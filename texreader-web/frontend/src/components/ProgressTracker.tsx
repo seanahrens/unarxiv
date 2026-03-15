@@ -21,7 +21,7 @@ function formatProgress(detail: string | null): string | null {
 
 const STAGES = [
   { key: "queued", label: "Queued" },
-  { key: "preparing", label: "Processing Paper" },
+  { key: "preparing", label: "Writing Script" },
   { key: "generating_audio", label: "Recording Narration" },
   { key: "complete", label: "Complete" },
 ];

@@ -32,7 +32,7 @@ function DownloadButton({ url, filename, label }: { url: string; filename: strin
 
   const colorClass = label.includes("MP3")
     ? "text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100"
-    : label.includes("Transcript")
+    : label.includes("Script")
     ? "text-pink-700 bg-pink-50 border-pink-200 hover:bg-pink-100"
     : "text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100";
 
@@ -449,7 +449,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             <DownloadButton
               url={transcriptUrl(paper.id)}
               filename={`${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org - ${paper.id}.txt`}
-              label="Transcript"
+              label="Script"
             />
           )}
           {isReady && (
