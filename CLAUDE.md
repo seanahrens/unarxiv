@@ -24,6 +24,11 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 
 ## Deployment
 
+Source the Cloudflare API token before deploying:
+```bash
+export $(cat /home/user/unarxiv/.env | xargs)
+```
+
 ```bash
 # Worker API
 cd texreader-web/worker && npx wrangler deploy
