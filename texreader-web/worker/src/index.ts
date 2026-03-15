@@ -145,7 +145,7 @@ async function handleRequest(
   if (ratingGetMatch && method === "GET") {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
     const rating = await getRating(env.DB, ratingGetMatch[1], ip);
-    if (!rating) return json({ error: "No rating" }, 404);
+    if (!rating) return json({ rating: null });
     return json({
       paper_id: rating.paper_id,
       stars: rating.stars,

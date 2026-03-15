@@ -210,9 +210,9 @@ export interface Rating {
 
 export async function fetchRating(paperId: string): Promise<Rating | null> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/rating`);
-  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  return data.rating === null ? null : data;
 }
 
 export async function submitRating(paperId: string, stars: number, comment: string): Promise<Rating> {
