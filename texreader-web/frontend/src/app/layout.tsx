@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
-import { SquareArrowUp } from "lucide-react";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
 import HeaderPlayer from "@/components/HeaderPlayer";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
@@ -30,23 +29,31 @@ export default function RootLayout({
         <PlaylistProvider>
         <FlyToPlaylist />
         <header className="border-b border-stone-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
+            {/* Left: logo — fixed width so center column stays centered */}
+            <div className="flex items-center gap-3 shrink-0">
               <Link href="/" className="flex items-center gap-2 no-underline text-stone-900 hover:text-stone-600 transition-colors">
-                <SquareArrowUp size={24} strokeWidth={1.8} className="text-stone-700" />
+                <svg width="28" height="28" viewBox="0 0 30 30" fill="none" stroke="#44403c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 11v14a2 2 0 002 2h18a2 2 0 002-2V11" />
+                  <path d="M4 11l-2.25-4.5" />
+                  <path d="M26 11l2.25-4.5" />
+                  <g transform="translate(15,19) rotate(-90)">
+                    <polygon points="0,-3.5 0,3.5 2.5,3.5 5,6 5,-6 2.5,-3.5" fill="#44403c" stroke="none" />
+                    <path d="M7,-2.5a3.5 3.5 0 010 5" fill="none" stroke="#44403c" strokeWidth="1.5" />
+                    <path d="M9,-4.5a6 6 0 010 9" fill="none" stroke="#44403c" strokeWidth="1.5" />
+                  </g>
+                </svg>
                 <span className="text-lg tracking-tight">
                   <span className="font-bold underline">un</span><span className="font-medium">arXiv</span>
                 </span>
               </Link>
-              <span className="text-xs text-stone-400 tracking-wide uppercase hidden md:inline">
-                Listen to research papers
-              </span>
-              {/* Desktop: player inline in header, left-aligned after tagline */}
-              <div className="hidden md:block ml-4">
-                <HeaderPlayer inline />
-              </div>
             </div>
-            <div className="flex items-center gap-3">
+            {/* Center: player (desktop only) — flex-1 centers it between logo and playlist */}
+            <div className="hidden md:flex flex-1 justify-center">
+              <HeaderPlayer inline />
+            </div>
+            {/* Right: playlist button */}
+            <div className="flex items-center gap-3 shrink-0 ml-auto md:ml-0">
               <PlaylistNavButton />
             </div>
           </div>
@@ -58,13 +65,12 @@ export default function RootLayout({
         <HeaderSearchBar />
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         <footer className="w-full py-6 flex items-center justify-center">
-          <span
-            className="text-sm text-stone-500 select-all"
-            style={{ direction: "rtl", unicodeBidi: "bidi-override" }}
-            aria-label="hello at unarXiv dot org"
+          <Link
+            href="/about"
+            className="text-sm text-stone-400 hover:text-stone-600 transition-colors no-underline"
           >
-            {"gro.viXranu@olleh"}
-          </span>
+            About
+          </Link>
         </footer>
         <a
           href="/admin"
