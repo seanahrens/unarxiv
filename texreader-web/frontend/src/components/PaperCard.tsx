@@ -53,7 +53,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
 
   return (
     <Link
-      href={`/papers/?id=${paper.id}`}
+      href={`/abs?id=${paper.id}`}
       className={`block relative rounded-xl border p-5 hover:shadow-md transition-all no-underline ${
         read
           ? "bg-emerald-50 border-emerald-300 hover:border-emerald-400"

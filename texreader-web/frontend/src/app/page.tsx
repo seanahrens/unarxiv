@@ -45,7 +45,7 @@ function HomePageContent() {
       (async () => {
         try {
           const dbPaper = await fetchPaper(arxivId);
-          window.location.href = `/papers/?id=${dbPaper.id}`;
+          window.location.href = `/abs?id=${dbPaper.id}`;
           return;
         } catch {
           // Not in DB — fetch from arXiv and create
@@ -53,7 +53,7 @@ function HomePageContent() {
         try {
           const meta = await previewPaper(arxivParam);
           const paper = await submitPaper(meta.arxiv_url, meta);
-          window.location.href = `/papers/?id=${paper.id}`;
+          window.location.href = `/abs?id=${paper.id}`;
         } catch (e: any) {
           setPreviewError(e.message || "Could not fetch paper details");
           setPreviewing(false);
