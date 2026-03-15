@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Build output
+.next/
+out/
+
+# Environment / secrets
+.env.local
+.env*.local
+.dev.vars
+.wrangler/
+
+# OS
+.DS_Store
+
+# Large files / data
+input/
+output/
+papers/
+*.mp3
+*.tar
+
+# Python
+*.egg-info/
+dist/
+build/

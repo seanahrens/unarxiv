@@ -1,0 +1,23 @@
+name = "texreader-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+# Set these via `wrangler secret put`:
+# TURNSTILE_SECRET_KEY
+# MODAL_WEBHOOK_SECRET
+# ADMIN_PASSWORD
+TURNSTILE_SITE_KEY = "0x4AAAAAACq7Empy5Tza8tKi"
+MODAL_FUNCTION_URL = "https://seanahrens--texreader-worker-trigger-narration.modal.run"
+DAILY_GLOBAL_LIMIT = "50"
+PER_IP_DAILY_LIMIT = "10"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "texreader-db"
+database_id = "d1936353-a389-4f38-a109-79db70cc44ef"
+
+[[r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "texreader-audio"
+# Create with: wrangler r2 bucket create texreader-audio
