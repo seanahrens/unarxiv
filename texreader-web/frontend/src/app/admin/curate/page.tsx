@@ -343,6 +343,19 @@ export default function CuratePage() {
                       <span>{new Date(paper.created_at).toLocaleDateString()}</span>
                     </>
                   )}
+                  {(paper.status === "complete" || paper.status === "generating_audio") && (
+                    <>
+                      <span>&middot;</span>
+                      <a
+                        href={`/s?id=${paper.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700 transition-colors no-underline font-medium"
+                      >
+                        Script
+                      </a>
+                    </>
+                  )}
                   {yourPaperIds.has(paper.id) && (
                     <>
                       <span>&middot;</span>

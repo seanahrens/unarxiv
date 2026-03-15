@@ -11,7 +11,7 @@ interface AudioPlayerProps {
 }
 
 function getStorageKey(paperId: string) {
-  return `papear-pos-${paperId}`;
+  return `pos-${paperId}`;
 }
 
 export default function AudioPlayer({ src, title, paperId, variant = "standard" }: AudioPlayerProps) {

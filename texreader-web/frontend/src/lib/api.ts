@@ -47,6 +47,26 @@ export async function fetchPaper(id: string): Promise<Paper> {
   return res.json();
 }
 
+export async function fetchPapersBatch(ids: string[]): Promise<Paper[]> {
+  if (ids.length === 0) return [];
+  try {
+    const res = await fetch(`${API_BASE}/api/papers/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    return data.papers;
+  } catch {
+    // Fallback: fetch individually
+    const results = await Promise.allSettled(ids.map((id) => fetchPaper(id)));
+    return results
+      .filter((r): r is PromiseFulfilledResult<Paper> => r.status === "fulfilled")
+      .map((r) => r.value);
+  }
+}
+
 export interface ArxivMetadata {
   id: string;
   arxiv_url: string;

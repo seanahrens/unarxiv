@@ -117,9 +117,7 @@ function HomePageContent() {
           {loading ? (
             <div className="text-center py-16 text-stone-400 text-sm">Loading...</div>
           ) : papers.length === 0 && !searchQuery ? (
-            <div className="text-center py-16 text-stone-400 text-sm">
-              No papers yet. Paste an arXiv URL above to get started!
-            </div>
+            <ArxivCta />
           ) : (
             <>
               {papers.length > 0 && (

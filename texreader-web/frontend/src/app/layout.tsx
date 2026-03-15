@@ -4,7 +4,10 @@ import Link from "next/link";
 import { SquareArrowUp } from "lucide-react";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
 import HeaderPlayer from "@/components/HeaderPlayer";
+import PlaylistNavButton from "@/components/PlaylistNavButton";
+import FlyToPlaylist from "@/components/FlyToPlaylist";
 import { AudioProvider } from "@/contexts/AudioContext";
+import { PlaylistProvider } from "@/contexts/PlaylistContext";
 
 export const metadata: Metadata = {
   title: "unarXiv — Listen to Research Papers",
@@ -24,6 +27,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-stone-50 text-gray-900 min-h-screen antialiased">
         <AudioProvider>
+        <PlaylistProvider>
+        <FlyToPlaylist />
         <header className="border-b border-stone-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -33,33 +38,44 @@ export default function RootLayout({
                   <span className="font-bold underline">un</span><span className="font-medium">arXiv</span>
                 </span>
               </Link>
-              <span className="text-xs text-stone-400 tracking-wide uppercase">
+              <span className="text-xs text-stone-400 tracking-wide uppercase hidden md:inline">
                 Listen to research papers
               </span>
+              {/* Desktop: player inline in header, left-aligned after tagline */}
+              <div className="hidden md:block ml-4">
+                <HeaderPlayer inline />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <PlaylistNavButton />
             </div>
           </div>
+          {/* Mobile: player below header content, still inside sticky header */}
+          <div className="md:hidden">
+            <HeaderPlayer />
+          </div>
         </header>
-        <HeaderPlayer />
         <HeaderSearchBar />
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
-        <footer className="w-full py-6 flex items-center justify-center gap-4">
+        <footer className="w-full py-6 flex items-center justify-center">
           <span
-            className="text-[11px] text-stone-300 select-all"
+            className="text-sm text-stone-500 select-all"
             style={{ direction: "rtl", unicodeBidi: "bidi-override" }}
             aria-label="hello at unarXiv dot org"
           >
             {"gro.viXranu@olleh"}
           </span>
-          <a
-            href="/admin"
-            className="text-stone-300 hover:text-stone-400 transition-colors"
-            title="Admin"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-            </svg>
-          </a>
         </footer>
+        <a
+          href="/admin"
+          className="fixed bottom-4 right-4 z-40 text-stone-300 hover:text-stone-400 transition-colors"
+          title="Admin"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          </svg>
+        </a>
+        </PlaylistProvider>
         </AudioProvider>
       </body>
     </html>

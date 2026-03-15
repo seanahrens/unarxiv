@@ -11,6 +11,17 @@ export async function getPaper(db: D1Database, id: string): Promise<Paper | null
     .first<Paper>();
 }
 
+/** Get multiple papers by arXiv IDs. */
+export async function getPapersBatch(db: D1Database, ids: string[]): Promise<Paper[]> {
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => "?").join(",");
+  const result = await db
+    .prepare(`SELECT * FROM papers WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<Paper>();
+  return result.results;
+}
+
 /** Insert a new paper. Returns true if inserted, false if already exists. */
 export async function insertPaper(
   db: D1Database,

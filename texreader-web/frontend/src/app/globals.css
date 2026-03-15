@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* All buttons should use pointer cursor */
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
 /* Audio player seek bar thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;

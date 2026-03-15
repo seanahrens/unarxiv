@@ -20,6 +20,7 @@ import { paperToResponse } from "./types";
 import { parseArxivId, scrapeArxivMetadata } from "./arxiv";
 import {
   getPaper,
+  getPapersBatch,
   insertPaper,
   updatePaperStatus,
   searchPapers,
@@ -95,6 +96,20 @@ async function handleRequest(
   // POST /api/papers/preview — must be before /api/papers/:id match
   if (path === "/api/papers/preview" && method === "POST") {
     return handlePreviewPaper(request);
+  }
+
+  // POST /api/papers/batch — fetch multiple papers by ID
+  if (path === "/api/papers/batch" && method === "POST") {
+    const body = await request.json<{ ids?: string[] }>();
+    const ids = body.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return json({ error: "ids must be a non-empty array" }, 400);
+    }
+    if (ids.length > 50) {
+      return json({ error: "Maximum 50 IDs per request" }, 400);
+    }
+    const papers = await getPapersBatch(env.DB, ids);
+    return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
   }
 
   // GET /api/papers

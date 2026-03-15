@@ -18,6 +18,7 @@ export default function SearchBar({
 }: SearchBarProps) {
   const [value, setValue] = useState(initialQuery);
   const [isArxiv, setIsArxiv] = useState(false);
+  const [focused, setFocused] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -41,17 +42,28 @@ export default function SearchBar({
     [onSearch, onArxivSubmit]
   );
 
+  const showPlaceholder = !value && !focused;
+
   return (
     <div className="w-full">
-      <input
-        type="text"
-        value={value}
-        onChange={handleChange}
-        placeholder="Paste arXiv.org URL, arXiv ID, or Search Our Narrations"
-        className="w-full px-4 py-3 text-base border border-stone-300 rounded-xl
-                   focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent
-                   bg-white shadow-sm placeholder:text-stone-400"
-      />
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={handleChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="w-full px-4 py-3 text-base border border-stone-300 rounded-xl
+                     focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent
+                     bg-white shadow-sm"
+        />
+        {showPlaceholder && (
+          <div className="absolute inset-0 flex items-center px-4 pointer-events-none text-base text-stone-400">
+            <span className="hidden md:inline">Paste arXiv.org URL, arXiv ID, or Search Our Narrations</span>
+            <span className="md:hidden">Paste arXiv URL, arXiv ID, or Search</span>
+          </div>
+        )}
+      </div>
       {!hideHint && (
         <p className="mt-2 text-xs text-stone-400">
           {isArxiv ? (
