@@ -61,7 +61,7 @@ export default function ScriptPageContent() {
   return (
     <div>
       <Link
-        href={`/abs?id=${paper.id}`}
+        href={`/p?id=${paper.id}`}
         className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-4 inline-block"
       >
         &larr; Back to paper

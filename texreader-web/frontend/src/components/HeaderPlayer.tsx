@@ -69,7 +69,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Title + progress */}
         <div className="min-w-0 max-w-[200px]">
           <Link
-            href={`/abs?id=${paperId}`}
+            href={`/p?id=${paperId}`}
             className="block text-[10px] text-stone-600 hover:text-stone-900 truncate no-underline transition-colors"
             title={paperTitle || ""}
           >
@@ -161,7 +161,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Title + progress */}
         <div className="flex-1 min-w-0">
           <Link
-            href={`/abs?id=${paperId}`}
+            href={`/p?id=${paperId}`}
             className="block text-xs text-stone-700 hover:text-stone-900 truncate no-underline transition-colors"
             title={paperTitle || ""}
           >

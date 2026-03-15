@@ -176,7 +176,7 @@ export default function PlaylistPage() {
 
                 {/* Title + authors */}
                 <Link
-                  href={`/abs?id=${entry.paperId}`}
+                  href={`/p?id=${entry.paperId}`}
                   className="flex-1 min-w-0 no-underline"
                 >
                   <span className="text-sm text-stone-800 truncate block">
@@ -225,7 +225,7 @@ export default function PlaylistPage() {
             return (
               <Link
                 key={entry.paperId}
-                href={`/abs?id=${entry.paperId}`}
+                href={`/p?id=${entry.paperId}`}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-stone-50 transition-colors no-underline"
               >
                 <span className="text-[11px] text-stone-400 shrink-0 w-24">

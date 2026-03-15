@@ -71,7 +71,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
 
   return (
     <Link
-      href={`/abs?id=${paper.id}`}
+      href={`/p?id=${paper.id}`}
       className="block relative rounded-xl border p-5 hover:shadow-md transition-all no-underline bg-white border-stone-200 hover:border-stone-300"
     >
       {isReady && (
