@@ -2,28 +2,17 @@
 """
 tex_to_audio.py — Convert LaTeX .tar archives to listenable MP3 audiobooks.
 
-FOLDER LAYOUT (relative to this script):
-  input/    — drop .tar archives here
-  papers/   — tars are auto-extracted here (one sub-folder per tar)
-              each folder also receives  tr-transcript.txt  for inspection
-  output/   — finished MP3s land here
+Used by the Modal serverless worker (narrate.py) to process arXiv papers.
+Can also be run standalone for local testing.
 
-WORKFLOW (double-click run.command, or: python tex_to_audio.py):
-  1. Any .tar in input/ not yet extracted  →  extracted to papers/{stem}/
-  2. ALL pending tr-transcript.txt files are written first so you can inspect
-     every paper's cleaned text even if audio generation later fails.
-  3. Audio is generated paper by paper, shortest transcript first.
-  Re-runs are safe: extracted dirs, existing transcripts, and existing MP3s
-  are all skipped automatically.
-
-SINGLE-FILE MODE:
+USAGE:
   python tex_to_audio.py path/to/paper.tar
   python tex_to_audio.py path/to/paper.tar  -o out.mp3
   python tex_to_audio.py path/to/paper.tex
 
 OUTPUT FILENAME:  LastName - Title - sourcestem.mp3
 
-REQUIREMENTS (install once):
+REQUIREMENTS:
   pip install edge-tts mutagen   # edge-tts = Microsoft TTS (no rate limiting)
   pip install pyttsx3            # optional offline fallback (uses system voices)
   brew install ffmpeg   # macOS  |  sudo apt install ffmpeg  # Linux

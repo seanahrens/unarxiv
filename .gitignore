@@ -16,10 +16,7 @@ out/
 # OS
 .DS_Store
 
-# Large files / data
-input/
-output/
-papers/
+# Large files
 *.mp3
 *.tar
 

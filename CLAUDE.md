@@ -12,7 +12,6 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 - **Frontend**: `texreader-web/frontend/` — Next.js on Cloudflare Pages
 - **API**: `texreader-web/worker/` — Cloudflare Workers (TypeScript), bindings in `wrangler.toml`
 - **Narration**: `texreader-web/modal_worker/` — Modal serverless Python, wraps `tex_to_audio.py`
-- **CLI tool**: `tex_to_audio.py` (root) — standalone Python CLI, ~1,228 lines
 
 ## Key Config
 
