@@ -668,7 +668,7 @@ async function handleGetAudio(env: Env, id: string): Promise<Response> {
 
 async function handleGetTranscript(env: Env, id: string): Promise<Response> {
   const paper = await getPaper(env.DB, id);
-  if (!paper || paper.status !== "complete") {
+  if (!paper || !["generating_audio", "complete"].includes(paper.status)) {
     return json({ error: "Transcript not available" }, 404);
   }
 
