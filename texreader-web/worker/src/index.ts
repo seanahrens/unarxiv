@@ -683,7 +683,7 @@ async function handleGetTranscript(env: Env, id: string): Promise<Response> {
   headers.set("Content-Length", String(object.size));
   headers.set(
     "Content-Disposition",
-    `attachment; filename="${encodeURIComponent(paper.title)} - Transcript.txt"`
+    `inline; filename="${encodeURIComponent(paper.title)} - Transcript.txt"`
   );
 
   return new Response(object.body, { headers });

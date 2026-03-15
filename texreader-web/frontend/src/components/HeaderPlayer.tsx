@@ -50,7 +50,7 @@ export default function HeaderPlayer() {
           <div className="flex-1 min-w-0">
             {/* Paper title as link */}
             <Link
-              href={`/papers/?id=${paperId}`}
+              href={`/abs?id=${paperId}`}
               className="block text-xs text-stone-700 hover:text-stone-900 truncate no-underline transition-colors"
               title={paperTitle || ""}
             >

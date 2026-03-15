@@ -6,7 +6,7 @@ import Link from "next/link";
 import AudioPlayer from "@/components/AudioPlayer";
 import ProgressTracker from "@/components/ProgressTracker";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, recordVisit, audioUrl, transcriptUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 
 function DownloadButton({ url, filename, label }: { url: string; filename: string; label: string }) {
@@ -33,8 +33,6 @@ function DownloadButton({ url, filename, label }: { url: string; filename: strin
 
   const colorClass = label.includes("MP3")
     ? "text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100"
-    : label.includes("Script")
-    ? "text-pink-700 bg-pink-50 border-pink-200 hover:bg-pink-100"
     : "text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100";
 
   return (
@@ -447,11 +445,20 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             />
           )}
           {(isReady || paper.status === "generating_audio") && (
-            <DownloadButton
-              url={transcriptUrl(paper.id)}
-              filename={`${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org - ${paper.id}.txt`}
-              label="Script"
-            />
+            <a
+              href={`/s/?id=${paper.id}`}
+              className="inline-flex items-center justify-center gap-1.5 px-3 h-[42px] text-xs font-medium
+                         text-pink-700 bg-pink-50 border border-pink-200 hover:bg-pink-100
+                         rounded-xl transition-colors no-underline"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              Script
+            </a>
           )}
           {isReady && (
             <button
