@@ -98,8 +98,19 @@ function HomePageContent() {
       {/* Paper list */}
       {!previewing && (
         <>
-          <h2 className="text-xs font-medium text-stone-400 uppercase tracking-wider mb-4">
-            {searchQuery ? `Results for "${searchQuery}"` : "Popular Papers"}
+          <h2 className="flex items-center gap-2 text-xs font-medium text-stone-400 uppercase tracking-wider mb-4">
+            {searchQuery ? (
+              `Results for "${searchQuery}"`
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                Popular Paper Narrations
+              </>
+            )}
           </h2>
 
           {loading ? (
@@ -111,7 +122,7 @@ function HomePageContent() {
                 : "No papers yet. Paste an arXiv URL above to get started!"}
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               {papers.map((paper) => (
                 <PaperCard key={paper.id} paper={paper} />
               ))}

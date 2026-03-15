@@ -31,7 +31,7 @@ function formatShortDate(dateStr: string): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  not_requested: "Not Narrated",
+  not_requested: "",
   queued: "In Progress",
   preparing: "In Progress",
   generating_audio: "In Progress",
@@ -86,12 +86,11 @@ export default function PaperCard({ paper }: PaperCardProps) {
         <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug">
           {paper.title || "Untitled"}
         </h3>
-        {!isReady && (
+        {!isReady && !isNotRequested && (
           <span
             className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium
               ${isFailed ? "bg-red-50 text-red-600" : ""}
-              ${paper.status === "not_requested" ? "bg-stone-100 text-stone-500" : ""}
-              ${isProcessing && paper.status !== "not_requested" ? "bg-amber-50 text-amber-600" : ""}
+              ${isProcessing ? "bg-amber-50 text-amber-600" : ""}
             `}
           >
             {STATUS_LABELS[paper.status] || paper.status}
