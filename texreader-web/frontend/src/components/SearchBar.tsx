@@ -47,7 +47,7 @@ export default function SearchBar({
         type="text"
         value={value}
         onChange={handleChange}
-        placeholder="Paste arXiv.org abstract URL, paper ID, or search our narrations"
+        placeholder="Paste arXiv.org URL, arXiv ID, or Search Our Narrations"
         className="w-full px-4 py-3 text-base border border-stone-300 rounded-xl
                    focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent
                    bg-white shadow-sm placeholder:text-stone-400"
