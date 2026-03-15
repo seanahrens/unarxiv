@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import SiteName from "@/components/SiteName";
 
 export const metadata: Metadata = {
   title: "About — unarXiv",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="max-w-xl mx-auto py-8">
-      <h1 className="text-2xl font-bold text-stone-900 mb-6">About unarXiv</h1>
+      <h1 className="text-2xl font-bold text-stone-900 mb-6">About <SiteName /></h1>
 
       <div className="space-y-4 text-sm text-stone-600 leading-relaxed">
         <p>

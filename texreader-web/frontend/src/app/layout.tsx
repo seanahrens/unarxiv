@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import SiteName from "@/components/SiteName";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
 import HeaderPlayer from "@/components/HeaderPlayer";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
@@ -43,9 +44,7 @@ export default function RootLayout({
                     <path d="M9,-4.5a6 6 0 010 9" fill="none" stroke="#44403c" strokeWidth="1.5" />
                   </g>
                 </svg>
-                <span className="text-lg tracking-tight">
-                  <span className="font-bold underline">un</span><span className="font-medium">arXiv</span>
-                </span>
+                <SiteName className="text-lg tracking-tight" />
               </Link>
             </div>
             {/* Center: player (desktop only) — flex-1 centers it between logo and playlist */}
@@ -64,13 +63,16 @@ export default function RootLayout({
         </header>
         <HeaderSearchBar />
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
-        <footer className="w-full py-6 flex items-center justify-center">
+        <footer className="w-full py-6 flex flex-col items-center gap-2">
           <Link
             href="/about"
             className="text-sm text-stone-400 hover:text-stone-600 transition-colors no-underline"
           >
             About
           </Link>
+          <p className="text-[11px] text-stone-400 text-center max-w-md">
+            arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
+          </p>
         </footer>
         <a
           href="/admin"

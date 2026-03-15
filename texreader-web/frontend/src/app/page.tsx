@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PaperCard from "@/components/PaperCard";
 import ArxivCta from "@/components/ArxivCta";
+import SiteName from "@/components/SiteName";
 import {
   fetchPapers,
   fetchPaper,
@@ -99,17 +100,35 @@ function HomePageContent() {
       {/* Paper list */}
       {!previewing && (
         <>
-          <h2 className="flex items-center gap-2 text-xs font-medium text-stone-400 uppercase tracking-wider mb-4">
+          {/* Explainer section — only on default homepage (no search) */}
+          {!searchQuery && !loading && (
+            <div className="mb-10 max-w-2xl mx-auto text-center">
+              <h2 className="text-lg font-semibold text-stone-800 mb-3">
+                How does <SiteName /> work?
+              </h2>
+              <p className="text-sm text-stone-500 leading-relaxed mb-5">
+                We are an audio arXiv — a mirrored repository of papers on{" "}
+                arXiv in audiobook format. For a paper to be on <SiteName />, it first needs
+                to be added.
+              </p>
+              <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">
+                To add a paper, drop the arXiv URL in the search above — or browse to an arXiv.org paper &amp; add &lsquo;un&rsquo; to the URL &amp; hit enter.
+              </p>
+              <ArxivCta showHeading={false} inlineBrowse staticUrl className="py-0" />
+            </div>
+          )}
+
+          <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mb-4">
             {searchQuery ? (
               `Results for "${searchQuery}"`
             ) : (
               <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                   <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                 </svg>
-                Popular Paper Narrations
+                Our Audio Papers So Far
               </>
             )}
           </h2>
@@ -119,17 +138,11 @@ function HomePageContent() {
           ) : papers.length === 0 && !searchQuery ? (
             <ArxivCta />
           ) : (
-            <>
-              {papers.length > 0 && (
-                <div className="grid gap-3">
-                  {papers.map((paper) => (
-                    <PaperCard key={paper.id} paper={paper} />
-                  ))}
-                </div>
-              )}
-
-              <ArxivCta query={searchQuery || undefined} />
-            </>
+            <div className="grid gap-3">
+              {papers.map((paper) => (
+                <PaperCard key={paper.id} paper={paper} />
+              ))}
+            </div>
           )}
         </>
       )}
