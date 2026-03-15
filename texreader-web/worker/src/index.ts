@@ -5,7 +5,9 @@
  *   GET  /api/papers?q=...&sort=popular|recent|all&page=1
  *   GET  /api/papers/:id
  *   POST /api/papers/preview  { arxiv_url }  — scrape metadata without inserting
- *   POST /api/papers  { arxiv_url, turnstile_token, metadata? }
+ *   POST /api/papers  { arxiv_url, metadata? }  — create paper record (no narration)
+ *   POST /api/papers/:id/narrate  — request narration (conditional captcha)
+ *   GET  /api/narration-check  — check if captcha is required for caller
  *   DELETE /api/papers/:id  (requires admin password)
  *   GET  /api/papers/:id/audio
  *   GET  /api/papers/:id/progress
@@ -30,6 +32,7 @@ import {
   recordVisit,
   getSubmissionCount,
   getGlobalSubmissionCount,
+  getNarrationCountLastHour,
   recordSubmission,
   cleanup,
   getRating,
@@ -49,7 +52,7 @@ export default {
 
     // CORS headers
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": "https://unarxiv.org",
       "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password",
     };
@@ -177,6 +180,17 @@ async function handleRequest(
   const paperMatch = path.match(/^\/api\/papers\/([^/]+)$/);
   if (paperMatch && method === "GET") {
     return handleGetPaper(env, paperMatch[1], baseUrl);
+  }
+
+  // POST /api/papers/:id/narrate — request voice narration
+  const narrateMatch = path.match(/^\/api\/papers\/([^/]+)\/narrate$/);
+  if (narrateMatch && method === "POST") {
+    return handleNarratePaper(request, env, narrateMatch[1], baseUrl);
+  }
+
+  // GET /api/narration-check — check if captcha is required for caller
+  if (path === "/api/narration-check" && method === "GET") {
+    return handleNarrationCheck(request, env);
   }
 
   // POST /api/papers/:id/reprocess
@@ -359,7 +373,6 @@ async function handleSubmitPaper(
 ): Promise<Response> {
   const body = await request.json<{
     arxiv_url?: string;
-    turnstile_token?: string;
     metadata?: {
       id: string;
       arxiv_url: string;
@@ -386,44 +399,6 @@ async function handleSubmitPaper(
     return json(paperToResponse(existing, baseUrl));
   }
 
-  // --- Rate limiting (skip for admin) ---
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const isAdmin = env.ADMIN_PASSWORD && request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD;
-
-  if (!isAdmin) {
-    const ipLimit = parseInt(env.PER_IP_DAILY_LIMIT || "10");
-    const ipCount = await getSubmissionCount(env.DB, ip);
-    if (ipCount >= ipLimit) {
-      return json(
-        { error: `Rate limit exceeded. Maximum ${ipLimit} papers per day.` },
-        429
-      );
-    }
-  }
-
-  const globalLimit = parseInt(env.DAILY_GLOBAL_LIMIT || "50");
-  const globalCount = await getGlobalSubmissionCount(env.DB);
-  if (!isAdmin && globalCount >= globalLimit) {
-    return json(
-      { error: "The service is at capacity for today. Please try again tomorrow." },
-      503
-    );
-  }
-
-  // --- Turnstile verification ---
-  if (!body.turnstile_token) {
-    return json({ error: "Turnstile verification required for new papers" }, 400);
-  }
-
-  const turnstileValid = await verifyTurnstile(
-    body.turnstile_token,
-    ip,
-    env.TURNSTILE_SECRET_KEY
-  );
-  if (!turnstileValid) {
-    return json({ error: "Turnstile verification failed" }, 403);
-  }
-
   // --- Use pre-scraped metadata if provided, otherwise scrape ---
   let metadata;
   if (body.metadata && body.metadata.id === arxivId) {
@@ -436,7 +411,8 @@ async function handleSubmitPaper(
     }
   }
 
-  // --- Insert paper + record submission ---
+  // --- Insert paper with status "not_requested" ---
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const cf = (request as any).cf;
   const inserted = await insertPaper(env.DB, {
     id: metadata.id,
@@ -456,11 +432,74 @@ async function handleSubmitPaper(
     return json(paperToResponse(paper!, baseUrl));
   }
 
+  const paper = await getPaper(env.DB, arxivId);
+  return json(paperToResponse(paper!, baseUrl), 201);
+}
+
+async function handleNarratePaper(
+  request: Request,
+  env: Env,
+  id: string,
+  baseUrl: string
+): Promise<Response> {
+  const paper = await getPaper(env.DB, id);
+  if (!paper) {
+    return json({ error: "Paper not found" }, 404);
+  }
+
+  if (paper.status !== "not_requested") {
+    return json({ error: "Narration already requested" }, 400);
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const isAdmin = env.ADMIN_PASSWORD && request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD;
+
+  if (!isAdmin) {
+    // Rate limiting
+    const ipLimit = parseInt(env.PER_IP_DAILY_LIMIT || "10");
+    const ipCount = await getSubmissionCount(env.DB, ip);
+    if (ipCount >= ipLimit) {
+      return json(
+        { error: `Rate limit exceeded. Maximum ${ipLimit} narrations per day.` },
+        429
+      );
+    }
+
+    const globalLimit = parseInt(env.DAILY_GLOBAL_LIMIT || "50");
+    const globalCount = await getGlobalSubmissionCount(env.DB);
+    if (globalCount >= globalLimit) {
+      return json(
+        { error: "The service is at capacity for today. Please try again tomorrow." },
+        503
+      );
+    }
+
+    // Conditional captcha: required if >2 narrations in last hour
+    const hourlyCount = await getNarrationCountLastHour(env.DB, ip);
+    if (hourlyCount > 2) {
+      const body = await request.json<{ turnstile_token?: string }>().catch(() => ({}));
+      if (!body.turnstile_token) {
+        return json({ error: "Turnstile verification required" }, 400);
+      }
+      const turnstileValid = await verifyTurnstile(
+        body.turnstile_token,
+        ip,
+        env.TURNSTILE_SECRET_KEY
+      );
+      if (!turnstileValid) {
+        return json({ error: "Turnstile verification failed" }, 403);
+      }
+    }
+  }
+
+  // Update status to queued
+  await updatePaperStatus(env.DB, id, "queued");
   await recordSubmission(env.DB, ip);
 
-  // --- Dispatch to Modal ---
+  // Dispatch to Modal
   if (env.MODAL_FUNCTION_URL) {
     try {
+      const meta = await scrapeArxivMetadata(id);
       await fetch(env.MODAL_FUNCTION_URL, {
         method: "POST",
         headers: {
@@ -468,21 +507,29 @@ async function handleSubmitPaper(
           Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
         },
         body: JSON.stringify({
-          arxiv_id: metadata.id,
-          tex_source_url: metadata.tex_source_url,
+          arxiv_id: id,
+          tex_source_url: meta.tex_source_url,
           callback_url: `${baseUrl}/api/webhooks/modal`,
-          paper_title: metadata.title,
-          paper_author: metadata.authors[0] || "",
+          paper_title: paper.title,
+          paper_author: JSON.parse(paper.authors)[0] || "",
         }),
       });
     } catch (e: any) {
       console.error("Failed to dispatch to Modal:", e);
-      // Paper is queued; Modal can pick it up later
     }
   }
 
-  const paper = await getPaper(env.DB, arxivId);
-  return json(paperToResponse(paper!, baseUrl), 202);
+  const updated = await getPaper(env.DB, id);
+  return json(paperToResponse(updated!, baseUrl));
+}
+
+async function handleNarrationCheck(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const hourlyCount = await getNarrationCountLastHour(env.DB, ip);
+  return json({ captcha_required: hourlyCount > 2 });
 }
 
 async function handleReprocessPaper(

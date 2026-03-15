@@ -17,7 +17,7 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 
 - D1 database: `texreader-db` (ID: `d1936353-a389-4f38-a109-79db70cc44ef`)
 - R2 bucket: `texreader-audio` (audio + transcripts)
-- Domain: `papers.aixdemocracy.fyi`
+- Domain: `unarxiv.org` (frontend), `api.unarxiv.org` (worker API)
 - `wrangler` is available at `/usr/local/bin/npx wrangler` (must set PATH)
 - Admin password stored as Worker secret (`ADMIN_PASSWORD`)
 - Rate limits: 10/day/IP, global daily cap configurable via `DAILY_GLOBAL_LIMIT`
