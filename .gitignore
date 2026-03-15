@@ -8,6 +8,7 @@ __pycache__/
 out/
 
 # Environment / secrets
+.env
 .env.local
 .env*.local
 .dev.vars
