@@ -197,7 +197,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             meta = tex_to_audio.extract_full_metadata(latex, f"arXiv-{arxiv_id}")
             tag_title = meta["title"] or "Untitled"
             tag_author = meta["authors"][0] if meta["authors"] else "Unknown"
-        tex_to_audio.tag_mp3(output_path, title=tag_title, author=tag_author)
+        tex_to_audio.tag_mp3(output_path, title=tag_title, author=tag_author, arxiv_id=arxiv_id)
 
         # Get duration
         duration_seconds = None

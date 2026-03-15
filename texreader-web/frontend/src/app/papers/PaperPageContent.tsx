@@ -421,7 +421,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           </a>
           <DownloadButton
             url={`https://arxiv.org/pdf/${paper.id}`}
-            filename={`${paper.id}.pdf`}
+            filename={`${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org-abs-${paper.id}.pdf`}
             label="PDF"
           />
           {isNotRequested && (
@@ -441,14 +441,14 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           {isReady && (
             <DownloadButton
               url={audioUrl(paper.id)}
-              filename={`${paper.id}.mp3`}
+              filename={`${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org-abs-${paper.id}.mp3`}
               label="MP3"
             />
           )}
-          {isReady && (
+          {(isReady || paper.status === "generating_audio") && (
             <DownloadButton
               url={transcriptUrl(paper.id)}
-              filename={`${paper.title} - Transcript.txt`}
+              filename={`${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org-abs-${paper.id}.txt`}
               label="Transcript"
             />
           )}

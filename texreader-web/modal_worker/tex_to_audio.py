@@ -333,6 +333,7 @@ def _build_transcript_header(title: str, date: str, authors: list[str]) -> str:
             first_three = f"{authors[0]}, {authors[1]}, {authors[2]}"
             remaining = len(authors) - 3
             lines += [f"By {first_three}, and {remaining} more author{'s' if remaining != 1 else ''}.", ""]
+    lines += ["Narration by un. archive.org.", ""]
     return "\n".join(lines)
 
 
@@ -343,7 +344,13 @@ def _build_transcript_footer(title: str, date: str, authors: list[str]) -> str:
         f"\n\n"
         f"Thanks for listening. "
         f"This has been an audio narration of {info} "
-        f"This paper was narrated by Archive to Audio, a project by Sean Ahrens."
+        f"This paper was narrated by un-archive,org "
+        f"(spelled u. n. a. r. x. i. v. dot. org.), "
+        f"a project by Sean Ahrens. "
+        f"Un. archive.org makes it easy to have archive papers narrated for free. "
+        f"Simply visit a paper on archive.org "
+        f"(spelled a. r. x. i. v. dot. org.), "
+        f"then pre-pend u. n. to the domain, making the domain un. archive.org."
     )
 
 
@@ -973,13 +980,23 @@ def _split_into_chunks(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]
 # ID3 tagging
 # ---------------------------------------------------------------------------
 
-def tag_mp3(path: str, title: str, author: str, genre: str = "Audiobook") -> None:
-    """Write ID3 tags (title, artist, album, genre) to an MP3 file.
+def tag_mp3(
+    path: str,
+    title: str,
+    author: str,
+    genre: str = "Audiobook",
+    arxiv_id: str = "",
+) -> None:
+    """Write ID3 tags to an MP3 file.
 
+    Includes title, artist, album, genre, URL, and unarXiv.org branding.
     Silently skips tagging if *mutagen* is not installed.
     """
     try:
-        from mutagen.id3 import ID3, TIT2, TPE1, TALB, TCON, ID3NoHeaderError
+        from mutagen.id3 import (
+            ID3, TIT2, TPE1, TPE2, TALB, TCON, COMM, WOAF, TPUB,
+            ID3NoHeaderError,
+        )
     except ImportError:
         print("  (mutagen not installed — skipping ID3 tags)")
         return
@@ -989,8 +1006,16 @@ def tag_mp3(path: str, title: str, author: str, genre: str = "Audiobook") -> Non
         tags = ID3()
     tags.add(TIT2(encoding=3, text=title))
     tags.add(TPE1(encoding=3, text=author))
+    tags.add(TPE2(encoding=3, text="unarXiv.org"))
     tags.add(TALB(encoding=3, text=title))
     tags.add(TCON(encoding=3, text=genre))
+    tags.add(TPUB(encoding=3, text="unarXiv.org"))
+    if arxiv_id:
+        url = f"https://unarXiv.org/abs/{arxiv_id}"
+        tags.add(WOAF(url=url))
+        tags.add(COMM(encoding=3, lang="eng", desc="", text=f"Narrated by unarXiv.org — {url}"))
+    else:
+        tags.add(COMM(encoding=3, lang="eng", desc="", text="Narrated by unarXiv.org"))
     tags.save(path)
 
 
