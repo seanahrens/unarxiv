@@ -239,12 +239,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const skipBack = useCallback((seconds = 15) => {
+    if (typeof seconds !== "number") seconds = 15;
     const audio = audioRef.current;
     if (!audio || !isFinite(audio.currentTime)) return;
     audio.currentTime = Math.max(0, audio.currentTime - seconds);
   }, []);
 
   const skipForward = useCallback((seconds = 30) => {
+    if (typeof seconds !== "number") seconds = 30;
     const audio = audioRef.current;
     if (!audio || !isFinite(audio.currentTime) || !isFinite(audio.duration) || audio.duration <= 0) return;
     audio.currentTime = Math.min(audio.duration, audio.currentTime + seconds);

@@ -26,7 +26,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       <div className="flex items-center gap-2">
         {/* Skip Back */}
         <button
-          onClick={actions.skipBack}
+          onClick={() => actions.skipBack()}
           className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
           title="Back 15s"
         >
@@ -56,7 +56,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
 
         {/* Skip Forward */}
         <button
-          onClick={actions.skipForward}
+          onClick={() => actions.skipForward()}
           className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
           title="Forward 30s"
         >
@@ -118,7 +118,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       <div className="max-w-5xl mx-auto px-6 py-2 flex items-center gap-3">
         {/* Skip Back */}
         <button
-          onClick={actions.skipBack}
+          onClick={() => actions.skipBack()}
           className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
           title="Back 15s"
         >
@@ -148,7 +148,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
 
         {/* Skip Forward */}
         <button
-          onClick={actions.skipForward}
+          onClick={() => actions.skipForward()}
           className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
           title="Forward 30s"
         >

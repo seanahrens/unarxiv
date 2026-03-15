@@ -28,7 +28,7 @@ export default function PlaylistPage() {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
-  const readHistory = getReadHistory();
+  const [readHistory, setReadHistory] = useState<{ paperId: string; readAt: string }[]>([]);
 
   // Fetch playlist papers
   useEffect(() => {
@@ -51,7 +51,9 @@ export default function PlaylistPage() {
 
   // Fetch history papers
   useEffect(() => {
-    const ids = readHistory.map((e) => e.paperId);
+    const history = getReadHistory();
+    setReadHistory(history);
+    const ids = history.map((e) => e.paperId);
     if (ids.length === 0) {
       setHistoryPapers({});
       setHistoryLoading(false);
