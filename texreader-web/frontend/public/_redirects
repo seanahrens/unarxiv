@@ -1,4 +1,1 @@
-# Redirect arXiv-style URLs to homepage with arxiv param for paper lookup/submission
-/abs/* /?arxiv=:splat 302
-/html/* /?arxiv=:splat 302
-/pdf/* /?arxiv=:splat 302
+# arXiv-style URL redirects handled by Pages Functions in functions/
