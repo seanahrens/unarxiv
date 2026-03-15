@@ -6,6 +6,7 @@ import { fetchPaper, type Paper } from "@/lib/api";
 interface ProgressTrackerProps {
   paperId: string;
   onComplete: (paper: Paper) => void;
+  onStatusChange?: (paper: Paper) => void;
 }
 
 function formatProgress(detail: string | null): string | null {
@@ -29,6 +30,7 @@ const STAGES = [
 export default function ProgressTracker({
   paperId,
   onComplete,
+  onStatusChange,
 }: ProgressTrackerProps) {
   const [status, setStatus] = useState("queued");
   const [detail, setDetail] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export default function ProgressTracker({
 
         setStatus(paper.status);
         setDetail(paper.progress_detail);
+        onStatusChange?.(paper);
 
         if (paper.status === "complete") {
           onComplete(paper);
@@ -67,7 +70,7 @@ export default function ProgressTracker({
     return () => {
       cancelled = true;
     };
-  }, [paperId, onComplete]);
+  }, [paperId, onComplete, onStatusChange]);
 
   const currentStageIdx = STAGES.findIndex((s) => s.key === status);
 

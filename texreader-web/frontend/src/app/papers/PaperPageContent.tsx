@@ -505,7 +505,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           )}
           {isProcessing && (
             <div className="flex-1 min-w-[280px]">
-              <ProgressTracker paperId={paper.id} onComplete={handleComplete} />
+              <ProgressTracker paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
             </div>
           )}
         </div>

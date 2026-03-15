@@ -15,6 +15,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg")
     .pip_install("edge-tts>=6.1.0", "mutagen>=1.47.0", "httpx>=0.27.0", "boto3>=1.34.0", "fastapi[standard]")
+    .run_commands("python -c 'import edge_tts; print(edge_tts.__version__)'")  # verify edge-tts installed
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py")
 )
 

@@ -346,9 +346,8 @@ def _build_transcript_footer(title: str, date: str, authors: list[str]) -> str:
         f"This has been an audio narration of {info} "
         f"This paper was narrated by un. archive dot org, a project by Sean Ahrens. "
         f"un. archive.org lets you listen to archive papers for free. "
-        f"Simply visit a paper on archive.org. "
-        f"strangely spelled A; R; X; I; V; dot org, "
-        f"then pre pend U; N; to the domain name, spelling un. archive."
+        f"Simply visit a paper on archive, strangely spelled; A; R; X; I; V; dot org, "
+        f"then pre pend the letters; U; N; to the domain name, spelling unarchive.org"
     )
 
 
