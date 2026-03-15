@@ -73,11 +73,10 @@ export async function scrapeArxivMetadata(arxivId: string): Promise<ArxivMetadat
     ? stripHtml(abstractMatch[1]).trim()
     : "";
 
-  // Parse date
+  // Parse date — extract first submission date as ISO (YYYY-MM-DD)
   const dateMatch = html.match(/<div class="dateline">([\s\S]*?)<\/div>/i);
-  const published_date = dateMatch
-    ? stripHtml(dateMatch[1]).replace(/[\[\]]/g, "").trim()
-    : "";
+  const rawDate = dateMatch ? stripHtml(dateMatch[1]).replace(/[\[\]]/g, "").trim() : "";
+  const published_date = parseSubmissionDate(rawDate);
 
   // Check for TeX source availability
   // Look for the "Other formats" / source link
@@ -108,6 +107,20 @@ export async function scrapeArxivMetadata(arxivId: string): Promise<ArxivMetadat
     published_date,
     tex_source_url: arxivSrcUrl(arxivId),
   };
+}
+
+const MONTHS: Record<string, string> = {
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+};
+
+/** Parse arXiv dateline like "Submitted on 27 Mar 2024 (v1), ..." into "2024-03-27". */
+function parseSubmissionDate(raw: string): string {
+  const m = raw.match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/);
+  if (!m) return raw;
+  const day = m[1].padStart(2, "0");
+  const month = MONTHS[m[2]];
+  return `${m[3]}-${month}-${day}`;
 }
 
 function stripHtml(html: string): string {

@@ -147,7 +147,6 @@ export async function getPopularPapers(
          WHERE visited_at > datetime('now', '-7 days')
          GROUP BY paper_id
        ) v ON v.paper_id = p.id
-       WHERE p.status != 'not_requested'
        ORDER BY visit_count DESC, p.created_at DESC
        LIMIT ? OFFSET ?`
     )
@@ -166,7 +165,6 @@ export async function getRecentPapers(
   const results = await db
     .prepare(
       `SELECT * FROM papers
-       WHERE status != 'not_requested'
        ORDER BY created_at DESC
        LIMIT ? OFFSET ?`
     )

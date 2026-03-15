@@ -267,6 +267,17 @@ function RatingModal({
   );
 }
 
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function PaperPageContent({ paperId: propId }: { paperId?: string } = {}) {
   const searchParams = useSearchParams();
   const id = propId || searchParams.get("id") || "";
@@ -384,15 +395,11 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
         <div className="flex items-center gap-2 text-sm text-stone-400 mb-5">
           {paper.published_date && (
-            <span>Submitted to arXiv on {paper.published_date}</span>
+            <span>{formatDate(paper.published_date)}</span>
           )}
-          {paper.published_date && (
-            <>
-              <span>&middot;</span>
-              <span className="font-mono">{paper.id}</span>
-              <CopyIdButton id={paper.id} />
-            </>
-          )}
+          <span>&middot;</span>
+          <span className="font-mono">{paper.id}</span>
+          <CopyIdButton id={paper.id} />
         </div>
 
         {/* Buttons + compact player on same row */}
@@ -417,6 +424,20 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             filename={`${paper.id}.pdf`}
             label="PDF"
           />
+          {isNotRequested && (
+            <button
+              onClick={handleRequestNarration}
+              disabled={narrationLoading}
+              className="inline-flex items-center justify-center gap-1.5 px-3 h-[42px] text-xs font-medium
+                         text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700
+                         rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {narrationLoading ? "Starting..." : "Generate Audio Narration"}
+            </button>
+          )}
+          {narrationError && (
+            <span className="text-xs text-red-600">{narrationError}</span>
+          )}
           {isReady && (
             <DownloadButton
               url={audioUrl(paper.id)}
@@ -489,22 +510,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           )}
         </div>
 
-        {/* Record Voice Narration button for not_requested papers */}
-        {isNotRequested && (
-          <div className="mb-6">
-            <button
-              onClick={handleRequestNarration}
-              disabled={narrationLoading}
-              className="w-full py-4 text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700
-                         rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {narrationLoading ? "Starting narration..." : "Record Voice Narration"}
-            </button>
-            {narrationError && (
-              <p className="text-sm text-red-600 mt-2">{narrationError}</p>
-            )}
-          </div>
-        )}
+        {/* Generate narration button for not_requested papers — inline with other buttons */}
 
         {paper.abstract && (
           <p className="text-sm text-stone-600 leading-relaxed">
