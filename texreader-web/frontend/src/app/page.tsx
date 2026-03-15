@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import SearchBar from "@/components/SearchBar";
 import PaperCard from "@/components/PaperCard";
 import {
   fetchPapers,
@@ -25,11 +24,7 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const arxivParam = searchParams.get("arxiv") || "";
   const qParam = searchParams.get("q") || "";
-  const arxivTriggeredRef = useRef(false);
-  const qTriggeredRef = useRef(false);
-
   const [papers, setPapers] = useState<Paper[]>([]);
-  const [allPapers, setAllPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -37,111 +32,55 @@ function HomePageContent() {
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
 
-  // Load popular papers on mount
+  // React to search params: load popular papers, search results, or trigger arXiv flow
   useEffect(() => {
-    fetchPapers({ sort: "popular" })
-      .then((data) => {
-        setPapers(data.papers);
-        setAllPapers(data.papers);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleSearch = useCallback(
-    async (query: string) => {
-      setSearchQuery(query);
+    if (arxivParam) {
+      // ArXiv ID detected — look up or create paper, then redirect
       setPreviewError("");
-
-      if (!query.trim()) {
-        setLoading(true);
-        const data = await fetchPapers({ sort: "popular" });
-        setPapers(data.papers);
-        setAllPapers(data.papers);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const data = await fetchPapers({ q: query });
-        setPapers(data.papers);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  const handleArxivSubmit = useCallback(
-    async (input: string) => {
-      setPreviewError("");
-
-      const arxivId = extractArxivId(input);
+      const arxivId = extractArxivId(arxivParam);
       if (!arxivId) return;
 
-      // Check in-memory first
-      const inMemory = allPapers.find((p) => p.id === arxivId);
-      if (inMemory) {
-        window.location.href = `/papers/?id=${inMemory.id}`;
-        return;
-      }
-
-      // Check the database
       setPreviewing(true);
-      try {
-        const dbPaper = await fetchPaper(arxivId);
-        // Paper exists in DB — go to paper page
-        window.location.href = `/papers/?id=${dbPaper.id}`;
-        return;
-      } catch {
-        // Not in DB — fetch preview from arXiv and create record
-      }
-
-      try {
-        const meta = await previewPaper(input);
-        // Create paper record with not_requested status
-        const paper = await submitPaper(meta.arxiv_url, meta);
-        window.location.href = `/papers/?id=${paper.id}`;
-      } catch (e: any) {
-        setPreviewError(e.message || "Could not fetch paper details");
-        setPreviewing(false);
-      }
-    },
-    [allPapers]
-  );
-
-  // Auto-trigger arXiv flow when ?arxiv= param is present
-  useEffect(() => {
-    if (arxivParam && !arxivTriggeredRef.current) {
-      arxivTriggeredRef.current = true;
-      handleArxivSubmit(arxivParam);
+      (async () => {
+        try {
+          const dbPaper = await fetchPaper(arxivId);
+          window.location.href = `/papers/?id=${dbPaper.id}`;
+          return;
+        } catch {
+          // Not in DB — fetch from arXiv and create
+        }
+        try {
+          const meta = await previewPaper(arxivParam);
+          const paper = await submitPaper(meta.arxiv_url, meta);
+          window.location.href = `/papers/?id=${paper.id}`;
+        } catch (e: any) {
+          setPreviewError(e.message || "Could not fetch paper details");
+          setPreviewing(false);
+        }
+      })();
+    } else if (qParam) {
+      // Text search
+      setSearchQuery(qParam);
+      setPreviewError("");
+      setLoading(true);
+      fetchPapers({ q: qParam })
+        .then((data) => setPapers(data.papers))
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      // No params — show popular papers
+      setSearchQuery("");
+      setPreviewError("");
+      setLoading(true);
+      fetchPapers({ sort: "popular" })
+        .then((data) => setPapers(data.papers))
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
-  }, [arxivParam, handleArxivSubmit]);
-
-  // Auto-trigger search when ?q= param is present
-  useEffect(() => {
-    if (qParam && !qTriggeredRef.current) {
-      qTriggeredRef.current = true;
-      handleSearch(qParam);
-    }
-  }, [qParam, handleSearch]);
-
-  const hideSearchHint = previewing || previewError !== "";
+  }, [qParam, arxivParam]);
 
   return (
     <div>
-      <div className="mb-10">
-        <SearchBar
-          onSearch={handleSearch}
-          onArxivSubmit={handleArxivSubmit}
-          initialQuery={arxivParam || qParam}
-          hideHint={hideSearchHint}
-        />
-      </div>
-
       {/* Previewing spinner */}
       {previewing && (
         <div className="text-center py-10 text-stone-400 text-sm">

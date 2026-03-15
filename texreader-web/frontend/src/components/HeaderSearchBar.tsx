@@ -1,15 +1,11 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import SearchBar from "./SearchBar";
 
 export default function HeaderSearchBar() {
   const router = useRouter();
-  const pathname = usePathname();
-
-  // Don't render on the home page (it has its own hero SearchBar)
-  if (pathname === "/") return null;
 
   const handleSearch = useCallback(
     (query: string) => {
