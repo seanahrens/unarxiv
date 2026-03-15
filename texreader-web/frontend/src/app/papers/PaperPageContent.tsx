@@ -379,7 +379,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     <div>
       <a
         href="/"
-        className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-8 inline-block"
+        className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-4 inline-block"
       >
         &larr; Back to papers
       </a>

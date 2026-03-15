@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PaperCard from "@/components/PaperCard";
+import ArxivCta from "@/components/ArxivCta";
 import {
   fetchPapers,
   fetchPaper,
@@ -104,9 +105,9 @@ function HomePageContent() {
             ) : (
               <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                 </svg>
                 Popular Paper Narrations
               </>
@@ -115,18 +116,22 @@ function HomePageContent() {
 
           {loading ? (
             <div className="text-center py-16 text-stone-400 text-sm">Loading...</div>
-          ) : papers.length === 0 ? (
+          ) : papers.length === 0 && !searchQuery ? (
             <div className="text-center py-16 text-stone-400 text-sm">
-              {searchQuery
-                ? "No papers found. Try a different search or paste an arXiv URL."
-                : "No papers yet. Paste an arXiv URL above to get started!"}
+              No papers yet. Paste an arXiv URL above to get started!
             </div>
           ) : (
-            <div className="grid gap-3">
-              {papers.map((paper) => (
-                <PaperCard key={paper.id} paper={paper} />
-              ))}
-            </div>
+            <>
+              {papers.length > 0 && (
+                <div className="grid gap-3">
+                  {papers.map((paper) => (
+                    <PaperCard key={paper.id} paper={paper} />
+                  ))}
+                </div>
+              )}
+
+              <ArxivCta query={searchQuery || undefined} />
+            </>
           )}
         </>
       )}

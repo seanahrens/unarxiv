@@ -36,7 +36,7 @@ export default function RootLayout({
           </div>
         </header>
         <HeaderSearchBar />
-        <main className="max-w-5xl mx-auto px-6 py-10">{children}</main>
+        <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         <footer className="fixed bottom-4 right-4">
           <a
             href="/admin"
