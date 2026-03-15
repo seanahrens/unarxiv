@@ -31,7 +31,7 @@ export async function insertPaper(
       .prepare(
         `INSERT INTO papers (id, arxiv_url, title, authors, abstract, published_date, status,
          submitted_by_ip, submitted_by_country, submitted_by_city)
-         VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, 'not_requested', ?, ?, ?)`
       )
       .bind(
         paper.id,
@@ -147,6 +147,7 @@ export async function getPopularPapers(
          WHERE visited_at > datetime('now', '-7 days')
          GROUP BY paper_id
        ) v ON v.paper_id = p.id
+       WHERE p.status != 'not_requested'
        ORDER BY visit_count DESC, p.created_at DESC
        LIMIT ? OFFSET ?`
     )
@@ -165,6 +166,7 @@ export async function getRecentPapers(
   const results = await db
     .prepare(
       `SELECT * FROM papers
+       WHERE status != 'not_requested'
        ORDER BY created_at DESC
        LIMIT ? OFFSET ?`
     )
@@ -205,6 +207,22 @@ export async function getGlobalSubmissionCount(db: D1Database): Promise<number> 
       `SELECT COUNT(*) as count FROM submissions
        WHERE submitted_at > datetime('now', '-1 day')`
     )
+    .first<{ count: number }>();
+
+  return result?.count ?? 0;
+}
+
+/** Check narration requests in last hour (for conditional captcha). */
+export async function getNarrationCountLastHour(
+  db: D1Database,
+  ip: string
+): Promise<number> {
+  const result = await db
+    .prepare(
+      `SELECT COUNT(*) as count FROM submissions
+       WHERE ip_address = ? AND submitted_at > datetime('now', '-1 hour')`
+    )
+    .bind(ip)
     .first<{ count: number }>();
 
   return result?.count ?? 0;

@@ -51,8 +51,11 @@ export default {
     const method = request.method;
 
     // CORS headers
+    const origin = request.headers.get("Origin") || "";
+    const allowedOrigins = ["https://unarxiv.org", "http://localhost:3000"];
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : "https://unarxiv.org";
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "https://unarxiv.org",
+      "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password",
     };

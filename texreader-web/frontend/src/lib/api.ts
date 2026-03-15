@@ -73,7 +73,6 @@ export async function previewPaper(arxivUrl: string): Promise<ArxivMetadata> {
 
 export async function submitPaper(
   arxivUrl: string,
-  turnstileToken: string,
   metadata?: ArxivMetadata
 ): Promise<Paper> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -85,7 +84,6 @@ export async function submitPaper(
     headers,
     body: JSON.stringify({
       arxiv_url: arxivUrl,
-      turnstile_token: turnstileToken,
       metadata,
     }),
   });
@@ -94,6 +92,36 @@ export async function submitPaper(
     const data = await res.json().catch(() => ({ error: "Unknown error" }));
     throw new Error(data.error || `API error: ${res.status}`);
   }
+  return res.json();
+}
+
+export async function requestNarration(
+  paperId: string,
+  turnstileToken?: string
+): Promise<Paper> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const adminPw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("admin_password") : null;
+  if (adminPw) headers["X-Admin-Password"] = adminPw;
+
+  const body: Record<string, string> = {};
+  if (turnstileToken) body.turnstile_token = turnstileToken;
+
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/narrate`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(data.error || `API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function checkNarrationRateLimit(): Promise<{ captcha_required: boolean }> {
+  const res = await fetch(`${API_BASE}/api/narration-check`);
+  if (!res.ok) return { captcha_required: false };
   return res.json();
 }
 

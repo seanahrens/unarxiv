@@ -31,6 +31,7 @@ function formatShortDate(dateStr: string): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
+  not_requested: "Not Narrated",
   queued: "In Progress",
   preparing: "In Progress",
   generating_audio: "In Progress",
@@ -41,7 +42,8 @@ const STATUS_LABELS: Record<string, string> = {
 export default function PaperCard({ paper }: PaperCardProps) {
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
-  const isProcessing = !isReady && !isFailed;
+  const isNotRequested = paper.status === "not_requested";
+  const isProcessing = !isReady && !isFailed && !isNotRequested;
   const [read, setRead] = useState(false);
 
   useEffect(() => {
@@ -88,7 +90,8 @@ export default function PaperCard({ paper }: PaperCardProps) {
           <span
             className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium
               ${isFailed ? "bg-red-50 text-red-600" : ""}
-              ${isProcessing ? "bg-amber-50 text-amber-600" : ""}
+              ${paper.status === "not_requested" ? "bg-stone-100 text-stone-500" : ""}
+              ${isProcessing && paper.status !== "not_requested" ? "bg-amber-50 text-amber-600" : ""}
             `}
           >
             {STATUS_LABELS[paper.status] || paper.status}

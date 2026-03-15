@@ -300,7 +300,7 @@ export default function CuratePage() {
               />
               <div className="flex-1 min-w-0">
                 <a
-                  href={`/papers/?id=${paper.id}`}
+                  href={`/abs/${paper.id}`}
                   className="text-sm font-medium text-stone-900 hover:text-stone-600 transition-colors no-underline truncate block"
                 >
                   {paper.title || "Untitled"}

@@ -35,6 +35,7 @@ export interface Paper {
 }
 
 export type PaperStatus =
+  | "not_requested"
   | "queued"
   | "preparing"
   | "generating_audio"

@@ -3,7 +3,7 @@
 
 -- Core paper data + job state
 CREATE TABLE IF NOT EXISTS papers (
-    id              TEXT PRIMARY KEY,          -- arXiv ID, e.g. "2302.00672v1"
+    id              TEXT PRIMARY KEY,          -- arXiv ID without version suffix, e.g. "2302.00672"
     arxiv_url       TEXT NOT NULL,
     title           TEXT NOT NULL DEFAULT '',
     authors         TEXT NOT NULL DEFAULT '[]', -- JSON array of strings
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS papers (
     published_date  TEXT DEFAULT '',
 
     -- Job state
-    status          TEXT NOT NULL DEFAULT 'queued'
-                    CHECK(status IN ('queued','preparing',
+    status          TEXT NOT NULL DEFAULT 'not_requested'
+                    CHECK(status IN ('not_requested','queued','preparing',
                                      'generating_audio',
                                      'complete','failed')),
     error_message   TEXT,

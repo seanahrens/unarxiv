@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import AudioPlayer from "@/components/AudioPlayer";
 import ProgressTracker from "@/components/ProgressTracker";
-import { fetchPaper, recordVisit, audioUrl, transcriptUrl, fetchRating, submitRating, deleteRating, type Paper, type Rating } from "@/lib/api";
+import TurnstileWidget from "@/components/TurnstileWidget";
+import { fetchPaper, recordVisit, audioUrl, transcriptUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 
 function DownloadButton({ url, filename, label }: { url: string; filename: string; label: string }) {
@@ -266,15 +267,18 @@ function RatingModal({
   );
 }
 
-export default function PaperPageContent() {
+export default function PaperPageContent({ paperId: propId }: { paperId?: string } = {}) {
   const searchParams = useSearchParams();
-  const id = searchParams.get("id") || "";
+  const id = propId || searchParams.get("id") || "";
   const [paper, setPaper] = useState<Paper | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [myRating, setMyRating] = useState<Rating | null>(null);
   const [paperRead, setPaperRead] = useState(false);
+  const [narrationLoading, setNarrationLoading] = useState(false);
+  const [narrationError, setNarrationError] = useState("");
+  const [showCaptchaModal, setShowCaptchaModal] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -304,6 +308,41 @@ export default function PaperPageContent() {
     setPaper(updatedPaper);
   }, []);
 
+  const handleRequestNarration = useCallback(async () => {
+    if (!paper) return;
+    setNarrationLoading(true);
+    setNarrationError("");
+    try {
+      const { captcha_required } = await checkNarrationRateLimit();
+      if (captcha_required) {
+        setShowCaptchaModal(true);
+        setNarrationLoading(false);
+        return;
+      }
+      const updated = await requestNarration(paper.id);
+      setPaper(updated);
+    } catch (e: any) {
+      setNarrationError(e.message || "Failed to request narration");
+    } finally {
+      setNarrationLoading(false);
+    }
+  }, [paper]);
+
+  const handleCaptchaVerify = useCallback(async (token: string) => {
+    if (!paper) return;
+    setShowCaptchaModal(false);
+    setNarrationLoading(true);
+    setNarrationError("");
+    try {
+      const updated = await requestNarration(paper.id, token);
+      setPaper(updated);
+    } catch (e: any) {
+      setNarrationError(e.message || "Failed to request narration");
+    } finally {
+      setNarrationLoading(false);
+    }
+  }, [paper]);
+
   if (loading) {
     return <div className="text-center py-20 text-stone-400">Loading...</div>;
   }
@@ -321,7 +360,8 @@ export default function PaperPageContent() {
 
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
-  const isProcessing = !isReady && !isFailed;
+  const isNotRequested = paper.status === "not_requested";
+  const isProcessing = !isReady && !isFailed && !isNotRequested;
   const authors: string[] = paper.authors || [];
 
   return (
@@ -449,6 +489,23 @@ export default function PaperPageContent() {
           )}
         </div>
 
+        {/* Record Voice Narration button for not_requested papers */}
+        {isNotRequested && (
+          <div className="mb-6">
+            <button
+              onClick={handleRequestNarration}
+              disabled={narrationLoading}
+              className="w-full py-4 text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700
+                         rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {narrationLoading ? "Starting narration..." : "Record Voice Narration"}
+            </button>
+            {narrationError && (
+              <p className="text-sm text-red-600 mt-2">{narrationError}</p>
+            )}
+          </div>
+        )}
+
         {paper.abstract && (
           <p className="text-sm text-stone-600 leading-relaxed">
             {paper.abstract}
@@ -483,6 +540,21 @@ export default function PaperPageContent() {
           onSaved={(r) => setMyRating(r)}
           onCleared={() => setMyRating(null)}
         />
+      )}
+
+      {showCaptchaModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowCaptchaModal(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-stone-900 mb-2">Verification Required</h3>
+            <p className="text-sm text-stone-500 mb-5">
+              Please complete the verification to continue.
+            </p>
+            <TurnstileWidget onVerify={handleCaptchaVerify} />
+          </div>
+        </div>
       )}
     </div>
   );
