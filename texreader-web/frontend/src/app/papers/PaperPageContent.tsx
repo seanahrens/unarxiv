@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import AudioPlayer from "@/components/AudioPlayer";
 import ProgressTracker from "@/components/ProgressTracker";
 import TurnstileWidget from "@/components/TurnstileWidget";
@@ -362,9 +363,9 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     return (
       <div className="text-center py-20">
         <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
-        <a href="/" className="text-sm text-stone-500 hover:text-stone-700 transition-colors">
+        <Link href="/" className="text-sm text-stone-500 hover:text-stone-700 transition-colors">
           &larr; Back to papers
-        </a>
+        </Link>
       </div>
     );
   }
@@ -377,12 +378,12 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
   return (
     <div>
-      <a
+      <Link
         href="/"
         className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-4 inline-block"
       >
         &larr; Back to papers
-      </a>
+      </Link>
 
       <article className="mb-8">
         <h1 className="text-2xl font-bold text-stone-900 leading-tight mb-3">

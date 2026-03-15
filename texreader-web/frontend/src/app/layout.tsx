@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Link from "next/link";
 import { SquareArrowUp } from "lucide-react";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
+import HeaderPlayer from "@/components/HeaderPlayer";
+import { AudioProvider } from "@/contexts/AudioContext";
 
 export const metadata: Metadata = {
   title: "unarXiv — Listen to Research Papers",
@@ -20,21 +23,23 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-stone-50 text-gray-900 min-h-screen antialiased">
+        <AudioProvider>
         <header className="border-b border-stone-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <a href="/" className="flex items-center gap-2 no-underline text-stone-900 hover:text-stone-600 transition-colors">
+              <Link href="/" className="flex items-center gap-2 no-underline text-stone-900 hover:text-stone-600 transition-colors">
                 <SquareArrowUp size={24} strokeWidth={1.8} className="text-stone-700" />
                 <span className="text-lg tracking-tight">
                   <span className="font-bold underline">un</span><span className="font-medium">arXiv</span>
                 </span>
-              </a>
+              </Link>
               <span className="text-xs text-stone-400 tracking-wide uppercase">
                 Listen to research papers
               </span>
             </div>
           </div>
         </header>
+        <HeaderPlayer />
         <HeaderSearchBar />
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         <footer className="w-full py-6 flex items-center justify-center gap-4">
@@ -55,6 +60,7 @@ export default function RootLayout({
             </svg>
           </a>
         </footer>
+        </AudioProvider>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Paper, formatDuration } from "@/lib/api";
 import { isRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 
@@ -51,7 +52,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
   }, [paper.id]);
 
   return (
-    <a
+    <Link
       href={`/papers/?id=${paper.id}`}
       className={`block relative rounded-xl border p-5 hover:shadow-md transition-all no-underline ${
         read
@@ -125,6 +126,6 @@ export default function PaperCard({ paper }: PaperCardProps) {
           <span>{formatDuration(paper.duration_seconds)}</span>
         )}
       </div>
-    </a>
+    </Link>
   );
 }
