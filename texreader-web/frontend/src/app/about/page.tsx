@@ -25,7 +25,7 @@ export default function AboutPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">What is this?</h2>
           <p className="text-stone-700 leading-relaxed">
             <SiteName /> is an audio mirror of arXiv. Paste any arXiv URL or paper ID and
-            we&apos;ll generate a free narrated audiobook from the paper&apos;s LaTeX source.
+            we&apos;ll generate a free narrated audiobook from the paper.
             Listen while you commute, exercise, or do chores.
           </p>
         </section>
@@ -40,7 +40,7 @@ export default function AboutPage() {
             </div>
             <div className="flex-1 flex gap-3">
               <span className="text-lg font-bold text-stone-300">2</span>
-              <p>We parse the LaTeX source and convert it to natural-sounding speech.</p>
+              <p>We extract the paper&apos;s text and convert it to natural-sounding speech.</p>
             </div>
             <div className="flex-1 flex gap-3">
               <span className="text-lg font-bold text-stone-300">3</span>

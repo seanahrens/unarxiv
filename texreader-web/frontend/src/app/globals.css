@@ -43,3 +43,19 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
+
+/* Narration progress shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.progress-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(59 130 246 / 0.15) 0%,
+    rgb(59 130 246 / 0.35) 50%,
+    rgb(59 130 246 / 0.15) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

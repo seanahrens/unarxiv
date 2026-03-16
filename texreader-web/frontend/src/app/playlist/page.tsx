@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
-import { fetchPapersBatch, audioUrl, type Paper } from "@/lib/api";
+import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, type Paper } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
+import NarrationProgress from "@/components/NarrationProgress";
 
 export default function PlaylistPage() {
   const { playlist, removeFromPlaylist, reorderPlaylist } = usePlaylist();
@@ -19,6 +20,8 @@ export default function PlaylistPage() {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const [readHistory, setReadHistory] = useState<{ paperId: string; readAt: string }[]>([]);
+  const [myAdditions, setMyAdditions] = useState<Paper[]>([]);
+  const [additionsLoading, setAdditionsLoading] = useState(true);
 
   // Fetch playlist papers
   useEffect(() => {
@@ -59,6 +62,37 @@ export default function PlaylistPage() {
       .catch(() => {})
       .finally(() => setHistoryLoading(false));
   }, []);
+
+  // Fetch my additions
+  useEffect(() => {
+    setAdditionsLoading(true);
+    fetchMyAdditions()
+      .then((papers) => setMyAdditions(papers))
+      .catch(() => setMyAdditions([]))
+      .finally(() => setAdditionsLoading(false));
+  }, []);
+
+  // Poll for in-progress additions
+  useEffect(() => {
+    const inProgress = myAdditions.filter((p) =>
+      ["queued", "preparing", "generating_audio"].includes(p.status)
+    );
+    if (inProgress.length === 0) return;
+
+    const interval = setInterval(async () => {
+      const updates = await Promise.all(
+        inProgress.map((p) => fetchPaper(p.id).catch(() => p))
+      );
+      setMyAdditions((prev) =>
+        prev.map((p) => {
+          const updated = updates.find((u) => u.id === p.id);
+          return updated || p;
+        })
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [myAdditions]);
 
   const handleDragStart = (idx: number) => {
     setDragIdx(idx);
@@ -285,6 +319,103 @@ export default function PlaylistPage() {
           </div>
         )}
       </section>
+
+      {!additionsLoading && myAdditions.length > 0 && (
+        <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
+          <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
+            <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              My Additions
+            </h2>
+          </div>
+
+          <div className="divide-y divide-stone-200">
+            {myAdditions.map((paper) => {
+              const isActive = state.paperId === paper.id;
+              const isInProgress = ["queued", "preparing", "generating_audio"].includes(paper.status);
+
+              return (
+                <div
+                  key={paper.id}
+                  className={`px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-100" : "hover:bg-stone-100"}`}
+                >
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <span className="shrink-0 invisible">
+                      <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>
+                    </span>
+
+                    {paper.status === "complete" ? (
+                      <Link
+                        href={`/p?id=${paper.id}`}
+                        className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors shrink-0"
+                        title="View paper"
+                      >
+                        <AudioFileIcon size={28} />
+                      </Link>
+                    ) : (
+                      <div className="w-7 shrink-0" />
+                    )}
+
+                    <button
+                      onClick={() => paper.status === "complete" && handlePlay(paper)}
+                      className="flex-1 min-w-0 text-left cursor-pointer"
+                    >
+                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                        {paper.title}
+                      </span>
+                      {paper.authors && paper.authors.length > 0 && (
+                        <span className="text-[11px] text-stone-500 truncate block">
+                          <span className="md:hidden">
+                            {paper.authors[0]}
+                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                          </span>
+                          <span className="hidden md:inline">
+                            {paper.authors.slice(0, 3).join(", ")}
+                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                          </span>
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        if (!confirm("Remove this paper from unarXiv?")) return;
+                        const ok = await deleteMyAddition(paper.id);
+                        if (ok) setMyAdditions((prev) => prev.filter((p) => p.id !== paper.id));
+                      }}
+                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                      title="Remove from site"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {isInProgress && (
+                    <div className="mt-1.5 ml-[56px] md:ml-[62px] mr-[26px]">
+                      <NarrationProgress paper={paper} />
+                    </div>
+                  )}
+
+                  {paper.status === "failed" && (
+                    <div className="mt-1.5 ml-[56px] md:ml-[62px]">
+                      <span className="text-[11px] text-red-500">
+                        Failed{paper.error_message ? `: ${paper.error_message}` : ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
         <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">

@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-tex_to_audio.py — Convert LaTeX .tar archives to listenable MP3 audiobooks.
+tex_to_audio.py — Convert arXiv papers (LaTeX or PDF) to listenable MP3 audiobooks.
 
 Used by the Modal serverless worker (narrate.py) to process arXiv papers.
 Can also be run standalone for local testing.
+
+Supports two source types:
+  - LaTeX source (.tar/.tex): parsed and cleaned for natural speech
+  - PDF: text extracted via PyMuPDF when no LaTeX source is available
 
 USAGE:
   python tex_to_audio.py path/to/paper.tar
@@ -14,6 +18,7 @@ OUTPUT FILENAME:  LastName - Title - sourcestem.mp3
 
 REQUIREMENTS:
   pip install edge-tts mutagen   # edge-tts = Microsoft TTS (no rate limiting)
+  pip install pymupdf            # PDF text extraction (for PDF-only papers)
   pip install pyttsx3            # optional offline fallback (uses system voices)
   brew install ffmpeg   # macOS  |  sudo apt install ffmpeg  # Linux
 """
@@ -628,7 +633,7 @@ def _find_pending_papers(papers_dir: str, output_dir: str) -> list[tuple[str, st
 
 
 # ---------------------------------------------------------------------------
-# LaTeX → spoken text
+# LaTeX → spoken text (for papers with LaTeX source)
 # ---------------------------------------------------------------------------
 
 def _extract_command_arg(text: str, command: str) -> str | None:
@@ -1037,6 +1042,199 @@ def build_speech_text(latex: str, source_stem: str = "") -> str:
     authors = meta["authors"]
     header = _build_transcript_header(title, date, authors)
     footer = _build_transcript_footer(title, date, authors)
+    return header + "\n" + body + footer
+
+
+# ---------------------------------------------------------------------------
+# PDF → spoken text (for papers without LaTeX source)
+# ---------------------------------------------------------------------------
+
+def _strip_pdf_title_block(text: str, title: str, authors: list[str]) -> str:
+    """Remove the title/author block from the top of PDF-extracted text.
+
+    The first page of a PDF typically starts with the paper title, author
+    names, and affiliations — all of which are rendered separately in the
+    spoken header.  This function strips that block to avoid duplication.
+    """
+    if not title:
+        return text
+
+    # Find the title in the first ~2000 chars (page 1)
+    title_lower = title.lower().strip().rstrip(".")
+    head = text[:2000].lower()
+    idx = head.find(title_lower)
+    if idx == -1:
+        return text
+
+    # Find where the body text begins after the title block.
+    # Look for "Abstract" keyword (common in academic papers)
+    after_title = text[idx + len(title_lower):]
+    abstract_m = re.search(r"\n\s*Abstract\s*\n", after_title, re.IGNORECASE)
+    if abstract_m:
+        # Keep everything from "Abstract" onward (we'll format it below)
+        return after_title[abstract_m.start():]
+
+    # Fallback: skip a generous block after the title (title + authors + affiliations
+    # typically spans 5-15 lines)
+    lines_after = after_title.split("\n")
+    # Skip short lines (author names, affiliations, emails) until we hit
+    # a substantial paragraph (>80 chars = real body text)
+    skip = 0
+    for i, line in enumerate(lines_after):
+        if len(line.strip()) > 80:
+            skip = i
+            break
+    if skip > 0:
+        return "\n".join(lines_after[skip:])
+
+    return text
+
+
+def _rejoin_column_lines(text: str) -> str:
+    """Rejoin lines broken by PDF column layout.
+
+    In 2-column PDFs, sentences are broken mid-word or mid-phrase at the
+    column boundary. This heuristic joins a line to the next when the
+    current line doesn't end with sentence-ending punctuation and the next
+    line starts with a lowercase letter (continuation).
+    """
+    lines = text.split("\n")
+    merged: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Join with next line if: current line ends mid-sentence and next
+        # line starts with lowercase (continuation)
+        while (
+            i + 1 < len(lines)
+            and line.rstrip()
+            and not line.rstrip()[-1] in ".!?:;\n"
+            and lines[i + 1].strip()
+            and lines[i + 1].strip()[0].islower()
+        ):
+            i += 1
+            line = line.rstrip() + " " + lines[i].strip()
+        merged.append(line)
+        i += 1
+    return "\n".join(merged)
+
+
+def _clean_pdf_text(text: str, title: str = "", authors: Optional[list[str]] = None) -> str:
+    """Clean up raw PDF-extracted text for TTS narration.
+
+    Handles common PDF artefacts: page headers/footers, column breaks,
+    hyphenated line-wraps, reference lists, table/figure junk, footnotes,
+    and duplicate title/author blocks.
+    """
+    authors = authors or []
+
+    # Remove form-feed / page-break characters
+    text = text.replace("\f", "\n\n")
+
+    # Rejoin hyphenated line breaks (word- \n continuation)
+    text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+
+    # Strip duplicate title/author block from page 1
+    text = _strip_pdf_title_block(text, title, authors)
+
+    # Collapse lines that are just page numbers (e.g. standalone "3" or "- 3 -")
+    text = re.sub(r"^\s*[-–—]?\s*\d{1,3}\s*[-–—]?\s*$", "", text, flags=re.MULTILINE)
+
+    lines = text.split("\n")
+    cleaned_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            cleaned_lines.append("")
+            continue
+        # Skip lines that are just URLs
+        if re.match(r"^https?://\S+$", stripped):
+            continue
+        # Skip footnote markers (e.g. standalone superscript numbers "1", "2")
+        if re.match(r"^\d{1,2}$", stripped):
+            continue
+        cleaned_lines.append(line)
+    text = "\n".join(cleaned_lines)
+
+    # Remove the References / Bibliography section and everything after
+    text = re.split(
+        r"\n\s*(?:References|Bibliography|REFERENCES|BIBLIOGRAPHY)\s*\n",
+        text, maxsplit=1
+    )[0]
+
+    # Remove Acknowledgments section
+    text = re.sub(
+        r"\n\s*(?:Acknowledgments?|ACKNOWLEDGMENTS?)\s*\n.*?(?=\n[A-Z][\w\s]*\n|\Z)",
+        "\n", text, flags=re.DOTALL
+    )
+
+    # Remove figure/table captions (lines starting with "Figure N" or "Table N")
+    text = re.sub(r"^(?:Figure|Fig\.|Table)\s+\d+[.:].+$", "", text, flags=re.MULTILINE)
+
+    # Remove lines that look like table data: >50% numeric tokens
+    def _is_table_row(line: str) -> bool:
+        tokens = line.split()
+        if len(tokens) < 2:
+            return False
+        num_tokens = sum(1 for t in tokens if re.match(r"^[\d.,]+%?$", t))
+        return num_tokens > len(tokens) * 0.5
+
+    lines = text.split("\n")
+    text = "\n".join(l for l in lines if not _is_table_row(l.strip()))
+
+    # Rejoin lines broken by column layout
+    text = _rejoin_column_lines(text)
+
+    # Collapse 3+ newlines to 2
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    # Collapse multiple spaces
+    text = re.sub(r"[ \t]+", " ", text)
+
+    return text.strip()
+
+
+def is_pdf_file(path: str) -> bool:
+    """Check if a file is a PDF by reading its magic bytes."""
+    try:
+        with open(path, "rb") as f:
+            return f.read(5) == b"%PDF-"
+    except OSError:
+        return False
+
+
+def build_speech_text_from_pdf(
+    pdf_path: str,
+    title: str = "",
+    date: str = "",
+    authors: Optional[list[str]] = None,
+) -> str:
+    """Extract text from a PDF and build a TTS-ready transcript.
+
+    Uses PyMuPDF (fitz) for text extraction.  Metadata (title, date,
+    authors) should be supplied by the caller (scraped from arXiv) since
+    PDF metadata fields are unreliable.
+    """
+    import fitz  # PyMuPDF
+
+    doc = fitz.open(pdf_path)
+    pages: list[str] = []
+    for page in doc:
+        pages.append(page.get_text())
+    doc.close()
+
+    raw_text = "\n\n".join(pages)
+    authors = authors or []
+    body = _clean_pdf_text(raw_text, title=title, authors=authors)
+
+    if not body or len(body) < 200:
+        raise RuntimeError(
+            f"PDF text extraction yielded too little text ({len(body)} chars). "
+            "The PDF may be scanned/image-based."
+        )
+
+    header = _build_transcript_header(title or "Untitled", date, authors)
+    footer = _build_transcript_footer(title or "Untitled", date, authors)
     return header + "\n" + body + footer
 
 

@@ -69,6 +69,26 @@ export async function fetchPapersBatch(ids: string[]): Promise<Paper[]> {
   }
 }
 
+export async function fetchMyAdditions(): Promise<Paper[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/my-additions`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.papers;
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteMyAddition(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/api/my-additions/${id}`, { method: "DELETE" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export interface ArxivMetadata {
   id: string;
   arxiv_url: string;

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
-import ProgressTracker from "@/components/ProgressTracker";
+import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, formatDuration, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
@@ -579,8 +579,8 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         )}
 
         {isProcessing && (
-          <div className="w-full mb-2">
-            <ProgressTracker paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
+          <div className="w-full mb-2 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+            <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
           </div>
         )}
 

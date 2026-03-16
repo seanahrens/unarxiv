@@ -8,6 +8,7 @@
  *   POST /api/papers  { arxiv_url, metadata? }  — create paper record (no narration)
  *   POST /api/papers/:id/narrate  — request narration (conditional captcha)
  *   GET  /api/narration-check  — check if captcha is required for caller
+ *   GET  /api/my-additions  — papers submitted by caller's IP
  *   DELETE /api/papers/:id  (requires admin password)
  *   GET  /api/papers/:id/audio
  *   GET  /api/papers/:id/progress
@@ -43,6 +44,7 @@ import {
   hasAnyLowRatings,
   getAllRatingsForPaper,
   clearRatingsForPaper,
+  getPapersBySubmitterIp,
 } from "./db";
 
 export default {
@@ -209,6 +211,27 @@ async function handleRequest(
   // GET /api/narration-check — check if captcha is required for caller
   if (path === "/api/narration-check" && method === "GET") {
     return handleNarrationCheck(request, env);
+  }
+
+  // GET /api/my-additions — papers submitted by this caller's IP
+  if (path === "/api/my-additions" && method === "GET") {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const papers = await getPapersBySubmitterIp(env.DB, ip);
+    return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
+  }
+
+  // DELETE /api/my-additions/:id — delete own paper (IP must match submitter)
+  const myDeleteMatch = path.match(/^\/api\/my-additions\/([^/]+)$/);
+  if (myDeleteMatch && method === "DELETE") {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const paper = await getPaper(env.DB, myDeleteMatch[1]);
+    if (!paper) return json({ error: "Paper not found" }, 404);
+    if (paper.submitted_by_ip !== ip) return json({ error: "Not your paper" }, 403);
+    if (paper.audio_r2_key) {
+      try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
+    }
+    await deletePaper(env.DB, myDeleteMatch[1]);
+    return json({ ok: true });
   }
 
   // POST /api/papers/:id/reprocess

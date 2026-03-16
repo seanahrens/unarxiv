@@ -245,6 +245,15 @@ export async function recordSubmission(db: D1Database, ip: string): Promise<void
     .run();
 }
 
+/** Get papers submitted by a specific IP. */
+export async function getPapersBySubmitterIp(db: D1Database, ip: string): Promise<Paper[]> {
+  const results = await db
+    .prepare("SELECT * FROM papers WHERE submitted_by_ip = ? ORDER BY created_at DESC")
+    .bind(ip)
+    .all<Paper>();
+  return results.results;
+}
+
 /** Get all papers (for admin). */
 export async function getAllPapers(
   db: D1Database,

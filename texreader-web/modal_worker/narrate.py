@@ -14,7 +14,7 @@ app = modal.App("texreader-worker")
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg")
-    .pip_install("edge-tts>=6.1.0", "mutagen>=1.47.0", "httpx>=0.27.0", "boto3>=1.34.0", "fastapi[standard]")
+    .pip_install("edge-tts>=6.1.0", "mutagen>=1.47.0", "httpx>=0.27.0", "boto3>=1.34.0", "fastapi[standard]", "pymupdf>=1.24.0")
     .run_commands("python -c 'import edge_tts; print(edge_tts.__version__)'")  # verify edge-tts installed
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py")
 )
@@ -139,33 +139,50 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
             os.makedirs(source_dir, exist_ok=True)
 
-            # Handle tar.gz archives, gzip'd single .tex files, and plain .tex files
-            content_type = resp.headers.get("content-type", "")
-            if "gzip" in content_type or "tar" in content_type or tar_path.endswith(".gz"):
-                try:
-                    with tarfile.open(tar_path, "r:*") as tf:
-                        tf.extractall(source_dir)
-                except tarfile.TarError:
-                    # Not a tar archive — might be a single gzip'd .tex file
-                    import gzip
-                    try:
-                        with gzip.open(tar_path, "rb") as gz:
-                            decompressed = gz.read()
-                        with open(os.path.join(source_dir, "main.tex"), "wb") as f:
-                            f.write(decompressed)
-                        print(f"Decompressed single gzip'd .tex file ({len(decompressed):,} bytes)")
-                    except gzip.BadGzipFile:
-                        # Truly a plain .tex file, not compressed at all
-                        os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+            # arXiv's /src/ endpoint returns LaTeX source when available,
+            # falling back to PDF when no LaTeX exists.  We detect the
+            # format via magic bytes and use the appropriate pipeline.
+            is_pdf = tex_to_audio.is_pdf_file(tar_path)
+
+            if is_pdf:
+                # --- PDF fallback: no LaTeX source, extract text from PDF ---
+                print("Source is a PDF (no LaTeX available). Extracting text from PDF...")
+                # Parse authors list from the comma-separated string
+                pdf_authors = [a.strip() for a in paper_author.split(",")] if paper_author else []
+                speech = tex_to_audio.build_speech_text_from_pdf(
+                    tar_path,
+                    title=paper_title,
+                    date="",  # date already in metadata, not reliably in PDF
+                    authors=pdf_authors,
+                )
             else:
-                # Likely a single .tex file
-                os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+                # Handle tar.gz archives, gzip'd single .tex files, and plain .tex files
+                content_type = resp.headers.get("content-type", "")
+                if "gzip" in content_type or "tar" in content_type or tar_path.endswith(".gz"):
+                    try:
+                        with tarfile.open(tar_path, "r:*") as tf:
+                            tf.extractall(source_dir)
+                    except tarfile.TarError:
+                        # Not a tar archive — might be a single gzip'd .tex file
+                        import gzip
+                        try:
+                            with gzip.open(tar_path, "rb") as gz:
+                                decompressed = gz.read()
+                            with open(os.path.join(source_dir, "main.tex"), "wb") as f:
+                                f.write(decompressed)
+                            print(f"Decompressed single gzip'd .tex file ({len(decompressed):,} bytes)")
+                        except gzip.BadGzipFile:
+                            # Truly a plain .tex file, not compressed at all
+                            os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+                else:
+                    # Likely a single .tex file
+                    os.rename(tar_path, os.path.join(source_dir, "main.tex"))
 
-            # --- Process TeX ---
-            print("Processing LaTeX...")
+                # --- Process TeX ---
+                print("Processing LaTeX...")
 
-            latex = tex_to_audio.read_latex_from_dir(source_dir)
-            speech = tex_to_audio.build_speech_text(latex, source_stem=f"arXiv-{arxiv_id}")
+                latex = tex_to_audio.read_latex_from_dir(source_dir)
+                speech = tex_to_audio.build_speech_text(latex, source_stem=f"arXiv-{arxiv_id}")
 
             print(f"Generated speech text: {len(speech):,} chars")
 
