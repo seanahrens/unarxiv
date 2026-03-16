@@ -515,22 +515,22 @@ async function handleNarratePaper(
       );
     }
 
-    // Conditional captcha: required if >2 narrations in last hour
-    const hourlyCount = await getNarrationCountLastHour(env.DB, ip);
-    if (hourlyCount > 2) {
-      const body = await request.json<{ turnstile_token?: string }>().catch(() => ({}));
-      if (!body.turnstile_token) {
-        return json({ error: "Turnstile verification required" }, 400);
-      }
-      const turnstileValid = await verifyTurnstile(
-        body.turnstile_token,
-        ip,
-        env.TURNSTILE_SECRET_KEY
-      );
-      if (!turnstileValid) {
-        return json({ error: "Turnstile verification failed" }, 403);
-      }
-    }
+    // Turnstile captcha disabled for now
+    // const hourlyCount = await getNarrationCountLastHour(env.DB, ip);
+    // if (hourlyCount > 2) {
+    //   const body = await request.json<{ turnstile_token?: string }>().catch(() => ({}));
+    //   if (!body.turnstile_token) {
+    //     return json({ error: "Turnstile verification required" }, 400);
+    //   }
+    //   const turnstileValid = await verifyTurnstile(
+    //     body.turnstile_token,
+    //     ip,
+    //     env.TURNSTILE_SECRET_KEY
+    //   );
+    //   if (!turnstileValid) {
+    //     return json({ error: "Turnstile verification failed" }, 403);
+    //   }
+    // }
   }
 
   // Update status to queued
@@ -569,8 +569,8 @@ async function handleNarrationCheck(
   env: Env
 ): Promise<Response> {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const hourlyCount = await getNarrationCountLastHour(env.DB, ip);
-  return json({ captcha_required: hourlyCount > 2 });
+  // Turnstile captcha disabled for now
+  return json({ captcha_required: false });
 }
 
 async function handleReprocessPaper(

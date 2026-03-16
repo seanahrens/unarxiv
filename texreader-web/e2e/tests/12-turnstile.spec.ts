@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Turnstile captcha", () => {
+test.describe.skip("Turnstile captcha", () => {
   test("about page: clicking 'Show email address' renders Turnstile without sitekey errors", async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on("console", (msg) => {
