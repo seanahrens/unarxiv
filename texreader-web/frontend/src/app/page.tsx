@@ -96,12 +96,14 @@ function HomePageContent() {
   return (
     <div>
       {!searchQuery && (
-        <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mb-4">
+        <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-6">
           Listen to arXiv Papers. Unlimited. Free.
         </h2>
       )}
 
       <HeaderSearchBar />
+
+      {!searchQuery && <div className="h-6" />}
 
       {/* Previewing spinner */}
       {previewing && (
