@@ -115,7 +115,7 @@ export default function SearchBar({
           transition: "max-height 0.5s ease-in-out",
         }}
       >
-        <div className="bg-gradient-to-br from-amber-50 via-stone-50 to-orange-50 border border-amber-200/60 rounded-xl p-5 text-sm text-stone-600 shadow-sm">
+        <div className="bg-white border border-stone-300 rounded-xl p-5 text-sm text-stone-600 shadow-sm">
           <p className="font-semibold text-stone-800 mb-2 text-base">How does <SiteName /> work?</p>
           <p className="mb-3 text-stone-500 leading-relaxed">
             We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.

@@ -224,7 +224,7 @@ export default function PlaylistPage() {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                   className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${
-                    dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-100" : "hover:bg-stone-50"
+                    dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-100" : "hover:bg-stone-100"
                   } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
                 >
                   <span className="text-stone-500 cursor-grab shrink-0 touch-none">
@@ -238,7 +238,7 @@ export default function PlaylistPage() {
                   {paper?.status === "complete" && (
                     <button
                       onClick={() => handlePlay(paper)}
-                      className="w-7 h-7 flex items-center justify-center bg-stone-900 hover:bg-stone-700 text-white rounded-full transition-colors shrink-0"
+                      className="w-7 h-7 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors shrink-0"
                       title={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
@@ -315,7 +315,7 @@ export default function PlaylistPage() {
               return (
                 <div
                   key={entry.paperId}
-                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-100" : "hover:bg-stone-50"}`}
+                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-100" : "hover:bg-stone-100"}`}
                 >
                   <span className="shrink-0 invisible">
                     <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>
@@ -324,7 +324,7 @@ export default function PlaylistPage() {
                   {paper?.status === "complete" ? (
                     <button
                       onClick={() => handlePlay(paper)}
-                      className="w-7 h-7 flex items-center justify-center bg-stone-900 hover:bg-stone-700 text-white rounded-full transition-colors shrink-0"
+                      className="w-7 h-7 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors shrink-0"
                       title={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (

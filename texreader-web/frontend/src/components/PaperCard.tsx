@@ -72,7 +72,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
   return (
     <Link
       href={`/p?id=${paper.id}`}
-      className="block relative rounded-xl border p-5 shadow-sm hover:shadow-md transition-all no-underline bg-white border-stone-300 hover:border-stone-400"
+      className="block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400"
     >
       {isReady && (
         inPlaylist ? (
