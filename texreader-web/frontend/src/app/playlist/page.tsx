@@ -174,7 +174,7 @@ export default function PlaylistPage() {
             <button
               onClick={handlePrev}
               disabled={!hasPrev}
-              className="w-7 h-7 flex items-center justify-center bg-stone-600 hover:bg-stone-500 disabled:bg-stone-300 text-white rounded-full transition-colors"
+              className="w-7 h-7 flex items-center justify-center bg-stone-400 hover:bg-stone-500 disabled:bg-stone-200 text-white rounded-full transition-colors"
               title="Previous"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
@@ -185,7 +185,7 @@ export default function PlaylistPage() {
             <button
               onClick={handleNext}
               disabled={!hasNext}
-              className="w-7 h-7 flex items-center justify-center bg-stone-600 hover:bg-stone-500 disabled:bg-stone-300 text-white rounded-full transition-colors"
+              className="w-7 h-7 flex items-center justify-center bg-stone-400 hover:bg-stone-500 disabled:bg-stone-200 text-white rounded-full transition-colors"
               title="Next"
             >
               <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">

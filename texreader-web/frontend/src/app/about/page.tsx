@@ -49,6 +49,43 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Recommended apps */}
+        <section className="bg-white rounded-2xl border border-stone-200 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Listen on the go</h2>
+          <div className="flex flex-col sm:flex-row gap-4 text-sm text-stone-600">
+            <div className="flex-1">
+              <p className="font-semibold text-stone-800 mb-1">iPhone</p>
+              <p>
+                Download the MP3 and store it in iCloud Drive. Use{" "}
+                <a
+                  href="https://apps.apple.com/app/bookplayer-audio-book-player/id1138219998"
+                  className="text-stone-800 font-medium underline hover:text-stone-600"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  BookPlayer
+                </a>{" "}
+                — a free audiobook player that supports variable speed, bookmarks, and sleep timers.
+              </p>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-stone-800 mb-1">Apple Watch</p>
+              <p>
+                For offline listening on your wrist, try{" "}
+                <a
+                  href="https://apps.apple.com/app/watchaudio-audio-for-watch/id1576731498"
+                  className="text-stone-800 font-medium underline hover:text-stone-600"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  WatchAudio
+                </a>{" "}
+                — a one-time $4 app that syncs MP3s directly to your Apple Watch for phone-free playback.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Who + Contact side by side on desktop */}
         <div className="grid sm:grid-cols-2 gap-6">
           <section className="bg-white rounded-2xl border border-stone-200 p-6">

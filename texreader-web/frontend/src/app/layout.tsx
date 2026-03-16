@@ -57,7 +57,7 @@ export default function RootLayout({
               </Link>
             </div>
             {/* Center: player (desktop only) — flex-1 centers it between logo and playlist */}
-            <div className="hidden md:flex flex-1 justify-center">
+            <div className="hidden md:flex flex-1 min-w-0 px-5">
               <HeaderPlayer inline />
             </div>
             {/* Right: playlist button */}
