@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { Paper, formatDuration } from "@/lib/api";
-import { ListPlus, ListMinus } from "lucide-react";
+
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { isRead, markAsUnread } from "@/lib/readStatus";
 
@@ -78,19 +78,24 @@ export default function PaperCard({ paper }: PaperCardProps) {
         inPlaylist ? (
           <button
             onClick={handleRemoveFromPlaylist}
-            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-stone-700 bg-stone-200 hover:bg-stone-300 transition-colors z-10"
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg bg-stone-700 text-white hover:bg-stone-600 transition-colors z-10"
             title="Remove from playlist"
           >
-            <ListMinus size={14} />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </button>
         ) : (
           <button
             ref={btnRef}
             onClick={handleAddToPlaylist}
-            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors z-10"
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-300 text-stone-500 hover:text-stone-700 hover:border-stone-400 hover:bg-stone-50 transition-colors z-10 bg-white"
             title="Add to playlist"
           >
-            <ListPlus size={14} />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
         )
       )}
