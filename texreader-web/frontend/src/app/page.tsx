@@ -95,6 +95,12 @@ function HomePageContent() {
 
   return (
     <div>
+      {!searchQuery && (
+        <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mb-4">
+          Listen to arXiv Papers. Unlimited. Free.
+        </h2>
+      )}
+
       <HeaderSearchBar />
 
       {/* Previewing spinner */}
@@ -114,13 +120,11 @@ function HomePageContent() {
       {/* Paper list */}
       {!previewing && (
         <>
-          <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
-            {searchQuery ? (
-              `Results for "${searchQuery}"`
-            ) : (
-              "Listen to arXiv Papers. Unlimited. Free."
-            )}
-          </h2>
+          {searchQuery && (
+            <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
+              {`Results for "${searchQuery}"`}
+            </h2>
+          )}
 
           {loading ? (
             <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
