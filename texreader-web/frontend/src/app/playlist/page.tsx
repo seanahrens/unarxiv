@@ -478,7 +478,10 @@ export default function PlaylistPage() {
                       onClick={async () => {
                         if (!confirm("Remove this paper from unarXiv?")) return;
                         const ok = await deleteMyAddition(paper.id);
-                        if (ok) setMyAdditions((prev) => prev.filter((p) => p.id !== paper.id));
+                        if (ok) {
+                          if (state.paperId === paper.id) actions.stop();
+                          setMyAdditions((prev) => prev.filter((p) => p.id !== paper.id));
+                        }
                       }}
                       className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
                       title="Remove from site"

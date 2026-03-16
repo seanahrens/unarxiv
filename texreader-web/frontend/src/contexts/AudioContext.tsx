@@ -64,6 +64,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   paperIdRef.current = paperId;
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
+  const playbackRateRef = useRef(playbackRate);
+  playbackRateRef.current = playbackRate;
   const loadPaperRef = useRef<((id: string, title: string, src: string) => void) | null>(null);
 
   // Save position for current paper
@@ -217,7 +219,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     // Load new source
     audio.src = newSrc;
-    audio.playbackRate = playbackRate;
+    audio.playbackRate = playbackRateRef.current;
 
     // Restore position and auto-play after metadata loads
     const onReady = () => {
@@ -245,7 +247,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("loadedmetadata", onReadyOnce);
     audio.addEventListener("canplay", onReadyOnce);
     audio.load();
-  }, [playbackRate, savePosition]);
+  }, [savePosition]);
   loadPaperRef.current = loadPaper;
 
   const togglePlay = useCallback(() => {
