@@ -40,7 +40,12 @@ export default function RootLayout({
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
             {/* Left: logo — fixed width so center column stays centered */}
             <div className="flex items-center gap-3 shrink-0">
-              <Link href="/" className="no-underline text-stone-900 hover:text-stone-600 transition-colors">
+              <Link href="/" className="flex items-center gap-2 no-underline text-stone-900 hover:text-stone-600 transition-colors">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#292524" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "rotate(180deg)" }}>
+                  <rect x="2" y="3" width="20" height="5" rx="1" />
+                  <path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8" />
+                  <line x1="10" y1="12" x2="14" y2="12" />
+                </svg>
                 <SiteName className="text-lg tracking-tight" />
               </Link>
             </div>
