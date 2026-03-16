@@ -118,7 +118,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
       )}
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
-        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : isNotRequested ? "text-red-300" : "text-stone-400"}`}>
+        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-stone-400"}`}>
           {isReady ? <AudioFileIcon size={34} /> : <FileIcon size={34} />}
           {isProcessing ? (
             <span className="text-[10px] text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>

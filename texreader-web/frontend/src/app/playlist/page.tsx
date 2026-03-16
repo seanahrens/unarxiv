@@ -278,7 +278,7 @@ export default function PlaylistPage() {
                     className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
                       paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
                       ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? "text-purple-300" :
-                      paper?.status === "not_requested" ? "text-red-300" : "text-stone-400"
+                      "text-stone-400"
                     }`}
                     title="View paper"
                   >
@@ -385,7 +385,7 @@ export default function PlaylistPage() {
                     className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
                       paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
                       ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? "text-purple-300" :
-                      paper?.status === "not_requested" ? "text-red-300" : "text-stone-400"
+                      "text-stone-400"
                     }`}
                     title="View paper"
                   >
@@ -501,7 +501,7 @@ export default function PlaylistPage() {
                       className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
                         paper.status === "complete" ? "text-stone-500 hover:text-stone-700" :
                         isInProgress ? "text-purple-300" :
-                        paper.status === "not_requested" ? "text-red-300" : "text-stone-400"
+                        "text-stone-400"
                       }`}
                       title="View paper"
                     >
