@@ -12,20 +12,12 @@ const STATUS_LABELS: Record<string, string> = {
   generating_audio: "Narrating",
 };
 
-/** Parse "30%|eta:240" → { pct: 30, etaSeconds: 240 } */
-function parseProgressDetail(detail: string | null): { pct: number; etaSeconds: number | null } {
-  if (!detail) return { pct: 0, etaSeconds: null };
-  const parts = detail.split("|");
-  const pctMatch = parts[0].match(/^(\d+)%$/);
-  const pct = pctMatch ? parseInt(pctMatch[1]) : 0;
-  let etaSeconds: number | null = null;
-  for (const part of parts) {
-    const etaMatch = part.match(/^eta:(\d+)$/);
-    if (etaMatch) {
-      etaSeconds = parseInt(etaMatch[1]);
-    }
-  }
-  return { pct, etaSeconds };
+/** Parse "eta:240" → { etaSeconds: 240 } */
+function parseEta(detail: string | null): { etaSeconds: number | null } {
+  if (!detail) return { etaSeconds: null };
+  const etaMatch = detail.match(/eta:(\d+)/);
+  if (etaMatch) return { etaSeconds: parseInt(etaMatch[1]) };
+  return { etaSeconds: null };
 }
 
 function formatEta(seconds: number): string {
@@ -107,7 +99,7 @@ export default function NarrationProgress({
   const label = status ? STATUS_LABELS[status] : null;
   if (!label) return null;
 
-  const { etaSeconds } = parseProgressDetail(detail);
+  const { etaSeconds } = parseEta(detail);
   // Show backend ETA during audio generation, or default ~60s estimate for early stages
   const DEFAULT_ETA_SECONDS = 55;
   const etaText = (etaSeconds !== null && etaSeconds > 0)

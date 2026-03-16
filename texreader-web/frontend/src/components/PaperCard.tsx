@@ -12,15 +12,18 @@ interface PaperCardProps {
   paper: Paper;
 }
 
-function formatProgress(detail: string | null): string | null {
+function formatEtaShort(detail: string | null): string | null {
   if (!detail) return null;
-  const match = detail.match(/^chunk (\d+)\/(\d+)$/);
-  if (match) {
-    const pct = Math.round((parseInt(match[1]) / parseInt(match[2])) * 100);
-    return `${pct}%`;
+  // Parse "eta:240" or legacy "30%|eta:240" format
+  const etaMatch = detail.match(/eta:(\d+)/);
+  if (etaMatch) {
+    const secs = parseInt(etaMatch[1]);
+    if (secs <= 0) return null;
+    if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
+    const mins = Math.floor(secs / 60);
+    return `~${mins}m`;
   }
-  if (detail === "starting") return "0%";
-  return detail;
+  return null;
 }
 
 function formatShortDate(dateStr: string): string {
@@ -114,12 +117,10 @@ export default function PaperCard({ paper }: PaperCardProps) {
       )}
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
-        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-amber-500" : "text-stone-400"}`}>
+        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-indigo-400" : "text-stone-400"}`}>
           <AudioFileIcon size={34} />
-          {isProcessing && paper.progress_detail ? (
-            <span className="text-[10px] text-amber-500 font-medium mt-0.5">{formatProgress(paper.progress_detail)}</span>
-          ) : isProcessing ? (
-            <span className="text-[10px] text-amber-500 font-medium mt-0.5">...</span>
+          {isProcessing ? (
+            <span className="text-[10px] text-indigo-400 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
           ) : paper.duration_seconds ? (
             <span className="text-[10px] text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}
