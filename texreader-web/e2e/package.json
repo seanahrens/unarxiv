@@ -1,0 +1,13 @@
+{
+  "name": "unarxiv-e2e",
+  "private": true,
+  "scripts": {
+    "test": "playwright test --project=fast",
+    "test:full": "playwright test --project=full --project=narration",
+    "test:headed": "playwright test --project=fast --headed",
+    "test:debug": "playwright test --project=fast --debug"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
+}

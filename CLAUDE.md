@@ -1,4 +1,4 @@
-# PapEar (TexReader)
+# unarXiv (TexReader)
 
 Public website for converting arXiv LaTeX papers into narrated MP3 audiobooks.
 
