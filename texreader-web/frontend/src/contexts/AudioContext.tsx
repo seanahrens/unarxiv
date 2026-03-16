@@ -170,6 +170,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.src = saved.src;
 
       const onReady = () => {
+        // Apply playback rate after load (load() resets it)
+        const rate = parseFloat(localStorage.getItem(RATE_KEY) || "1") || 1;
+        audio.playbackRate = rate;
         try {
           const posStr = localStorage.getItem(getStorageKey(saved.paperId));
           if (posStr) {
@@ -219,10 +222,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     // Load new source
     audio.src = newSrc;
-    audio.playbackRate = playbackRateRef.current;
 
     // Restore position and auto-play after metadata loads
     const onReady = () => {
+      // Apply playback rate after load (load() resets it)
+      audio.playbackRate = playbackRateRef.current;
       try {
         const saved = localStorage.getItem(getStorageKey(newPaperId));
         if (saved) {
