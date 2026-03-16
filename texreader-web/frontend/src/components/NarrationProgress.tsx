@@ -108,9 +108,13 @@ export default function NarrationProgress({
   if (!label) return null;
 
   const { etaSeconds } = parseProgressDetail(detail);
-  const etaText = (status === "generating_audio" && etaSeconds !== null && etaSeconds > 0)
+  // Show backend ETA during audio generation, or default ~60s estimate for early stages
+  const DEFAULT_ETA_SECONDS = 60;
+  const etaText = (etaSeconds !== null && etaSeconds > 0)
     ? formatEta(etaSeconds)
-    : null;
+    : (status === "queued" || status === "preparing")
+      ? formatEta(DEFAULT_ETA_SECONDS)
+      : null;
 
   return (
     <div className="flex flex-col gap-1.5">

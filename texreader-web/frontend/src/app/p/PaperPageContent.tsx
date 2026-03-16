@@ -473,15 +473,17 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     if (!paper) return;
     setNarrationLoading(true);
     setNarrationError("");
+    // Optimistically show progress bar immediately (before any network calls)
+    setPaper({ ...paper, status: "queued" as any });
     try {
       const { captcha_required } = await checkNarrationRateLimit();
       if (captcha_required) {
+        // Revert — need captcha first
+        setPaper(paper);
         setShowCaptchaModal(true);
         setNarrationLoading(false);
         return;
       }
-      // Optimistically show progress bar immediately
-      setPaper({ ...paper, status: "queued" as any });
       const updated = await requestNarration(paper.id);
       setPaper(updated);
     } catch (e: any) {
@@ -559,8 +561,12 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
                          text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700
                          rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
-              {narrationLoading ? "Starting..." : "Generate Audio Narration"}
+              Generate Audio Narration
             </button>
+          ) : isProcessing ? (
+            <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+              <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
+            </div>
           ) : null}
         </div>
 
@@ -579,12 +585,6 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         {narrationError && (
           <div className="mb-2">
             <span className="text-xs text-red-600">{narrationError}</span>
-          </div>
-        )}
-
-        {isProcessing && (
-          <div className="w-full mb-2 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
-            <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
           </div>
         )}
 
