@@ -46,8 +46,8 @@ input[type="range"]::-moz-range-thumb {
 
 /* Narration progress — infinite flowing bar */
 @keyframes progress-flow {
-  0% { background-position: 0% 0; }
-  100% { background-position: 200% 0; }
+  0% { background-position: 200% 0; }
+  100% { background-position: 0% 0; }
 }
 .progress-flow {
   background: repeating-linear-gradient(
