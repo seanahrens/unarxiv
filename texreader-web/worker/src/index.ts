@@ -552,7 +552,7 @@ async function handleNarratePaper(
           tex_source_url: meta.tex_source_url,
           callback_url: `${baseUrl}/api/webhooks/modal`,
           paper_title: paper.title,
-          paper_author: JSON.parse(paper.authors)[0] || "",
+          paper_author: JSON.parse(paper.authors).join(", "),
         }),
       });
     } catch (e: any) {
@@ -659,7 +659,7 @@ async function handleReprocessPaper(
           tex_source_url: metadata?.tex_source_url || "",
           callback_url: `${baseUrl}/api/webhooks/modal`,
           paper_title: metadata?.title || paper.title,
-          paper_author: (metadata?.authors?.[0]) || "",
+          paper_author: (metadata?.authors || []).join(", "),
           mode,
         }),
       });

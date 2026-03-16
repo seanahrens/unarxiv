@@ -259,7 +259,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         elif mode != "narration_only":
             meta = tex_to_audio.extract_full_metadata(latex, f"arXiv-{arxiv_id}")
             tag_title = meta["title"] or "Untitled"
-            tag_author = meta["authors"][0] if meta["authors"] else "Unknown"
+            tag_author = ", ".join(meta["authors"]) if meta["authors"] else "Unknown"
         else:
             tag_title = paper_title or "Untitled"
             tag_author = paper_author or "Unknown"
