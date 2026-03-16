@@ -14,11 +14,13 @@ interface PlaylistContextValue {
   playlist: PlaylistEntry[];
   playlistCount: number;
   addToPlaylist: (paperId: string, sourceRect?: DOMRect) => void;
-  removeFromPlaylist: (paperId: string) => void;
+  removeFromPlaylist: (paperId: string, targetRect?: DOMRect) => void;
   isInPlaylist: (paperId: string) => boolean;
   reorderPlaylist: (orderedIds: string[]) => void;
   animatingPaperId: string | null;
   animationSourceRect: DOMRect | null;
+  removingPaperId: string | null;
+  removeAnimationTargetRect: DOMRect | null;
   badgePulse: boolean;
 }
 
@@ -34,6 +36,8 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<PlaylistEntry[]>([]);
   const [animatingPaperId, setAnimatingPaperId] = useState<string | null>(null);
   const [animationSourceRect, setAnimationSourceRect] = useState<DOMRect | null>(null);
+  const [removingPaperId, setRemovingPaperId] = useState<string | null>(null);
+  const [removeAnimationTargetRect, setRemoveAnimationTargetRect] = useState<DOMRect | null>(null);
   const [badgePulse, setBadgePulse] = useState(false);
 
   // Load from localStorage on mount
@@ -58,9 +62,20 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     }, sourceRect ? 500 : 0);
   }, []);
 
-  const removeFromPlaylist = useCallback((paperId: string) => {
-    removeFromStorage(paperId);
-    setPlaylist(loadPlaylist());
+  const removeFromPlaylist = useCallback((paperId: string, targetRect?: DOMRect) => {
+    if (targetRect) {
+      setRemovingPaperId(paperId);
+      setRemoveAnimationTargetRect(targetRect);
+      setTimeout(() => {
+        removeFromStorage(paperId);
+        setPlaylist(loadPlaylist());
+        setRemovingPaperId(null);
+        setRemoveAnimationTargetRect(null);
+      }, 500);
+    } else {
+      removeFromStorage(paperId);
+      setPlaylist(loadPlaylist());
+    }
   }, []);
 
   const isInPlaylistCheck = useCallback((paperId: string) => {
@@ -83,6 +98,8 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         reorderPlaylist: reorderPlaylistAction,
         animatingPaperId,
         animationSourceRect,
+        removingPaperId,
+        removeAnimationTargetRect,
         badgePulse,
       }}
     >

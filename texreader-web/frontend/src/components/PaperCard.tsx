@@ -48,7 +48,8 @@ export default function PaperCard({ paper }: PaperCardProps) {
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = !isReady && !isFailed && !isNotRequested;
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const removeBtnRef = useRef<HTMLButtonElement>(null);
 
   const handleAddToPlaylist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,14 +58,15 @@ export default function PaperCard({ paper }: PaperCardProps) {
       if (!confirm("You've already listened to this. Are you sure you want to add it to your playlist? We will unmark it as read.")) return;
       markAsUnread(paper.id);
     }
-    const rect = btnRef.current?.getBoundingClientRect();
+    const rect = addBtnRef.current?.getBoundingClientRect();
     addToPlaylist(paper.id, rect || undefined);
   };
 
   const handleRemoveFromPlaylist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    removeFromPlaylist(paper.id);
+    const rect = removeBtnRef.current?.getBoundingClientRect();
+    removeFromPlaylist(paper.id, rect || undefined);
   };
 
   const inPlaylist = isReady && isInPlaylist(paper.id);
@@ -77,8 +79,9 @@ export default function PaperCard({ paper }: PaperCardProps) {
       {isReady && (
         inPlaylist ? (
           <button
+            ref={removeBtnRef}
             onClick={handleRemoveFromPlaylist}
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-300 bg-stone-100 text-stone-500 hover:bg-stone-200 hover:border-stone-400 transition-colors z-10"
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-400 bg-stone-300 text-stone-600 hover:bg-stone-400 hover:text-stone-700 transition-colors z-10"
             title="Remove from playlist"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -87,7 +90,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
           </button>
         ) : (
           <button
-            ref={btnRef}
+            ref={addBtnRef}
             onClick={handleAddToPlaylist}
             className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-300 text-stone-500 hover:text-stone-700 hover:border-stone-400 hover:bg-stone-50 transition-colors z-10 bg-white"
             title="Add to playlist"
