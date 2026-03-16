@@ -5,7 +5,17 @@ function getReadRecord(): Record<string, string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Migrate legacy array format (["id1","id2"]) → object format ({"id1":"...","id2":"..."})
+    if (Array.isArray(parsed)) {
+      const migrated: Record<string, string> = {};
+      for (const id of parsed) {
+        if (typeof id === "string" && id) migrated[id] = new Date().toISOString();
+      }
+      saveReadRecord(migrated);
+      return migrated;
+    }
+    return parsed;
   } catch {
     return {};
   }

@@ -8,6 +8,7 @@ import { usePlaylist } from "@/contexts/PlaylistContext";
 import { isRead, markAsUnread } from "@/lib/readStatus";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
+import ProcessingFileIcon from "@/components/ProcessingFileIcon";
 
 interface PaperCardProps {
   paper: Paper;
@@ -119,9 +120,14 @@ export default function PaperCard({ paper }: PaperCardProps) {
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
         <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-stone-400"}`}>
-          {isReady ? <AudioFileIcon size={34} /> : <FileIcon size={34} />}
+          {isReady ? <AudioFileIcon size={34} /> : isProcessing ? <ProcessingFileIcon size={34} /> : <FileIcon size={34} />}
           {isProcessing ? (
-            <span className="text-[10px] text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
+            <>
+              <div className="w-5 h-1 rounded-full bg-purple-100 overflow-hidden mt-1">
+                <div className="h-full rounded-full progress-flow w-full" style={{ background: "repeating-linear-gradient(90deg, rgb(192 132 252 / 0.2) 0%, rgb(192 132 252 / 0.6) 15%, rgb(168 85 247 / 0.7) 30%, rgb(192 132 252 / 0.6) 45%, rgb(192 132 252 / 0.2) 50%)", backgroundSize: "200% 100%" }} />
+              </div>
+              <span className="text-[10px] text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
+            </>
           ) : paper.duration_seconds ? (
             <span className="text-[10px] text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}

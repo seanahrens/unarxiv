@@ -8,6 +8,7 @@ import { getReadHistory, markAsUnread } from "@/lib/readStatus";
 import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, type Paper } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
+import ProcessingFileIcon from "@/components/ProcessingFileIcon";
 import NarrationProgress, { POLL_INTERVAL_MS } from "@/components/NarrationProgress";
 
 export default function PlaylistPage() {
@@ -282,7 +283,7 @@ export default function PlaylistPage() {
                     }`}
                     title="View paper"
                   >
-                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : <FileIcon size={28} />}
+                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
                   </Link>
 
                   {paper?.status === "complete" ? (
@@ -389,7 +390,7 @@ export default function PlaylistPage() {
                     }`}
                     title="View paper"
                   >
-                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : <FileIcon size={28} />}
+                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
                   </Link>
 
                   {paper?.status === "complete" ? (
@@ -505,7 +506,7 @@ export default function PlaylistPage() {
                       }`}
                       title="View paper"
                     >
-                      {paper.status === "complete" ? <AudioFileIcon size={28} /> : <FileIcon size={28} />}
+                      {paper.status === "complete" ? <AudioFileIcon size={28} /> : isInProgress ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
                     </Link>
 
                     {paper.status === "complete" ? (

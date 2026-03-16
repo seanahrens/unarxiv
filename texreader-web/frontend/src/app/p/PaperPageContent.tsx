@@ -635,7 +635,11 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             <GenerateButtonWithMenu paper={paper} onGenerate={handleRequestNarration} disabled={narrationLoading} />
           ) : isProcessing ? (
             <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
-              <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
+              {narrationLoading ? (
+                <NarrationProgress paper={paper} />
+              ) : (
+                <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
+              )}
             </div>
           ) : null}
         </div>

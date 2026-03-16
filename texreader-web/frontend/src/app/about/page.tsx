@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import SiteName from "@/components/SiteName";
-import ContactEmail from "@/components/ContactEmail";
 
 export const metadata: Metadata = {
   title: "About — unarXiv",
@@ -52,36 +51,52 @@ export default function AboutPage() {
         {/* Recommended apps */}
         <section className="bg-white rounded-2xl border border-stone-200 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Listen on the go</h2>
-          <div className="flex flex-col sm:flex-row gap-4 text-sm text-stone-600">
-            <div className="flex-1">
-              <p className="font-semibold text-stone-800 mb-1">iPhone</p>
+          <div className="flex flex-col gap-4 text-sm text-stone-600">
+            <div>
+              <p className="font-semibold text-stone-800 mb-1">Add to Home Screen (recommended)</p>
               <p>
-                Download the MP3 and store it in iCloud Drive. Use{" "}
-                <a
-                  href="https://apps.apple.com/app/bookplayer-audio-book-player/id1138219998"
-                  className="text-stone-800 font-medium underline hover:text-stone-600"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  BookPlayer
-                </a>{" "}
-                — a free audiobook player that supports variable speed, bookmarks, and sleep timers.
+                On your iPhone, open unarxiv.org in Safari, tap the{" "}
+                <span className="inline-flex items-center align-middle">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                </span>{" "}
+                Share button, then choose <strong>Add to Home Screen</strong>. This gives you a full-screen app experience with playback controls on your lock screen.
               </p>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-stone-800 mb-1">Apple Watch</p>
-              <p>
-                For offline listening on your wrist, try{" "}
-                <a
-                  href="https://apps.apple.com/app/watchaudio-audio-for-watch/id1576731498"
-                  className="text-stone-800 font-medium underline hover:text-stone-600"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  WatchAudio
-                </a>{" "}
-                — a one-time $4 app that syncs MP3s directly to your Apple Watch for phone-free playback.
-              </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <p className="font-semibold text-stone-800 mb-1">BookPlayer (offline support)</p>
+                <p>
+                  For offline listening, download the MP3 and store it in iCloud Drive. Use{" "}
+                  <a
+                    href="https://apps.apple.com/app/bookplayer-audio-book-player/id1138219998"
+                    className="text-stone-800 font-medium underline hover:text-stone-600"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    BookPlayer
+                  </a>{" "}
+                  — a free audiobook player that supports variable speed, bookmarks, and sleep timers.
+                </p>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-stone-800 mb-1">WatchAudio (offline support)</p>
+                <p>
+                  For offline listening on your wrist, try{" "}
+                  <a
+                    href="https://apps.apple.com/app/watchaudio-audio-for-watch/id1576731498"
+                    className="text-stone-800 font-medium underline hover:text-stone-600"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WatchAudio
+                  </a>{" "}
+                  — a one-time $4 app that syncs MP3s directly to your Apple Watch for phone-free playback.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -104,7 +119,7 @@ export default function AboutPage() {
 
           <section className="bg-white rounded-2xl border border-stone-200 p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Get in touch</h2>
-            <ContactEmail />
+            <p className="text-sm text-stone-600">hello at this domain</p>
           </section>
         </div>
 
