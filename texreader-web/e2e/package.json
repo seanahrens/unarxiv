@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test --project=fast",
-    "test:full": "playwright test --project=full --project=narration",
+    "test:full": "playwright test --project=fast --project=narration",
     "test:headed": "playwright test --project=fast --headed",
     "test:debug": "playwright test --project=fast --debug"
   },

@@ -78,7 +78,7 @@ jobs:
       - name: Run full E2E tests
         id: e2e
         working-directory: texreader-web/e2e
-        run: npx playwright test --project=full
+        run: npx playwright test --project=fast --project=narration
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           TEST_BASE_URL: https://unarxiv.org

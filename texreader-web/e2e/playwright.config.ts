@@ -22,10 +22,6 @@ export default defineConfig({
       testMatch: /11-narration-gen/,
       dependencies: ["fast"],
     },
-    {
-      name: "full",
-      testIgnore: /11-narration-gen/,
-    },
   ],
   globalSetup: "./helpers/global-setup.ts",
 });
