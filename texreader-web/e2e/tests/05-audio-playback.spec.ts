@@ -6,8 +6,8 @@ test.describe("Audio Playback", () => {
     const id = knownCompleteId();
     await page.goto(`/p?id=${id}`);
 
-    // Find the play button (round black button with title "Play")
-    const playBtn = page.locator('button[title="Play"]').first();
+    // The split play button contains text "Play"
+    const playBtn = page.locator('button:has-text("Play")').first();
     await expect(playBtn).toBeVisible({ timeout: 10000 });
     await playBtn.click();
 
@@ -30,7 +30,7 @@ test.describe("Audio Playback", () => {
     const id = knownCompleteId();
     await page.goto(`/p?id=${id}`);
 
-    const playBtn = page.locator('button[title="Play"]').first();
+    const playBtn = page.locator('button:has-text("Play")').first();
     await expect(playBtn).toBeVisible({ timeout: 10000 });
     await playBtn.click();
 
