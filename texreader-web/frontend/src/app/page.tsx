@@ -15,6 +15,8 @@ import {
   type Paper,
 } from "@/lib/api";
 
+const PAGE_SIZE = 3;
+
 export default function HomePage() {
   return (
     <Suspense fallback={<div className="text-center py-12 text-stone-500">Loading...</div>}>
@@ -23,11 +25,63 @@ export default function HomePage() {
   );
 }
 
+function PaperSection({ title, papers }: { title: string; papers: Paper[] }) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(papers.length / PAGE_SIZE);
+  const visible = papers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  if (papers.length === 0) return null;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
+          {title}
+        </h2>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 0}
+              className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+              aria-label="Previous page"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 12L6 8L10 4" />
+              </svg>
+            </button>
+            <span className="text-xs text-stone-400 tabular-nums min-w-[3ch] text-center">
+              {page + 1}/{totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages - 1}
+              className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+              aria-label="Next page"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 4L10 8L6 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="grid gap-3">
+        {visible.map((paper) => (
+          <PaperCard key={paper.id} paper={paper} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function HomePageContent() {
   const searchParams = useSearchParams();
   const arxivParam = searchParams.get("arxiv") || "";
   const qParam = searchParams.get("q") || "";
-  const [papers, setPapers] = useState<Paper[]>([]);
+  const [searchPapers, setSearchPapers] = useState<Paper[]>([]);
+  const [popularPapers, setPopularPapers] = useState<Paper[]>([]);
+  const [newPapers, setNewPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -50,7 +104,7 @@ function HomePageContent() {
 
       // Run text search in parallel
       fetchPapers({ q: arxivParam })
-        .then((data) => setPapers(data.papers))
+        .then((data) => setSearchPapers(data.papers))
         .catch(console.error)
         .finally(() => setLoading(false));
 
@@ -78,16 +132,28 @@ function HomePageContent() {
       setPreviewError("");
       setLoading(true);
       fetchPapers({ q: qParam })
-        .then((data) => setPapers(data.papers))
+        .then((data) => setSearchPapers(data.papers))
         .catch(console.error)
         .finally(() => setLoading(false));
     } else {
-      // No params — show popular papers
+      // No params — load popular + recent sections
       setSearchQuery("");
       setPreviewError("");
       setLoading(true);
-      fetchPapers({ sort: "popular" })
-        .then((data) => setPapers(data.papers))
+
+      Promise.all([
+        fetchPapers({ sort: "popular", per_page: 6 }),
+        fetchPapers({ sort: "recent", per_page: 25 }),
+      ])
+        .then(([popularData, recentData]) => {
+          const popular = popularData.papers;
+          setPopularPapers(popular);
+
+          // Deduplicate: remove popular papers from recent, take first 25
+          const popularIds = new Set(popular.map((p) => p.id));
+          const deduped = recentData.papers.filter((p) => !popularIds.has(p.id));
+          setNewPapers(deduped.slice(0, 6));
+        })
         .catch(console.error)
         .finally(() => setLoading(false));
     }
@@ -122,28 +188,36 @@ function HomePageContent() {
         </div>
       )}
 
-      {/* Paper list */}
+      {/* Content */}
       {!previewing && (
         <>
-          {searchQuery && (
-            <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
-              {`Results for "${searchQuery}"`}
-            </h2>
-          )}
-
-          {loading ? (
+          {searchQuery ? (
+            <>
+              <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
+                {`Results for "${searchQuery}"`}
+              </h2>
+              {loading ? (
+                <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+              ) : (
+                <>
+                  <div className="grid gap-3">
+                    {searchPapers.map((paper) => (
+                      <PaperCard key={paper.id} paper={paper} />
+                    ))}
+                  </div>
+                  <ArxivCta query={searchQuery} />
+                </>
+              )}
+            </>
+          ) : loading ? (
             <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
-          ) : papers.length === 0 && !searchQuery ? (
+          ) : popularPapers.length === 0 && newPapers.length === 0 ? (
             <ArxivCta />
           ) : (
-            <>
-              <div className="grid gap-3">
-                {papers.map((paper) => (
-                  <PaperCard key={paper.id} paper={paper} />
-                ))}
-              </div>
-              {searchQuery && <ArxivCta query={searchQuery} />}
-            </>
+            <div className="flex flex-col gap-8">
+              <PaperSection title="Popular" papers={popularPapers} />
+              <PaperSection title="Newly Added" papers={newPapers} />
+            </div>
           )}
         </>
       )}
