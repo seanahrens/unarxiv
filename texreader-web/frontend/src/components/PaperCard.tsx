@@ -34,6 +34,15 @@ function formatShortDate(dateStr: string): string {
   }
 }
 
+function formatYear(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    return `${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 const STATUS_LABELS: Record<string, string> = {
   not_requested: "",
   queued: "In Progress",
@@ -127,20 +136,18 @@ export default function PaperCard({ paper }: PaperCardProps) {
           </div>
 
           <p className="text-xs text-stone-500 mb-2 flex items-center gap-1.5 flex-wrap">
+            {paper.duration_seconds && (
+              <span>{formatDuration(paper.duration_seconds)}</span>
+            )}
+            {paper.duration_seconds && paper.authors.length > 0 && <span>&middot;</span>}
             {paper.authors.length > 0 && (
               <span className="text-stone-600">
                 {paper.authors.slice(0, 3).join(", ")}
                 {paper.authors.length > 3 && ` +${paper.authors.length - 3} more`}
               </span>
             )}
-            {paper.authors.length > 0 && paper.published_date && <span>&middot;</span>}
-            {paper.published_date && <span>{formatShortDate(paper.published_date)}</span>}
-            {paper.duration_seconds && (
-              <>
-                <span>&middot;</span>
-                <span>{formatDuration(paper.duration_seconds)}</span>
-              </>
-            )}
+            {(paper.duration_seconds || paper.authors.length > 0) && paper.published_date && <span>&middot;</span>}
+            {paper.published_date && <span>{formatYear(paper.published_date)}</span>}
             {paper.progress_detail && isProcessing && (
               <>
                 <span>&middot;</span>

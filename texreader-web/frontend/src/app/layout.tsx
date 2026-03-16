@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Libre_Baskerville } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import SiteName from "@/components/SiteName";
 
-const libreBaskerville = Libre_Baskerville({
+const quicksand = Quicksand({
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-brand",
 });
 
@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={libreBaskerville.variable}>
+    <html lang="en" className={quicksand.variable}>
       <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
         <AudioProvider>
         <PlaylistProvider>
@@ -47,7 +47,7 @@ export default function RootLayout({
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
             {/* Left: logo — fixed width so center column stays centered */}
             <div className="flex items-center gap-3 shrink-0">
-              <Link href="/" className="flex items-center gap-2 no-underline text-stone-900 hover:text-stone-600 transition-colors">
+              <Link href="/" className="flex items-center gap-2 no-underline text-stone-900 transition-colors">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#292524" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "rotate(180deg)" }}>
                   <rect x="2" y="3" width="20" height="5" rx="1" />
                   <path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8" />
@@ -80,7 +80,6 @@ export default function RootLayout({
               About
             </Link>
             <div className="text-right">
-              <p className="text-[11px] text-stone-500 mb-1">Launched Mar 15 2026</p>
               <p className="text-[11px] text-stone-500 max-w-md">
                 arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
               </p>

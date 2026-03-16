@@ -338,8 +338,7 @@ function PlayButtonWithMenu({
             )}
             {inPlaylist ? "Remove from Playlist" : "Add to Playlist"}
           </button>
-          <div className="border-t border-stone-200 my-1" />
-          {isReady && (
+          {isReady && (<><div className="border-t border-stone-200 mx-3" />
             <button
               onClick={() => { onRate(); setMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
@@ -348,9 +347,9 @@ function PlayButtonWithMenu({
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
               Rate Narration
-            </button>
+            </button></>
           )}
-          {isReady && (
+          {isReady && (<><div className="border-t border-stone-200 mx-3" />
             <button
               onClick={() => { download(audioUrl(paper.id), mp3Filename); setMenuOpen(false); }}
               disabled={downloading}
@@ -361,9 +360,9 @@ function PlayButtonWithMenu({
                 <path d="M15.54 8.46a5 5 0 010 7.07" />
               </svg>
               Download Audio
-            </button>
+            </button></>
           )}
-          <div className="border-t border-stone-200 my-1" />
+          <div className="border-t border-stone-200 mx-3" />
           <button
             onClick={() => { download(`https://arxiv.org/pdf/${paper.id}`, pdfFilename); setMenuOpen(false); }}
             disabled={downloading}
@@ -375,6 +374,7 @@ function PlayButtonWithMenu({
             </svg>
             Download PDF
           </button>
+          <div className="border-t border-stone-200 mx-3" />
           <a
             href={paper.arxiv_url}
             target="_blank"
@@ -513,7 +513,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       <div className="text-center py-20">
         <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
         <Link href="/" className="text-sm text-stone-600 hover:text-stone-800 transition-colors">
-          &larr; Back to papers
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="inline -mt-px"><polygon points="2,12 22,2 22,22" /></svg> BACK TO PAPERS
         </Link>
       </div>
     );
@@ -531,27 +531,15 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         href="/"
         className="text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 inline-block"
       >
-        &larr; Back to papers
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="inline -mt-px"><polygon points="2,12 22,2 22,22" /></svg> BACK TO PAPERS
       </Link>
 
       <article className="mb-8">
-        <h1 className="text-2xl font-bold text-stone-900 leading-tight mb-3">
-          {paper.title || "Untitled"}
-        </h1>
-
-        <div className="flex items-start gap-3 mb-4">
-          <p className="text-sm text-stone-500 flex-1">
-            {authors.length > 0 && (
-              <span className="font-semibold text-stone-700">{authors.join(", ")}</span>
-            )}
-            {authors.length > 0 && paper.published_date && <span> &middot; </span>}
-            {paper.published_date && (
-              <span>{formatDate(paper.published_date)}</span>
-            )}
-            <span> &middot; </span>
-            <CopyableId id={paper.id} />
-          </p>
-          {isReady && (
+        <div className="flex items-start gap-3 mb-3">
+          <h1 className="text-2xl font-bold text-stone-900 leading-tight flex-1">
+            {paper.title || "Untitled"}
+          </h1>
+          {isReady ? (
             <PlayButtonWithMenu
               paper={paper}
               onRate={() => setShowRatingModal(true)}
@@ -559,45 +547,42 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
               onAddToPlaylist={handleAddToPlaylist}
               onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
             />
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 justify-end">
-          {isNotRequested && (
+          ) : isNotRequested ? (
             <button
               onClick={handleRequestNarration}
               disabled={narrationLoading}
               className="inline-flex items-center justify-center gap-1.5 px-3 h-[42px] text-xs font-medium
                          text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700
-                         rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                         rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               {narrationLoading ? "Starting..." : "Generate Audio Narration"}
             </button>
-          )}
-          {narrationError && (
-            <span className="text-xs text-red-600">{narrationError}</span>
-          )}
-          {paperRead && (
-            <button
-              onClick={() => {
-                markAsUnread(paper.id);
-                setPaperRead(false);
-              }}
-              className="inline-flex items-center justify-center text-stone-400 hover:text-stone-500 transition-colors"
-              title="Listened — click to mark as unread"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </button>
-          )}
-          {isProcessing && (
-            <div className="flex-1 min-w-[280px]">
-              <ProgressTracker paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
-            </div>
-          )}
+          ) : null}
         </div>
+
+        <p className="text-sm text-stone-500 mb-2">
+          {authors.length > 0 && (
+            <span className="font-semibold text-stone-700">{authors.join(", ")}</span>
+          )}
+          {authors.length > 0 && paper.published_date && <span> &middot; </span>}
+          {paper.published_date && (
+            <span>{formatDate(paper.published_date)}</span>
+          )}
+          <span> &middot; </span>
+          <CopyableId id={paper.id} />
+        </p>
+
+        {narrationError && (
+          <div className="mb-2">
+            <span className="text-xs text-red-600">{narrationError}</span>
+          </div>
+        )}
+
+        {isProcessing && (
+          <div className="w-full mb-2">
+            <ProgressTracker paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
+          </div>
+        )}
 
         {paper.abstract && (
           <p className="text-base text-stone-600 leading-relaxed">

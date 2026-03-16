@@ -45,7 +45,7 @@ export default function ArxivCta({ query, className, showHeading = true, inlineB
             Not seeing the paper you expect?
           </h3>
           <p className="text-sm text-stone-500 max-w-md mx-auto mb-5">
-            Find it on arXiv. Add &lsquo;un&rsquo; to the URL. And we&rsquo;ll narrate it!
+            Find it on arXiv. Add &lsquo;un&rsquo; to the URL. We&rsquo;ll narrate it!
           </p>
         </>
       )}

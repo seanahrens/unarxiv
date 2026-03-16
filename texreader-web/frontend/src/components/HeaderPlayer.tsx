@@ -90,9 +90,9 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         </Link>
 
         {/* Title + seekable progress */}
-        <div className="min-w-0 max-w-[200px]">
+        <div className="flex-1 min-w-0">
           <span
-            className="block text-[10px] text-stone-600 truncate"
+            className="block text-xs text-stone-600 truncate"
             title={paperTitle || ""}
           >
             {paperTitle || "Unknown paper"}
@@ -110,14 +110,14 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         </div>
 
         {/* Duration shorthand */}
-        <span className="text-[10px] font-mono text-stone-500 tabular-nums shrink-0">
+        <span className="text-[10px] font-mono text-stone-500 tabular-nums shrink-0 min-w-[28px] text-right">
           {duration ? fmtShort(duration) : "--"}
         </span>
 
         {/* Speed */}
         <button
           onClick={actions.cycleSpeed}
-          className="text-[10px] font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[46px] text-center"
+          className="text-[10px] font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-2.5 transition-colors shrink-0 min-w-[46px] text-center"
           title="Speed"
         >
           {playbackRate}x
@@ -200,14 +200,14 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         </div>
 
         {/* Duration shorthand */}
-        <span className="text-[10px] font-mono text-stone-500 tabular-nums shrink-0">
+        <span className="text-[10px] font-mono text-stone-500 tabular-nums shrink-0 min-w-[28px] text-right">
           {duration ? fmtShort(duration) : "--"}
         </span>
 
         {/* Speed */}
         <button
           onClick={actions.cycleSpeed}
-          className="text-[10px] font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[46px] text-center"
+          className="text-[10px] font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-2.5 transition-colors shrink-0 min-w-[46px] text-center"
           title="Speed"
         >
           {playbackRate}x
