@@ -7,17 +7,6 @@ import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory } from "@/lib/readStatus";
 import { fetchPapersBatch, audioUrl, type Paper } from "@/lib/api";
 
-function formatShortDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[d.getMonth()]} ${d.getDate()}`;
-  } catch {
-    return dateStr;
-  }
-}
-
 export default function PlaylistPage() {
   const { playlist, removeFromPlaylist, reorderPlaylist } = usePlaylist();
   const { state, actions } = useAudio();
@@ -150,10 +139,10 @@ export default function PlaylistPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <section className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-100">
-          <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+    <div className="space-y-2 md:space-y-8 -mx-6 md:mx-0">
+      <section className="bg-white border-y md:border border-stone-200 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-100">
+          <h1 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="8" y1="6" x2="21" y2="6" />
               <line x1="8" y1="12" x2="21" y2="12" />
@@ -194,7 +183,7 @@ export default function PlaylistPage() {
                   onTouchStart={(e) => handleTouchStart(e, idx)}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  className={`flex items-center gap-3 px-5 py-3 transition-colors ${
+                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${
                     dragIdx === idx ? "opacity-30" : "hover:bg-stone-50"
                   } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
                 >
@@ -226,15 +215,21 @@ export default function PlaylistPage() {
                   )}
 
                   <Link href={`/p?id=${entry.paperId}`} className="flex-1 min-w-0 no-underline">
-                    <span className="text-sm text-stone-800 truncate block">
+                    <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
                       {paper?.title || (loading ? "" : entry.paperId)}
                     </span>
                     {loading && !paper ? (
                       <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
                     ) : paper?.authors && paper.authors.length > 0 ? (
                       <span className="text-[11px] text-stone-400 truncate block">
-                        {paper.authors.slice(0, 3).join(", ")}
-                        {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                        <span className="md:hidden">
+                          {paper.authors[0]}
+                          {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                        </span>
+                        <span className="hidden md:inline">
+                          {paper.authors.slice(0, 3).join(", ")}
+                          {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                        </span>
                       </span>
                     ) : null}
                   </Link>
@@ -256,9 +251,9 @@ export default function PlaylistPage() {
         )}
       </section>
 
-      <section className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-100">
-          <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+      <section className="bg-white border-y md:border border-stone-200 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-100">
+          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
@@ -275,27 +270,54 @@ export default function PlaylistPage() {
           <div className="divide-y divide-stone-50">
             {readHistory.map((entry) => {
               const paper = historyPapers[entry.paperId];
+              const isActive = state.paperId === entry.paperId;
+              const isPlaying = isActive && state.isPlaying;
               return (
-                <Link
+                <div
                   key={entry.paperId}
-                  href={`/p?id=${entry.paperId}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-stone-50 transition-colors no-underline"
+                  className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 hover:bg-stone-50 transition-colors"
                 >
-                  <span className="text-[11px] text-stone-400 shrink-0 w-24">
-                    {formatShortDate(entry.readAt)}
-                  </span>
-                  <span className="text-sm text-stone-800 truncate flex-1">
-                    {paper?.title || (historyLoading ? "" : entry.paperId)}
-                    {historyLoading && !paper && (
-                      <span className="inline-block h-3 w-48 bg-stone-100 rounded animate-pulse" />
-                    )}
-                  </span>
-                  {paper?.authors && paper.authors.length > 0 && (
-                    <span className="text-[11px] text-stone-400 truncate max-w-[200px] hidden md:block">
-                      {paper.authors.slice(0, 2).join(", ")}
-                    </span>
+                  {paper?.status === "complete" ? (
+                    <button
+                      onClick={() => handlePlay(paper)}
+                      className="w-7 h-7 flex items-center justify-center bg-stone-900 hover:bg-stone-700 text-white rounded-full transition-colors shrink-0"
+                      title={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                          <rect x="6" y="4" width="4" height="16" rx="1" />
+                          <rect x="14" y="4" width="4" height="16" rx="1" />
+                        </svg>
+                      ) : (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                          <polygon points="7,3 21,12 7,21" />
+                        </svg>
+                      )}
+                    </button>
+                  ) : (
+                    <div className="w-7 shrink-0" />
                   )}
-                </Link>
+                  <Link href={`/p?id=${entry.paperId}`} className="flex-1 min-w-0 no-underline">
+                    <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                      {paper?.title || (historyLoading ? "" : entry.paperId)}
+                      {historyLoading && !paper && (
+                        <span className="inline-block h-3 w-48 bg-stone-100 rounded animate-pulse" />
+                      )}
+                    </span>
+                    {paper?.authors && paper.authors.length > 0 && (
+                      <span className="text-[11px] text-stone-400 truncate block">
+                        <span className="md:hidden">
+                          {paper.authors[0]}
+                          {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                        </span>
+                        <span className="hidden md:inline">
+                          {paper.authors.slice(0, 3).join(", ")}
+                          {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                        </span>
+                      </span>
+                    )}
+                  </Link>
+                </div>
               );
             })}
           </div>
