@@ -554,15 +554,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
               onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
             />
           ) : isNotRequested ? (
-            <button
-              onClick={handleRequestNarration}
-              disabled={narrationLoading}
-              className="inline-flex items-center justify-center gap-1.5 px-3 h-[42px] text-xs font-medium
-                         text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700
-                         rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-            >
-              Generate Audio Narration
-            </button>
+            <GenerateButtonWithMenu paper={paper} onGenerate={handleRequestNarration} disabled={narrationLoading} />
           ) : isProcessing ? (
             <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
               <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />

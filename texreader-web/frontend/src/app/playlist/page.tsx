@@ -7,6 +7,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
 import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, type Paper } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
+import FileIcon from "@/components/FileIcon";
 import NarrationProgress, { POLL_INTERVAL_MS } from "@/components/NarrationProgress";
 
 export default function PlaylistPage() {
@@ -272,38 +273,65 @@ export default function PlaylistPage() {
                     </svg>
                   </span>
 
-                  {paper?.status === "complete" && (
+                  <Link
+                    href={`/p?id=${entry.paperId}`}
+                    className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
+                      paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
+                      ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? "text-purple-300" :
+                      paper?.status === "not_requested" ? "text-red-300" : "text-stone-400"
+                    }`}
+                    title="View paper"
+                  >
+                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : <FileIcon size={28} />}
+                  </Link>
+
+                  {paper?.status === "complete" ? (
+                    <button
+                      onClick={() => handlePlay(paper)}
+                      className="flex-1 min-w-0 text-left cursor-pointer"
+                    >
+                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                        {paper?.title || (loading ? "" : entry.paperId)}
+                      </span>
+                      {loading && !paper ? (
+                        <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
+                      ) : paper?.authors && paper.authors.length > 0 ? (
+                        <span className="text-[11px] text-stone-500 truncate block">
+                          <span className="md:hidden">
+                            {paper.authors[0]}
+                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                          </span>
+                          <span className="hidden md:inline">
+                            {paper.authors.slice(0, 3).join(", ")}
+                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                          </span>
+                        </span>
+                      ) : null}
+                    </button>
+                  ) : (
                     <Link
                       href={`/p?id=${entry.paperId}`}
-                      className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors shrink-0"
-                      title="View paper"
+                      className="flex-1 min-w-0 text-left"
                     >
-                      <AudioFileIcon size={28} />
+                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                        {paper?.title || (loading ? "" : entry.paperId)}
+                      </span>
+                      {loading && !paper ? (
+                        <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
+                      ) : paper?.authors && paper.authors.length > 0 ? (
+                        <span className="text-[11px] text-stone-500 truncate block">
+                          <span className="md:hidden">
+                            {paper.authors[0]}
+                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                          </span>
+                          <span className="hidden md:inline">
+                            {paper.authors.slice(0, 3).join(", ")}
+                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                          </span>
+                        </span>
+                      ) : null}
                     </Link>
                   )}
-
-                  <button
-                    onClick={() => paper?.status === "complete" && handlePlay(paper)}
-                    className="flex-1 min-w-0 text-left cursor-pointer"
-                  >
-                    <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                      {paper?.title || (loading ? "" : entry.paperId)}
-                    </span>
-                    {loading && !paper ? (
-                      <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
-                    ) : paper?.authors && paper.authors.length > 0 ? (
-                      <span className="text-[11px] text-stone-500 truncate block">
-                        <span className="md:hidden">
-                          {paper.authors[0]}
-                          {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                        </span>
-                        <span className="hidden md:inline">
-                          {paper.authors.slice(0, 3).join(", ")}
-                          {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                        </span>
-                      </span>
-                    ) : null}
-                  </button>
 
                   <button
                     onClick={() => removeFromPlaylist(entry.paperId)}
@@ -352,40 +380,67 @@ export default function PlaylistPage() {
                     <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>
                   </span>
 
+                  <Link
+                    href={`/p?id=${entry.paperId}`}
+                    className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
+                      paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
+                      ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? "text-purple-300" :
+                      paper?.status === "not_requested" ? "text-red-300" : "text-stone-400"
+                    }`}
+                    title="View paper"
+                  >
+                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : <FileIcon size={28} />}
+                  </Link>
+
                   {paper?.status === "complete" ? (
+                    <button
+                      onClick={() => handlePlay(paper)}
+                      className="flex-1 min-w-0 text-left cursor-pointer"
+                    >
+                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                        {paper?.title || (historyLoading ? "" : entry.paperId)}
+                        {historyLoading && !paper && (
+                          <span className="inline-block h-3 w-48 bg-stone-100 rounded animate-pulse" />
+                        )}
+                      </span>
+                      {paper?.authors && paper.authors.length > 0 && (
+                        <span className="text-[11px] text-stone-500 truncate block">
+                          <span className="md:hidden">
+                            {paper.authors[0]}
+                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                          </span>
+                          <span className="hidden md:inline">
+                            {paper.authors.slice(0, 3).join(", ")}
+                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                          </span>
+                        </span>
+                      )}
+                    </button>
+                  ) : (
                     <Link
                       href={`/p?id=${entry.paperId}`}
-                      className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors shrink-0"
-                      title="View paper"
+                      className="flex-1 min-w-0 text-left"
                     >
-                      <AudioFileIcon size={28} />
-                    </Link>
-                  ) : (
-                    <div className="w-7 shrink-0" />
-                  )}
-                  <button
-                    onClick={() => paper?.status === "complete" && handlePlay(paper)}
-                    className="flex-1 min-w-0 text-left cursor-pointer"
-                  >
-                    <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                      {paper?.title || (historyLoading ? "" : entry.paperId)}
-                      {historyLoading && !paper && (
-                        <span className="inline-block h-3 w-48 bg-stone-100 rounded animate-pulse" />
-                      )}
-                    </span>
-                    {paper?.authors && paper.authors.length > 0 && (
-                      <span className="text-[11px] text-stone-500 truncate block">
-                        <span className="md:hidden">
-                          {paper.authors[0]}
-                          {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                        </span>
-                        <span className="hidden md:inline">
-                          {paper.authors.slice(0, 3).join(", ")}
-                          {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                        </span>
+                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                        {paper?.title || (historyLoading ? "" : entry.paperId)}
+                        {historyLoading && !paper && (
+                          <span className="inline-block h-3 w-48 bg-stone-100 rounded animate-pulse" />
+                        )}
                       </span>
-                    )}
-                  </button>
+                      {paper?.authors && paper.authors.length > 0 && (
+                        <span className="text-[11px] text-stone-500 truncate block">
+                          <span className="md:hidden">
+                            {paper.authors[0]}
+                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                          </span>
+                          <span className="hidden md:inline">
+                            {paper.authors.slice(0, 3).join(", ")}
+                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                          </span>
+                        </span>
+                      )}
+                    </Link>
+                  )}
 
                   <button
                     onClick={() => {
@@ -443,42 +498,69 @@ export default function PlaylistPage() {
 
                     <Link
                       href={`/p?id=${paper.id}`}
-                      className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${isInProgress ? "text-indigo-400" : "text-stone-500 hover:text-stone-700"}`}
+                      className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
+                        paper.status === "complete" ? "text-stone-500 hover:text-stone-700" :
+                        isInProgress ? "text-purple-300" :
+                        paper.status === "not_requested" ? "text-red-300" : "text-stone-400"
+                      }`}
                       title="View paper"
                     >
-                      <AudioFileIcon size={28} />
+                      {paper.status === "complete" ? <AudioFileIcon size={28} /> : <FileIcon size={28} />}
                     </Link>
 
-                    <button
-                      onClick={() => paper.status === "complete" && handlePlay(paper)}
-                      className="flex-1 min-w-0 text-left cursor-pointer"
-                    >
-                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                        {paper.title}
-                      </span>
-                      {paper.authors && paper.authors.length > 0 && (
-                        <span className="text-[11px] text-stone-500 truncate block">
-                          <span className="md:hidden">
-                            {paper.authors[0]}
-                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                          </span>
-                          <span className="hidden md:inline">
-                            {paper.authors.slice(0, 3).join(", ")}
-                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                          </span>
+                    {paper.status === "complete" ? (
+                      <button
+                        onClick={() => handlePlay(paper)}
+                        className="flex-1 min-w-0 text-left cursor-pointer"
+                      >
+                        <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                          {paper.title}
                         </span>
-                      )}
-                      {isInProgress && (
-                        <div className="mt-1">
-                          <NarrationProgress paper={paper} />
-                        </div>
-                      )}
-                      {paper.status === "failed" && (
-                        <span className="text-[11px] text-red-500 block mt-1">
-                          Failed{paper.error_message ? `: ${paper.error_message}` : ""}
+                        {paper.authors && paper.authors.length > 0 && (
+                          <span className="text-[11px] text-stone-500 truncate block">
+                            <span className="md:hidden">
+                              {paper.authors[0]}
+                              {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                            </span>
+                            <span className="hidden md:inline">
+                              {paper.authors.slice(0, 3).join(", ")}
+                              {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                            </span>
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/p?id=${paper.id}`}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+                          {paper.title}
                         </span>
-                      )}
-                    </button>
+                        {paper.authors && paper.authors.length > 0 && (
+                          <span className="text-[11px] text-stone-500 truncate block">
+                            <span className="md:hidden">
+                              {paper.authors[0]}
+                              {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
+                            </span>
+                            <span className="hidden md:inline">
+                              {paper.authors.slice(0, 3).join(", ")}
+                              {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
+                            </span>
+                          </span>
+                        )}
+                        {isInProgress && (
+                          <div className="mt-1">
+                            <NarrationProgress paper={paper} />
+                          </div>
+                        )}
+                        {paper.status === "failed" && (
+                          <span className="text-[11px] text-red-500 block mt-1">
+                            Failed{paper.error_message ? `: ${paper.error_message}` : ""}
+                          </span>
+                        )}
+                      </Link>
+                    )}
 
                     <button
                       onClick={async () => {

@@ -7,6 +7,7 @@ import { Paper, formatDurationShort } from "@/lib/api";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { isRead, markAsUnread } from "@/lib/readStatus";
 import AudioFileIcon from "@/components/AudioFileIcon";
+import FileIcon from "@/components/FileIcon";
 
 interface PaperCardProps {
   paper: Paper;
@@ -117,10 +118,10 @@ export default function PaperCard({ paper }: PaperCardProps) {
       )}
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
-        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-indigo-400" : "text-stone-400"}`}>
-          <AudioFileIcon size={34} />
+        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : isNotRequested ? "text-red-300" : "text-stone-400"}`}>
+          {isReady ? <AudioFileIcon size={34} /> : <FileIcon size={34} />}
           {isProcessing ? (
-            <span className="text-[10px] text-indigo-400 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
+            <span className="text-[10px] text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
           ) : paper.duration_seconds ? (
             <span className="text-[10px] text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}
