@@ -8,6 +8,7 @@ import modal
 import os
 import tempfile
 import tarfile
+import time
 
 app = modal.App("texreader-worker")
 
