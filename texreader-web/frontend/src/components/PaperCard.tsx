@@ -78,7 +78,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
         inPlaylist ? (
           <button
             onClick={handleRemoveFromPlaylist}
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg bg-stone-700 text-white hover:bg-stone-600 transition-colors z-10"
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-300 bg-stone-100 text-stone-500 hover:bg-stone-200 hover:border-stone-400 transition-colors z-10"
             title="Remove from playlist"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
