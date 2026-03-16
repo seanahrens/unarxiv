@@ -52,7 +52,7 @@ export default function SearchBar({
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
-          type="text"
+          type="search"
           value={value}
           onChange={handleChange}
           onFocus={() => setFocused(true)}
