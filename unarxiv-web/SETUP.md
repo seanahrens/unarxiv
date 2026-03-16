@@ -1,4 +1,4 @@
-# TexReader Web — Setup Guide
+# unarXiv — Setup Guide
 
 ## Prerequisites
 - Node.js 18+
@@ -12,14 +12,14 @@
 cd worker
 
 # Create D1 database
-wrangler d1 create texreader-db
+wrangler d1 create unarxiv-db
 # Copy the database_id from the output into wrangler.toml
 
 # Create R2 bucket
-wrangler r2 bucket create texreader-audio
+wrangler r2 bucket create unarxiv-audio
 
 # Initialize the database schema
-wrangler d1 execute texreader-db --file=../schema.sql
+wrangler d1 execute unarxiv-db --file=../schema.sql
 
 # Set secrets
 wrangler secret put TURNSTILE_SECRET_KEY
@@ -36,11 +36,11 @@ cd modal_worker
 
 # Create Modal secret with R2 credentials
 # First, create R2 API token at: https://dash.cloudflare.com > R2 > Manage R2 API Tokens
-modal secret create texreader-secrets \
+modal secret create unarxiv-secrets \
   R2_ACCOUNT_ID=<your-cloudflare-account-id> \
   R2_ACCESS_KEY_ID=<r2-access-key> \
   R2_SECRET_ACCESS_KEY=<r2-secret-key> \
-  R2_BUCKET_NAME=texreader-audio \
+  R2_BUCKET_NAME=unarxiv-audio \
   CALLBACK_SECRET=<same-as-MODAL_WEBHOOK_SECRET>
 
 # Deploy
@@ -71,14 +71,14 @@ npm install
 npm run build
 
 # Deploy to Cloudflare Pages
-npx wrangler pages deploy out --project-name=texreader
+npx wrangler pages deploy out --project-name=unarxiv-frontend
 ```
 
 ## 5. Custom Domain
 
 In Cloudflare dashboard:
-1. Go to Pages > texreader > Custom domains
-2. Add `papers.aixdemocracy.fyi`
+1. Go to Pages > unarxiv-frontend > Custom domains
+2. Add `unarxiv.org`
 3. Cloudflare will auto-configure DNS
 
 ## Local Development

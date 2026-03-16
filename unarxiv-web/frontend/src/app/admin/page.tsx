@@ -118,7 +118,7 @@ export default function AdminPage() {
   const links = [
     {
       label: "Modal Apps",
-      url: "https://modal.com/apps/seanahrens/main/deployed/texreader-worker",
+      url: "https://modal.com/apps/seanahrens/main/deployed/unarxiv-worker",
       description: "Narration worker logs & invocations",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -128,7 +128,7 @@ export default function AdminPage() {
     },
     {
       label: "Workers API",
-      url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/workers/services/view/texreader-api",
+      url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/workers/services/view/unarxiv-api",
       description: "API worker settings & analytics",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

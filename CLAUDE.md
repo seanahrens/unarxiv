@@ -1,4 +1,4 @@
-# unarXiv (TexReader)
+# unarXiv
 
 Public website for converting arXiv LaTeX papers into narrated MP3 audiobooks.
 
@@ -9,14 +9,14 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
                                                                  → Modal (Python narration worker)
 ```
 
-- **Frontend**: `texreader-web/frontend/` — Next.js on Cloudflare Pages
-- **API**: `texreader-web/worker/` — Cloudflare Workers (TypeScript), bindings in `wrangler.toml`
-- **Narration**: `texreader-web/modal_worker/` — Modal serverless Python, wraps `tex_to_audio.py`
+- **Frontend**: `unarxiv-web/frontend/` — Next.js on Cloudflare Pages
+- **API**: `unarxiv-web/worker/` — Cloudflare Workers (TypeScript), bindings in `wrangler.toml`
+- **Narration**: `unarxiv-web/modal_worker/` — Modal serverless Python, wraps `tex_to_audio.py`
 
 ## Key Config
 
-- D1 database: `texreader-db` (ID: `d1936353-a389-4f38-a109-79db70cc44ef`)
-- R2 bucket: `texreader-audio` (audio + transcripts)
+- D1 database: `unarxiv-db` (ID: `d1936353-a389-4f38-a109-79db70cc44ef`)
+- R2 bucket: `texreader-audio` (audio + transcripts) — legacy name, can't rename without migration
 - Domain: `unarxiv.org` (frontend), `api.unarxiv.org` (worker API)
 - `wrangler` is available at `/usr/local/bin/npx wrangler` (must set PATH)
 - Admin password stored as Worker secret (`ADMIN_PASSWORD`)
@@ -31,23 +31,23 @@ export $(cat /home/user/unarxiv/.env | xargs)
 
 ```bash
 # Worker API
-cd texreader-web/worker && npx wrangler deploy
+cd unarxiv-web/worker && npx wrangler deploy
 
 # Frontend
-cd texreader-web/frontend && npm run build
-npx wrangler pages deploy out --project-name=texreader-frontend
+cd unarxiv-web/frontend && npm run build
+npx wrangler pages deploy out --project-name=unarxiv-frontend
 
 # Modal worker
-cd texreader-web/modal_worker && modal deploy narrate.py
+cd unarxiv-web/modal_worker && modal deploy narrate.py
 ```
 
 ## Database
 
-Schema in `texreader-web/schema.sql`. Paper statuses: `queued → preparing → generating_audio → complete | failed`.
+Schema in `unarxiv-web/schema.sql`. Paper statuses: `queued → preparing → generating_audio → complete | failed`.
 
 D1 migrations must be run with:
 ```bash
-npx wrangler d1 execute texreader-db --remote --command="SQL HERE"
+npx wrangler d1 execute unarxiv-db --remote --command="SQL HERE"
 ```
 
 SQLite CHECK constraints can't be altered — must recreate table to change them. Remember to recreate FTS triggers after table recreation.

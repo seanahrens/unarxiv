@@ -1,5 +1,5 @@
 /**
- * TexReader API — Cloudflare Worker
+ * unarXiv API — Cloudflare Worker
  *
  * Routes:
  *   GET  /api/papers?q=...&sort=popular|recent|all&page=1

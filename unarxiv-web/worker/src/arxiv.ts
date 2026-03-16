@@ -36,7 +36,7 @@ export async function scrapeArxivMetadata(arxivId: string): Promise<ArxivMetadat
   const absUrl = arxivAbsUrl(arxivId);
 
   const response = await fetch(absUrl, {
-    headers: { "User-Agent": "TexReader/1.0 (research paper narration tool)" },
+    headers: { "User-Agent": "unarXiv/1.0 (research paper narration tool)" },
   });
 
   if (!response.ok) {
@@ -89,7 +89,7 @@ export async function scrapeArxivMetadata(arxivId: string): Promise<ArxivMetadat
     // Double-check with a HEAD request to the src URL
     const srcCheck = await fetch(arxivSrcUrl(arxivId), {
       method: "HEAD",
-      headers: { "User-Agent": "TexReader/1.0" },
+      headers: { "User-Agent": "unarXiv/1.0" },
     });
     if (!srcCheck.ok) {
       throw new Error(

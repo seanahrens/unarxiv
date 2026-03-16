@@ -1,5 +1,5 @@
 -- Migration: Add ratings system
--- Run: npx wrangler d1 execute texreader-db --remote --file=migrations/001_add_ratings.sql
+-- Run: npx wrangler d1 execute unarxiv-db --remote --file=migrations/001_add_ratings.sql
 
 -- Add denormalized rating columns to papers table
 ALTER TABLE papers ADD COLUMN rating_count INTEGER NOT NULL DEFAULT 0;

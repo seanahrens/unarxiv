@@ -1,5 +1,5 @@
--- TexReader Web — D1 Schema
--- Run: wrangler d1 execute texreader-db --file=schema.sql
+-- unarXiv — D1 Schema
+-- Run: wrangler d1 execute unarxiv-db --file=schema.sql
 
 -- Core paper data + job state
 CREATE TABLE IF NOT EXISTS papers (

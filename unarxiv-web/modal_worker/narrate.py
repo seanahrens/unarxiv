@@ -1,5 +1,5 @@
 """
-TexReader Modal Worker — Narrates arXiv papers and uploads MP3s to R2.
+unarXiv Modal Worker — Narrates arXiv papers and uploads MP3s to R2.
 
 Deploy: modal deploy narrate.py
 """
@@ -10,7 +10,7 @@ import tempfile
 import tarfile
 import time
 
-app = modal.App("texreader-worker")
+app = modal.App("unarxiv-worker")
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -20,7 +20,7 @@ image = (
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py")
 )
 
-# Secrets: set via `modal secret create texreader-secrets ...`
+# Secrets: set via `modal secret create unarxiv-secrets ...`
 # Required keys:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 #   CALLBACK_SECRET (shared with Worker's MODAL_WEBHOOK_SECRET)
@@ -83,7 +83,7 @@ def _download_from_r2(r2_key: str) -> str | None:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("texreader-secrets")],
+    secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=3600,  # 1 hour max per paper
     retries=0,
 )
@@ -126,7 +126,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             with httpx.Client(timeout=120, follow_redirects=True) as client:
                 resp = client.get(
                     tex_source_url,
-                    headers={"User-Agent": "TexReader/1.0"},
+                    headers={"User-Agent": "unarXiv/1.0"},
                 )
                 resp.raise_for_status()
 
@@ -322,7 +322,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 # Web endpoint for the Cloudflare Worker to call
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("texreader-secrets")],
+    secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=60,
 )
 @modal.fastapi_endpoint(method="POST")
