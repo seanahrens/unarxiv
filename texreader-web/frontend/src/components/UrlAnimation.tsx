@@ -14,7 +14,7 @@ type Phase = "typing_u" | "typing_n" | "pause_typed" | "deleting_n" | "deleting_
 function UrlBar({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`select-none pointer-events-none ${className || ""}`}>
-      <div className="inline-flex items-center gap-2 bg-stone-50 border-2 border-dashed border-stone-300 rounded-full px-3 py-1.5">
+      <div className="inline-flex items-center gap-2 bg-stone-50 border border-stone-300 rounded-full px-3 py-1.5">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
@@ -37,7 +37,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
 function StaticUrlAnimation({ className }: { className?: string }) {
   return (
     <UrlBar className={className}>
-      <span className="text-stone-900 bg-yellow-200">un</span>
+      <span className="text-stone-900 bg-blue-200">un</span>
     </UrlBar>
   );
 }

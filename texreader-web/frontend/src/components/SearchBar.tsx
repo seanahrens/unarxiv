@@ -89,8 +89,7 @@ export default function SearchBar({
         />
         {showPlaceholder && (
           <div className="absolute inset-0 flex items-center pl-10 pr-11 pointer-events-none text-base text-stone-400">
-            <span className="hidden md:inline">Paste arXiv.org URL, arXiv ID, or Search Our Narrations</span>
-            <span className="md:hidden">arXiv URL / ID / Search Term</span>
+            <span>arXiv URL / ID / Search Term</span>
           </div>
         )}
         {/* Help icon */}
