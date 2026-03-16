@@ -183,7 +183,13 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 print("Processing LaTeX...")
 
                 latex = tex_to_audio.read_latex_from_dir(source_dir)
-                speech = tex_to_audio.build_speech_text(latex, source_stem=f"arXiv-{arxiv_id}")
+                # Parse fallback authors from the comma-separated string sent by the worker
+                fallback_authors = [a.strip() for a in paper_author.split(",")] if paper_author else []
+                speech = tex_to_audio.build_speech_text(
+                    latex, source_stem=f"arXiv-{arxiv_id}",
+                    fallback_title=paper_title,
+                    fallback_authors=fallback_authors,
+                )
 
             print(f"Generated speech text: {len(speech):,} chars")
 

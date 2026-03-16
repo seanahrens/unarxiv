@@ -1033,13 +1033,17 @@ def _finalize_speech(text: str) -> str:
     return "\n".join(lines).strip()
 
 
-def build_speech_text(latex: str, source_stem: str = "") -> str:
-    """Full LaTeX → TTS-ready text pipeline with header and footer."""
+def build_speech_text(latex: str, source_stem: str = "", fallback_title: str = "", fallback_authors: list[str] | None = None) -> str:
+    """Full LaTeX → TTS-ready text pipeline with header and footer.
+
+    *fallback_title* and *fallback_authors* are used when LaTeX extraction
+    fails (e.g. unusual author format). They typically come from arXiv metadata.
+    """
     body = _finalize_speech(_convert_markers_to_speech(clean_latex(latex)))
     meta = extract_full_metadata(latex, source_stem)
-    title   = meta["title"]
+    title   = meta["title"] if meta["title"] and meta["title"] != "Untitled" else (fallback_title or meta["title"])
     date    = meta["date"]
-    authors = meta["authors"]
+    authors = meta["authors"] if meta["authors"] else (fallback_authors or [])
     header = _build_transcript_header(title, date, authors)
     footer = _build_transcript_footer(title, date, authors)
     return header + "\n" + body + footer
