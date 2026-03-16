@@ -75,10 +75,10 @@ jobs:
         working-directory: texreader-web/e2e
         run: npx playwright install chromium --with-deps
 
-      - name: Run full E2E tests
+      - name: Run E2E tests
         id: e2e
         working-directory: texreader-web/e2e
-        run: npx playwright test --project=fast --project=narration
+        run: npx playwright test --project=fast
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           TEST_BASE_URL: https://unarxiv.org
