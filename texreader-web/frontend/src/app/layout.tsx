@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import SiteName from "@/components/SiteName";
-import HeaderSearchBar from "@/components/HeaderSearchBar";
+
 import HeaderPlayer from "@/components/HeaderPlayer";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
 import FlyToPlaylist from "@/components/FlyToPlaylist";
@@ -15,6 +15,13 @@ export const metadata: Metadata = {
     "Browse and listen to narrated research papers from arXiv. Submit any paper for audio narration.",
   icons: {
     icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "unarXiv",
+    statusBarStyle: "default",
   },
 };
 
@@ -61,10 +68,9 @@ export default function RootLayout({
             <HeaderPlayer />
           </div>
         </header>
-        <HeaderSearchBar />
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         <footer className="w-full py-6">
-          <div className="max-w-5xl mx-auto px-6 flex items-end justify-between">
+          <div className="max-w-5xl mx-auto px-6 flex items-start justify-between">
             <Link
               href="/about"
               className="text-sm text-stone-400 hover:text-stone-600 transition-colors no-underline"

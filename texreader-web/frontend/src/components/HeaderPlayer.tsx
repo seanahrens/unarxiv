@@ -17,6 +17,12 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
+  const fmtShort = (s: number) => {
+    const mins = s / 60;
+    if (mins < 60) return `${Math.round(mins)}m`;
+    return `${(mins / 60).toFixed(1)}h`;
+  };
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const isActive = paperId !== null;
 
@@ -202,9 +208,9 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
           </div>
         </div>
 
-        {/* Time */}
-        <span className="text-[10px] font-mono text-stone-400 tabular-nums shrink-0 min-w-[100px] text-right">
-          {fmtTime(currentTime)}/{duration ? fmtTime(duration) : "--:--"}
+        {/* Duration shorthand */}
+        <span className="text-[10px] font-mono text-stone-400 tabular-nums shrink-0">
+          {duration ? fmtShort(duration) : "--"}
         </span>
 
         {/* Speed */}

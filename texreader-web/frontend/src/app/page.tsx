@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import PaperCard from "@/components/PaperCard";
 import ArxivCta from "@/components/ArxivCta";
 import SiteName from "@/components/SiteName";
+import HeaderSearchBar from "@/components/HeaderSearchBar";
 import {
   fetchPapers,
   fetchPaper,
@@ -94,6 +95,8 @@ function HomePageContent() {
 
   return (
     <div>
+      <HeaderSearchBar />
+
       {/* Previewing spinner */}
       {previewing && (
         <div className="text-center py-10 text-stone-400 text-sm">
