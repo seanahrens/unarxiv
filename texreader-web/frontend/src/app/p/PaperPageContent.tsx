@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
 import ProgressTracker from "@/components/ProgressTracker";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { ListPlus, ListMinus } from "lucide-react";
@@ -435,9 +435,21 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       .then((p) => {
         setPaper(p);
         recordVisit(id);
+        setLoading(false);
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch(async () => {
+        // Paper not in DB — try to auto-import from arXiv
+        try {
+          const arxivUrl = `https://arxiv.org/abs/${id}`;
+          const meta = await previewPaper(arxivUrl);
+          const paper = await submitPaper(meta.arxiv_url, meta);
+          setPaper(paper);
+          recordVisit(paper.id);
+        } catch (e: any) {
+          setError(e.message || "Paper not found");
+        }
+        setLoading(false);
+      });
 
     // Fetch existing rating for this user
     fetchRating(id)
