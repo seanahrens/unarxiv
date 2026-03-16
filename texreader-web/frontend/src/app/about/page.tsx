@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SiteName from "@/components/SiteName";
+import ContactEmail from "@/components/ContactEmail";
 
 export const metadata: Metadata = {
   title: "About — unarXiv",
@@ -19,7 +20,7 @@ export default function AboutPage() {
         </p>
 
         <p>
-          Paste any arXiv URL or paper ID and we'll generate a free audio
+          Paste any arXiv URL or paper ID and we&apos;ll generate a free audio
           narration. Papers are processed through LaTeX parsing and
           text-to-speech to produce natural-sounding MP3 audiobooks.
         </p>
@@ -32,14 +33,15 @@ export default function AboutPage() {
 
         <h2 className="text-lg font-semibold text-stone-800 pt-4">Contact</h2>
         <p>
-          Questions, feedback, or issues? Reach us at{" "}
-          <span
-            className="text-stone-800 font-medium select-all"
-            style={{ direction: "rtl", unicodeBidi: "bidi-override", display: "inline-block" }}
-            aria-label="hello at unarXiv dot org"
-          >
-            {"gro.viXranu@olleh"}
-          </span>
+          Questions, feedback, or issues? Complete the verification below to reveal our email address.
+        </p>
+        <ContactEmail />
+
+        <h2 className="text-lg font-semibold text-stone-800 pt-4">Legal</h2>
+        <p>
+          arXiv is a registered trademark of Cornell University. unarXiv is not
+          affiliated with, endorsed by, or sponsored by Cornell University or
+          arXiv.
         </p>
       </div>
 

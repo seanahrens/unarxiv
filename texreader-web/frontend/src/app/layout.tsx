@@ -63,16 +63,21 @@ export default function RootLayout({
         </header>
         <HeaderSearchBar />
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
-        <footer className="w-full py-6 flex flex-col items-center gap-2">
-          <Link
-            href="/about"
-            className="text-sm text-stone-400 hover:text-stone-600 transition-colors no-underline"
-          >
-            About
-          </Link>
-          <p className="text-[11px] text-stone-400 text-center max-w-md">
-            arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
-          </p>
+        <footer className="w-full py-6">
+          <div className="max-w-5xl mx-auto px-6 flex items-end justify-between">
+            <Link
+              href="/about"
+              className="text-sm text-stone-400 hover:text-stone-600 transition-colors no-underline"
+            >
+              About
+            </Link>
+            <div className="text-right">
+              <p className="text-[11px] text-stone-400 mb-1">Launched Mar 15 2026</p>
+              <p className="text-[11px] text-stone-400 max-w-md">
+                arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
+              </p>
+            </div>
+          </div>
         </footer>
         <a
           href="/admin"
