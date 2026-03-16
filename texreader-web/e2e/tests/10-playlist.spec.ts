@@ -29,13 +29,10 @@ test.describe("Playlist", () => {
       timeout: 5000,
     });
 
-    // Paper should be in the playlist — check for a link containing the paper ID
-    const playlistItem = page.locator(`a[href="/p?id=${id}"]`).first();
-    // Also try with trailing slash variant
-    const playlistItemAlt = page.locator(`a[href="/p/?id=${id}"]`).first();
-    const found = await playlistItem.isVisible({ timeout: 5000 }).catch(() => false)
-      || await playlistItemAlt.isVisible({ timeout: 1000 }).catch(() => false);
-    expect(found).toBe(true);
+    // Wait for the paper to appear — look for the "View paper" link which renders
+    // after paper data loads, or the paper title text
+    const paperLink = page.locator(`a[href="/p?id=${id}"]`);
+    await expect(paperLink.first()).toBeVisible({ timeout: 10000 });
   });
 
   test("remove from playlist", async ({ page }) => {
@@ -55,16 +52,15 @@ test.describe("Playlist", () => {
 
     await page.goto("/playlist");
 
-    // Wait for the paper to appear — title text or paper link
-    await page.waitForTimeout(2000);
+    // Wait for the paper link to appear (data loads async)
+    const paperLink = page.locator(`a[href="/p?id=${id}"]`).first();
+    await expect(paperLink).toBeVisible({ timeout: 10000 });
 
     // Click remove button (X icon with title "Remove from playlist")
     const removeBtn = page.locator('button[title="Remove from playlist"]').first();
-    await expect(removeBtn).toBeVisible({ timeout: 5000 });
     await removeBtn.click();
 
-    // Paper should be gone — playlist should show empty state or the item disappears
-    await page.waitForTimeout(1000);
-    await expect(removeBtn).not.toBeVisible({ timeout: 3000 });
+    // Paper should be gone
+    await expect(paperLink).not.toBeVisible({ timeout: 3000 });
   });
 });
