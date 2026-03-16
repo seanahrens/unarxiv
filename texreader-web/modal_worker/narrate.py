@@ -216,9 +216,10 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         total_chunks = len(chunks)
         print(f"Split into {total_chunks} chunks")
 
-        # Generate audio with progress tracking
+        # Generate audio with progress tracking + ETA
         tmp_dir = tempfile.mkdtemp()
         chunk_paths = []
+        audio_start_time = time.time()
 
         for i, chunk in enumerate(chunks):
             chunk_path = os.path.join(tmp_dir, f"chunk_{i:03d}.mp3")
@@ -228,10 +229,17 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
             # Report progress every 3 chunks or on last chunk
             if (i + 1) % 3 == 0 or i == total_chunks - 1:
+                pct = round((i + 1) / total_chunks * 100)
+                # Calculate ETA from measured chunk processing speed
+                elapsed = time.time() - audio_start_time
+                eta_str = ""
+                if pct > 0 and pct < 100:
+                    remaining_secs = int(elapsed / pct * (100 - pct))
+                    eta_str = f"|eta:{remaining_secs}"
                 send_status(
                     callback_url, secret, arxiv_id,
                     status="generating_audio",
-                    progress_detail=f"{round((i + 1) / total_chunks * 100)}%",
+                    progress_detail=f"{pct}%{eta_str}",
                 )
 
         # Concatenate chunks

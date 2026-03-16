@@ -7,7 +7,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
 import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, type Paper } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
-import NarrationProgress from "@/components/NarrationProgress";
+import NarrationProgress, { POLL_INTERVAL_MS } from "@/components/NarrationProgress";
 
 export default function PlaylistPage() {
   const { playlist, removeFromPlaylist, reorderPlaylist } = usePlaylist();
@@ -89,7 +89,7 @@ export default function PlaylistPage() {
           return updated || p;
         })
       );
-    }, 3000);
+    }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [myAdditions]);
