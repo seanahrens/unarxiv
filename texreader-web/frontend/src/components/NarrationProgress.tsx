@@ -11,8 +11,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 function parseProgressPercent(detail: string | null): number {
   if (!detail) return 0;
-  const match = detail.match(/^chunk (\d+)\/(\d+)$/);
-  if (match) return Math.round((parseInt(match[1]) / parseInt(match[2])) * 100);
+  const pctMatch = detail.match(/^(\d+)%$/);
+  if (pctMatch) return parseInt(pctMatch[1]);
   return 0;
 }
 
