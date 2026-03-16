@@ -114,24 +114,6 @@ function HomePageContent() {
       {/* Paper list */}
       {!previewing && (
         <>
-          {/* Explainer section — only on default homepage (no search) */}
-          {!searchQuery && !loading && (
-            <div className="mb-10 max-w-2xl mx-auto text-center">
-              <h2 className="text-lg font-semibold text-stone-800 mb-3">
-                How does <SiteName /> work?
-              </h2>
-              <p className="text-sm text-stone-500 leading-relaxed mb-5">
-                We are an audio arXiv — a mirrored repository of papers on{" "}
-                arXiv in audiobook format. For a paper to be on <SiteName />, it first needs
-                to be added.
-              </p>
-              <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">
-                To add a paper, drop the arXiv URL in the search above — or browse to an arXiv.org paper &amp; add &lsquo;un&rsquo; to the URL &amp; hit enter.
-              </p>
-              <ArxivCta showHeading={false} inlineBrowse staticUrl className="py-0" />
-            </div>
-          )}
-
           <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mb-4">
             {searchQuery ? (
               `Results for "${searchQuery}"`

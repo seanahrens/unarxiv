@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { markAsRead } from "@/lib/readStatus";
-import { removeFromPlaylist } from "@/lib/playlist";
+import { removeFromPlaylist, getPlaylist } from "@/lib/playlist";
+import { fetchPaper, audioUrl } from "@/lib/api";
 
 function getStorageKey(paperId: string) {
   return `pos-${paperId}`;
@@ -63,7 +64,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   paperIdRef.current = paperId;
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
-  const markedAsReadRef = useRef<string | null>(null);
+  const loadPaperRef = useRef<((id: string, title: string, src: string) => void) | null>(null);
 
   // Save position for current paper
   const savePosition = useCallback(() => {
@@ -85,17 +86,41 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (paperIdRef.current && audio.currentTime > 0 && Math.floor(audio.currentTime) % 3 === 0) {
         try { localStorage.setItem(getStorageKey(paperIdRef.current), String(audio.currentTime)); } catch {}
       }
-      // Auto mark-as-read when within last 30 seconds
-      if (paperIdRef.current && audio.duration > 0 && audio.currentTime >= audio.duration - 30 && markedAsReadRef.current !== paperIdRef.current) {
-        markedAsReadRef.current = paperIdRef.current;
-        markAsRead(paperIdRef.current);
-        removeFromPlaylist(paperIdRef.current);
-      }
     };
     const onDurationChange = () => setDuration(audio.duration || 0);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const onEnded = () => setIsPlaying(false);
+    const onEnded = () => {
+      const finishedId = paperIdRef.current;
+      const playlist = getPlaylist();
+      let nextPaperId: string | null = null;
+
+      if (finishedId) {
+        const idx = playlist.findIndex((e) => e.paperId === finishedId);
+        if (idx !== -1 && idx < playlist.length - 1) {
+          nextPaperId = playlist[idx + 1].paperId;
+        } else if (idx === -1 && playlist.length > 0) {
+          nextPaperId = playlist[0].paperId;
+        }
+        markAsRead(finishedId);
+        removeFromPlaylist(finishedId);
+      }
+
+      if (nextPaperId) {
+        const nextId = nextPaperId;
+        fetchPaper(nextId)
+          .then((paper) => {
+            if (loadPaperRef.current) {
+              loadPaperRef.current(nextId, paper.title, audioUrl(nextId));
+            }
+          })
+          .catch(() => {
+            setIsPlaying(false);
+          });
+      } else {
+        setIsPlaying(false);
+      }
+    };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("durationchange", onDurationChange);
@@ -221,6 +246,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("canplay", onReadyOnce);
     audio.load();
   }, [playbackRate, savePosition]);
+  loadPaperRef.current = loadPaper;
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;

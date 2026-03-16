@@ -37,7 +37,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
 function StaticUrlAnimation({ className }: { className?: string }) {
   return (
     <UrlBar className={className}>
-      <span className="text-stone-900 bg-blue-200">un</span>
+      <span className="text-stone-900 bg-yellow-200">un</span>
     </UrlBar>
   );
 }

@@ -138,10 +138,26 @@ export default function PlaylistPage() {
     }
   };
 
+  const currentIdx = playlist.findIndex((e) => e.paperId === state.paperId);
+  const hasPrev = currentIdx > 0;
+  const hasNext = currentIdx !== -1 && currentIdx < playlist.length - 1;
+
+  const handlePrev = () => {
+    if (!hasPrev) return;
+    const prev = papers[playlist[currentIdx - 1].paperId];
+    if (prev) actions.loadPaper(prev.id, prev.title, audioUrl(prev.id));
+  };
+
+  const handleNext = () => {
+    if (!hasNext) return;
+    const next = papers[playlist[currentIdx + 1].paperId];
+    if (next) actions.loadPaper(next.id, next.title, audioUrl(next.id));
+  };
+
   return (
     <div className="space-y-2 md:space-y-8 -mx-6 md:mx-0">
       <section className="bg-white border-y md:border border-stone-200 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-100">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-100 flex items-center justify-between">
           <h1 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="8" y1="6" x2="21" y2="6" />
@@ -153,6 +169,30 @@ export default function PlaylistPage() {
             </svg>
             My Playlist
           </h1>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrev}
+              disabled={!hasPrev}
+              className="w-7 h-7 flex items-center justify-center bg-stone-600 hover:bg-stone-500 disabled:bg-stone-300 text-white rounded-full transition-colors"
+              title="Previous"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="3" y="4" width="3" height="16" rx="0.5" />
+                <polygon points="21,4 9,12 21,20" />
+              </svg>
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={!hasNext}
+              className="w-7 h-7 flex items-center justify-center bg-stone-600 hover:bg-stone-500 disabled:bg-stone-300 text-white rounded-full transition-colors"
+              title="Next"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="3,4 15,12 3,20" />
+                <rect x="18" y="4" width="3" height="16" rx="0.5" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -184,7 +224,7 @@ export default function PlaylistPage() {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                   className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${
-                    dragIdx === idx ? "opacity-30" : "hover:bg-stone-50"
+                    dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-50" : "hover:bg-stone-50"
                   } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
                 >
                   <span className="text-stone-400 cursor-grab shrink-0 touch-none">
@@ -275,7 +315,7 @@ export default function PlaylistPage() {
               return (
                 <div
                   key={entry.paperId}
-                  className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 hover:bg-stone-50 transition-colors"
+                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-50" : "hover:bg-stone-50"}`}
                 >
                   <span className="shrink-0 invisible">
                     <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>

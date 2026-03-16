@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { isArxivUrl } from "@/lib/api";
+import SiteName from "@/components/SiteName";
+import ArxivCta from "@/components/ArxivCta";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -11,6 +13,7 @@ interface SearchBarProps {
 }
 
 const VISITED_KEY = "unarxiv_visited";
+
 
 export default function SearchBar({
   onSearch,
@@ -106,27 +109,22 @@ export default function SearchBar({
 
       {/* Info drawer */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          drawerOpen ? "max-h-60 opacity-100 mt-3" : "max-h-0 opacity-0 mt-0"
-        }`}
+        className={`overflow-hidden ${drawerOpen ? "mt-3" : ""}`}
+        style={{
+          maxHeight: drawerOpen ? "24rem" : "0",
+          transition: "max-height 0.5s ease-in-out",
+        }}
       >
-        <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 text-sm text-stone-600">
-          <p className="font-semibold text-stone-800 mb-1">How does unarXiv work?</p>
-          <p className="mb-2">
+        <div className="bg-gradient-to-br from-amber-50 via-stone-50 to-orange-50 border border-amber-200/60 rounded-xl p-5 text-sm text-stone-600 shadow-sm">
+          <p className="font-semibold text-stone-800 mb-2 text-base">How does <SiteName /> work?</p>
+          <p className="mb-3 text-stone-500 leading-relaxed">
             We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.
-            For a paper to be on unarXiv, it first needs to be added.
+            For us to have a paper, it first needs to be added.
           </p>
-          <p className="font-semibold text-stone-800 text-xs uppercase tracking-wide mb-2">
+          <p className="font-semibold text-stone-700 text-xs uppercase tracking-wide mb-3">
             To add a paper, drop the arXiv URL in the search above — or browse to an arxiv.org paper &amp; add &lsquo;un&rsquo; to the URL &amp; hit enter.
           </p>
-          <a
-            href="https://arxiv.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-stone-500 hover:text-stone-700 underline text-xs"
-          >
-            Browse papers on arXiv.org &rarr;
-          </a>
+          <ArxivCta showHeading={false} inlineBrowse staticUrl className="py-0" />
         </div>
       </div>
 
@@ -142,16 +140,6 @@ export default function SearchBar({
         </p>
       )}
 
-      {/* Pulse keyframes injected once */}
-      {shouldPulse && (
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes help-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0.5); }
-            50% { box-shadow: 0 0 0 6px rgba(120, 113, 108, 0); }
-          }
-          .animate-help-pulse { animation: help-pulse 2s ease-in-out infinite; }
-        `}} />
-      )}
     </div>
   );
 }
