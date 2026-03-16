@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
+import { formatDurationShort } from "@/lib/api";
 
 export default function HeaderPlayer({ inline }: { inline?: boolean }) {
   const { state, actions } = useAudio();
@@ -18,11 +19,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const fmtShort = (s: number) => {
-    const mins = s / 60;
-    if (mins < 60) return `${Math.round(mins)}m`;
-    return `${(mins / 60).toFixed(1)}h`;
-  };
+  const fmtShort = formatDurationShort;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const isActive = paperId !== null;

@@ -300,6 +300,12 @@ export function formatDuration(seconds: number | null): string {
   return `${m} min`;
 }
 
+export function formatDurationShort(seconds: number): string {
+  const mins = seconds / 60;
+  if (mins < 60) return `${Math.round(mins)}m`;
+  return `${(mins / 60).toFixed(1)}h`;
+}
+
 // Extract an arXiv ID (YYMM.NNNNN with optional vN) from anywhere in a string.
 const ARXIV_ID_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
 

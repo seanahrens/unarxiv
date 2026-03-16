@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { Paper, formatDuration } from "@/lib/api";
+import { Paper, formatDurationShort } from "@/lib/api";
 
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { isRead, markAsUnread } from "@/lib/readStatus";
@@ -113,9 +113,12 @@ export default function PaperCard({ paper }: PaperCardProps) {
         )
       )}
       <div className="flex gap-3">
-        {/* File-audio icon */}
-        <div className="shrink-0 text-stone-400 mt-0.5">
+        {/* File-audio icon + duration */}
+        <div className="shrink-0 text-stone-400 mt-0.5 flex flex-col items-center">
           <AudioFileIcon size={34} />
+          {paper.duration_seconds && (
+            <span className="text-[10px] text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
+          )}
         </div>
         {/* Card content */}
         <div className="flex-1 min-w-0">
@@ -135,22 +138,18 @@ export default function PaperCard({ paper }: PaperCardProps) {
             )}
           </div>
 
-          <p className="text-xs text-stone-500 mb-2 flex items-center gap-1.5 flex-wrap">
-            {paper.duration_seconds && (
-              <span>{formatDuration(paper.duration_seconds)}</span>
-            )}
-            {paper.duration_seconds && paper.authors.length > 0 && <span>&middot;</span>}
+          <p className="text-xs text-stone-500 mb-2">
             {paper.authors.length > 0 && (
               <span className="text-stone-600">
                 {paper.authors.slice(0, 3).join(", ")}
                 {paper.authors.length > 3 && ` +${paper.authors.length - 3} more`}
               </span>
             )}
-            {(paper.duration_seconds || paper.authors.length > 0) && paper.published_date && <span>&middot;</span>}
+            {paper.authors.length > 0 && paper.published_date && <span> &middot; </span>}
             {paper.published_date && <span>{formatYear(paper.published_date)}</span>}
             {paper.progress_detail && isProcessing && (
               <>
-                <span>&middot;</span>
+                <span> &middot; </span>
                 <span className="text-amber-500">{formatProgress(paper.progress_detail)}</span>
               </>
             )}

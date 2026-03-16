@@ -285,10 +285,10 @@ function PlayButtonWithMenu({
   const mp3Filename = `${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org - ${paper.id}.mp3`;
 
   return (
-    <div className="relative inline-flex shrink-0" ref={menuRef}>
+    <div className="relative inline-flex w-full md:w-auto shrink-0" ref={menuRef}>
       <button
         onClick={handlePlay}
-        className={`${BTN_BASE} min-w-[140px] gap-2 text-white bg-stone-900 border-stone-900 hover:bg-stone-700`}
+        className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-stone-900 border-stone-900 hover:bg-stone-700`}
         style={{ borderRadius: "0.75rem 0 0 0.75rem" }}
       >
         {isPlaying ? (
@@ -535,7 +535,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       </Link>
 
       <article className="mb-8">
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex flex-col md:flex-row md:items-start gap-3 mb-3">
           <h1 className="text-2xl font-bold text-stone-900 leading-tight flex-1">
             {paper.title || "Untitled"}
           </h1>
