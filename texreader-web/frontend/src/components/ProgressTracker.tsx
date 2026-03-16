@@ -88,7 +88,7 @@ export default function ProgressTracker({
   const progressPct = formatProgress(detail);
 
   return (
-    <div className="bg-white border border-stone-200 rounded-xl px-4 py-2.5 shadow-sm">
+    <div className="bg-white border border-stone-300 rounded-xl px-4 py-2.5 shadow-sm">
       <style jsx>{`
         @keyframes shimmer {
           0% { background-position: -200% 0; }

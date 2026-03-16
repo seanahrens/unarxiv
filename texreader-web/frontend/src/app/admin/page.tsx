@@ -201,7 +201,7 @@ export default function AdminPage() {
         &larr; Back to papers
       </a>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin</h1>
+      <h1 className="text-2xl font-bold text-stone-900 mb-6">Admin</h1>
 
       <div className="space-y-3 mb-8">
         {internalLinks.map((link) => (
@@ -211,7 +211,7 @@ export default function AdminPage() {
             className={`block bg-white rounded-lg border p-4 hover:shadow-md transition-shadow no-underline ${
               link.label === "Curate Papers" && hasLowRatings
                 ? "border-orange-300"
-                : "border-stone-200"
+                : "border-stone-300"
             }`}
           >
             <h3 className="text-base font-semibold text-stone-900 flex items-center gap-2">
@@ -224,7 +224,7 @@ export default function AdminPage() {
                 </span>
               )}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-stone-500 mt-1">
               {link.description}
               {link.label === "Curate Papers" && hasLowRatings && (
                 <span className="text-orange-600 font-medium ml-1">

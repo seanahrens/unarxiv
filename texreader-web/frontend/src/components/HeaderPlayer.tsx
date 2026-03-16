@@ -42,7 +42,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Skip Back */}
         <button
           onClick={() => actions.skipBack()}
-          className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+          className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
           title="Back 15s"
         >
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -71,7 +71,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Skip Forward */}
         <button
           onClick={() => actions.skipForward()}
-          className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+          className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
           title="Forward 15s"
         >
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -82,7 +82,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Paper link */}
         <Link
           href={`/p?id=${paperId}`}
-          className="text-stone-400 hover:text-stone-600 transition-colors shrink-0"
+          className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
           title="View paper"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,14 +114,14 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         </div>
 
         {/* Duration shorthand */}
-        <span className="text-[10px] font-mono text-stone-400 tabular-nums shrink-0">
+        <span className="text-[10px] font-mono text-stone-500 tabular-nums shrink-0">
           {duration ? fmtShort(duration) : "--"}
         </span>
 
         {/* Speed */}
         <button
           onClick={actions.cycleSpeed}
-          className="text-[10px] font-mono text-stone-500 hover:text-stone-800 bg-stone-100 hover:bg-stone-200 rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[46px] text-center"
+          className="text-[10px] font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[46px] text-center"
           title="Speed"
         >
           {playbackRate}x
@@ -132,12 +132,12 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
 
   // Mobile variant: full-width bar below header
   return (
-    <div className="border-b border-stone-200/60 bg-white/80 backdrop-blur-sm">
+    <div className="border-b border-stone-200 bg-white/80 backdrop-blur-sm">
       <div className="max-w-5xl mx-auto px-6 py-2 flex items-center gap-3">
         {/* Skip Back */}
         <button
           onClick={() => actions.skipBack()}
-          className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+          className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
           title="Back 15s"
         >
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -166,7 +166,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Skip Forward */}
         <button
           onClick={() => actions.skipForward()}
-          className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+          className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
           title="Forward 15s"
         >
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -177,7 +177,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         {/* Paper link */}
         <Link
           href={`/p?id=${paperId}`}
-          className="text-stone-400 hover:text-stone-600 transition-colors shrink-0"
+          className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
           title="View paper"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -209,14 +209,14 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         </div>
 
         {/* Duration shorthand */}
-        <span className="text-[10px] font-mono text-stone-400 tabular-nums shrink-0">
+        <span className="text-[10px] font-mono text-stone-500 tabular-nums shrink-0">
           {duration ? fmtShort(duration) : "--"}
         </span>
 
         {/* Speed */}
         <button
           onClick={actions.cycleSpeed}
-          className="text-[10px] font-mono text-stone-500 hover:text-stone-800 bg-stone-100 hover:bg-stone-200 rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[46px] text-center"
+          className="text-[10px] font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[46px] text-center"
           title="Speed"
         >
           {playbackRate}x

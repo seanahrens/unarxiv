@@ -156,8 +156,8 @@ export default function PlaylistPage() {
 
   return (
     <div className="space-y-2 md:space-y-8 -mx-6 md:mx-0">
-      <section className="bg-white border-y md:border border-stone-200 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-100 flex items-center justify-between">
+      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200 flex items-center justify-between">
           <h1 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="8" y1="6" x2="21" y2="6" />
@@ -196,14 +196,14 @@ export default function PlaylistPage() {
         </div>
 
         {loading ? (
-          <div className="text-stone-400 text-sm py-12 text-center">Loading...</div>
+          <div className="text-stone-500 text-sm py-12 text-center">Loading...</div>
         ) : playlist.length === 0 ? (
-          <div className="text-stone-400 text-sm py-12 text-center">
+          <div className="text-stone-500 text-sm py-12 text-center">
             Your playlist is empty. Add papers from the{" "}
             <Link href="/" className="text-stone-600 hover:text-stone-800 underline">home page</Link>.
           </div>
         ) : (
-          <div className="divide-y divide-stone-100">
+          <div className="divide-y divide-stone-200">
             {playlist.map((entry, idx) => {
               const paper = papers[entry.paperId];
               const isActive = state.paperId === entry.paperId;
@@ -224,10 +224,10 @@ export default function PlaylistPage() {
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                   className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${
-                    dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-50" : "hover:bg-stone-50"
+                    dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-100" : "hover:bg-stone-50"
                   } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
                 >
-                  <span className="text-stone-400 cursor-grab shrink-0 touch-none">
+                  <span className="text-stone-500 cursor-grab shrink-0 touch-none">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                       <line x1="4" y1="8" x2="20" y2="8" />
                       <line x1="4" y1="12" x2="20" y2="12" />
@@ -261,7 +261,7 @@ export default function PlaylistPage() {
                     {loading && !paper ? (
                       <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
                     ) : paper?.authors && paper.authors.length > 0 ? (
-                      <span className="text-[11px] text-stone-400 truncate block">
+                      <span className="text-[11px] text-stone-500 truncate block">
                         <span className="md:hidden">
                           {paper.authors[0]}
                           {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
@@ -276,7 +276,7 @@ export default function PlaylistPage() {
 
                   <button
                     onClick={() => removeFromPlaylist(entry.paperId)}
-                    className="text-stone-400 hover:text-stone-600 transition-colors shrink-0"
+                    className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
                     title="Remove from playlist"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -291,8 +291,8 @@ export default function PlaylistPage() {
         )}
       </section>
 
-      <section className="bg-white border-y md:border border-stone-200 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-100">
+      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
           <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -303,11 +303,11 @@ export default function PlaylistPage() {
         </div>
 
         {historyLoading ? (
-          <div className="text-stone-400 text-sm py-12 text-center">Loading...</div>
+          <div className="text-stone-500 text-sm py-12 text-center">Loading...</div>
         ) : readHistory.length === 0 ? (
-          <div className="text-stone-400 text-sm py-12 text-center">No listen history yet.</div>
+          <div className="text-stone-500 text-sm py-12 text-center">No listen history yet.</div>
         ) : (
-          <div className="divide-y divide-stone-50">
+          <div className="divide-y divide-stone-200">
             {readHistory.map((entry) => {
               const paper = historyPapers[entry.paperId];
               const isActive = state.paperId === entry.paperId;
@@ -315,7 +315,7 @@ export default function PlaylistPage() {
               return (
                 <div
                   key={entry.paperId}
-                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-50" : "hover:bg-stone-50"}`}
+                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-100" : "hover:bg-stone-50"}`}
                 >
                   <span className="shrink-0 invisible">
                     <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>
@@ -349,7 +349,7 @@ export default function PlaylistPage() {
                       )}
                     </span>
                     {paper?.authors && paper.authors.length > 0 && (
-                      <span className="text-[11px] text-stone-400 truncate block">
+                      <span className="text-[11px] text-stone-500 truncate block">
                         <span className="md:hidden">
                           {paper.authors[0]}
                           {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}

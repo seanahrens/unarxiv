@@ -84,13 +84,13 @@ export default function SearchBar({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           className="w-full pl-10 pr-11 py-3 text-base border border-stone-300 rounded-xl
-                     focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent
+                     focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent
                      bg-white shadow-sm"
         />
         {showPlaceholder && (
           <div className="absolute inset-0 flex items-center pl-10 pr-11 pointer-events-none text-base text-stone-400">
             <span className="hidden md:inline">Paste arXiv.org URL, arXiv ID, or Search Our Narrations</span>
-            <span className="md:hidden">Paste arXiv URL, arXiv ID, or Search</span>
+            <span className="md:hidden">arXiv URL / ID / Search Term</span>
           </div>
         )}
         {/* Help icon */}
@@ -99,8 +99,8 @@ export default function SearchBar({
           onClick={toggleDrawer}
           aria-label="How does unarXiv work?"
           className={`absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center
-                      rounded-full bg-stone-400 text-white text-sm font-bold leading-none
-                      hover:bg-stone-500 transition-colors focus:outline-none
+                      rounded-full bg-stone-500 text-white text-sm font-bold leading-none
+                      hover:bg-stone-600 transition-colors focus:outline-none
                       ${shouldPulse ? "animate-help-pulse" : ""}`}
         >
           ?
@@ -129,7 +129,7 @@ export default function SearchBar({
       </div>
 
       {!hideHint && (
-        <p className="mt-2 text-xs text-stone-400">
+        <p className="mt-2 text-xs text-stone-500">
           {isArxiv ? (
             <span className="text-emerald-600 font-medium">
               arXiv paper detected — looking it up...

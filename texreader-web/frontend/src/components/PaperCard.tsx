@@ -72,13 +72,13 @@ export default function PaperCard({ paper }: PaperCardProps) {
   return (
     <Link
       href={`/p?id=${paper.id}`}
-      className="block relative rounded-xl border p-5 hover:shadow-md transition-all no-underline bg-white border-stone-200 hover:border-stone-300"
+      className="block relative rounded-xl border p-5 shadow-sm hover:shadow-md transition-all no-underline bg-white border-stone-300 hover:border-stone-400"
     >
       {isReady && (
         inPlaylist ? (
           <button
             onClick={handleRemoveFromPlaylist}
-            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-stone-600 bg-stone-200 hover:bg-stone-300 transition-colors z-10"
+            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-stone-700 bg-stone-200 hover:bg-stone-300 transition-colors z-10"
             title="Remove from playlist"
           >
             <ListMinus size={14} />
@@ -87,7 +87,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
           <button
             ref={btnRef}
             onClick={handleAddToPlaylist}
-            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-colors z-10"
+            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors z-10"
             title="Add to playlist"
           >
             <ListPlus size={14} />
@@ -111,19 +111,19 @@ export default function PaperCard({ paper }: PaperCardProps) {
       </div>
 
       {paper.authors.length > 0 && (
-        <p className="text-xs text-stone-500 mb-2">
+        <p className="text-xs text-stone-600 mb-2">
           {paper.authors.slice(0, 3).join(", ")}
           {paper.authors.length > 3 && ` +${paper.authors.length - 3} more`}
         </p>
       )}
 
       {paper.abstract && (
-        <p className="text-xs text-stone-400 line-clamp-3 mb-3 leading-relaxed">
+        <p className="text-xs text-stone-500 line-clamp-3 mb-3 leading-relaxed">
           {paper.abstract}
         </p>
       )}
 
-      <div className="flex items-center justify-between text-[11px] text-stone-400">
+      <div className="flex items-center justify-between text-[11px] text-stone-500">
         <div className="flex items-center gap-2">
           {paper.published_date && <span>{formatShortDate(paper.published_date)}</span>}
           {paper.progress_detail && isProcessing && (

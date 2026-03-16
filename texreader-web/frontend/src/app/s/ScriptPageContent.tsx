@@ -44,7 +44,7 @@ export default function ScriptPageContent() {
   }, [id]);
 
   if (loading) {
-    return <div className="text-center py-20 text-stone-400">Loading...</div>;
+    return <div className="text-center py-20 text-stone-500">Loading...</div>;
   }
 
   if (error || !paper) {

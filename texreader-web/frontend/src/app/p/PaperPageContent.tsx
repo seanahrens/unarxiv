@@ -12,7 +12,7 @@ import { usePlaylist } from "@/contexts/PlaylistContext";
 import { ListPlus, ListMinus } from "lucide-react";
 
 const BTN_BASE = "inline-flex items-center justify-center gap-1.5 px-3 h-[42px] text-xs font-medium rounded-xl transition-colors border";
-const BTN_IDLE = "text-stone-600 bg-white border-stone-200 hover:bg-stone-100";
+const BTN_IDLE = "text-stone-600 bg-white border-stone-300 hover:bg-stone-100";
 
 function PlaylistToggleButton({
   paperId,
@@ -112,7 +112,7 @@ function DownloadDropdown({ paper }: { paper: Paper }) {
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 min-w-[180px] py-1">
+        <div className="absolute top-full left-0 mt-1 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[180px] py-1">
           <button
             onClick={() => { download(`https://arxiv.org/pdf/${paper.id}`, pdfFilename); setOpen(false); }}
             className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
@@ -153,7 +153,7 @@ function CopyIdButton({ id }: { id: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="inline-flex items-center text-stone-400 hover:text-stone-600 transition-colors ml-1"
+      className="inline-flex items-center text-stone-500 hover:text-stone-700 transition-colors ml-1"
       title="Copy arXiv ID"
     >
       {copied ? (
@@ -500,14 +500,14 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   }, [paper]);
 
   if (loading) {
-    return <div className="text-center py-20 text-stone-400">Loading...</div>;
+    return <div className="text-center py-20 text-stone-500">Loading...</div>;
   }
 
   if (error || !paper) {
     return (
       <div className="text-center py-20">
         <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
-        <Link href="/" className="text-sm text-stone-500 hover:text-stone-700 transition-colors">
+        <Link href="/" className="text-sm text-stone-600 hover:text-stone-800 transition-colors">
           &larr; Back to papers
         </Link>
       </div>
@@ -524,7 +524,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     <div>
       <Link
         href="/"
-        className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-4 inline-block"
+        className="text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 inline-block"
       >
         &larr; Back to papers
       </Link>
@@ -535,10 +535,10 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         </h1>
 
         {authors.length > 0 && (
-          <p className="text-stone-500 mb-3">{authors.join(", ")}</p>
+          <p className="text-stone-600 mb-3">{authors.join(", ")}</p>
         )}
 
-        <div className="flex items-center gap-2 text-sm text-stone-400 mb-5">
+        <div className="flex items-center gap-2 text-sm text-stone-500 mb-5">
           {paper.published_date && (
             <span>{formatDate(paper.published_date)}</span>
           )}
@@ -550,7 +550,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             href={paper.arxiv_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-stone-400 hover:text-stone-600 transition-colors no-underline"
+            className="inline-flex items-center gap-1 text-stone-500 hover:text-stone-700 transition-colors no-underline"
             title="View on arXiv"
           >
             <svg width="14" height="14" viewBox="0 0 74.492 100.25" fill="currentColor">
@@ -615,7 +615,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
                 markAsUnread(paper.id);
                 setPaperRead(false);
               }}
-              className="inline-flex items-center justify-center text-stone-300 hover:text-stone-400 transition-colors"
+              className="inline-flex items-center justify-center text-stone-400 hover:text-stone-500 transition-colors"
               title="Listened — click to mark as unread"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -647,7 +647,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       )}
 
       {/* PDF viewer — hidden on mobile */}
-      <div className="hidden md:block mt-10 border border-stone-200 rounded-xl overflow-hidden">
+      <div className="hidden md:block mt-10 border border-stone-300 rounded-xl overflow-hidden">
         <iframe
           src={`https://arxiv.org/pdf/${paper.id}#zoom=page-width`}
           className="w-full bg-white"
@@ -673,7 +673,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-stone-900 mb-2">Verification Required</h3>
-            <p className="text-sm text-stone-500 mb-5">
+            <p className="text-sm text-stone-600 mb-5">
               Please complete the verification to continue.
             </p>
             <TurnstileWidget onVerify={handleCaptchaVerify} />

@@ -17,7 +17,7 @@ import {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-stone-400">Loading...</div>}>
+    <Suspense fallback={<div className="text-center py-12 text-stone-500">Loading...</div>}>
       <HomePageContent />
     </Suspense>
   );
@@ -99,7 +99,7 @@ function HomePageContent() {
 
       {/* Previewing spinner */}
       {previewing && (
-        <div className="text-center py-10 text-stone-400 text-sm">
+        <div className="text-center py-10 text-stone-500 text-sm">
           Fetching paper details from arXiv...
         </div>
       )}
@@ -130,7 +130,7 @@ function HomePageContent() {
           </h2>
 
           {loading ? (
-            <div className="text-center py-16 text-stone-400 text-sm">Loading...</div>
+            <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
           ) : papers.length === 0 && !searchQuery ? (
             <ArxivCta />
           ) : (

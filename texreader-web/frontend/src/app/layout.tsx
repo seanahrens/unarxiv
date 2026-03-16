@@ -32,23 +32,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-stone-50 text-gray-900 min-h-screen antialiased">
+      <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
         <AudioProvider>
         <PlaylistProvider>
         <FlyToPlaylist />
-        <header className="border-b border-stone-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
             {/* Left: logo — fixed width so center column stays centered */}
             <div className="flex items-center gap-3 shrink-0">
               <Link href="/" className="flex items-center gap-2 no-underline text-stone-900 hover:text-stone-600 transition-colors">
-                <svg width="28" height="28" viewBox="0 0 30 30" fill="none" stroke="#44403c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="28" height="28" viewBox="0 0 30 30" fill="none" stroke="#292524" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 11v14a2 2 0 002 2h18a2 2 0 002-2V11" />
                   <path d="M4 11l-2.25-4.5" />
                   <path d="M26 11l2.25-4.5" />
                   <g transform="translate(15,19) rotate(-90)">
-                    <polygon points="0,-3.5 0,3.5 2.5,3.5 5,6 5,-6 2.5,-3.5" fill="#44403c" stroke="none" />
-                    <path d="M7,-2.5a3.5 3.5 0 010 5" fill="none" stroke="#44403c" strokeWidth="1.5" />
-                    <path d="M9,-4.5a6 6 0 010 9" fill="none" stroke="#44403c" strokeWidth="1.5" />
+                    <polygon points="0,-3.5 0,3.5 2.5,3.5 5,6 5,-6 2.5,-3.5" fill="#292524" stroke="none" />
+                    <path d="M7,-2.5a3.5 3.5 0 010 5" fill="none" stroke="#292524" strokeWidth="1.5" />
+                    <path d="M9,-4.5a6 6 0 010 9" fill="none" stroke="#292524" strokeWidth="1.5" />
                   </g>
                 </svg>
                 <SiteName className="text-lg tracking-tight" />
@@ -73,13 +73,13 @@ export default function RootLayout({
           <div className="max-w-5xl mx-auto px-6 flex items-start justify-between">
             <Link
               href="/about"
-              className="text-sm text-stone-400 hover:text-stone-600 transition-colors no-underline"
+              className="text-sm text-stone-500 hover:text-stone-700 transition-colors no-underline"
             >
               About
             </Link>
             <div className="text-right">
-              <p className="text-[11px] text-stone-400 mb-1">Launched Mar 15 2026</p>
-              <p className="text-[11px] text-stone-400 max-w-md">
+              <p className="text-[11px] text-stone-500 mb-1">Launched Mar 15 2026</p>
+              <p className="text-[11px] text-stone-500 max-w-md">
                 arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
               </p>
             </div>
@@ -87,7 +87,7 @@ export default function RootLayout({
         </footer>
         <a
           href="/admin"
-          className="fixed bottom-4 right-4 z-40 text-stone-300 hover:text-stone-400 transition-colors"
+          className="fixed bottom-4 right-4 z-40 text-stone-400 hover:text-stone-500 transition-colors"
           title="Admin"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

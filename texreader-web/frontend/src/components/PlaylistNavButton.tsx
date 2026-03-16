@@ -23,7 +23,7 @@ export default function PlaylistNavButton() {
       <span>Playlist</span>
       {playlistCount > 0 && (
         <span
-          className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-stone-700 rounded-full transition-transform ${
+          className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-stone-800 rounded-full transition-transform ${
             badgePulse ? "scale-125" : "scale-100"
           }`}
         >

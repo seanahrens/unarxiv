@@ -7,7 +7,7 @@ export default function ScriptPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center py-12 text-stone-400">Loading...</div>
+        <div className="text-center py-12 text-stone-500">Loading...</div>
       }
     >
       <ScriptPageContent />
