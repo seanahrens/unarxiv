@@ -480,9 +480,13 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         setNarrationLoading(false);
         return;
       }
+      // Optimistically show progress bar immediately
+      setPaper({ ...paper, status: "queued" as any });
       const updated = await requestNarration(paper.id);
       setPaper(updated);
     } catch (e: any) {
+      // Revert optimistic update on failure
+      setPaper(paper);
       setNarrationError(e.message || "Failed to request narration");
     } finally {
       setNarrationLoading(false);
