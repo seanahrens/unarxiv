@@ -63,16 +63,13 @@ def extract_metadata(latex: str) -> tuple[str, str]:
     string separated by ``": "``.  Falls back to ``'Untitled'`` /
     ``'Unknown Author'`` when the macros are absent.
     """
-    title_m    = re.search(r'\\title\{(.*?)\}',    latex, re.DOTALL)
-    subtitle_m = re.search(r'\\subtitle\{(.*?)\}', latex, re.DOTALL)
-    author_m   = re.search(r'\\author\{(.*?)\}',   latex, re.DOTALL)
-
-    raw_title  = title_m.group(1)  if title_m  else "Untitled"
-    raw_author = author_m.group(1) if author_m else "Unknown Author"
+    raw_title  = _extract_command_arg(latex, "title") or "Untitled"
+    raw_sub    = _extract_command_arg(latex, "subtitle")
+    raw_author = _extract_command_arg(latex, "author") or "Unknown Author"
 
     title = re.sub(r"\s+", " ", _strip_latex_commands(raw_title)).strip()
-    if subtitle_m:
-        subtitle = re.sub(r"\s+", " ", _strip_latex_commands(subtitle_m.group(1))).strip()
+    if raw_sub:
+        subtitle = re.sub(r"\s+", " ", _strip_latex_commands(raw_sub)).strip()
         if subtitle:
             title = f"{title}: {subtitle}"
 
@@ -196,13 +193,25 @@ def _latex_accents_to_unicode(text: str) -> str:
 def _strip_latex_commands(text: str) -> str:
     """Remove LaTeX markup from a short inline string (title, author, etc.)."""
     text = re.sub(r"%.*$",                         "",    text, flags=re.MULTILINE)
-    text = _latex_accents_to_unicode(text)
+    # Strip math-mode content (superscripts, subscripts, inline math)
+    text = re.sub(r"\$[^$]*\$",                    "",    text)
+    # Strip ORCID identifiers (4 groups of 4 digits separated by hyphens)
+    text = re.sub(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]", "",   text)
+    # Strip commands BEFORE accent conversion (prevents \vspace being
+    # misinterpreted as \v accent on 's')
     text = re.sub(r"\\text[a-zA-Z]+\{([^}]*)\}",  r"\1", text)
     text = re.sub(r"\\emph\{([^}]*)\}",            r"\1", text)
     text = re.sub(r"\\[a-zA-Z]+\{[^}]*\}",         "",    text)
     text = re.sub(r"\\[a-zA-Z]+",                  "",    text)
+    # Now convert remaining accents (e.g. \'e, \"{u}) to Unicode
+    text = _latex_accents_to_unicode(text)
     text = text.replace("``", '"').replace("''", '"').replace("`", "'")
+    # Strip backslash-space (protected space) before removing remaining markup
+    text = text.replace("\\ ", " ")
     text = re.sub(r"[{}\\]",                        "",    text)
+    # Clean up stray superscript/subscript markers, lone dollar signs, and artifacts
+    text = re.sub(r"[$^_]",                         "",    text)
+    text = re.sub(r"\s+",                          " ",   text)
     return text.strip()
 
 
@@ -219,21 +228,20 @@ def extract_full_metadata(
 
     Returns ``{"title": str, "date": str, "authors": list[str]}``.
     """
-    # --- title (reuse existing logic) ---
-    title_m    = re.search(r'\\title\{(.*?)\}',    latex, re.DOTALL)
-    subtitle_m = re.search(r'\\subtitle\{(.*?)\}', latex, re.DOTALL)
-    raw_title  = title_m.group(1) if title_m else "Untitled"
+    # --- title (reuse existing logic, brace-aware) ---
+    raw_title  = _extract_command_arg(latex, "title") or "Untitled"
+    raw_sub    = _extract_command_arg(latex, "subtitle")
     title = re.sub(r"\s+", " ", _strip_latex_commands(raw_title)).strip()
-    if subtitle_m:
-        subtitle = re.sub(r"\s+", " ", _strip_latex_commands(subtitle_m.group(1))).strip()
+    if raw_sub:
+        subtitle = re.sub(r"\s+", " ", _strip_latex_commands(raw_sub)).strip()
         if subtitle:
             title = f"{title}: {subtitle}"
 
     # Also handle \icmltitle
-    if not title_m:
-        icml_m = re.search(r"\\icmltitle\{(.*?)\}", latex, re.DOTALL)
-        if icml_m:
-            title = re.sub(r"\s+", " ", _strip_latex_commands(icml_m.group(1))).strip()
+    if raw_title == "Untitled":
+        icml_raw = _extract_command_arg(latex, "icmltitle")
+        if icml_raw:
+            title = re.sub(r"\s+", " ", _strip_latex_commands(icml_raw)).strip()
 
     # --- date (search preamble only to avoid false matches in body) ---
     date_str = ""
@@ -263,20 +271,44 @@ def extract_full_metadata(
     if icml_authors:
         authors = [_strip_latex_commands(a).strip() for a in icml_authors]
 
-    # Try \author[N]{Name} (authblk format)
+    # Try multiple separate \author{} commands (AASTeX / RevTeX / aastex format)
     if not authors:
-        authblk = re.findall(r"\\author(?:\[[^\]]*\])?\{([^}]+)\}", latex)
-        if authblk:
+        # Use findall — each \author{} is one author in this format
+        multi_author = re.findall(r"\\author\b[^{]*\{", latex)
+        if len(multi_author) > 1:
+            # Multiple separate \author commands — extract each one
             raw_names: list[str] = []
-            for block in authblk:
-                # Split on \and, \AND, commas, or "and"
-                parts = re.split(r"\\and\b|\\AND\b", block)
-                for part in parts:
-                    name = _strip_latex_commands(part).strip()
-                    # Skip things that look like affiliations or emails
+            search_start = 0
+            while True:
+                pos = latex.find("\\author", search_start)
+                if pos == -1:
+                    break
+                # Verify it's \author (not \authorblk etc.)
+                end_cmd = pos + len("\\author")
+                if end_cmd < len(latex) and latex[end_cmd].isalpha():
+                    search_start = end_cmd
+                    continue
+                arg = _extract_command_arg(latex[pos:], "author")
+                if arg:
+                    name = _strip_latex_commands(arg).strip()
                     if name and "@" not in name and len(name) < 80:
                         raw_names.append(name)
+                search_start = end_cmd + 1
             authors = raw_names
+
+    # Try single \author{} with \and separators (standard LaTeX / authblk)
+    if not authors:
+        author_raw = _extract_command_arg(latex, "author")
+        if author_raw:
+            # Split on \and, \AND
+            parts = re.split(r"\\and\b|\\AND\b", author_raw)
+            raw_names2: list[str] = []
+            for part in parts:
+                name = _strip_latex_commands(part).strip()
+                # Skip things that look like affiliations or emails
+                if name and "@" not in name and len(name) < 80:
+                    raw_names2.append(name)
+            authors = raw_names2
 
     # Deduplicate while preserving order
     seen: set[str] = set()
@@ -599,6 +631,31 @@ def _find_pending_papers(papers_dir: str, output_dir: str) -> list[tuple[str, st
 # LaTeX → spoken text
 # ---------------------------------------------------------------------------
 
+def _extract_command_arg(text: str, command: str) -> str | None:
+    """Extract the brace-balanced argument of ``\\command{...}``.
+
+    Unlike a simple regex, this correctly handles nested braces such as
+    ``\\author{Name$^{1,2}$}``.  Returns ``None`` if the command is not found.
+    """
+    needle = f"\\{command}"
+    pos = text.find(needle)
+    if pos == -1:
+        return None
+    i = pos + len(needle)
+    # Skip optional whitespace / optional args before the main braced arg
+    while i < len(text) and text[i] in " \t\n":
+        i += 1
+    if i < len(text) and text[i] == "[":
+        i = _skip_bracketed_group(text, i)
+        while i < len(text) and text[i] in " \t\n":
+            i += 1
+    if i >= len(text) or text[i] != "{":
+        return None
+    start = i + 1
+    end = _skip_braced_group(text, i)
+    return text[start : end - 1]
+
+
 def _skip_braced_group(text: str, pos: int) -> int:
     """Advance past a ``{...}`` group starting at *pos*, handling nested braces.
 
@@ -752,10 +809,18 @@ def clean_latex(text: str) -> str:
     )
     text = re.sub(r"\\begin\{acks\}.*?\\end\{acks\}", "", text, flags=re.DOTALL)
 
-    # 8. Remove ICML author/affiliation commands and \twocolumn[...] layout
+    # 8. Remove author/affiliation metadata commands from body
+    #    (metadata is extracted separately by extract_full_metadata)
     for cmd in ("icmlauthor", "icmltitle", "icmltitlerunning",
-                "icmlaffiliation", "icmlcorrespondingauthor"):
+                "icmlaffiliation", "icmlcorrespondingauthor",
+                "affiliation", "correspondingauthor", "altaffiliation",
+                "shorttitle", "shortauthors", "orcidlink", "orcid",
+                "email", "thanks", "keywords"):
         text = _drop_braced_command(text, cmd)
+    # Also strip \author{} and \title{} commands in the body
+    # (metadata is extracted separately for the spoken header)
+    text = _drop_braced_command(text, "author")
+    text = _drop_braced_command(text, "title")
     # Strip \twocolumn[...] optional args (contain title/author blocks)
     # but keep body text after the closing ]
     result_parts: list[str] = []
@@ -827,12 +892,33 @@ def clean_latex(text: str) -> str:
     text = _drop_braced_command(text, "marginpar")
 
     # 15. Citations, cross-references, hyperlinks
-    text = re.sub(r"\\cite[a-z]*\{[^}]*\}",         "",    text)
+    #     Handle optional args: \citep[e.g.][]{keys}, \cite[note]{keys}
+    text = re.sub(r"\\cite[a-z]*(?:\[[^\]]*\])*\{[^}]*\}", "", text)
     text = re.sub(r"\\(ref|eqref|pageref|autoref)\{[^}]*\}", "", text)
     text = re.sub(r"\\href\{[^}]*\}\{([^}]+)\}",     r"\1", text)
     text = re.sub(r"\\url\{[^}]*\}",                 "",    text)
 
-    # 16. Abbreviation and punctuation normalisation
+    # 16. Math mode handling
+    # 16a. Remove display math: \[...\], $$...$$, \begin{equation}...\end{equation}
+    #      (equation environments already handled by step 13)
+    text = re.sub(r"\\\[.*?\\\]", "", text, flags=re.DOTALL)
+    text = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL)
+    # 16b. Remove superscript/subscript-only math: $^{...}$, $_{...}$, $^...$
+    text = re.sub(r"\$\s*[\^_]\s*\{[^}]*\}\s*\$", "", text)
+    text = re.sub(r"\$\s*[\^_]\s*[^$\s]+\s*\$",   "", text)
+    # 16c. Inline math: strip dollar signs, keep inner content for readability
+    text = re.sub(r"\$([^$]+)\$", r" \1 ", text)
+    # 16d. Remove stray superscript/subscript markers and their arguments
+    text = re.sub(r"[\^_]\{[^}]*\}", "", text)
+    # Strip bare ^/_ followed by a single character (e.g. ^2, _i)
+    # but NOT multi-char words (to avoid breaking marker tokens like _START)
+    text = re.sub(r"[\^_](?=[a-zA-Z0-9*])(?!\w{2})", "", text)
+
+    # 17. ORCID identifiers and affiliation markers
+    text = re.sub(r"\\orcid\{[^}]*\}", "", text)
+    text = re.sub(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]", "", text)
+
+    # 18. Abbreviation and punctuation normalisation
     text = re.sub(r"\\ldots\{\}?", "...",           text)
     text = re.sub(r"e\.g\.~",      "for example, ", text)
     text = re.sub(r"i\.e\.~",      "that is, ",     text)
@@ -840,12 +926,15 @@ def clean_latex(text: str) -> str:
     text = re.sub(r"i\.e\.",       "that is,",      text)
     text = text.replace("---", ", ")
     text = text.replace("``", '"').replace("''", '"').replace("`", "'")
-    text = text.replace("~", " ").replace("\\\\", " ")
+    text = text.replace("~", " ")
+    # Backslash-space (protected space in LaTeX) → regular space
+    text = text.replace("\\ ", " ")
+    text = text.replace("\\\\", " ")
 
-    # 17. Convert LaTeX accents to Unicode before stripping remaining commands
+    # 19. Convert LaTeX accents to Unicode before stripping remaining commands
     text = _latex_accents_to_unicode(text)
 
-    # 18. Final sweep — remaining commands (keep brace content) then bare braces
+    # 20. Final sweep — remaining commands (keep brace content) then bare braces
     text = re.sub(r"\\[a-zA-Z]+\*?\{([^}]*)\}", r"\1", text)
     text = re.sub(r"\\[a-zA-Z]+\*?",             " ",   text)
     text = re.sub(r"[{}]",                        "",    text)
