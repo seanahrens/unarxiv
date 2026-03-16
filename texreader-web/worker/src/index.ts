@@ -561,11 +561,15 @@ async function handleReprocessPaper(
     return json({ error: "Unauthorized" }, 401);
   }
 
-  // Check for wipe_reviews flag in body (optional)
+  // Parse body: mode ("full" | "script_only" | "narration_only"), wipe_reviews
   let wipeReviews = false;
+  let mode = "full";
   try {
-    const body = await request.json<{ wipe_reviews?: boolean }>();
+    const body = await request.json<{ wipe_reviews?: boolean; mode?: string }>();
     wipeReviews = !!body?.wipe_reviews;
+    if (body?.mode && ["full", "script_only", "narration_only"].includes(body.mode)) {
+      mode = body.mode;
+    }
   } catch {
     // No body or invalid JSON is fine
   }
@@ -575,32 +579,48 @@ async function handleReprocessPaper(
     return json({ error: "Paper not found" }, 404);
   }
 
-  // Delete old audio + transcript from R2
-  if (paper.audio_r2_key) {
-    try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
+  // Delete old media from R2 based on mode
+  if (mode !== "narration_only") {
+    // Delete old transcript (will be regenerated)
+    try { await env.AUDIO_BUCKET.delete(`transcripts/${id}.txt`); } catch {}
   }
-  try { await env.AUDIO_BUCKET.delete(`transcripts/${id}.txt`); } catch {}
+  if (mode !== "script_only") {
+    // Delete old audio (will be regenerated)
+    if (paper.audio_r2_key) {
+      try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
+    }
+  }
 
   // Wipe reviews if requested
   if (wipeReviews) {
     await clearRatingsForPaper(env.DB, id);
   }
 
-  // Re-scrape metadata
+  // Re-scrape metadata (needed for tex_source_url in full/script_only modes)
   let metadata;
-  try {
-    metadata = await scrapeArxivMetadata(id);
-  } catch (e: any) {
-    return json({ error: e.message }, 422);
-  }
+  if (mode !== "narration_only") {
+    try {
+      metadata = await scrapeArxivMetadata(id);
+    } catch (e: any) {
+      return json({ error: e.message }, 422);
+    }
 
-  // Reset paper in DB with fresh metadata
-  await resetPaperForReprocess(env.DB, id, {
-    title: metadata.title,
-    authors: metadata.authors,
-    abstract: metadata.abstract,
-    published_date: metadata.published_date,
-  });
+    // Reset paper in DB with fresh metadata
+    await resetPaperForReprocess(env.DB, id, {
+      title: metadata.title,
+      authors: metadata.authors,
+      abstract: metadata.abstract,
+      published_date: metadata.published_date,
+    });
+  } else {
+    // narration_only: just reset audio fields, keep transcript and metadata
+    await resetPaperForReprocess(env.DB, id, {
+      title: paper.title,
+      authors: typeof paper.authors === "string" ? JSON.parse(paper.authors) : paper.authors,
+      abstract: paper.abstract,
+      published_date: paper.published_date,
+    });
+  }
 
   // Dispatch to Modal
   if (env.MODAL_FUNCTION_URL) {
@@ -612,11 +632,12 @@ async function handleReprocessPaper(
           Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
         },
         body: JSON.stringify({
-          arxiv_id: metadata.id,
-          tex_source_url: metadata.tex_source_url,
+          arxiv_id: id,
+          tex_source_url: metadata?.tex_source_url || "",
           callback_url: `${baseUrl}/api/webhooks/modal`,
-          paper_title: metadata.title,
-          paper_author: metadata.authors[0] || "",
+          paper_title: metadata?.title || paper.title,
+          paper_author: (metadata?.authors?.[0]) || "",
+          mode,
         }),
       });
     } catch (e: any) {

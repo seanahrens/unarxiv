@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchAdminStats,
   deletePaperApi,
@@ -100,6 +100,19 @@ export default function CuratePage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [processing, setProcessing] = useState<Set<string>>(new Set());
   const [ratingsModal, setRatingsModal] = useState<{ paperId: string; title: string } | null>(null);
+  const [reprocessMenuOpen, setReprocessMenuOpen] = useState(false);
+  const reprocessMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!reprocessMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (reprocessMenuRef.current && !reprocessMenuRef.current.contains(e.target as Node)) {
+        setReprocessMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [reprocessMenuOpen]);
 
   useEffect(() => {
     const pw = sessionStorage.getItem("admin_password");
@@ -161,16 +174,17 @@ export default function CuratePage() {
     }
   }, [password, selected]);
 
-  const handleBulkReprocess = useCallback(async () => {
+  const handleBulkReprocess = useCallback(async (mode: "full" | "script_only" | "narration_only" = "full") => {
     if (!password || selected.size === 0) return;
 
     const ids = [...selected];
     setProcessing(new Set(ids));
+    setReprocessMenuOpen(false);
     const failed: string[] = [];
 
     for (const id of ids) {
       try {
-        const updated = await reprocessPaperApi(id, password, false);
+        const updated = await reprocessPaperApi(id, password, false, mode);
         setPapers((prev) => prev.map((p) => (p.id === id ? {
           ...p,
           ...updated,
@@ -234,14 +248,44 @@ export default function CuratePage() {
         <span className="text-sm text-stone-600">
           {selected.size > 0 ? `${selected.size} selected` : "None selected"}
         </span>
-        <button
-          onClick={handleBulkReprocess}
-          disabled={selected.size === 0 || deleting.size > 0 || processing.size > 0}
-          className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200
-                     hover:bg-amber-100 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {processing.size > 0 ? "Reprocessing..." : selected.size > 0 ? `Reprocess ${selected.size}` : "Reprocess"}
-        </button>
+        <div className="relative" ref={reprocessMenuRef}>
+          <div className="inline-flex rounded-lg border border-amber-200 overflow-hidden">
+            <button
+              onClick={() => handleBulkReprocess("full")}
+              disabled={selected.size === 0 || deleting.size > 0 || processing.size > 0}
+              className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50
+                         hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {processing.size > 0 ? "Reprocessing..." : selected.size > 0 ? `Reprocess ${selected.size}` : "Reprocess"}
+            </button>
+            <button
+              onClick={() => setReprocessMenuOpen((v) => !v)}
+              disabled={selected.size === 0 || deleting.size > 0 || processing.size > 0}
+              className="px-1.5 py-1.5 text-xs text-amber-700 bg-amber-50 border-l border-amber-200
+                         hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </div>
+          {reprocessMenuOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+              <button
+                onClick={() => handleBulkReprocess("script_only")}
+                className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors rounded-t-lg"
+              >
+                Reprocess Script
+              </button>
+              <button
+                onClick={() => handleBulkReprocess("narration_only")}
+                className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors rounded-b-lg border-t border-stone-100"
+              >
+                Reprocess Narration
+              </button>
+            </div>
+          )}
+        </div>
         <button
           onClick={handleBulkClearReviews}
           disabled={selected.size === 0 || deleting.size > 0 || processing.size > 0}

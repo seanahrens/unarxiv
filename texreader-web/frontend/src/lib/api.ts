@@ -168,11 +168,16 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
   return res.ok;
 }
 
-export async function reprocessPaperApi(id: string, password: string, wipeReviews: boolean = false): Promise<Paper> {
+export async function reprocessPaperApi(
+  id: string,
+  password: string,
+  wipeReviews: boolean = false,
+  mode: "full" | "script_only" | "narration_only" = "full"
+): Promise<Paper> {
   const res = await fetch(`${API_BASE}/api/papers/${id}/reprocess`, {
     method: "POST",
     headers: { "X-Admin-Password": password, "Content-Type": "application/json" },
-    body: JSON.stringify({ wipe_reviews: wipeReviews }),
+    body: JSON.stringify({ wipe_reviews: wipeReviews, mode }),
   });
 
   if (!res.ok) {

@@ -62,14 +62,37 @@ def upload_to_r2(local_path: str, r2_key: str, content_type: str = "audio/mpeg")
     return file_size
 
 
+def _download_from_r2(r2_key: str) -> str | None:
+    """Download a text file from R2. Returns content or None if not found."""
+    import boto3
+
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
+        aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],
+        region_name="auto",
+    )
+    try:
+        obj = s3.get_object(Bucket=os.environ["R2_BUCKET_NAME"], Key=r2_key)
+        return obj["Body"].read().decode("utf-8")
+    except Exception:
+        return None
+
+
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("texreader-secrets")],
     timeout=3600,  # 1 hour max per paper
     retries=0,
 )
-def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_title: str = "", paper_author: str = ""):
-    """Download, process, and narrate an arXiv paper."""
+def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_title: str = "", paper_author: str = "", mode: str = "full"):
+    """Download, process, and narrate an arXiv paper.
+
+    mode: "full" (default) = regenerate script + audio
+          "script_only"    = regenerate script only, keep existing audio
+          "narration_only" = re-narrate from existing transcript in R2
+    """
     import sys
     sys.path.insert(0, "/app")
     import tex_to_audio
@@ -83,66 +106,88 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
     output_path = os.path.join(work_dir, f"{arxiv_id}.mp3")
 
     try:
-        # --- Stage 1: Download, extract, process TeX ---
-        send_status(callback_url, secret, arxiv_id, status="preparing")
-        print(f"Downloading {tex_source_url}...")
+        speech = None
 
-        with httpx.Client(timeout=120, follow_redirects=True) as client:
-            resp = client.get(
-                tex_source_url,
-                headers={"User-Agent": "TexReader/1.0"},
-            )
-            resp.raise_for_status()
-
-        with open(tar_path, "wb") as f:
-            f.write(resp.content)
-
-        print(f"Downloaded {len(resp.content)} bytes")
-
-        # --- Extract ---
-        print("Extracting...")
-
-        os.makedirs(source_dir, exist_ok=True)
-
-        # Handle tar.gz archives, gzip'd single .tex files, and plain .tex files
-        content_type = resp.headers.get("content-type", "")
-        if "gzip" in content_type or "tar" in content_type or tar_path.endswith(".gz"):
-            try:
-                with tarfile.open(tar_path, "r:*") as tf:
-                    tf.extractall(source_dir)
-            except tarfile.TarError:
-                # Not a tar archive — might be a single gzip'd .tex file
-                import gzip
-                try:
-                    with gzip.open(tar_path, "rb") as gz:
-                        decompressed = gz.read()
-                    with open(os.path.join(source_dir, "main.tex"), "wb") as f:
-                        f.write(decompressed)
-                    print(f"Decompressed single gzip'd .tex file ({len(decompressed):,} bytes)")
-                except gzip.BadGzipFile:
-                    # Truly a plain .tex file, not compressed at all
-                    os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+        if mode == "narration_only":
+            # --- Download existing transcript from R2 ---
+            send_status(callback_url, secret, arxiv_id, status="preparing",
+                        progress_detail="Downloading existing transcript...")
+            print(f"Downloading existing transcript for {arxiv_id}...")
+            speech = _download_from_r2(f"transcripts/{arxiv_id}.txt")
+            if not speech:
+                raise RuntimeError(f"No transcript found in R2 for {arxiv_id}")
+            print(f"Loaded transcript: {len(speech):,} chars")
         else:
-            # Likely a single .tex file
-            os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+            # --- Stage 1: Download, extract, process TeX ---
+            send_status(callback_url, secret, arxiv_id, status="preparing")
+            print(f"Downloading {tex_source_url}...")
 
-        # --- Process TeX ---
-        print("Processing LaTeX...")
+            with httpx.Client(timeout=120, follow_redirects=True) as client:
+                resp = client.get(
+                    tex_source_url,
+                    headers={"User-Agent": "TexReader/1.0"},
+                )
+                resp.raise_for_status()
 
-        latex = tex_to_audio.read_latex_from_dir(source_dir)
-        speech = tex_to_audio.build_speech_text(latex, source_stem=f"arXiv-{arxiv_id}")
+            with open(tar_path, "wb") as f:
+                f.write(resp.content)
 
-        print(f"Generated speech text: {len(speech):,} chars")
+            print(f"Downloaded {len(resp.content)} bytes")
 
-        # Save transcript to R2
-        transcript_path = os.path.join(work_dir, f"{arxiv_id}-transcript.txt")
-        with open(transcript_path, "w") as f:
-            f.write(speech)
-        transcript_r2_key = f"transcripts/{arxiv_id}.txt"
-        print(f"Uploading transcript to R2: {transcript_r2_key}")
-        upload_to_r2(transcript_path, transcript_r2_key, content_type="text/plain; charset=utf-8")
+            # --- Extract ---
+            print("Extracting...")
 
-        # --- Stage 4: Generate audio ---
+            os.makedirs(source_dir, exist_ok=True)
+
+            # Handle tar.gz archives, gzip'd single .tex files, and plain .tex files
+            content_type = resp.headers.get("content-type", "")
+            if "gzip" in content_type or "tar" in content_type or tar_path.endswith(".gz"):
+                try:
+                    with tarfile.open(tar_path, "r:*") as tf:
+                        tf.extractall(source_dir)
+                except tarfile.TarError:
+                    # Not a tar archive — might be a single gzip'd .tex file
+                    import gzip
+                    try:
+                        with gzip.open(tar_path, "rb") as gz:
+                            decompressed = gz.read()
+                        with open(os.path.join(source_dir, "main.tex"), "wb") as f:
+                            f.write(decompressed)
+                        print(f"Decompressed single gzip'd .tex file ({len(decompressed):,} bytes)")
+                    except gzip.BadGzipFile:
+                        # Truly a plain .tex file, not compressed at all
+                        os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+            else:
+                # Likely a single .tex file
+                os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+
+            # --- Process TeX ---
+            print("Processing LaTeX...")
+
+            latex = tex_to_audio.read_latex_from_dir(source_dir)
+            speech = tex_to_audio.build_speech_text(latex, source_stem=f"arXiv-{arxiv_id}")
+
+            print(f"Generated speech text: {len(speech):,} chars")
+
+            # Save transcript to R2
+            transcript_path = os.path.join(work_dir, f"{arxiv_id}-transcript.txt")
+            with open(transcript_path, "w") as f:
+                f.write(speech)
+            transcript_r2_key = f"transcripts/{arxiv_id}.txt"
+            print(f"Uploading transcript to R2: {transcript_r2_key}")
+            upload_to_r2(transcript_path, transcript_r2_key, content_type="text/plain; charset=utf-8")
+
+        # --- Script-only mode: done after transcript ---
+        if mode == "script_only":
+            send_status(
+                callback_url, secret, arxiv_id,
+                status="complete",
+                progress_detail="Script regenerated",
+            )
+            print(f"Script-only done: {arxiv_id}")
+            return
+
+        # --- Generate audio (full + narration_only modes) ---
         send_status(
             callback_url, secret, arxiv_id,
             status="generating_audio",
@@ -194,10 +239,13 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         if paper_title and paper_author:
             tag_title = paper_title
             tag_author = paper_author
-        else:
+        elif mode != "narration_only":
             meta = tex_to_audio.extract_full_metadata(latex, f"arXiv-{arxiv_id}")
             tag_title = meta["title"] or "Untitled"
             tag_author = meta["authors"][0] if meta["authors"] else "Unknown"
+        else:
+            tag_title = paper_title or "Untitled"
+            tag_author = paper_author or "Unknown"
         tex_to_audio.tag_mp3(output_path, title=tag_title, author=tag_author, arxiv_id=arxiv_id)
 
         # Get duration
@@ -212,7 +260,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         file_size = os.path.getsize(output_path)
         print(f"Audio generated: {file_size / (1024*1024):.1f} MB, {duration_seconds}s")
 
-        # --- Stage 5: Upload to R2 ---
+        # --- Upload to R2 ---
         r2_key = f"audio/{arxiv_id}.mp3"
         print(f"Uploading to R2: {r2_key}")
         upload_to_r2(output_path, r2_key)
@@ -251,11 +299,14 @@ def trigger_narration(request: dict):
     callback_url = request.get("callback_url")
     paper_title = request.get("paper_title", "")
     paper_author = request.get("paper_author", "")
+    mode = request.get("mode", "full")
 
-    if not all([arxiv_id, tex_source_url, callback_url]):
-        return {"error": "arxiv_id, tex_source_url, and callback_url required"}
+    if not all([arxiv_id, callback_url]):
+        return {"error": "arxiv_id and callback_url required"}
+    if mode != "narration_only" and not tex_source_url:
+        return {"error": "tex_source_url required for this mode"}
 
     # Spawn the narration as an async job
-    narrate_paper.spawn(arxiv_id, tex_source_url, callback_url, paper_title, paper_author)
+    narrate_paper.spawn(arxiv_id, tex_source_url or "", callback_url, paper_title, paper_author, mode)
 
-    return {"status": "dispatched", "arxiv_id": arxiv_id}
+    return {"status": "dispatched", "arxiv_id": arxiv_id, "mode": mode}
