@@ -6,6 +6,7 @@ import { Paper, formatDuration } from "@/lib/api";
 
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { isRead, markAsUnread } from "@/lib/readStatus";
+import AudioFileIcon from "@/components/AudioFileIcon";
 
 interface PaperCardProps {
   paper: Paper;
@@ -102,48 +103,58 @@ export default function PaperCard({ paper }: PaperCardProps) {
           </button>
         )
       )}
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug">
-          {paper.title || "Untitled"}
-        </h3>
-        {!isReady && !isNotRequested && (
-          <span
-            className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium
-              ${isFailed ? "bg-red-50 text-red-600" : ""}
-              ${isProcessing ? "bg-amber-50 text-amber-600" : ""}
-            `}
-          >
-            {STATUS_LABELS[paper.status] || paper.status}
-          </span>
-        )}
-      </div>
+      <div className="flex gap-3">
+        {/* File-audio icon */}
+        <div className="shrink-0 text-stone-400 mt-0.5">
+          <AudioFileIcon size={34} />
+        </div>
+        {/* Card content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug">
+              {paper.title || "Untitled"}
+            </h3>
+            {!isReady && !isNotRequested && (
+              <span
+                className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium
+                  ${isFailed ? "bg-red-50 text-red-600" : ""}
+                  ${isProcessing ? "bg-amber-50 text-amber-600" : ""}
+                `}
+              >
+                {STATUS_LABELS[paper.status] || paper.status}
+              </span>
+            )}
+          </div>
 
-      {paper.authors.length > 0 && (
-        <p className="text-xs text-stone-600 mb-2">
-          {paper.authors.slice(0, 3).join(", ")}
-          {paper.authors.length > 3 && ` +${paper.authors.length - 3} more`}
-        </p>
-      )}
+          <p className="text-xs text-stone-500 mb-2 flex items-center gap-1.5 flex-wrap">
+            {paper.authors.length > 0 && (
+              <span className="text-stone-600">
+                {paper.authors.slice(0, 3).join(", ")}
+                {paper.authors.length > 3 && ` +${paper.authors.length - 3} more`}
+              </span>
+            )}
+            {paper.authors.length > 0 && paper.published_date && <span>&middot;</span>}
+            {paper.published_date && <span>{formatShortDate(paper.published_date)}</span>}
+            {paper.duration_seconds && (
+              <>
+                <span>&middot;</span>
+                <span>{formatDuration(paper.duration_seconds)}</span>
+              </>
+            )}
+            {paper.progress_detail && isProcessing && (
+              <>
+                <span>&middot;</span>
+                <span className="text-amber-500">{formatProgress(paper.progress_detail)}</span>
+              </>
+            )}
+          </p>
 
-      {paper.abstract && (
-        <p className="text-xs text-stone-500 line-clamp-3 mb-3 leading-relaxed">
-          {paper.abstract}
-        </p>
-      )}
-
-      <div className="flex items-center justify-between text-[11px] text-stone-500">
-        <div className="flex items-center gap-2">
-          {paper.published_date && <span>{formatShortDate(paper.published_date)}</span>}
-          {paper.progress_detail && isProcessing && (
-            <>
-              <span>&middot;</span>
-              <span className="text-amber-500">{formatProgress(paper.progress_detail)}</span>
-            </>
+          {paper.abstract && (
+            <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+              {paper.abstract}
+            </p>
           )}
         </div>
-        {paper.duration_seconds && (
-          <span>{formatDuration(paper.duration_seconds)}</span>
-        )}
       </div>
     </Link>
   );

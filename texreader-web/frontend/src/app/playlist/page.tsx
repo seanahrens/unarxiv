@@ -6,6 +6,7 @@ import { usePlaylist } from "@/contexts/PlaylistContext";
 import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory } from "@/lib/readStatus";
 import { fetchPapersBatch, audioUrl, type Paper } from "@/lib/api";
+import AudioFileIcon from "@/components/AudioFileIcon";
 
 export default function PlaylistPage() {
   const { playlist, removeFromPlaylist, reorderPlaylist } = usePlaylist();
@@ -241,12 +242,7 @@ export default function PlaylistPage() {
                       className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors shrink-0"
                       title="View paper"
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                      </svg>
+                      <AudioFileIcon size={28} />
                     </Link>
                   )}
 
@@ -304,7 +300,7 @@ export default function PlaylistPage() {
         {historyLoading ? (
           <div className="text-stone-500 text-sm py-12 text-center">Loading...</div>
         ) : readHistory.length === 0 ? (
-          <div className="text-stone-500 text-sm py-12 text-center">No listen history yet.</div>
+          <div className="text-stone-500 text-sm py-12 text-center">No completed listens yet.</div>
         ) : (
           <div className="divide-y divide-stone-200">
             {readHistory.map((entry) => {
@@ -326,12 +322,7 @@ export default function PlaylistPage() {
                       className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors shrink-0"
                       title="View paper"
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                      </svg>
+                      <AudioFileIcon size={28} />
                     </Link>
                   ) : (
                     <div className="w-7 shrink-0" />

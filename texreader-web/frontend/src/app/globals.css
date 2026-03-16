@@ -13,6 +13,14 @@ button,
 }
 .animate-help-pulse { animation: help-pulse 2s ease-in-out infinite; }
 
+/* Copy toast fade out */
+@keyframes fade-out {
+  0% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(-4px); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+.animate-fade-out { animation: fade-out 1.2s ease-out forwards; }
+
 /* Audio player seek bar thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;

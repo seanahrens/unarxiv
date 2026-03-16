@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Libre_Baskerville } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import SiteName from "@/components/SiteName";
+
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-brand",
+});
 
 import HeaderPlayer from "@/components/HeaderPlayer";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
@@ -31,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={libreBaskerville.variable}>
       <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
         <AudioProvider>
         <PlaylistProvider>

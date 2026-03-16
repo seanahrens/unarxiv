@@ -3,6 +3,7 @@
 import { useCallback, useRef } from "react";
 import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
+import AudioFileIcon from "@/components/AudioFileIcon";
 
 export default function HeaderPlayer({ inline }: { inline?: boolean }) {
   const { state, actions } = useAudio();
@@ -85,12 +86,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
           className="text-stone-600 hover:text-stone-800 transition-colors shrink-0"
           title="View paper"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
+          <AudioFileIcon size={30} />
         </Link>
 
         {/* Title + seekable progress */}
@@ -180,12 +176,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
           className="text-stone-600 hover:text-stone-800 transition-colors shrink-0"
           title="View paper"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
+          <AudioFileIcon size={30} />
         </Link>
 
         {/* Title + seekable progress */}
