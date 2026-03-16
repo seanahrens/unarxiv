@@ -53,6 +53,7 @@ test.describe.serial("ArXiv Search Import", () => {
   });
 
   test("admin delete removes test paper", async () => {
+    test.skip(!process.env.ADMIN_PASSWORD, "ADMIN_PASSWORD env not set");
     await cleanupTestPaper(TEST_ARXIV_ID);
     const paper = await getPaper(TEST_ARXIV_ID);
     expect(paper).toBeNull();
