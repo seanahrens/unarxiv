@@ -24,6 +24,12 @@ export default function AboutPage() {
           text-to-speech to produce natural-sounding MP3 audiobooks.
         </p>
 
+        <h2 className="text-lg font-semibold text-stone-800 pt-4">Made by</h2>
+        <p>
+          <SiteName /> was created by{" "}
+          <a href="https://inventsean.com" className="text-stone-800 font-medium underline hover:text-stone-600" target="_blank" rel="noopener noreferrer">Sean Ahrens</a>.
+        </p>
+
         <h2 className="text-lg font-semibold text-stone-800 pt-4">Contact</h2>
         <p>
           Questions, feedback, or issues? Reach us at{" "}

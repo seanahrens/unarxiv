@@ -46,7 +46,7 @@ export default function ArxivCta({ query, className, showHeading = true, inlineB
         </>
       )}
       {inlineBrowse ? (
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <UrlAnimation static={staticUrl} />
           {browseButton}
         </div>

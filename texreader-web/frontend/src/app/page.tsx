@@ -37,12 +37,23 @@ function HomePageContent() {
   // React to search params: load popular papers, search results, or trigger arXiv flow
   useEffect(() => {
     if (arxivParam) {
-      // ArXiv ID detected — look up or create paper, then redirect
+      // ArXiv ID detected — try lookup, but also run a text search in parallel
+      // so we have results to show if the arXiv lookup fails
       setPreviewError("");
       const arxivId = extractArxivId(arxivParam);
       if (!arxivId) return;
 
+      setSearchQuery(arxivParam);
       setPreviewing(true);
+      setLoading(true);
+
+      // Run text search in parallel
+      fetchPapers({ q: arxivParam })
+        .then((data) => setPapers(data.papers))
+        .catch(console.error)
+        .finally(() => setLoading(false));
+
+      // Try arXiv lookup — redirect on success, fall back to search results on failure
       (async () => {
         try {
           const dbPaper = await fetchPaper(arxivId);
@@ -138,11 +149,14 @@ function HomePageContent() {
           ) : papers.length === 0 && !searchQuery ? (
             <ArxivCta />
           ) : (
-            <div className="grid gap-3">
-              {papers.map((paper) => (
-                <PaperCard key={paper.id} paper={paper} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-3">
+                {papers.map((paper) => (
+                  <PaperCard key={paper.id} paper={paper} />
+                ))}
+              </div>
+              {searchQuery && <ArxivCta query={searchQuery} />}
+            </>
           )}
         </>
       )}
