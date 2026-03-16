@@ -29,10 +29,14 @@ function parseProgressDetail(detail: string | null): { pct: number; etaSeconds: 
 }
 
 function formatEta(seconds: number): string {
-  if (seconds < 60) return "< 1 min remaining";
-  const mins = Math.ceil(seconds / 60);
-  if (mins === 1) return "~1 min remaining";
-  return `~${mins} min remaining`;
+  if (seconds <= 0) return "";
+  if (seconds < 10) return "a few seconds remaining";
+  if (seconds < 60) return `~${Math.round(seconds / 5) * 5}s remaining`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round((seconds % 60) / 10) * 10;
+  if (mins === 0) return `~${secs}s remaining`;
+  if (secs === 0) return `~${mins}m remaining`;
+  return `~${mins}m ${secs}s remaining`;
 }
 
 interface NarrationProgressProps {
@@ -103,7 +107,7 @@ export default function NarrationProgress({
   const label = status ? STATUS_LABELS[status] : null;
   if (!label) return null;
 
-  const { pct, etaSeconds } = parseProgressDetail(detail);
+  const { etaSeconds } = parseProgressDetail(detail);
   const etaText = (status === "generating_audio" && etaSeconds !== null && etaSeconds > 0)
     ? formatEta(etaSeconds)
     : null;
@@ -117,11 +121,6 @@ export default function NarrationProgress({
         <div className="flex-1 h-1.5 rounded-full bg-stone-100 overflow-hidden">
           <div className="h-full rounded-full progress-flow w-full" />
         </div>
-        {status === "generating_audio" && (
-          <span className="text-[11px] text-stone-400 font-medium shrink-0 w-8 text-right">
-            {pct}%
-          </span>
-        )}
       </div>
       {etaText && (
         <span className="text-[10px] text-stone-400 pl-16">

@@ -206,16 +206,18 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             return
 
         # --- Generate audio (full + narration_only modes) ---
+        chunks = tex_to_audio._split_into_chunks(speech)
+        total_chunks = len(chunks)
+        print(f"Generating audio... ({total_chunks} chunks)")
+
+        # Send initial status with estimated ETA (~5s per chunk for edge-tts)
+        EST_SECS_PER_CHUNK = 5
+        initial_eta = total_chunks * EST_SECS_PER_CHUNK
         send_status(
             callback_url, secret, arxiv_id,
             status="generating_audio",
-            progress_detail="0%",
+            progress_detail=f"0%|eta:{initial_eta}",
         )
-        print("Generating audio...")
-
-        chunks = tex_to_audio._split_into_chunks(speech)
-        total_chunks = len(chunks)
-        print(f"Split into {total_chunks} chunks")
 
         # Generate audio with progress tracking + ETA
         tmp_dir = tempfile.mkdtemp()
