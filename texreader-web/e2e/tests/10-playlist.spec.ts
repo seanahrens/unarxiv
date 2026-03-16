@@ -29,9 +29,8 @@ test.describe("Playlist", () => {
       timeout: 5000,
     });
 
-    // Wait for the paper to appear — look for the "View paper" link which renders
-    // after paper data loads, or the paper title text
-    const paperLink = page.locator(`a[href="/p?id=${id}"]`);
+    // Wait for the paper to appear — Next.js adds trailing slash: /p/?id=...
+    const paperLink = page.locator(`a[href="/p/?id=${id}"]`);
     await expect(paperLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -53,7 +52,8 @@ test.describe("Playlist", () => {
     await page.goto("/playlist");
 
     // Wait for the paper link to appear (data loads async)
-    const paperLink = page.locator(`a[href="/p?id=${id}"]`).first();
+    // Next.js adds trailing slash: /p/?id=...
+    const paperLink = page.locator(`a[href="/p/?id=${id}"]`).first();
     await expect(paperLink).toBeVisible({ timeout: 10000 });
 
     // Click remove button (X icon with title "Remove from playlist")
