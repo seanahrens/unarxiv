@@ -441,17 +441,13 @@ export default function PlaylistPage() {
                       <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>
                     </span>
 
-                    {paper.status === "complete" ? (
-                      <Link
-                        href={`/p?id=${paper.id}`}
-                        className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors shrink-0"
-                        title="View paper"
-                      >
-                        <AudioFileIcon size={28} />
-                      </Link>
-                    ) : (
-                      <div className="w-7 shrink-0" />
-                    )}
+                    <Link
+                      href={`/p?id=${paper.id}`}
+                      className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${isInProgress ? "text-indigo-400" : "text-stone-500 hover:text-stone-700"}`}
+                      title="View paper"
+                    >
+                      <AudioFileIcon size={28} />
+                    </Link>
 
                     <button
                       onClick={() => paper.status === "complete" && handlePlay(paper)}
@@ -470,6 +466,16 @@ export default function PlaylistPage() {
                             {paper.authors.slice(0, 3).join(", ")}
                             {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
                           </span>
+                        </span>
+                      )}
+                      {isInProgress && (
+                        <div className="mt-1">
+                          <NarrationProgress paper={paper} />
+                        </div>
+                      )}
+                      {paper.status === "failed" && (
+                        <span className="text-[11px] text-red-500 block mt-1">
+                          Failed{paper.error_message ? `: ${paper.error_message}` : ""}
                         </span>
                       )}
                     </button>
@@ -493,19 +499,6 @@ export default function PlaylistPage() {
                     </button>
                   </div>
 
-                  {isInProgress && (
-                    <div className="mt-1.5 ml-[56px] md:ml-[62px] mr-[26px]">
-                      <NarrationProgress paper={paper} />
-                    </div>
-                  )}
-
-                  {paper.status === "failed" && (
-                    <div className="mt-1.5 ml-[56px] md:ml-[62px]">
-                      <span className="text-[11px] text-red-500">
-                        Failed{paper.error_message ? `: ${paper.error_message}` : ""}
-                      </span>
-                    </div>
-                  )}
                 </div>
               );
             })}

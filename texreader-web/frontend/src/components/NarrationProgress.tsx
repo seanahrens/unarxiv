@@ -109,20 +109,13 @@ export default function NarrationProgress({
       : null;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-stone-500 font-medium shrink-0 w-14">
-          {label}
-        </span>
-        <div className="flex-1 h-1.5 rounded-full bg-stone-100 overflow-hidden">
-          <div className="h-full rounded-full progress-flow w-full" />
-        </div>
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] text-stone-500 font-medium shrink-0">
+        {label}{etaText ? ` (${etaText})` : ""}
+      </span>
+      <div className="flex-1 max-w-[100px] h-1.5 rounded-full bg-stone-100 overflow-hidden">
+        <div className="h-full rounded-full progress-flow w-full" />
       </div>
-      {etaText && (
-        <span className="text-[10px] text-stone-400 pl-16">
-          {etaText}
-        </span>
-      )}
     </div>
   );
 }
