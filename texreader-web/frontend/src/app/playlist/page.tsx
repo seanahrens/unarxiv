@@ -12,7 +12,7 @@ function formatShortDate(dateStr: string): string {
     const d = new Date(dateStr);
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    return `${months[d.getMonth()]} ${d.getDate()}`;
   } catch {
     return dateStr;
   }
@@ -98,6 +98,49 @@ export default function PlaylistPage() {
     setDragOverIdx(null);
   };
 
+  // Touch-based reordering for mobile
+  const touchStartY = useRef<number>(0);
+  const touchItemIdx = useRef<number | null>(null);
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleTouchStart = (e: React.TouchEvent, idx: number) => {
+    // Only start drag from the handle area (first 40px)
+    const touch = e.touches[0];
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (touch.clientX - rect.left > 40) return;
+    touchStartY.current = touch.clientY;
+    touchItemIdx.current = idx;
+    setDragIdx(idx);
+  };
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchItemIdx.current === null) return;
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    // Find which row we're over
+    for (let i = 0; i < rowRefs.current.length; i++) {
+      const row = rowRefs.current[i];
+      if (!row) continue;
+      const rect = row.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom) {
+        setDragOverIdx(i);
+        return;
+      }
+    }
+  }, []);
+
+  const handleTouchEnd = () => {
+    if (touchItemIdx.current !== null && dragOverIdx !== null && touchItemIdx.current !== dragOverIdx) {
+      const ids = playlist.map((e) => e.paperId);
+      const [moved] = ids.splice(touchItemIdx.current, 1);
+      ids.splice(dragOverIdx, 0, moved);
+      reorderPlaylist(ids);
+    }
+    touchItemIdx.current = null;
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
   const handlePlay = (paper: Paper) => {
     if (state.paperId === paper.id) {
       actions.togglePlay();
@@ -128,24 +171,25 @@ export default function PlaylistPage() {
             return (
               <div
                 key={entry.paperId}
+                ref={(el) => { rowRefs.current[idx] = el; }}
                 draggable
                 onDragStart={() => handleDragStart(idx)}
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={handleDragEnd}
+                onTouchStart={(e) => handleTouchStart(e, idx)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 className={`flex items-center gap-3 px-3 py-3 transition-colors ${
                   dragIdx === idx ? "opacity-30" : "hover:bg-stone-50"
                 } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
               >
                 {/* Drag handle */}
-                <span className="text-stone-400 cursor-grab shrink-0">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="9" cy="6" r="1.5" />
-                    <circle cx="15" cy="6" r="1.5" />
-                    <circle cx="9" cy="12" r="1.5" />
-                    <circle cx="15" cy="12" r="1.5" />
-                    <circle cx="9" cy="18" r="1.5" />
-                    <circle cx="15" cy="18" r="1.5" />
+                <span className="text-stone-400 cursor-grab shrink-0 touch-none">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="4" y1="8" x2="20" y2="8" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="16" x2="20" y2="16" />
                   </svg>
                 </span>
 
@@ -168,11 +212,6 @@ export default function PlaylistPage() {
                     )}
                   </button>
                 )}
-
-                {/* Year */}
-                <span className="text-[11px] text-stone-400 shrink-0 w-8">
-                  {paper?.published_date?.slice(0, 4) || ""}
-                </span>
 
                 {/* Title + authors */}
                 <Link

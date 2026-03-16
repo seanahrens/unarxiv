@@ -113,9 +113,9 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
           </div>
         </div>
 
-        {/* Time */}
-        <span className="text-[10px] font-mono text-stone-400 tabular-nums shrink-0 min-w-[100px] text-right">
-          {fmtTime(currentTime)}/{duration ? fmtTime(duration) : "--:--"}
+        {/* Duration shorthand */}
+        <span className="text-[10px] font-mono text-stone-400 tabular-nums shrink-0">
+          {duration ? fmtShort(duration) : "--"}
         </span>
 
         {/* Speed */}
