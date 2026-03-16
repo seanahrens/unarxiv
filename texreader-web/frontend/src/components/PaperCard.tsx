@@ -114,11 +114,15 @@ export default function PaperCard({ paper }: PaperCardProps) {
       )}
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
-        <div className="shrink-0 text-stone-400 mt-0.5 flex flex-col items-center">
+        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-amber-500" : "text-stone-400"}`}>
           <AudioFileIcon size={34} />
-          {paper.duration_seconds && (
+          {isProcessing && paper.progress_detail ? (
+            <span className="text-[10px] text-amber-500 font-medium mt-0.5">{formatProgress(paper.progress_detail)}</span>
+          ) : isProcessing ? (
+            <span className="text-[10px] text-amber-500 font-medium mt-0.5">...</span>
+          ) : paper.duration_seconds ? (
             <span className="text-[10px] text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
-          )}
+          ) : null}
         </div>
         {/* Card content */}
         <div className="flex-1 min-w-0">
@@ -126,13 +130,8 @@ export default function PaperCard({ paper }: PaperCardProps) {
             <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug">
               {paper.title || "Untitled"}
             </h3>
-            {!isReady && !isNotRequested && (
-              <span
-                className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium
-                  ${isFailed ? "bg-red-50 text-red-600" : ""}
-                  ${isProcessing ? "bg-amber-50 text-amber-600" : ""}
-                `}
-              >
+            {isFailed && (
+              <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">
                 {STATUS_LABELS[paper.status] || paper.status}
               </span>
             )}
@@ -147,12 +146,6 @@ export default function PaperCard({ paper }: PaperCardProps) {
             )}
             {paper.authors.length > 0 && paper.published_date && <span> &middot; </span>}
             {paper.published_date && <span>{formatYear(paper.published_date)}</span>}
-            {paper.progress_detail && isProcessing && (
-              <>
-                <span> &middot; </span>
-                <span className="text-amber-500">{formatProgress(paper.progress_detail)}</span>
-              </>
-            )}
           </p>
 
           {paper.abstract && (

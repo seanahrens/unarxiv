@@ -22,8 +22,8 @@ function formatProgress(detail: string | null): string | null {
 
 const STAGES = [
   { key: "queued", label: "Queued" },
-  { key: "preparing", label: "Writing Script" },
-  { key: "generating_audio", label: "Recording Narration" },
+  { key: "preparing", label: "Scripting" },
+  { key: "generating_audio", label: "Recording" },
   { key: "complete", label: "Complete" },
 ];
 
@@ -140,7 +140,7 @@ export default function ProgressTracker({
               </span>
               {/* Animated progress bar between "Generating Audio" label and percentage */}
               {isCurrent && isGenerating && (
-                <div className="flex-1 mx-2 h-1.5 rounded-full bg-stone-100 overflow-hidden min-w-[40px]">
+                <div className="hidden md:block flex-1 mx-2 h-1.5 rounded-full bg-stone-100 overflow-hidden min-w-[40px]">
                   <div className="h-full rounded-full progress-shimmer" style={{ width: "100%" }} />
                 </div>
               )}
@@ -151,7 +151,7 @@ export default function ProgressTracker({
                 <span className="text-blue-400 text-xs ml-1">({formatProgress(detail)})</span>
               )}
               {idx < displayStages.length - 1 && (
-                <div className={`flex-1 h-px mx-2 ${isDone ? "bg-emerald-300" : "bg-stone-200"} ${isCurrent && isGenerating ? "hidden" : ""}`} />
+                <div className={`flex-1 h-px mx-2 ${isDone ? "bg-emerald-300" : "bg-stone-200"} ${isCurrent && isGenerating ? "md:hidden" : ""}`} />
               )}
             </div>
           );
