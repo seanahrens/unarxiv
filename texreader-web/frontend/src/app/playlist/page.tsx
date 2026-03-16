@@ -277,6 +277,10 @@ export default function PlaylistPage() {
                   key={entry.paperId}
                   className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 hover:bg-stone-50 transition-colors"
                 >
+                  <span className="shrink-0 invisible">
+                    <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8" /></svg>
+                  </span>
+
                   {paper?.status === "complete" ? (
                     <button
                       onClick={() => handlePlay(paper)}
@@ -317,6 +321,10 @@ export default function PlaylistPage() {
                       </span>
                     )}
                   </Link>
+
+                  <span className="shrink-0 invisible">
+                    <svg width="18" height="18" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /></svg>
+                  </span>
                 </div>
               );
             })}
