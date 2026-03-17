@@ -188,9 +188,10 @@ def _latex_accents_to_unicode(text: str) -> str:
 
     # Symbol accents bare: \'e, \`a, \^o, \"u, \~n, \.z, \=a
     text = re.sub(r"""\\(['\"`^~.=])(\w)""", _replace_bare, text)
-    # Named accents bare: \cc, \vs (only single-char commands to avoid
-    # false positives with real commands like \cite)
-    text = re.sub(r"\\([cHdrukvk])(?=[a-zA-Z])(\w)", _replace_bare, text)
+    # Named accents bare: require the base char is NOT followed by more word
+    # characters, to avoid false-positives inside commands like \color (which
+    # would otherwise mangle \co → "o", leaving "lor" as artifact "olorred").
+    text = re.sub(r"\\([cHdrukvk])([a-zA-Z])(?!\w)", _replace_bare, text)
 
     return text
 
@@ -796,8 +797,14 @@ def clean_latex(text: str) -> str:
     # 3. Remove command/environment definitions that leak from \input files
     text = _drop_command_defs(text)
 
-    # 4. Remove \definecolor{...}{...}{...}
+    # 4. Remove \definecolor{...}{...}{...} and color commands
     text = re.sub(r"\\definecolor\{[^}]*\}\{[^}]*\}\{[^}]*\}", "", text)
+    # Keep inner text of \textcolor{X}{text}; drop bare \color{X} switches
+    text = re.sub(r"\\textcolor\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\colorbox\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\fcolorbox\{[^}]*\}\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\color\{[^}]*\}", "", text)
+    text = re.sub(r"\\color\b", "", text)
 
     # 5. Remove \hypersetup{...} (fixes pdfborder artifacts)
     text = _drop_braced_command(text, "hypersetup")
@@ -807,12 +814,19 @@ def clean_latex(text: str) -> str:
     text = _drop_braced_command(text, "usetikzlibrary")
     text = _drop_braced_command(text, "pgfplotsset")
 
-    # 7. Remove acknowledgements before marker conversion
+    # 7. Remove acknowledgements and appendix before marker conversion
+    # Match \section, \subsection, or \subsubsection (all variants used in the wild)
     text = re.sub(
-        r"\\section\*?\{Acknowledg(?:e?ments?)\}.*?(?=\\section|\Z)",
+        r"\\(?:sub)*section\*?\{Acknowledg(?:e?ments?)\}.*?(?=\\(?:sub)*section|\Z)",
         "", text, flags=re.DOTALL | re.IGNORECASE,
     )
     text = re.sub(r"\\begin\{acks\}.*?\\end\{acks\}", "", text, flags=re.DOTALL)
+    # Remove appendix — contains equations, proofs, visualizations (unreadable aloud)
+    text = re.sub(r"\\appendix\b.*", "", text, flags=re.DOTALL)
+    text = re.sub(
+        r"\\section\*?\{Appendix(?:es)?\}.*",
+        "", text, flags=re.DOTALL | re.IGNORECASE,
+    )
 
     # 8. Remove author/affiliation metadata commands from body
     #    (metadata is extracted separately by extract_full_metadata)
@@ -843,12 +857,15 @@ def clean_latex(text: str) -> str:
             tc_i += 1
     text = "".join(result_parts)
 
-    # 9. Layout / navigation commands with no spoken content
+    # 9. Layout / navigation commands with no spoken content.
+    # \label is stripped separately (without consuming trailing newline) so that
+    # the following line is not merged with the preceding section-marker token.
+    text = re.sub(r"\\label\{[^}]*\}", "", text)
     text = re.sub(
         r"\\(maketitle|tableofcontents|printbibliography|bibliographystyle|"
         r"bibliography|listoffigures|listoftables|newpage|clearpage|"
         r"cleardoublepage|vspace|hspace|vfill|hfill|noindent|medskip|"
-        r"bigskip|smallskip|hypertarget|label|tightlist|pagestyle|"
+        r"bigskip|smallskip|hypertarget|tightlist|pagestyle|"
         r"thispagestyle|fancyhf|lfoot|rfoot|lhead|rhead|cfoot|chead|"
         r"printindex|glsaddall|printglossary|"
         r"itemsep|parsep|topsep|partopsep|labelsep|leftmargin|"
@@ -881,9 +898,20 @@ def clean_latex(text: str) -> str:
     text = re.sub(r"\\end\{(itemize|compactitem|inparaenum)\}",                "LIST_END\n",   text)
     text = re.sub(r"\\item\s*", "\nITEM ", text)
 
-    # 12. Skip figure, table floats, and ICML author lists entirely
+    # 12. Skip figure, table floats, ICML author lists, and bibliography entirely
     text = re.sub(
-        r"\\begin\{(figure|table|icmlauthorlist)[*]?\}.*?\\end\{\1[*]?\}", "", text, flags=re.DOTALL
+        r"\\begin\{(figure|table|icmlauthorlist|thebibliography)[*]?\}.*?\\end\{\1[*]?\}",
+        "", text, flags=re.DOTALL
+    )
+    # Belt-and-suspenders: strip from first \bibitem onward (inline bib not in env)
+    text = re.sub(r"\\bibitem\{[^}]*\}.*", "", text, flags=re.DOTALL)
+
+    # 12b. Drop display-math environments — content is unreadable when spoken aloud.
+    #      \[...\] and $$...$$ are handled separately in step 16a.
+    text = re.sub(
+        r"\\begin\{(align\*?|eqnarray\*?|multline\*?|gather\*?|"
+        r"aligned|split|subequations|dcases|cases)\}.*?\\end\{\1\}",
+        "", text, flags=re.DOTALL
     )
 
     # 13. Other named environments — strip tags, keep body
@@ -899,9 +927,14 @@ def clean_latex(text: str) -> str:
     # 15. Citations, cross-references, hyperlinks
     #     Handle optional args: \citep[e.g.][]{keys}, \cite[note]{keys}
     text = re.sub(r"\\cite[a-z]*(?:\[[^\]]*\])*\{[^}]*\}", "", text)
-    text = re.sub(r"\\(ref|eqref|pageref|autoref)\{[^}]*\}", "", text)
+    text = re.sub(r"\\(ref|eqref|pageref|autoref|cref|Cref|vref)\{[^}]*\}", "", text)
     text = re.sub(r"\\href\{[^}]*\}\{([^}]+)\}",     r"\1", text)
     text = re.sub(r"\\url\{[^}]*\}",                 "",    text)
+    # Clean up orphaned "Figure " / "Table " left after \ref removal
+    text = re.sub(r"\b(?:Figure|Fig\.|Table|Eq\.|Equation)\s+(?=[,.\s]|$)", "", text, flags=re.MULTILINE)
+    # Remove empty parentheses/brackets left by dropped refs
+    text = re.sub(r"\(\s*\)", "", text)
+    text = re.sub(r"\[\s*\]", "", text)
 
     # 16. Math mode handling
     # 16a. Remove display math: \[...\], $$...$$, \begin{equation}...\end{equation}
@@ -935,6 +968,30 @@ def clean_latex(text: str) -> str:
     # Backslash-space (protected space in LaTeX) → regular space
     text = text.replace("\\ ", " ")
     text = text.replace("\\\\", " ")
+    # Strip LaTeX text-mode special char escapes that \\[a-zA-Z]+ misses
+    text = text.replace("\\_", " ")     # \_ (text underscore) → space
+    text = text.replace("\\#", "")      # \# → drop
+    text = text.replace("\\$", "")      # \$ → drop
+    text = re.sub(r"\\&", " and ", text)  # \& → "and"
+
+    # 18b. Translate Greek letter commands to English names so TTS can read them.
+    # Applied before accent conversion to prevent them being stripped as unknowns.
+    _GREEK = {
+        r"\alpha": "alpha", r"\beta": "beta", r"\gamma": "gamma",
+        r"\delta": "delta", r"\epsilon": "epsilon", r"\varepsilon": "epsilon",
+        r"\zeta": "zeta", r"\eta": "eta", r"\theta": "theta", r"\vartheta": "theta",
+        r"\iota": "iota", r"\kappa": "kappa", r"\lambda": "lambda",
+        r"\mu": "mu", r"\nu": "nu", r"\xi": "xi", r"\pi": "pi", r"\varpi": "pi",
+        r"\rho": "rho", r"\varrho": "rho", r"\sigma": "sigma", r"\varsigma": "sigma",
+        r"\tau": "tau", r"\upsilon": "upsilon", r"\phi": "phi", r"\varphi": "phi",
+        r"\chi": "chi", r"\psi": "psi", r"\omega": "omega",
+        r"\Gamma": "Gamma", r"\Delta": "Delta", r"\Theta": "Theta",
+        r"\Lambda": "Lambda", r"\Xi": "Xi", r"\Pi": "Pi",
+        r"\Sigma": "Sigma", r"\Upsilon": "Upsilon", r"\Phi": "Phi",
+        r"\Psi": "Psi", r"\Omega": "Omega",
+    }
+    for cmd, name in _GREEK.items():
+        text = re.sub(re.escape(cmd) + r"(?![a-zA-Z])", f" {name} ", text)
 
     # 19. Convert LaTeX accents to Unicode before stripping remaining commands
     text = _latex_accents_to_unicode(text)
@@ -1137,6 +1194,42 @@ def _clean_pdf_text(text: str, title: str = "", authors: Optional[list[str]] = N
 
     # Rejoin hyphenated line breaks (word- \n continuation)
     text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+
+    # Strip arXiv stamp lines (e.g. "arXiv:2301.12345v2 [cs.LG] 12 Jan 2024")
+    text = re.sub(r"^arXiv:\S+[^\n]*\n?", "", text, flags=re.MULTILINE)
+
+    # Strip "Author et al." running headers (appear on every page)
+    text = re.sub(r"^\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+et al\.\s*$\n?", "", text, flags=re.MULTILINE)
+
+    # Strip footnote/affiliation marker lines (symbols followed by affiliation text)
+    text = re.sub(r"^[∗†‡✝✦⋆]\s*.+$", "", text, flags=re.MULTILINE)
+
+    # Strip Authors' addresses block (appears at end of many ACM papers)
+    text = re.sub(r"^Authors\S*\s*addresses:.*?(?=\n[A-Z])", "", text, flags=re.DOTALL | re.MULTILINE)
+
+    # Strip standalone section numbers (e.g. "3.1", "2.4.1" on their own line)
+    text = re.sub(r"^\s*\d+(?:\.\d+)+\s*$", "", text, flags=re.MULTILINE)
+
+    # Strip inline citation brackets [1], [1,2,3], [1; 2; 3]
+    text = re.sub(r"\[\d+(?:[,;]\s*\d+)*\]", "", text)
+
+    # Strip inline URLs
+    text = re.sub(r"https?://\S+", "", text)
+
+    # Strip footnote marker digits after punctuation (e.g. "sentence.1 Next" → "sentence. Next")
+    text = re.sub(r"(?<=[.!?,;])\d{1,2}(?=\s)", "", text)
+
+    # Strip duplicate running title (paper short-title repeated every page):
+    # find the most-repeated short line (3-8 words, title-cased) after first 500 chars and remove it
+    if title:
+        # Build a short version of the title for running-header matching
+        title_words = title.split()[:6]
+        if len(title_words) >= 3:
+            short_title_pat = re.escape(" ".join(title_words[:4]))
+            text_after_start = text[500:]
+            count = len(re.findall(short_title_pat, text_after_start, flags=re.IGNORECASE))
+            if count >= 2:
+                text = text[:500] + re.sub(short_title_pat, "", text_after_start, flags=re.IGNORECASE)
 
     # Strip duplicate title/author block from page 1
     text = _strip_pdf_title_block(text, title, authors)
