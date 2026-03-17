@@ -16,6 +16,7 @@
  *   POST /api/webhooks/modal  (callback from Modal worker)
  */
 
+import type { IncomingRequestCfProperties } from "@cloudflare/workers-types";
 import type { Env, Paper } from "./types";
 import { paperToResponse } from "./types";
 import { parseArxivId, scrapeArxivMetadata, arxivSrcUrl } from "./arxiv";
@@ -479,7 +480,7 @@ async function handleRequest(
 
     // Auto-add missing papers from arXiv (cap at 20)
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const cf = (request as any).cf;
+    const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
     const toAdd = missing.slice(0, 20);
     for (const arxivId of toAdd) {
       try {
@@ -492,8 +493,8 @@ async function handleRequest(
           abstract: meta.abstract,
           published_date: meta.published_date,
           submitted_by_ip: ip,
-          submitted_by_country: cf?.country || null,
-          submitted_by_city: cf?.city || null,
+          submitted_by_country: cf?.country || undefined,
+          submitted_by_city: cf?.city || undefined,
         });
       } catch {
         invalid.push(arxivId);
@@ -645,7 +646,7 @@ async function handleSubmitPaper(
 
   // --- Insert paper with status "not_requested" ---
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const cf = (request as any).cf;
+  const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
   const inserted = await insertPaper(env.DB, {
     id: metadata.id,
     arxiv_url: metadata.arxiv_url,
@@ -654,8 +655,8 @@ async function handleSubmitPaper(
     abstract: metadata.abstract,
     published_date: metadata.published_date,
     submitted_by_ip: ip,
-    submitted_by_country: cf?.country || null,
-    submitted_by_city: cf?.city || null,
+    submitted_by_country: cf?.country || undefined,
+    submitted_by_city: cf?.city || undefined,
   });
 
   if (!inserted) {
