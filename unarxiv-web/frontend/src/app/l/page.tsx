@@ -223,7 +223,6 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   const handleDelete = async () => {
     if (!ownerToken) return;
-    if (!confirm("Delete this collection permanently? This cannot be undone.")) return;
     try {
       await deleteListApi(listId, ownerToken);
       removeListToken(listId);
