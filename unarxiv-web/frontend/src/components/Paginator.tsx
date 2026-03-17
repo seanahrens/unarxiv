@@ -13,7 +13,7 @@ export default function Paginator({ page, totalPages, onChange }: PaginatorProps
       <button
         onClick={() => onChange(Math.max(0, page - 1))}
         disabled={page === 0}
-        className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+        className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-amber-50 disabled:opacity-30 disabled:cursor-default transition-colors"
         aria-label="Previous page"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -26,7 +26,7 @@ export default function Paginator({ page, totalPages, onChange }: PaginatorProps
       <button
         onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
         disabled={page >= totalPages - 1}
-        className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+        className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-amber-50 disabled:opacity-30 disabled:cursor-default transition-colors"
         aria-label="Next page"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

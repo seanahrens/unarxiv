@@ -108,13 +108,13 @@ export default function PaperActionButton({
         <button
           onClick={onGenerate}
           disabled={generateDisabled}
-          className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
+          className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-stone-800 hover:bg-stone-900 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
         >
           Generate Audio Narration
         </button>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className={`${BTN_BASE} px-1.5 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
+          className={`${BTN_BASE} px-1.5 text-white bg-stone-800 hover:bg-stone-900 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="6 9 12 15 18 9" />

@@ -175,8 +175,8 @@ function RatingModal({
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Any feedback on pronunciation, pacing, or transcript quality..."
-            className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm
-                       focus:outline-none focus:ring-2 focus:ring-stone-400 resize-none"
+            className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm
+                       focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
             rows={3}
           />
         </div>
@@ -198,14 +198,14 @@ function RatingModal({
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 transition-colors"
+              className="px-4 py-2 text-sm text-stone-600 hover:text-amber-900 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || clearing || stars === 0}
-              className="px-4 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg
+              className="px-4 py-2 text-sm font-medium bg-stone-800 text-white rounded-lg
                          hover:bg-stone-700 transition-colors disabled:opacity-50"
             >
               {saving ? "Saving..." : existingRating ? "Update Rating" : "Submit Rating"}
@@ -233,7 +233,7 @@ function BackButton() {
   return (
     <button
       onClick={handleBack}
-      className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 border border-stone-300 rounded-full px-3 py-1"
+      className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 border border-amber-200 rounded-full px-3 py-1"
     >
       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
       Back to {previousLabel}
@@ -380,7 +380,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
               onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
             />
           ) : isProcessing ? (
-            <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+            <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-amber-200 rounded-xl px-4 py-3">
               {narrationLoading ? (
                 <NarrationProgress paper={paper} />
               ) : (
@@ -426,7 +426,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       )}
 
       {/* PDF viewer — hidden on mobile */}
-      <div className="hidden md:block mt-10 border border-stone-300 rounded-xl overflow-hidden">
+      <div className="hidden md:block mt-10 border border-amber-200 rounded-xl overflow-hidden">
         <iframe
           src={`https://arxiv.org/pdf/${paper.id}#zoom=page-width`}
           className="w-full bg-white"

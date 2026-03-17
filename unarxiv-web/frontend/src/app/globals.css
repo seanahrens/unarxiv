@@ -13,8 +13,8 @@ button,
 
 /* Help icon pulse for first-time visitors */
 @keyframes help-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0.5); }
-  50% { box-shadow: 0 0 0 6px rgba(120, 113, 108, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(146, 64, 14, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(146, 64, 14, 0); }
 }
 .animate-help-pulse { animation: help-pulse 2s ease-in-out infinite; }
 
@@ -47,9 +47,9 @@ input[type="range"]::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #1c1917;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #92400e;
+  border: 2px solid #fef3c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   cursor: pointer;
 }
 
@@ -57,9 +57,9 @@ input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #1c1917;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #92400e;
+  border: 2px solid #fef3c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   cursor: pointer;
 }
 
@@ -82,9 +82,9 @@ input[type="range"]::-moz-range-thumb {
 
 /* PlayerBar flash when new paper loads */
 @keyframes player-flash {
-  0% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0.5); }
-  25% { box-shadow: 0 -4px 20px 4px rgba(120, 113, 108, 0.3); }
-  100% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(146, 64, 14, 0.4); }
+  25% { box-shadow: 0 -4px 20px 4px rgba(146, 64, 14, 0.2); }
+  100% { box-shadow: 0 0 0 0 rgba(146, 64, 14, 0); }
 }
 .animate-player-flash {
   animation: player-flash 0.8s ease-out;
@@ -105,28 +105,28 @@ input[type="range"]::-moz-range-thumb {
   0% { background-position: 200% 0; }
   100% { background-position: 0% 0; }
 }
-/* Blue variant: used in NarrationProgress component (progress bar inside paper page) */
+/* Amber variant: used in NarrationProgress component */
 .progress-flow {
   background: repeating-linear-gradient(
     90deg,
-    rgb(59 130 246 / 0.12) 0%,
-    rgb(59 130 246 / 0.35) 15%,
-    rgb(99 102 241 / 0.4) 30%,
-    rgb(59 130 246 / 0.35) 45%,
-    rgb(59 130 246 / 0.12) 50%
+    rgb(245 158 11 / 0.1) 0%,
+    rgb(245 158 11 / 0.3) 15%,
+    rgb(217 119 6 / 0.4) 30%,
+    rgb(245 158 11 / 0.3) 45%,
+    rgb(245 158 11 / 0.1) 50%
   );
   background-size: 200% 100%;
   animation: progress-flow 1.8s linear infinite;
 }
-/* Purple variant: used in PaperCard processing indicator (subtle in-list state) */
+/* Warm amber variant: used in PaperCard processing indicator */
 .progress-flow-purple {
   background: repeating-linear-gradient(
     90deg,
-    rgb(192 132 252 / 0.2) 0%,
-    rgb(192 132 252 / 0.6) 15%,
-    rgb(168 85 247 / 0.7) 30%,
-    rgb(192 132 252 / 0.6) 45%,
-    rgb(192 132 252 / 0.2) 50%
+    rgb(251 191 36 / 0.2) 0%,
+    rgb(251 191 36 / 0.5) 15%,
+    rgb(245 158 11 / 0.6) 30%,
+    rgb(251 191 36 / 0.5) 45%,
+    rgb(251 191 36 / 0.2) 50%
   );
   background-size: 200% 100%;
   animation: progress-flow 1.8s linear infinite;
