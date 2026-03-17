@@ -29,7 +29,7 @@ export default function PlaylistNavButton() {
       className={`inline-flex items-center gap-1.5 text-sm no-underline transition-colors relative border rounded-full px-3 py-1.5 ${
         isOnPlaylist
           ? "text-stone-900 bg-stone-200 border-stone-400"
-          : "text-stone-700 hover:text-stone-900 hover:bg-stone-100 border-stone-300"
+          : "text-stone-700 hover:text-stone-900 hover:bg-amber-50 border-amber-200"
       }`}
     >
       <svg width="16" height="16" viewBox="0 0 576 512" fill="currentColor" aria-hidden="true">

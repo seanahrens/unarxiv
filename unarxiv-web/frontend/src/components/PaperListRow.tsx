@@ -79,7 +79,7 @@ export default function PaperListRow({
   return (
     <div
       className={`flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 transition-colors ${
-        isActive ? "bg-blue-100" : "hover:bg-stone-100"
+        isActive ? "bg-blue-100" : "hover:bg-amber-50"
       } ${className}`}
     >
       <Link

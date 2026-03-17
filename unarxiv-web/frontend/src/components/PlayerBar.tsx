@@ -19,9 +19,9 @@ function EqBars({ visible }: { visible: boolean }) {
     <span className="inline-flex items-end gap-[2px] h-3 w-[10px] shrink-0" aria-hidden>
       {visible ? (
         <>
-          <span className="w-[2px] bg-stone-500 rounded-full animate-eq-1" />
-          <span className="w-[2px] bg-stone-500 rounded-full animate-eq-2" />
-          <span className="w-[2px] bg-stone-500 rounded-full animate-eq-3" />
+          <span className="w-[2px] bg-amber-700 rounded-full animate-eq-1" />
+          <span className="w-[2px] bg-amber-700 rounded-full animate-eq-2" />
+          <span className="w-[2px] bg-amber-700 rounded-full animate-eq-3" />
         </>
       ) : (
         <>
@@ -49,19 +49,19 @@ function ScrubberTitle({
   return (
     <div
       onClick={onSeek}
-      className="relative flex-1 min-w-0 h-7 self-center cursor-pointer group rounded-md border border-stone-200 overflow-hidden select-none"
+      className="relative flex-1 min-w-0 h-7 self-center cursor-pointer group rounded-md border border-amber-200 overflow-hidden select-none"
     >
       {/* Track background */}
-      <div className="absolute inset-0 bg-stone-50 rounded-md" />
+      <div className="absolute inset-0 bg-white rounded-md" />
       {/* Elapsed fill */}
       <div
-        className="absolute inset-y-0 left-0 bg-stone-300 group-hover:bg-stone-400/50 transition-colors"
+        className="absolute inset-y-0 left-0 bg-amber-200 group-hover:bg-amber-300/80 transition-colors"
         style={{ width: `${progress}%` }}
       />
       {/* Title + EQ overlay */}
       <div className="relative z-10 flex items-center gap-1.5 h-full px-2.5">
         <EqBars visible={isPlaying} />
-        <span className="text-xs text-stone-600 truncate" title={paperTitle || ""}>
+        <span className="text-xs text-stone-700 truncate" title={paperTitle || ""}>
           {paperTitle || "Unknown paper"}
         </span>
       </div>
@@ -79,13 +79,13 @@ function SkipPrevNext({
 }) {
   return (
     <>
-      <button onClick={onPrev} className="text-stone-500 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Previous in playlist (Shift+Left)">
+      <button onClick={onPrev} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Previous in playlist (Shift+Left)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <rect x="4" y="5" width="2.5" height="14" rx="0.5" />
           <polygon points="19,5 9,12 19,19" />
         </svg>
       </button>
-      <button onClick={onNext} className="text-stone-500 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Next in playlist (Shift+Right)">
+      <button onClick={onNext} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Next in playlist (Shift+Right)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <polygon points="5,5 15,12 5,19" />
           <rect x="17.5" y="5" width="2.5" height="14" rx="0.5" />
@@ -349,9 +349,9 @@ export default function PlayerBar() {
   // Playlist popup overlay — wait for data before rendering to avoid layout shift
   const playlistPopup = showPlaylist && !playlistLoading && (
     <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
-      <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] min-h-[200px] flex flex-col">
-        <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
-          <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+      <div className="bg-white border border-amber-200 md:rounded-xl shadow-xl shadow-amber-900/10 overflow-hidden max-h-[60vh] min-h-[200px] flex flex-col">
+        <div className="px-4 py-3 border-b border-amber-100 flex items-center justify-between shrink-0">
+          <h3 className="text-sm font-bold text-stone-800 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <rect x="3" y="10" width="11" height="2" />
               <rect x="3" y="6" width="11" height="2" />
@@ -369,7 +369,7 @@ export default function PlayerBar() {
             <div className="text-stone-500 text-sm py-8 text-center">
               Your playlist is empty.
               <div className="mt-2">
-                <Link href="/" className="text-stone-600 hover:text-stone-800 underline text-sm" onClick={() => setShowPlaylist(false)}>
+                <Link href="/" className="text-amber-700 hover:text-amber-900 underline text-sm" onClick={() => setShowPlaylist(false)}>
                   Add papers from the home page
                 </Link>
               </div>
@@ -383,7 +383,7 @@ export default function PlayerBar() {
               onRemove={removeFromPlaylist}
               emptyMessage="Your playlist is empty."
               emptyAction={
-                <Link href="/" className="text-stone-600 hover:text-stone-800 underline text-sm" onClick={() => setShowPlaylist(false)}>
+                <Link href="/" className="text-amber-700 hover:text-amber-900 underline text-sm" onClick={() => setShowPlaylist(false)}>
                   Add papers from the home page
                 </Link>
               }
@@ -399,7 +399,7 @@ export default function PlayerBar() {
     <button
       id="player-playlist-button"
       onClick={togglePlaylist}
-      className={`transition-colors shrink-0 flex items-center ${showPlaylist ? "text-stone-900" : "text-stone-600 hover:text-stone-800"}`}
+      className={`transition-colors shrink-0 flex items-center ${showPlaylist ? "text-amber-800" : "text-stone-500 hover:text-amber-800"}`}
       title="Toggle playlist"
     >
       <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -439,7 +439,7 @@ export default function PlayerBar() {
   const flyDot = (
     <div
       ref={flyRef}
-      className="fixed z-[200] w-4 h-4 -ml-2 -mt-2 rounded-full bg-stone-600 pointer-events-none opacity-0"
+      className="fixed z-[200] w-4 h-4 -ml-2 -mt-2 rounded-full bg-amber-700 pointer-events-none opacity-0"
       style={{ left: 0, top: 0 }}
     />
   );
@@ -456,14 +456,14 @@ export default function PlayerBar() {
             Press <kbd className="bg-stone-700 px-1 py-0.5 rounded font-mono">?</kbd> for keyboard shortcuts
           </div>
         )}
-        <div className="bg-stone-100 border-t border-stone-300 shadow-[0_-2px_12px_rgba(0,0,0,0.1)] relative">
+        <div className="bg-amber-50 border-t border-amber-200 shadow-[0_-2px_12px_rgba(146,64,14,0.08)] relative">
           {playlistPopup}
           {shortcutOverlay}
 
           {/* Collapsed row — shown after expand-out animation finishes */}
           <div className={showCollapsedRow ? "" : "hidden"}>
             <div className="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3">
-              <Link href={`/p?id=${paperId}`} className="text-stone-600 hover:text-stone-800 transition-colors shrink-0">
+              <Link href={`/p?id=${paperId}`} className="text-amber-700 hover:text-amber-900 transition-colors shrink-0">
                 <AudioFileIcon size={22} />
               </Link>
               <ScrubberTitle
@@ -491,7 +491,7 @@ export default function PlayerBar() {
               {playlistButton()}
               <button
                 onClick={toggleCollapse}
-                className="text-stone-400 hover:text-stone-600 transition-colors shrink-0"
+                className="text-stone-400 hover:text-amber-800 transition-colors shrink-0"
                 title="Expand player"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -510,7 +510,7 @@ export default function PlayerBar() {
 
               {/* Desktop layout: single row */}
               <div className="hidden md:flex max-w-5xl mx-auto px-4 items-center gap-3 h-12">
-                <Link href={`/p?id=${paperId}`} className="text-stone-500 hover:text-stone-700 transition-colors shrink-0 flex items-center">
+                <Link href={`/p?id=${paperId}`} className="text-amber-700 hover:text-amber-900 transition-colors shrink-0 flex items-center">
                   <AudioFileIcon size={32} />
                 </Link>
                 <ScrubberTitle
@@ -522,18 +522,18 @@ export default function PlayerBar() {
                 <span className="text-3xs font-mono text-stone-400 tabular-nums shrink-0 flex items-center">
                   {fmtTime(currentTime)} / {duration ? fmtTime(duration) : "--"}
                 </span>
-                <button onClick={() => skipToPlaylistItem("prev")} className="text-stone-500 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Previous in playlist (Shift+Left)">
+                <button onClick={() => skipToPlaylistItem("prev")} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Previous in playlist (Shift+Left)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="4" y="5" width="2.5" height="14" rx="0.5" />
                     <polygon points="19,5 9,12 19,19" />
                   </svg>
                 </button>
-                <button onClick={() => actions.skipBack()} className="text-stone-500 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Back 10s">
+                <button onClick={() => actions.skipBack()} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Back 10s">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg>
                 </button>
                 <button
                   onClick={actions.togglePlay}
-                  className="w-8 h-8 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors shrink-0 self-center"
+                  className="w-8 h-8 flex items-center justify-center bg-stone-800 hover:bg-amber-800 text-white rounded-full transition-colors shrink-0 self-center"
                   title={isPlaying ? "Pause" : "Play"}
                 >
                   {isPlaying ? (
@@ -542,19 +542,19 @@ export default function PlayerBar() {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
                   )}
                 </button>
-                <button onClick={() => actions.skipForward()} className="text-stone-500 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Forward 10s">
+                <button onClick={() => actions.skipForward()} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Forward 10s">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" /></svg>
                 </button>
-                <button onClick={() => skipToPlaylistItem("next")} className="text-stone-500 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Next in playlist (Shift+Right)">
+                <button onClick={() => skipToPlaylistItem("next")} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Next in playlist (Shift+Right)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="5,5 15,12 5,19" />
                     <rect x="17.5" y="5" width="2.5" height="14" rx="0.5" />
                   </svg>
                 </button>
-                <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-100 hover:bg-stone-200 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center self-center" title="Speed">
+                <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center self-center" title="Speed">
                   {playbackRate}x
                 </button>
-                <button onClick={() => setShowShortcuts((p) => !p)} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0 flex items-center" title="Keyboard shortcuts (?)">
+                <button onClick={() => setShowShortcuts((p) => !p)} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Keyboard shortcuts (?)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="6" width="20" height="12" rx="2" />
                     <line x1="6" y1="10" x2="6" y2="10.01" /><line x1="10" y1="10" x2="10" y2="10.01" />
@@ -563,7 +563,7 @@ export default function PlayerBar() {
                   </svg>
                 </button>
                 {playlistButton()}
-                <button onClick={toggleCollapse} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0 flex items-center" title="Collapse player">
+                <button onClick={toggleCollapse} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Collapse player">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
@@ -587,7 +587,7 @@ export default function PlayerBar() {
                   <div className="flex items-center justify-center w-10 shrink-0">
                     {playlistButton()}
                   </div>
-                  <button onClick={toggleCollapse} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0 flex items-center" title="Collapse player">
+                  <button onClick={toggleCollapse} className="text-stone-400 hover:text-amber-800 transition-colors shrink-0 flex items-center" title="Collapse player">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -596,23 +596,23 @@ export default function PlayerBar() {
                 {/* Bottom row: speed left + transport center + time right */}
                 <div className="relative flex items-center px-3 py-2">
                   {/* Left: speed button */}
-                  <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center" title="Speed">
+                  <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center" title="Speed">
                     {playbackRate}x
                   </button>
                   {/* Center: transport controls with prev/next */}
                   <div className="flex items-center gap-4 mx-auto">
-                    <button onClick={() => skipToPlaylistItem("prev")} className="text-stone-500 hover:text-stone-800 transition-colors" title="Previous in playlist">
+                    <button onClick={() => skipToPlaylistItem("prev")} className="text-stone-400 hover:text-amber-800 transition-colors" title="Previous in playlist">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                         <rect x="4" y="5" width="2.5" height="14" rx="0.5" />
                         <polygon points="19,5 9,12 19,19" />
                       </svg>
                     </button>
-                    <button onClick={() => actions.skipBack()} className="text-stone-500 hover:text-stone-800 transition-colors" title="Back 10s">
+                    <button onClick={() => actions.skipBack()} className="text-stone-400 hover:text-amber-800 transition-colors" title="Back 10s">
                       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg>
                     </button>
                     <button
                       onClick={actions.togglePlay}
-                      className="w-11 h-11 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors"
+                      className="w-11 h-11 flex items-center justify-center bg-stone-800 hover:bg-amber-800 text-white rounded-full transition-colors"
                       title={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
@@ -621,10 +621,10 @@ export default function PlayerBar() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
                       )}
                     </button>
-                    <button onClick={() => actions.skipForward()} className="text-stone-500 hover:text-stone-800 transition-colors" title="Forward 10s">
+                    <button onClick={() => actions.skipForward()} className="text-stone-400 hover:text-amber-800 transition-colors" title="Forward 10s">
                       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" /></svg>
                     </button>
-                    <button onClick={() => skipToPlaylistItem("next")} className="text-stone-500 hover:text-stone-800 transition-colors" title="Next in playlist">
+                    <button onClick={() => skipToPlaylistItem("next")} className="text-stone-400 hover:text-amber-800 transition-colors" title="Next in playlist">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="5,5 15,12 5,19" />
                         <rect x="17.5" y="5" width="2.5" height="14" rx="0.5" />

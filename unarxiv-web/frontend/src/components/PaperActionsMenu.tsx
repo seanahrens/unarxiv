@@ -33,8 +33,8 @@ function useDownload() {
   return { downloading, download };
 }
 
-const MENU_ITEM = "w-full flex items-center gap-2 px-4 py-2.5 text-xs text-stone-700 hover:bg-stone-100 transition-colors";
-const DIVIDER = "border-t border-stone-200 mx-3";
+const MENU_ITEM = "w-full flex items-center gap-2 px-4 py-2.5 text-xs text-stone-700 hover:bg-amber-50 transition-colors";
+const DIVIDER = "border-t border-amber-100 mx-3";
 
 interface PaperActionsMenuProps {
   paper: Paper;
@@ -104,7 +104,7 @@ export default function PaperActionsMenu({
   };
 
   return (
-    <div className="absolute top-full right-0 mt-1 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[180px] py-1">
+    <div className="absolute top-full right-0 mt-1 bg-white border border-amber-200 rounded-xl shadow-lg shadow-amber-900/10 z-50 min-w-[180px] py-1">
       {/* Play Paper — only when showPlayItem AND paper has audio */}
       {showPlayItem && isComplete && (
         <>

@@ -84,8 +84,8 @@ export default function SearchBar({
           onChange={handleChange}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          className="w-full pl-10 pr-11 py-3 text-base border border-stone-300 rounded-xl
-                     focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent
+          className="w-full pl-10 pr-11 py-3 text-base border border-amber-300 rounded-xl
+                     focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
                      bg-white shadow-sm"
         />
         {showPlaceholder && (
@@ -99,8 +99,8 @@ export default function SearchBar({
           onClick={toggleDrawer}
           aria-label="How does unarXiv work?"
           className={`absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center
-                      rounded-full bg-stone-500 text-white text-sm font-bold leading-none
-                      hover:bg-stone-600 transition-colors focus:outline-none
+                      rounded-full bg-amber-700 text-white text-sm font-bold leading-none
+                      hover:bg-amber-800 transition-colors focus:outline-none
                       ${shouldPulse ? "animate-help-pulse" : ""}`}
         >
           ?
@@ -116,13 +116,13 @@ export default function SearchBar({
         }}
       >
         <div className="pt-3">
-        <div className="bg-white border border-stone-300 rounded-xl p-6 shadow-sm">
-          <p className="font-bold text-stone-900 mb-3 text-lg text-center">How does <SiteName /> work?</p>
+        <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm">
+          <p className="font-bold text-stone-900 mb-3 text-lg text-center font-[family-name:var(--font-serif-brand)]">How does <SiteName /> work?</p>
           <p className="mb-4 text-sm text-stone-600 leading-relaxed">
             We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.
             For us to have a paper, it first needs to be added.
           </p>
-          <p className="text-sm text-stone-700 font-medium leading-relaxed mb-4 border-l-2 border-stone-300 pl-3">
+          <p className="text-sm text-stone-700 font-medium leading-relaxed mb-4 border-l-2 border-amber-400 pl-3">
             To add a paper, drop the arXiv URL in the search above — or browse to an arxiv.org paper &amp; add &lsquo;un&rsquo; to the URL &amp; hit enter.
           </p>
           <ArxivCta showHeading={false} inlineBrowse staticUrl className="py-0" />
@@ -133,7 +133,7 @@ export default function SearchBar({
       {!hideHint && (
         <p className="mt-2 text-xs text-stone-500">
           {isArxiv ? (
-            <span className="text-emerald-600 font-medium">
+            <span className="text-amber-700 font-medium">
               arXiv paper detected — looking it up...
             </span>
           ) : (
