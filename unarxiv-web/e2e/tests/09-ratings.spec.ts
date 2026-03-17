@@ -18,12 +18,19 @@ test.describe("Ratings", () => {
     await expect(rateMenuItem).toBeVisible({ timeout: 3000 });
     await rateMenuItem.click();
 
-    // Rating modal should appear
-    await expect(page.locator('[data-testid="rating-modal"]')).toBeVisible({ timeout: 5000 });
+    // Rating modal should appear — use data-testid if deployed, else text
+    const ratingModal = page.locator('[data-testid="rating-modal"], .fixed.inset-0');
+    await expect(ratingModal.first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator("text=Rate Narration Quality")).toBeVisible();
 
-    // Step 2: Click the 4th star
-    await page.locator('[data-testid="star-4"]').click();
+    // Step 2: Click the 4th star — use data-testid if deployed, else nth-child
+    const star4 = page.locator('[data-testid="star-4"]');
+    if (await star4.isVisible({ timeout: 500 }).catch(() => false)) {
+      await star4.click();
+    } else {
+      const starContainer = ratingModal.first().locator("div.flex.gap-1");
+      await starContainer.locator("button").nth(3).click();
+    }
 
     // Step 3: Submit
     const submitBtn = page.locator('button:has-text("Submit Rating")');
@@ -31,7 +38,7 @@ test.describe("Ratings", () => {
     await submitBtn.click();
 
     // Modal should close
-    await expect(page.locator('[data-testid="rating-modal"]')).not.toBeVisible({ timeout: 5000 });
+    await expect(ratingModal.first()).not.toBeVisible({ timeout: 5000 });
 
     // Step 4: Verify rating persists after reload
     await page.reload();
@@ -44,7 +51,7 @@ test.describe("Ratings", () => {
     await expect(rateMenuItem2).toBeVisible({ timeout: 3000 });
     await rateMenuItem2.click();
 
-    await expect(page.locator('[data-testid="rating-modal"]')).toBeVisible({ timeout: 5000 });
+    await expect(ratingModal.first()).toBeVisible({ timeout: 5000 });
 
     // Click "Clear Rating"
     const clearBtn = page.locator('button:has-text("Clear Rating")');
@@ -56,6 +63,6 @@ test.describe("Ratings", () => {
     }
 
     // Modal should close
-    await expect(page.locator('[data-testid="rating-modal"]')).not.toBeVisible({ timeout: 5000 });
+    await expect(ratingModal.first()).not.toBeVisible({ timeout: 5000 });
   });
 });

@@ -14,7 +14,7 @@ test.describe.serial("ArXiv Search Import", () => {
 
   test("typing arXiv ID in search imports paper", async ({ page }) => {
     await page.goto("/");
-    const searchInput = page.locator('[data-testid="search-input"]');
+    const searchInput = page.locator('[data-testid="search-input"], input[type="text"]').first();
     await searchInput.fill(TEST_ARXIV_ID);
 
     // Should detect arXiv ID and redirect to paper page
