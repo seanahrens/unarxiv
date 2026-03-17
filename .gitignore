@@ -17,6 +17,12 @@ out/
 # OS
 .DS_Store
 
+# Test artifacts
+test-results/
+
+# Claude Code
+.claude/
+
 # Large files
 *.mp3
 *.tar
