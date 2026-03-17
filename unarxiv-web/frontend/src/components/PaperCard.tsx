@@ -106,7 +106,7 @@ function PaperCard({ paper }: PaperCardProps) {
           {isProcessing ? (
             <>
               <div className="w-5 h-1 rounded-full bg-purple-100 overflow-hidden mt-1">
-                <div className="h-full rounded-full progress-flow w-full" style={{ background: "repeating-linear-gradient(90deg, rgb(192 132 252 / 0.2) 0%, rgb(192 132 252 / 0.6) 15%, rgb(168 85 247 / 0.7) 30%, rgb(192 132 252 / 0.6) 45%, rgb(192 132 252 / 0.2) 50%)", backgroundSize: "200% 100%" }} />
+                <div className="h-full rounded-full progress-flow-purple w-full" />
               </div>
               <span className="text-[10px] text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
             </>

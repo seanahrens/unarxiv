@@ -56,6 +56,7 @@ input[type="range"]::-moz-range-thumb {
   0% { background-position: 200% 0; }
   100% { background-position: 0% 0; }
 }
+/* Blue variant: used in NarrationProgress component (progress bar inside paper page) */
 .progress-flow {
   background: repeating-linear-gradient(
     90deg,
@@ -64,6 +65,19 @@ input[type="range"]::-moz-range-thumb {
     rgb(99 102 241 / 0.4) 30%,
     rgb(59 130 246 / 0.35) 45%,
     rgb(59 130 246 / 0.12) 50%
+  );
+  background-size: 200% 100%;
+  animation: progress-flow 1.8s linear infinite;
+}
+/* Purple variant: used in PaperCard processing indicator (subtle in-list state) */
+.progress-flow-purple {
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(192 132 252 / 0.2) 0%,
+    rgb(192 132 252 / 0.6) 15%,
+    rgb(168 85 247 / 0.7) 30%,
+    rgb(192 132 252 / 0.6) 45%,
+    rgb(192 132 252 / 0.2) 50%
   );
   background-size: 200% 100%;
   animation: progress-flow 1.8s linear infinite;
