@@ -15,10 +15,18 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
   const [addedTo, setAddedTo] = useState<Set<string>>(new Set());
   const [checking, setChecking] = useState(false);
   const subRef = useRef<HTMLDivElement>(null);
+  // Cache membership results per paperId so we don't re-fetch on every open.
+  const membershipCache = useRef<{ paperId: string; result: Set<string> } | null>(null);
 
-  // Check which lists already contain this paper when submenu opens
+  // Check which lists already contain this paper when submenu opens.
+  // Results are cached for the current paperId and reused on subsequent opens.
   useEffect(() => {
     if (!subOpen || entries.length === 0) return;
+    // Use cached result if we already checked for this paperId.
+    if (membershipCache.current?.paperId === paperId) {
+      setAddedTo(new Set(membershipCache.current.result));
+      return;
+    }
     setChecking(true);
     const check = async () => {
       const inLists = new Set<string>();
@@ -32,6 +40,7 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
           } catch {}
         })
       );
+      membershipCache.current = { paperId, result: inLists };
       setAddedTo(inLists);
       setChecking(false);
     };
@@ -47,10 +56,23 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
     try {
       if (isAdded) {
         await removeItemFromList(listId, token, paperId);
-        setAddedTo((prev) => { const next = new Set(prev); next.delete(listId); return next; });
+        setAddedTo((prev) => {
+          const next = new Set(prev);
+          next.delete(listId);
+          if (membershipCache.current?.paperId === paperId) {
+            membershipCache.current = { paperId, result: next };
+          }
+          return next;
+        });
       } else {
         await addItemsToList(listId, token, [paperId]);
-        setAddedTo((prev) => new Set([...prev, listId]));
+        setAddedTo((prev) => {
+          const next = new Set([...prev, listId]);
+          if (membershipCache.current?.paperId === paperId) {
+            membershipCache.current = { paperId, result: next };
+          }
+          return next;
+        });
       }
     } catch {}
   };
