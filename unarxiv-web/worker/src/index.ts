@@ -706,23 +706,7 @@ async function handleNarratePaper(
       );
     }
 
-    // Turnstile captcha disabled for now
-    // const hourlyCount = await getNarrationCountLastHour(env.DB, ip);
-    // if (hourlyCount > 2) {
-    //   const body = await request.json<{ turnstile_token?: string }>().catch(() => ({}));
-    //   if (!body.turnstile_token) {
-    //     return json({ error: "Turnstile verification required" }, 400);
-    //   }
-    //   const turnstileValid = await verifyTurnstile(
-    //     body.turnstile_token,
-    //     ip,
-    //     env.TURNSTILE_SECRET_KEY
-    //   );
-    //   if (!turnstileValid) {
-    //     return json({ error: "Turnstile verification failed" }, 403);
-    //   }
-    // }
-  }
+    }
 
   // Update status to queued
   await updatePaperStatus(env.DB, id, "queued");
@@ -992,34 +976,6 @@ function requireAdmin(request: Request, env: Env): Response | null {
   return null;
 }
 
-// verifyTurnstile is disabled while Turnstile captcha is turned off.
-// Uncomment and wire up when re-enabling Turnstile.
-/*
-async function verifyTurnstile(
-  token: string,
-  ip: string,
-  secretKey: string
-): Promise<boolean> {
-  if (!secretKey) return true; // Skip in dev
-
-  const formData = new URLSearchParams();
-  formData.append("secret", secretKey);
-  formData.append("response", token);
-  formData.append("remoteip", ip);
-
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString(),
-    }
-  );
-
-  const result = await response.json<{ success: boolean }>();
-  return result.success;
-}
-*/
 
 function json(data: any, status = 200, extraHeaders?: Record<string, string>): Response {
   const headers: Record<string, string> = {
