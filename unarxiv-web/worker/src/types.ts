@@ -59,6 +59,35 @@ export interface PaperResponse {
   completed_at: string | null;
 }
 
+// --- Lists ---
+
+export interface List {
+  id: string;
+  owner_token: string;
+  name: string;
+  description: string;
+  creator_ip: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListItem {
+  id: number;
+  list_id: string;
+  paper_id: string;
+  position: number;
+  added_at: string;
+}
+
+export interface ListResponse {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  paper_count: number;
+}
+
 export function paperToResponse(paper: Paper, audioBaseUrl: string): PaperResponse {
   return {
     id: paper.id,

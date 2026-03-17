@@ -45,6 +45,17 @@ import {
   getAllRatingsForPaper,
   clearRatingsForPaper,
   getPapersBySubmitterIp,
+  generateListId,
+  createList,
+  getList,
+  getListsByToken,
+  getAllLists,
+  updateList,
+  deleteList,
+  getListItems,
+  addListItems,
+  removeListItem,
+  reorderListItems,
 } from "./db";
 
 export default {
@@ -59,8 +70,8 @@ export default {
     const corsOrigin = allowedOrigins.includes(origin) ? origin : "https://unarxiv.org";
     const corsHeaders = {
       "Access-Control-Allow-Origin": corsOrigin,
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password, X-List-Token",
     };
 
     if (method === "OPTIONS") {
@@ -325,6 +336,204 @@ async function handleRequest(
     }
     const hasLow = await hasAnyLowRatings(env.DB);
     return json({ has_low_ratings: hasLow });
+  }
+
+  // --- Lists ---
+
+  // POST /api/lists — create a new list
+  if (path === "/api/lists" && method === "POST") {
+    const body = await request.json<{ name?: string; description?: string }>();
+    if (!body.name || !body.name.trim()) {
+      return json({ error: "name is required" }, 400);
+    }
+    const id = await generateListId(env.DB);
+    const ownerToken = crypto.randomUUID().replace(/-/g, "");
+    const ip = request.headers.get("CF-Connecting-IP") || null;
+    const list = await createList(env.DB, id, ownerToken, body.name.trim(), (body.description || "").trim(), ip);
+    return json({
+      list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: 0 },
+      owner_token: ownerToken,
+    }, 201);
+  }
+
+  // GET /api/my-lists — get lists owned by token
+  if (path === "/api/my-lists" && method === "GET") {
+    const token = request.headers.get("X-List-Token");
+    if (!token) return json({ error: "X-List-Token header required" }, 401);
+    const lists = await getListsByToken(env.DB, token);
+    return json({
+      lists: lists.map((l) => ({
+        id: l.id, name: l.name, description: l.description,
+        created_at: l.created_at, updated_at: l.updated_at, paper_count: l.paper_count,
+      })),
+    });
+  }
+
+  // GET /api/admin/lists — all lists with tokens (admin recovery)
+  if (path === "/api/admin/lists" && method === "GET") {
+    const password = request.headers.get("X-Admin-Password");
+    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const lists = await getAllLists(env.DB);
+    return json({
+      lists: lists.map((l) => ({
+        id: l.id, name: l.name, description: l.description, owner_token: l.owner_token,
+        creator_ip: l.creator_ip, created_at: l.created_at, paper_count: l.paper_count,
+      })),
+    });
+  }
+
+  // GET /api/lists/:id — get list with papers (public)
+  const listGetMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})$/);
+  if (listGetMatch && method === "GET") {
+    const list = await getList(env.DB, listGetMatch[1]);
+    if (!list) return json({ error: "List not found" }, 404);
+    const items = await getListItems(env.DB, list.id);
+    const paperIds = items.map((i) => i.paper_id);
+    const papers = paperIds.length > 0 ? await getPapersBatch(env.DB, paperIds) : [];
+    const paperMap = new Map(papers.map((p) => [p.id, p]));
+    // Return papers in list order, with null for papers not in DB
+    const orderedPapers = paperIds.map((id) => {
+      const p = paperMap.get(id);
+      return p ? paperToResponse(p, baseUrl) : { id, not_found: true };
+    });
+    return json({
+      list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: items.length },
+      papers: orderedPapers,
+    });
+  }
+
+  // PUT /api/lists/:id — update name/description
+  const listPutMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})$/);
+  if (listPutMatch && method === "PUT") {
+    const token = request.headers.get("X-List-Token");
+    const list = await getList(env.DB, listPutMatch[1]);
+    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+    const body = await request.json<{ name?: string; description?: string }>();
+    await updateList(env.DB, list.id, (body.name ?? list.name).trim(), (body.description ?? list.description).trim());
+    return json({ ok: true });
+  }
+
+  // DELETE /api/lists/:id — delete list
+  const listDeleteMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})$/);
+  if (listDeleteMatch && method === "DELETE") {
+    const token = request.headers.get("X-List-Token");
+    const list = await getList(env.DB, listDeleteMatch[1]);
+    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+    await deleteList(env.DB, list.id);
+    return json({ ok: true });
+  }
+
+  // POST /api/lists/:id/items — add papers to list
+  const listItemsAddMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/items$/);
+  if (listItemsAddMatch && method === "POST") {
+    const token = request.headers.get("X-List-Token");
+    const list = await getList(env.DB, listItemsAddMatch[1]);
+    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+    const body = await request.json<{ paper_ids?: string[] }>();
+    if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
+      return json({ error: "paper_ids array required" }, 400);
+    }
+    const added = await addListItems(env.DB, list.id, body.paper_ids);
+    return json({ ok: true, added });
+  }
+
+  // DELETE /api/lists/:id/items/:paperId — remove paper from list
+  const listItemRemoveMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/items\/([^/]+)$/);
+  if (listItemRemoveMatch && method === "DELETE") {
+    const token = request.headers.get("X-List-Token");
+    const list = await getList(env.DB, listItemRemoveMatch[1]);
+    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+    await removeListItem(env.DB, list.id, listItemRemoveMatch[2]);
+    return json({ ok: true });
+  }
+
+  // PUT /api/lists/:id/reorder — reorder list items
+  const listReorderMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/reorder$/);
+  if (listReorderMatch && method === "PUT") {
+    const token = request.headers.get("X-List-Token");
+    const list = await getList(env.DB, listReorderMatch[1]);
+    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+    const body = await request.json<{ paper_ids?: string[] }>();
+    if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
+      return json({ error: "paper_ids array required" }, 400);
+    }
+    await reorderListItems(env.DB, list.id, body.paper_ids);
+    return json({ ok: true });
+  }
+
+  // POST /api/lists/:id/import — bulk import arXiv IDs
+  const listImportMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/import$/);
+  if (listImportMatch && method === "POST") {
+    const token = request.headers.get("X-List-Token");
+    const list = await getList(env.DB, listImportMatch[1]);
+    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+    const body = await request.json<{ raw_text?: string }>();
+    if (!body.raw_text) return json({ error: "raw_text required" }, 400);
+
+    // Parse all arXiv IDs from text
+    const chunks = body.raw_text.split(/[\s,;]+/).filter(Boolean);
+    const parsed = new Map<string, boolean>(); // id -> valid
+    const invalid: string[] = [];
+    for (const chunk of chunks) {
+      const id = parseArxivId(chunk);
+      if (id) {
+        parsed.set(id, true);
+      } else if (chunk.trim()) {
+        invalid.push(chunk);
+      }
+    }
+
+    const ids = [...parsed.keys()];
+    if (ids.length === 0) {
+      return json({ added: [], invalid });
+    }
+
+    // Check which exist in DB
+    const existing = await getPapersBatch(env.DB, ids);
+    const existingIds = new Set(existing.map((p) => p.id));
+    const missing = ids.filter((id) => !existingIds.has(id));
+
+    // Auto-add missing papers from arXiv (cap at 20)
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const cf = (request as any).cf;
+    const toAdd = missing.slice(0, 20);
+    for (const arxivId of toAdd) {
+      try {
+        const meta = await scrapeArxivMetadata(arxivId);
+        await insertPaper(env.DB, {
+          id: meta.id,
+          arxiv_url: meta.arxiv_url,
+          title: meta.title,
+          authors: meta.authors,
+          abstract: meta.abstract,
+          published_date: meta.published_date,
+          submitted_by_ip: ip,
+          submitted_by_country: cf?.country || null,
+          submitted_by_city: cf?.city || null,
+        });
+      } catch {
+        invalid.push(arxivId);
+      }
+    }
+    // IDs beyond the cap are added to invalid
+    for (const id of missing.slice(20)) {
+      invalid.push(id);
+    }
+
+    // Add all valid IDs to list
+    const validIds = ids.filter((id) => !invalid.includes(id));
+    const actuallyAdded = await addListItems(env.DB, list.id, validIds);
+    const duplicateCount = validIds.length - actuallyAdded;
+
+    // Fetch final paper data
+    const allPapers = validIds.length > 0 ? await getPapersBatch(env.DB, validIds) : [];
+    return json({
+      added: allPapers.map((p) => paperToResponse(p, baseUrl)),
+      duplicates: duplicateCount,
+      invalid,
+    });
   }
 
   // POST /api/webhooks/modal

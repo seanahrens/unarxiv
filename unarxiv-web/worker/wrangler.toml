@@ -16,7 +16,7 @@ PER_IP_DAILY_LIMIT = "10"
 [[d1_databases]]
 binding = "DB"
 database_name = "unarxiv-db"
-database_id = "d1936353-a389-4f38-a109-79db70cc44ef"
+database_id = "f87529b5-2f6c-43a9-988c-92f41e0a790e"
 
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"

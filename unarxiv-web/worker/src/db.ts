@@ -1,7 +1,7 @@
 /**
  * Database queries for D1.
  */
-import type { Paper, PaperStatus } from "./types";
+import type { Paper, PaperStatus, List, ListItem } from "./types";
 
 /** Get a paper by arXiv ID. */
 export async function getPaper(db: D1Database, id: string): Promise<Paper | null> {
@@ -459,6 +459,162 @@ export async function hasAnyLowRatings(db: D1Database): Promise<boolean> {
     .prepare("SELECT EXISTS(SELECT 1 FROM papers WHERE has_low_rating = 1) as has_low")
     .first<{ has_low: number }>();
   return result?.has_low === 1;
+}
+
+// --- Lists ---
+
+const LIST_ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+/** Generate a unique 4-char list ID with collision retry. */
+export async function generateListId(db: D1Database): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let id = "";
+    for (let i = 0; i < 4; i++) {
+      id += LIST_ID_CHARS[Math.floor(Math.random() * LIST_ID_CHARS.length)];
+    }
+    const existing = await db
+      .prepare("SELECT 1 FROM lists WHERE id = ?")
+      .bind(id)
+      .first();
+    if (!existing) return id;
+  }
+  throw new Error("Failed to generate unique list ID");
+}
+
+/** Create a new list. Returns the list. */
+export async function createList(
+  db: D1Database,
+  id: string,
+  ownerToken: string,
+  name: string,
+  description: string,
+  creatorIp: string | null
+): Promise<List> {
+  await db
+    .prepare(
+      `INSERT INTO lists (id, owner_token, name, description, creator_ip)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    .bind(id, ownerToken, name, description, creatorIp)
+    .run();
+  return (await getList(db, id))!;
+}
+
+/** Get a list by ID. */
+export async function getList(db: D1Database, id: string): Promise<List | null> {
+  return db.prepare("SELECT * FROM lists WHERE id = ?").bind(id).first<List>();
+}
+
+/** Get all lists owned by a token. */
+export async function getListsByToken(db: D1Database, ownerToken: string): Promise<(List & { paper_count: number })[]> {
+  const results = await db
+    .prepare(
+      `SELECT l.*, COALESCE(c.cnt, 0) as paper_count
+       FROM lists l
+       LEFT JOIN (SELECT list_id, COUNT(*) as cnt FROM list_items GROUP BY list_id) c ON c.list_id = l.id
+       WHERE l.owner_token = ?
+       ORDER BY l.created_at DESC`
+    )
+    .bind(ownerToken)
+    .all<List & { paper_count: number }>();
+  return results.results;
+}
+
+/** Get all lists with tokens (admin). */
+export async function getAllLists(db: D1Database): Promise<(List & { paper_count: number })[]> {
+  const results = await db
+    .prepare(
+      `SELECT l.*, COALESCE(c.cnt, 0) as paper_count
+       FROM lists l
+       LEFT JOIN (SELECT list_id, COUNT(*) as cnt FROM list_items GROUP BY list_id) c ON c.list_id = l.id
+       ORDER BY l.created_at DESC`
+    )
+    .all<List & { paper_count: number }>();
+  return results.results;
+}
+
+/** Update list name/description. */
+export async function updateList(
+  db: D1Database,
+  id: string,
+  name: string,
+  description: string
+): Promise<void> {
+  await db
+    .prepare("UPDATE lists SET name = ?, description = ?, updated_at = datetime('now') WHERE id = ?")
+    .bind(name, description, id)
+    .run();
+}
+
+/** Delete a list and all its items. */
+export async function deleteList(db: D1Database, id: string): Promise<void> {
+  await db.batch([
+    db.prepare("DELETE FROM list_items WHERE list_id = ?").bind(id),
+    db.prepare("DELETE FROM lists WHERE id = ?").bind(id),
+  ]);
+}
+
+/** Get ordered paper IDs for a list. */
+export async function getListItems(db: D1Database, listId: string): Promise<ListItem[]> {
+  const results = await db
+    .prepare("SELECT * FROM list_items WHERE list_id = ? ORDER BY position ASC")
+    .bind(listId)
+    .all<ListItem>();
+  return results.results;
+}
+
+/** Add papers to a list. Skips duplicates. Returns count actually added. */
+export async function addListItems(
+  db: D1Database,
+  listId: string,
+  paperIds: string[]
+): Promise<number> {
+  if (paperIds.length === 0) return 0;
+  // Get current max position
+  const maxPos = await db
+    .prepare("SELECT COALESCE(MAX(position), -1) as mp FROM list_items WHERE list_id = ?")
+    .bind(listId)
+    .first<{ mp: number }>();
+  let pos = (maxPos?.mp ?? -1) + 1;
+  let added = 0;
+  for (const paperId of paperIds) {
+    try {
+      await db
+        .prepare("INSERT INTO list_items (list_id, paper_id, position) VALUES (?, ?, ?)")
+        .bind(listId, paperId, pos)
+        .run();
+      pos++;
+      added++;
+    } catch (e: any) {
+      if (e.message?.includes("UNIQUE")) continue; // duplicate, skip
+      throw e;
+    }
+  }
+  return added;
+}
+
+/** Remove a paper from a list. */
+export async function removeListItem(db: D1Database, listId: string, paperId: string): Promise<void> {
+  await db
+    .prepare("DELETE FROM list_items WHERE list_id = ? AND paper_id = ?")
+    .bind(listId, paperId)
+    .run();
+}
+
+/** Reorder list items. paper_ids is the full ordered array. */
+export async function reorderListItems(
+  db: D1Database,
+  listId: string,
+  orderedPaperIds: string[]
+): Promise<void> {
+  const stmts = orderedPaperIds.map((paperId, i) =>
+    db
+      .prepare("UPDATE list_items SET position = ? WHERE list_id = ? AND paper_id = ?")
+      .bind(i, listId, paperId)
+  );
+  if (stmts.length > 0) {
+    await db.batch(stmts);
+  }
 }
 
 /** Cleanup old visits and submissions (call periodically). */
