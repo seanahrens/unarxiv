@@ -20,7 +20,7 @@ image = (
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py")
 )
 
-# Secrets: set via `modal secret create unarxiv-secrets ...`
+# Secrets: set via `modal secret create texreader-secrets ...`
 # Required keys:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 #   CALLBACK_SECRET (shared with Worker's MODAL_WEBHOOK_SECRET)
@@ -78,7 +78,7 @@ def _download_from_r2(r2_key: str) -> str | None:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("unarxiv-secrets")],
+    secrets=[modal.Secret.from_name("texreader-secrets")],
     timeout=3600,  # 1 hour max per paper
     retries=0,
 )
@@ -338,7 +338,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 # Web endpoint for the Cloudflare Worker to call
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("unarxiv-secrets")],
+    secrets=[modal.Secret.from_name("texreader-secrets")],
     timeout=60,
 )
 @modal.fastapi_endpoint(method="POST")
