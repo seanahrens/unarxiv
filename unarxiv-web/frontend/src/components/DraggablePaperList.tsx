@@ -1,12 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
-import { audioUrl, isInProgress, formatAuthors, type Paper } from "@/lib/api";
-import AudioFileIcon from "@/components/AudioFileIcon";
-import FileIcon from "@/components/FileIcon";
-import ProcessingFileIcon from "@/components/ProcessingFileIcon";
+import { type Paper } from "@/lib/api";
+import PaperListRow from "@/components/PaperListRow";
 
 interface DraggablePaperListProps {
   items: string[]; // paper IDs in order
@@ -27,7 +24,7 @@ export default function DraggablePaperList({
   emptyMessage,
   emptyAction,
 }: DraggablePaperListProps) {
-  const { state, actions } = useAudio();
+  const { state } = useAudio();
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -96,14 +93,6 @@ export default function DraggablePaperList({
     setDragOverIdx(null);
   };
 
-  const handlePlay = (paper: Paper) => {
-    if (state.paperId === paper.id) {
-      actions.togglePlay();
-    } else {
-      actions.loadPaper(paper.id, paper.title, audioUrl(paper.id));
-    }
-  };
-
   if (loading) {
     return <div className="text-stone-500 text-sm py-12 text-center">Loading...</div>;
   }
@@ -125,6 +114,11 @@ export default function DraggablePaperList({
         const isDragOver = dragOverIdx === idx && dragIdx !== null && dragIdx !== idx;
         const dragAbove = isDragOver && dragIdx !== null && dragIdx > idx;
         const dragBelow = isDragOver && dragIdx !== null && dragIdx < idx;
+        const dragClass = [
+          dragIdx === idx ? "opacity-30" : "",
+          dragAbove ? "border-t-2 !border-t-stone-400" : "",
+          dragBelow ? "border-b-2 !border-b-stone-400" : "",
+        ].filter(Boolean).join(" ");
 
         return (
           <div
@@ -138,69 +132,44 @@ export default function DraggablePaperList({
             onTouchStart={(e) => handleTouchStart(e, idx)}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className={`flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 transition-colors ${
-              dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-100" : "hover:bg-stone-100"
-            } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
           >
-            <Link
-              href={`/p?id=${paperId}`}
-              className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
-                paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
-                isInProgress(paper?.status || "") ? "text-purple-300" :
-                "text-stone-400"
-              }`}
-              title="View paper"
-            >
-              {paper?.status === "complete" ? <AudioFileIcon size={28} /> :
-               isInProgress(paper?.status || "") ? <ProcessingFileIcon size={28} /> :
-               <FileIcon size={28} />}
-            </Link>
-
-            {paper?.status === "complete" ? (
-              <button onClick={() => handlePlay(paper)} className="flex-1 min-w-0 text-left cursor-pointer">
-                <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                  {paper?.title || paperId}
-                </span>
-                {paper?.authors && paper.authors.length > 0 && (
-                  <span className="text-[11px] text-stone-500 truncate block">
-                    <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
-                    <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
-                  </span>
-                )}
-              </button>
+            {paper ? (
+              <PaperListRow
+                paper={paper}
+                paperId={paperId}
+                isActive={isActive && dragIdx !== idx}
+                className={dragClass}
+                actions={
+                  <>
+                    <span className="text-stone-400 cursor-grab shrink-0 touch-none">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="4" y1="8" x2="20" y2="8" />
+                        <line x1="4" y1="12" x2="20" y2="12" />
+                        <line x1="4" y1="16" x2="20" y2="16" />
+                      </svg>
+                    </span>
+                    <button
+                      onClick={() => onRemove(paperId)}
+                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                      title="Remove"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </>
+                }
+              />
             ) : (
-              <Link href={`/p?id=${paperId}`} className="flex-1 min-w-0 text-left">
-                <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                  {paper?.title || (loading ? "" : paperId)}
-                </span>
-                {loading && !paper ? (
+              <div className={`flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 transition-colors hover:bg-stone-100 ${dragClass}`}>
+                <span className="w-7 h-7 shrink-0 bg-stone-100 rounded animate-pulse" />
+                <div className="flex-1 min-w-0">
+                  <span className="block h-3 w-48 bg-stone-100 rounded animate-pulse" />
                   <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
-                ) : paper?.authors && paper.authors.length > 0 ? (
-                  <span className="text-[11px] text-stone-500 truncate block">
-                    <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
-                    <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
-                  </span>
-                ) : null}
-              </Link>
+                </div>
+              </div>
             )}
-
-            <span className="text-stone-400 cursor-grab shrink-0 touch-none">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="4" y1="8" x2="20" y2="8" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="16" x2="20" y2="16" />
-              </svg>
-            </span>
-            <button
-              onClick={() => onRemove(paperId)}
-              className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
-              title="Remove"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
           </div>
         );
       })}

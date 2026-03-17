@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
-import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, isInProgress, formatAuthors, type Paper } from "@/lib/api";
+import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, isInProgress, type Paper } from "@/lib/api";
 import {
   getMyListTokens,
   getTokenForList,
@@ -17,10 +17,8 @@ import {
   type ListMeta,
   DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
-import AudioFileIcon from "@/components/AudioFileIcon";
-import FileIcon from "@/components/FileIcon";
-import ProcessingFileIcon from "@/components/ProcessingFileIcon";
 import DraggablePaperList from "@/components/DraggablePaperList";
+import PaperListRow from "@/components/PaperListRow";
 import NarrationProgress, { POLL_INTERVAL_MS } from "@/components/NarrationProgress";
 
 export default function PlaylistPage() {
@@ -139,14 +137,6 @@ export default function PlaylistPage() {
 
   useEffect(() => { loadLists(); }, [loadLists]);
 
-  const handlePlay = (paper: Paper) => {
-    if (state.paperId === paper.id) {
-      actions.togglePlay();
-    } else {
-      actions.loadPaper(paper.id, paper.title, audioUrl(paper.id));
-    }
-  };
-
   const handleCreateList = async () => {
     try {
       const { list, owner_token } = await createListApi(DEFAULT_COLLECTION_NAME, "");
@@ -236,69 +226,28 @@ export default function PlaylistPage() {
         ) : (
           <div className="divide-y divide-stone-200">
             {myAdditions.map((paper) => {
-              const isActive = state.paperId === paper.id;
               const paperInProgress = isInProgress(paper.status);
-
               return (
-                <div
+                <PaperListRow
                   key={paper.id}
-                  className={`px-4 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-100" : "hover:bg-stone-100"}`}
-                >
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <Link
-                      href={`/p?id=${paper.id}`}
-                      className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
-                        paper.status === "complete" ? "text-stone-500 hover:text-stone-700" :
-                        paperInProgress ? "text-purple-300" :
-                        "text-stone-400"
-                      }`}
-                      title="View paper"
-                    >
-                      {paper.status === "complete" ? <AudioFileIcon size={28} /> : paperInProgress ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
-                    </Link>
-
-                    {paper.status === "complete" ? (
-                      <button
-                        onClick={() => handlePlay(paper)}
-                        className="flex-1 min-w-0 text-left cursor-pointer"
-                      >
-                        <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                          {paper.title}
+                  paper={paper}
+                  paperId={paper.id}
+                  isActive={state.paperId === paper.id}
+                  extra={
+                    <>
+                      {paperInProgress && (
+                        <div className="mt-1">
+                          <NarrationProgress paper={paper} />
+                        </div>
+                      )}
+                      {paper.status === "failed" && (
+                        <span className="text-[11px] text-red-500 block mt-1">
+                          Failed{paper.error_message ? `: ${paper.error_message}` : ""}
                         </span>
-                        {paper.authors && paper.authors.length > 0 && (
-                          <span className="text-[11px] text-stone-500 truncate block">
-                            <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
-                            <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
-                          </span>
-                        )}
-                      </button>
-                    ) : (
-                      <Link
-                        href={`/p?id=${paper.id}`}
-                        className="flex-1 min-w-0 text-left"
-                      >
-                        <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                          {paper.title}
-                        </span>
-                        {paper.authors && paper.authors.length > 0 && (
-                          <span className="text-[11px] text-stone-500 truncate block">
-                            <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
-                            <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
-                          </span>
-                        )}
-                        {paperInProgress && (
-                          <div className="mt-1">
-                            <NarrationProgress paper={paper} />
-                          </div>
-                        )}
-                        {paper.status === "failed" && (
-                          <span className="text-[11px] text-red-500 block mt-1">
-                            Failed{paper.error_message ? `: ${paper.error_message}` : ""}
-                          </span>
-                        )}
-                      </Link>
-                    )}
-
+                      )}
+                    </>
+                  }
+                  actions={
                     <button
                       onClick={async () => {
                         const ok = await deleteMyAddition(paper.id);
@@ -315,9 +264,8 @@ export default function PlaylistPage() {
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
                     </button>
-                  </div>
-
-                </div>
+                  }
+                />
               );
             })}
           </div>
@@ -438,70 +386,29 @@ export default function PlaylistPage() {
           <div className="divide-y divide-stone-200">
             {readHistory.map((entry) => {
               const paper = historyPapers[entry.paperId];
-              const isActive = state.paperId === entry.paperId;
+              if (!paper) return null;
               return (
-                <div
+                <PaperListRow
                   key={entry.paperId}
-                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${isActive ? "bg-blue-100" : "hover:bg-stone-100"}`}
-                >
-                  <Link
-                    href={`/p?id=${entry.paperId}`}
-                    className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
-                      paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
-                      isInProgress(paper?.status || "") ? "text-purple-300" :
-                      "text-stone-400"
-                    }`}
-                    title="View paper"
-                  >
-                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : isInProgress(paper?.status || "") ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
-                  </Link>
-
-                  {paper?.status === "complete" ? (
+                  paper={paper}
+                  paperId={entry.paperId}
+                  isActive={state.paperId === entry.paperId}
+                  actions={
                     <button
-                      onClick={() => handlePlay(paper)}
-                      className="flex-1 min-w-0 text-left cursor-pointer"
+                      onClick={() => {
+                        markAsUnread(entry.paperId);
+                        setReadHistory((prev) => prev.filter((h) => h.paperId !== entry.paperId));
+                      }}
+                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                      title="Mark as unread"
                     >
-                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                        {paper?.title || (historyLoading ? "" : entry.paperId)}
-                      </span>
-                      {paper?.authors && paper.authors.length > 0 && (
-                        <span className="text-[11px] text-stone-500 truncate block">
-                          <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
-                          <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
-                        </span>
-                      )}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
-                  ) : (
-                    <Link
-                      href={`/p?id=${entry.paperId}`}
-                      className="flex-1 min-w-0 text-left"
-                    >
-                      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
-                        {paper?.title || (historyLoading ? "" : entry.paperId)}
-                      </span>
-                      {paper?.authors && paper.authors.length > 0 && (
-                        <span className="text-[11px] text-stone-500 truncate block">
-                          <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
-                          <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
-                        </span>
-                      )}
-                    </Link>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      markAsUnread(entry.paperId);
-                      setReadHistory((prev) => prev.filter((h) => h.paperId !== entry.paperId));
-                    }}
-                    className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
-                    title="Mark as unread"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                </div>
+                  }
+                />
               );
             })}
           </div>
