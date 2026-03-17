@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, formatDuration, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, formatDuration, isInProgress, formatPaperDate, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
@@ -473,16 +473,7 @@ function GenerateButtonWithMenu({
   );
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + "T00:00:00");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
-  } catch {
-    return dateStr;
-  }
-}
+function formatDate(dateStr: string): string { return formatPaperDate(dateStr); }
 
 export default function PaperPageContent({ paperId: propId }: { paperId?: string } = {}) {
   const searchParams = useSearchParams();
@@ -605,7 +596,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
-  const isProcessing = !isReady && !isFailed && !isNotRequested;
+  const isProcessing = isInProgress(paper.status);
   const authors: string[] = paper.authors || [];
 
   return (
