@@ -4,7 +4,7 @@ import { API_BASE, ADMIN_PASSWORD, knownCompleteId } from "../helpers/fixtures";
 let testListId: string;
 let testListToken: string;
 
-test.describe("Lists API", () => {
+test.describe.serial("Lists API", () => {
   test("create a list", async () => {
     const res = await fetch(`${API_BASE}/api/lists`, {
       method: "POST",
@@ -139,38 +139,48 @@ test.describe("Lists API", () => {
 });
 
 test.describe("Lists Frontend", () => {
-  test("lists management page renders", async ({ page }) => {
-    await page.goto("/l/");
-    await expect(page.locator("h1:has-text('My Lists')")).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('input[placeholder="List name"]')).toBeVisible();
+  test("collections section visible on playlist page", async ({ page }) => {
+    await page.goto("/playlist");
+    await expect(page.locator("h2:has-text('My Collections')")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button[title="Create new collection"]')).toBeVisible();
   });
 
-  test("create list and view it", async ({ page }) => {
-    await page.goto("/l/");
-    await page.evaluate(() => localStorage.clear());
+  test("create collection via API and view it", async ({ page }) => {
+    // Create via API (frontend creation uses auto-naming)
+    const res = await fetch(`${API_BASE}/api/lists`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Playwright Frontend Test", description: "Test description" }),
+    });
+    const { list, owner_token } = await res.json();
+
+    // Store token in localStorage so the page recognizes ownership
+    await page.goto("/playlist");
+    await page.evaluate(
+      ({ id, token, name }) => {
+        const tokens = JSON.parse(localStorage.getItem("list_tokens") || "{}");
+        tokens[id] = { ownerToken: token, name };
+        localStorage.setItem("list_tokens", JSON.stringify(tokens));
+      },
+      { id: list.id, token: owner_token, name: "Playwright Frontend Test" }
+    );
     await page.reload();
 
-    // Fill in form
-    await page.fill('input[placeholder="List name"]', "Playwright Test List");
-    await page.fill('textarea[placeholder="Description (optional)"]', "Test description");
-    await page.click('button:has-text("Create List")');
+    // Collection should appear in My Collections section
+    await expect(page.locator(`text=Playwright Frontend Test`)).toBeVisible({ timeout: 10000 });
 
-    // Wait for the list to appear
-    await expect(page.locator('h3:has-text("Playwright Test List")')).toBeVisible({ timeout: 10000 });
+    // Click into the collection
+    await page.locator(`text=Playwright Frontend Test`).click();
+    await page.waitForURL(/\/l\?id=/);
 
-    // Click into the list
-    await page.locator('h3:has-text("Playwright Test List")').click();
+    // Should see the collection view with name as h1
+    await expect(page.locator('h1:has-text("Playwright Frontend Test")')).toBeVisible({ timeout: 5000 });
 
-    // Should see the list view
-    await expect(page.locator('h1:has-text("Playwright Test List")')).toBeVisible({ timeout: 5000 });
-
-    // Clean up: delete the list
-    const editBtn = page.locator('button:has-text("Edit")');
-    if (await editBtn.isVisible()) {
-      await editBtn.click();
-      await page.click('button:has-text("Delete List")');
-      page.on("dialog", (dialog) => dialog.accept());
-    }
+    // Clean up via API
+    await fetch(`${API_BASE}/api/lists/${list.id}`, {
+      method: "DELETE",
+      headers: { "X-List-Token": owner_token },
+    });
   });
 });
 

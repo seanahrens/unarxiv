@@ -56,8 +56,8 @@ test.describe("Playlist", () => {
     const paperLink = page.locator(`a[href="/p/?id=${id}"]`).first();
     await expect(paperLink).toBeVisible({ timeout: 10000 });
 
-    // Click remove button (X icon with title "Remove from playlist")
-    const removeBtn = page.locator('button[title="Remove from playlist"]').first();
+    // Click remove button (X icon with title "Remove")
+    const removeBtn = page.locator('button[title="Remove"]').first();
     await removeBtn.click();
 
     // Paper should be gone
