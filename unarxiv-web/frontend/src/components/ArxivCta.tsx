@@ -19,8 +19,8 @@ export default function ArxivCta({ query, className, showHeading = true, inlineB
     : "Browse papers on arXiv.org";
 
   const buttonStyle = inlineBrowse
-    ? "inline-flex items-center gap-2 px-5 py-1.5 text-sm font-medium text-stone-600 bg-stone-200 hover:bg-stone-300 rounded-full transition-colors no-underline whitespace-nowrap"
-    : "inline-flex items-center gap-2 px-5 py-1.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-full transition-colors no-underline whitespace-nowrap";
+    ? "inline-flex items-center gap-2 px-5 py-1.5 text-sm font-medium text-slate-400 bg-slate-700 hover:bg-slate-600 rounded-full transition-colors no-underline whitespace-nowrap"
+    : "inline-flex items-center gap-2 px-5 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors no-underline whitespace-nowrap";
 
   const browseButton = (
     <a
@@ -41,10 +41,10 @@ export default function ArxivCta({ query, className, showHeading = true, inlineB
     <div className={`text-center ${className || "py-10"}`}>
       {showHeading && (
         <>
-          <h3 className="text-xs font-medium text-stone-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
             Not seeing the paper you expect?
           </h3>
-          <p className="text-sm text-stone-500 max-w-md mx-auto mb-5">
+          <p className="text-sm text-slate-9000 max-w-md mx-auto mb-5">
             Find it on arXiv. Add &lsquo;un&rsquo; to the URL. We&rsquo;ll narrate it!
           </p>
         </>

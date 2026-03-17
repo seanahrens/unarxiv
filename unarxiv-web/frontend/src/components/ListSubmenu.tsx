@@ -84,7 +84,7 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
     >
       <button
         onClick={() => setSubOpen(!subOpen)}
-        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800 transition-colors"
       >
         <span className="flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -99,14 +99,14 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
       </button>
 
       {subOpen && (
-        <div className="absolute right-full top-0 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[160px] py-1">
+        <div className="absolute right-full top-0 bg-slate-900 border border-slate-700 rounded-xl shadow-lg z-50 min-w-[160px] py-1">
           {entries.map(([listId, entry]) => {
             const isAdded = addedTo.has(listId);
             return (
               <button
                 key={listId}
                 onClick={() => handleToggle(listId)}
-                className={`w-full flex items-center gap-2 px-4 py-2 text-xs hover:bg-stone-100 transition-colors ${isAdded ? "text-emerald-600" : "text-stone-700"}`}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-xs hover:bg-slate-800 transition-colors ${isAdded ? "text-indigo-400" : "text-slate-300"}`}
               >
                 {isAdded ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

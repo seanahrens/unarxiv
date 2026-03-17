@@ -79,7 +79,7 @@ export default function TurnstileWidget({ onVerify }: TurnstileWidgetProps) {
     <div>
       <div ref={containerRef} />
       {loading && (
-        <div className="text-sm text-stone-500 py-4 text-center">
+        <div className="text-sm text-slate-9000 py-4 text-center">
           Loading verification...
         </div>
       )}

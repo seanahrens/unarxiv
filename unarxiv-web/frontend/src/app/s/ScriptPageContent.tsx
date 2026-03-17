@@ -44,14 +44,14 @@ export default function ScriptPageContent() {
   }, [id]);
 
   if (loading) {
-    return <div className="text-center py-20 text-stone-500">Loading...</div>;
+    return <div className="text-center py-20 text-slate-9000">Loading...</div>;
   }
 
   if (error || !paper) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
-        <Link href="/" className="text-sm text-stone-500 hover:text-stone-700 transition-colors">
+        <p className="text-red-400 mb-3">{error || "Paper not found"}</p>
+        <Link href="/" className="text-sm text-slate-9000 hover:text-slate-300 transition-colors">
           &larr; Back to papers
         </Link>
       </div>
@@ -62,18 +62,18 @@ export default function ScriptPageContent() {
     <div>
       <Link
         href={`/p?id=${paper.id}`}
-        className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-4 inline-block"
+        className="text-sm text-slate-500 hover:text-slate-400 transition-colors mb-4 inline-block"
       >
         &larr; Back to paper
       </Link>
 
-      <h1 className="text-xl font-bold text-stone-900 leading-tight mb-1">
+      <h1 className="text-xl font-bold text-slate-100 leading-tight mb-1">
         {paper.title || "Untitled"}
       </h1>
-      <p className="text-sm text-stone-400 mb-6">Narration Script</p>
+      <p className="text-sm text-slate-500 mb-6">Narration Script</p>
 
-      <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
-        <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+        <pre className="whitespace-pre-wrap text-sm text-slate-200 leading-relaxed font-sans">
           {script}
         </pre>
       </div>

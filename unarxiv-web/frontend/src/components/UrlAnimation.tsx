@@ -14,14 +14,14 @@ type Phase = "typing_u" | "typing_n" | "pause_typed" | "deleting_n" | "deleting_
 function UrlBar({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`select-none pointer-events-none ${className || ""}`}>
-      <div className="inline-flex items-center gap-2 bg-stone-50 border border-stone-300 rounded-full px-3 py-1.5">
+      <div className="inline-flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-full px-3 py-1.5">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
-        <span className="text-[13px] text-stone-600 whitespace-nowrap font-sans mx-1">
-          <span className="text-stone-400">https://</span>
+        <span className="text-[13px] text-slate-400 whitespace-nowrap font-sans mx-1">
+          <span className="text-slate-500">https://</span>
           {children}
           <span>arxiv.org/abs/2411.09222</span>
         </span>
@@ -37,7 +37,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
 function StaticUrlAnimation({ className }: { className?: string }) {
   return (
     <UrlBar className={className}>
-      <span className="text-stone-900 bg-blue-200">un</span>
+      <span className="text-slate-100 bg-blue-200">un</span>
     </UrlBar>
   );
 }
@@ -94,14 +94,14 @@ function AnimatedUrlAnimation({ className }: { className?: string }) {
 
   const cursor = (
     <span
-      className="inline-block w-[1.5px] h-[13px] bg-stone-800 align-middle"
+      className="inline-block w-[1.5px] h-[13px] bg-indigo-700 align-middle"
       style={{ opacity: cursorVisible ? 1 : 0 }}
     />
   );
 
   return (
     <UrlBar className={className}>
-      {typed && <span className="font-bold text-stone-900">{typed}</span>}
+      {typed && <span className="font-bold text-slate-100">{typed}</span>}
       {spacer}
       {cursor}
     </UrlBar>

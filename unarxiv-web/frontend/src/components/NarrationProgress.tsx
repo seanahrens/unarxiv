@@ -90,7 +90,7 @@ export default function NarrationProgress({
   if (errorMsg) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-2xs font-medium text-red-600">Failed</span>
+        <span className="text-2xs font-medium text-red-400">Failed</span>
         <span className="text-2xs text-red-400 truncate">{errorMsg}</span>
       </div>
     );
@@ -110,10 +110,10 @@ export default function NarrationProgress({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-2xs text-stone-500 font-medium shrink-0">
+      <span className="text-2xs text-slate-9000 font-medium shrink-0">
         {label}{etaText ? ` (${etaText})` : ""}
       </span>
-      <div className="flex-1 max-w-[100px] h-1.5 rounded-full bg-stone-100 overflow-hidden">
+      <div className="flex-1 max-w-[100px] h-1.5 rounded-full bg-slate-800 overflow-hidden">
         <div className="h-full rounded-full progress-flow w-full" />
       </div>
     </div>
