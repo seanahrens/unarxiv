@@ -705,8 +705,7 @@ async function handleNarratePaper(
         503
       );
     }
-
-    }
+  }
 
   // Update status to queued
   await updatePaperStatus(env.DB, id, "queued");
