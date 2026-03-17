@@ -88,7 +88,7 @@ export default function RootLayout({
               About
             </Link>
             <div className="text-right">
-              <p className="text-[11px] text-stone-500 max-w-md">
+              <p className="text-2xs text-stone-500 max-w-md">
                 arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
               </p>
             </div>

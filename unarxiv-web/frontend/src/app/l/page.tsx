@@ -484,7 +484,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
             </button>
             {showEditMenu && (
               <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-20 min-w-[160px]">
-                <p className="px-3 py-1.5 text-[10px] text-stone-400 italic text-center bg-stone-50 rounded-t-lg border-b border-stone-100">Only visible to you</p>
+                <p className="px-3 py-1.5 text-3xs text-stone-400 italic text-center bg-stone-50 rounded-t-lg border-b border-stone-100">Only visible to you</p>
                 <div className="py-1">
                   <button
                     onClick={() => {

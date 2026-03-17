@@ -241,7 +241,7 @@ export default function PlaylistPage() {
                         </div>
                       )}
                       {paper.status === "failed" && (
-                        <span className="text-[11px] text-red-500 block mt-1">
+                        <span className="text-2xs text-red-500 block mt-1">
                           Failed{paper.error_message ? `: ${paper.error_message}` : ""}
                         </span>
                       )}

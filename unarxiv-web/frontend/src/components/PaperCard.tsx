@@ -108,10 +108,10 @@ function PaperCard({ paper }: PaperCardProps) {
               <div className="w-5 h-1 rounded-full bg-purple-100 overflow-hidden mt-1">
                 <div className="h-full rounded-full progress-flow-purple w-full" />
               </div>
-              <span className="text-[10px] text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
+              <span className="text-3xs text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
             </>
           ) : paper.duration_seconds ? (
-            <span className="text-[10px] text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
+            <span className="text-3xs text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}
         </div>
         {/* Card content */}
@@ -121,7 +121,7 @@ function PaperCard({ paper }: PaperCardProps) {
               {paper.title || "Untitled"}
             </h3>
             {isFailed && (
-              <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">
+              <span className="shrink-0 text-2xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">
                 {STATUS_LABELS[paper.status] || paper.status}
               </span>
             )}

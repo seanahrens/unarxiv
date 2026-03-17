@@ -65,7 +65,7 @@ export default function PaperListRow({
         {paper.title || paperId}
       </span>
       {paper.authors && paper.authors.length > 0 && (
-        <span className="text-[11px] text-stone-500 truncate block">
+        <span className="text-2xs text-stone-500 truncate block">
           <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
           <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
         </span>
