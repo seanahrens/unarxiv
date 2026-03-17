@@ -97,6 +97,9 @@ export default {
   },
 };
 
+/** Pattern for a 4-character list ID (lowercase alphanumeric). */
+const LIST_ID_PATTERN = "[a-z0-9]{4}";
+
 async function handleRequest(
   request: Request,
   env: Env,
@@ -368,7 +371,7 @@ async function handleRequest(
   }
 
   // GET /api/lists/:id — get list with papers (public)
-  const listGetMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})$/);
+  const listGetMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`));
   if (listGetMatch && method === "GET") {
     const list = await getList(env.DB, listGetMatch[1]);
     if (!list) return json({ error: "List not found" }, 404);
@@ -388,7 +391,7 @@ async function handleRequest(
   }
 
   // PUT /api/lists/:id — update name/description
-  const listPutMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})$/);
+  const listPutMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`));
   if (listPutMatch && method === "PUT") {
     const token = request.headers.get("X-List-Token");
     const list = await getList(env.DB, listPutMatch[1]);
@@ -399,7 +402,7 @@ async function handleRequest(
   }
 
   // DELETE /api/lists/:id — delete list
-  const listDeleteMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})$/);
+  const listDeleteMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`));
   if (listDeleteMatch && method === "DELETE") {
     const token = request.headers.get("X-List-Token");
     const list = await getList(env.DB, listDeleteMatch[1]);
@@ -409,7 +412,7 @@ async function handleRequest(
   }
 
   // POST /api/lists/:id/items — add papers to list
-  const listItemsAddMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/items$/);
+  const listItemsAddMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/items$`));
   if (listItemsAddMatch && method === "POST") {
     const token = request.headers.get("X-List-Token");
     const list = await getList(env.DB, listItemsAddMatch[1]);
@@ -423,7 +426,7 @@ async function handleRequest(
   }
 
   // DELETE /api/lists/:id/items/:paperId — remove paper from list
-  const listItemRemoveMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/items\/([^/]+)$/);
+  const listItemRemoveMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/items\\/([^/]+)$`));
   if (listItemRemoveMatch && method === "DELETE") {
     const token = request.headers.get("X-List-Token");
     const list = await getList(env.DB, listItemRemoveMatch[1]);
@@ -433,7 +436,7 @@ async function handleRequest(
   }
 
   // PUT /api/lists/:id/reorder — reorder list items
-  const listReorderMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/reorder$/);
+  const listReorderMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/reorder$`));
   if (listReorderMatch && method === "PUT") {
     const token = request.headers.get("X-List-Token");
     const list = await getList(env.DB, listReorderMatch[1]);
@@ -447,7 +450,7 @@ async function handleRequest(
   }
 
   // POST /api/lists/:id/import — bulk import arXiv IDs
-  const listImportMatch = path.match(/^\/api\/lists\/([a-z0-9]{4})\/import$/);
+  const listImportMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/import$`));
   if (listImportMatch && method === "POST") {
     const token = request.headers.get("X-List-Token");
     const list = await getList(env.DB, listImportMatch[1]);
