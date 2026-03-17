@@ -168,7 +168,9 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
       } : prev);
       setSaved(true);
       setTimeout(() => setSaved(false), 1500);
-    } catch {}
+    } catch (e: unknown) {
+      console.error("Failed to save collection:", e);
+    }
     setSaving(false);
   };
 
