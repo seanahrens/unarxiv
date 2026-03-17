@@ -47,7 +47,7 @@ jobs:
 
       - name: Deploy Frontend
         working-directory: unarxiv-web/frontend
-        run: npx wrangler pages deploy out --project-name=unarxiv-frontend
+        run: npx wrangler pages deploy out --project-name=texreader-frontend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -129,7 +129,7 @@ jobs:
 
       - name: Rollback Frontend
         working-directory: unarxiv-web/frontend
-        run: npx wrangler pages deploy out --project-name=unarxiv-frontend
+        run: npx wrangler pages deploy out --project-name=texreader-frontend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
