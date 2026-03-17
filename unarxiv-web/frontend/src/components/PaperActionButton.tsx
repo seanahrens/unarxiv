@@ -61,7 +61,7 @@ export default function PaperActionButton({
       <div className="relative inline-flex w-full md:w-auto shrink-0" ref={menuRef}>
         <button
           onClick={handlePlay}
-          className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 rounded-l-xl rounded-r-none`}
+          className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-indigo-600 border-indigo-500 hover:bg-indigo-500 rounded-l-xl rounded-r-none`}
         >
           {isPlaying ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -81,7 +81,7 @@ export default function PaperActionButton({
         <button
           data-testid="open-paper-actions"
           onClick={() => setMenuOpen(!menuOpen)}
-          className={`${BTN_BASE} px-1.5 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 border-l border-l-stone-700 rounded-r-xl rounded-l-none -ml-px`}
+          className={`${BTN_BASE} px-1.5 text-white bg-indigo-600 border-indigo-500 hover:bg-indigo-500 border-l border-l-slate-700 rounded-r-xl rounded-l-none -ml-px`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="6 9 12 15 18 9" />
@@ -108,13 +108,13 @@ export default function PaperActionButton({
         <button
           onClick={onGenerate}
           disabled={generateDisabled}
-          className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
+          className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-indigo-600 hover:bg-indigo-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
         >
           Generate Audio Narration
         </button>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className={`${BTN_BASE} px-1.5 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
+          className={`${BTN_BASE} px-1.5 text-white bg-indigo-600 hover:bg-indigo-700 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="6 9 12 15 18 9" />

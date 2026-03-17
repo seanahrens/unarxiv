@@ -11,18 +11,18 @@ export default function AboutPage() {
     <div className="py-12">
       {/* Hero */}
       <div className="mb-12 text-center">
-        <h1 className="text-3xl font-bold text-stone-900 mb-3">
+        <h1 className="text-3xl font-bold text-slate-100 mb-3">
           About <SiteName />
         </h1>
-        <p className="text-stone-500 text-sm">Launched March 15, 2026</p>
+        <p className="text-slate-9000 text-sm">Launched March 15, 2026</p>
       </div>
 
       {/* Cards */}
       <div className="space-y-6">
         {/* What */}
-        <section className="bg-white rounded-2xl border border-stone-200 p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">What is this?</h2>
-          <p className="text-stone-700 leading-relaxed">
+        <section className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-3">What is this?</h2>
+          <p className="text-slate-300 leading-relaxed">
             <SiteName /> is an audio mirror of arXiv. Paste any arXiv URL or paper ID and
             we&apos;ll generate a free narrated audiobook from the paper.
             Listen while you commute, exercise, or do chores.
@@ -30,30 +30,30 @@ export default function AboutPage() {
         </section>
 
         {/* How */}
-        <section className="bg-white rounded-2xl border border-stone-200 p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">How it works</h2>
-          <div className="flex flex-col sm:flex-row gap-4 text-sm text-stone-600">
+        <section className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-3">How it works</h2>
+          <div className="flex flex-col sm:flex-row gap-4 text-sm text-slate-400">
             <div className="flex-1 flex gap-3">
-              <span className="text-lg font-bold text-stone-300">1</span>
-              <p>Paste an arXiv URL or paper ID — or browse to any arxiv.org paper and add <span className="font-semibold text-stone-800">un</span> to the URL.</p>
+              <span className="text-lg font-bold text-slate-500">1</span>
+              <p>Paste an arXiv URL or paper ID — or browse to any arxiv.org paper and add <span className="font-semibold text-slate-200">un</span> to the URL.</p>
             </div>
             <div className="flex-1 flex gap-3">
-              <span className="text-lg font-bold text-stone-300">2</span>
+              <span className="text-lg font-bold text-slate-500">2</span>
               <p>We extract the paper&apos;s text and convert it to natural-sounding speech.</p>
             </div>
             <div className="flex-1 flex gap-3">
-              <span className="text-lg font-bold text-stone-300">3</span>
+              <span className="text-lg font-bold text-slate-500">3</span>
               <p>Stream or download the MP3 — add it to your playlist and listen on the go.</p>
             </div>
           </div>
         </section>
 
         {/* Recommended apps */}
-        <section className="bg-white rounded-2xl border border-stone-200 p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Listen on the go</h2>
-          <div className="flex flex-col gap-4 text-sm text-stone-600">
+        <section className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-3">Listen on the go</h2>
+          <div className="flex flex-col gap-4 text-sm text-slate-400">
             <div>
-              <p className="font-semibold text-stone-800 mb-1">Add to Home Screen (recommended)</p>
+              <p className="font-semibold text-slate-200 mb-1">Add to Home Screen (recommended)</p>
               <p>
                 On your iPhone, open unarxiv.org in Safari, tap the{" "}
                 <span className="inline-flex items-center align-middle">
@@ -68,12 +68,12 @@ export default function AboutPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
-                <p className="font-semibold text-stone-800 mb-1">BookPlayer (offline support)</p>
+                <p className="font-semibold text-slate-200 mb-1">BookPlayer (offline support)</p>
                 <p>
                   For offline listening, download the MP3 and store it in iCloud Drive. Use{" "}
                   <a
                     href="https://apps.apple.com/app/bookplayer-audio-book-player/id1138219998"
-                    className="text-stone-800 font-medium underline hover:text-stone-600"
+                    className="text-slate-200 font-medium underline hover:text-slate-400"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -83,12 +83,12 @@ export default function AboutPage() {
                 </p>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-stone-800 mb-1">WatchAudio (offline support)</p>
+                <p className="font-semibold text-slate-200 mb-1">WatchAudio (offline support)</p>
                 <p>
                   For offline listening on your wrist, try{" "}
                   <a
                     href="https://apps.apple.com/app/watchaudio-audio-for-watch/id1576731498"
-                    className="text-stone-800 font-medium underline hover:text-stone-600"
+                    className="text-slate-200 font-medium underline hover:text-slate-400"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -103,12 +103,12 @@ export default function AboutPage() {
 
         {/* Who + Contact side by side on desktop */}
         <div className="grid sm:grid-cols-2 gap-6">
-          <section className="bg-white rounded-2xl border border-stone-200 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Built by</h2>
-            <p className="text-stone-700">
+          <section className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-3">Built by</h2>
+            <p className="text-slate-300">
               <a
                 href="https://inventsean.com"
-                className="text-stone-900 font-semibold underline hover:text-stone-600"
+                className="text-slate-100 font-semibold underline hover:text-slate-400"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -117,9 +117,9 @@ export default function AboutPage() {
             </p>
           </section>
 
-          <section className="bg-white rounded-2xl border border-stone-200 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Get in touch</h2>
-            <p className="text-sm text-stone-600">hello at this domain</p>
+          <section className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-3">Get in touch</h2>
+            <p className="text-sm text-slate-400">hello at this domain</p>
           </section>
         </div>
 

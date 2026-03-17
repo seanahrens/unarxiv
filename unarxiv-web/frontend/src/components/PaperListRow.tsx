@@ -47,10 +47,10 @@ export default function PaperListRow({
 
   const iconColorClass =
     paper.status === "complete"
-      ? "text-stone-500 hover:text-stone-700"
+      ? "text-slate-9000 hover:text-slate-300"
       : inProgress
       ? "text-purple-300"
-      : "text-stone-400";
+      : "text-slate-500";
 
   const icon =
     paper.status === "complete" ? (
@@ -63,11 +63,11 @@ export default function PaperListRow({
 
   const titleAuthors = (
     <>
-      <span className="text-sm text-stone-800 line-clamp-2 md:truncate block">
+      <span className="text-sm text-slate-200 line-clamp-2 md:truncate block">
         {paper.title || paperId}
       </span>
       {paper.authors && paper.authors.length > 0 && (
-        <span className="text-2xs text-stone-500 truncate block">
+        <span className="text-2xs text-slate-9000 truncate block">
           <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
           <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
         </span>
@@ -79,7 +79,7 @@ export default function PaperListRow({
   return (
     <div
       className={`flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 transition-colors ${
-        isActive ? "bg-blue-100" : "hover:bg-stone-100"
+        isActive ? "bg-indigo-900/50" : "hover:bg-slate-800"
       } ${className}`}
     >
       <Link

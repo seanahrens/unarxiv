@@ -23,14 +23,14 @@ function CopyableId({ id }: { id: string }) {
     <>
       <span
         onClick={handleClick}
-        className="font-mono cursor-pointer hover:text-stone-700 transition-colors"
+        className="font-mono cursor-pointer hover:text-slate-300 transition-colors"
         title="Copy arXiv ID"
       >
         {id}
       </span>
       {toast && (
         <span
-          className="fixed z-50 px-2.5 py-1 text-xs font-medium text-white bg-stone-800 rounded-lg shadow-lg pointer-events-none animate-fade-out"
+          className="fixed z-50 px-2.5 py-1 text-xs font-medium text-white bg-indigo-700 rounded-lg shadow-lg pointer-events-none animate-fade-out"
           style={{ left: toast.x + 8, top: toast.y - 32 }}
         >
           arXiv ID Copied to Clipboard
@@ -85,7 +85,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
           type="button"
           data-testid={`star-${star}`}
           className={`transition-colors ${
-            star <= (hover || value) ? "text-amber-400" : "text-stone-300"
+            star <= (hover || value) ? "text-amber-400" : "text-slate-500"
           } hover:scale-110 transition-transform`}
           onMouseEnter={() => setHover(star)}
           onMouseLeave={() => setHover(0)}
@@ -159,29 +159,29 @@ function RatingModal({
   return (
     <div data-testid="rating-modal" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+        className="bg-slate-900 rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-bold text-stone-900 mb-4">Rate Narration Quality</h3>
+        <h3 className="text-lg font-bold text-slate-100 mb-4">Rate Narration Quality</h3>
 
         <div className="mb-4">
-          <label className="text-sm text-stone-600 mb-2 block">How was the narration quality?</label>
+          <label className="text-sm text-slate-400 mb-2 block">How was the narration quality?</label>
           <StarRatingInput value={stars} onChange={setStars} />
         </div>
 
         <div className="mb-4">
-          <label className="text-sm text-stone-600 mb-2 block">Comments (optional)</label>
+          <label className="text-sm text-slate-400 mb-2 block">Comments (optional)</label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Any feedback on pronunciation, pacing, or transcript quality..."
-            className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm
-                       focus:outline-none focus:ring-2 focus:ring-stone-400 resize-none"
+            className="w-full px-3 py-2 border border-slate-700 rounded-lg text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             rows={3}
           />
         </div>
 
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
 
         <div className="flex justify-between">
           <div>
@@ -189,7 +189,7 @@ function RatingModal({
               <button
                 onClick={handleClear}
                 disabled={clearing || saving}
-                className="px-4 py-2 text-sm text-red-600 hover:text-red-800 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm text-red-400 hover:text-red-800 transition-colors disabled:opacity-50"
               >
                 {clearing ? "Clearing..." : "Clear Rating"}
               </button>
@@ -198,15 +198,15 @@ function RatingModal({
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 transition-colors"
+              className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || clearing || stars === 0}
-              className="px-4 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg
-                         hover:bg-stone-700 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium bg-slate-100 text-white rounded-lg
+                         hover:bg-indigo-600 transition-colors disabled:opacity-50"
             >
               {saving ? "Saving..." : existingRating ? "Update Rating" : "Submit Rating"}
             </button>
@@ -233,7 +233,7 @@ function BackButton() {
   return (
     <button
       onClick={handleBack}
-      className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 border border-stone-300 rounded-full px-3 py-1"
+      className="inline-flex items-center gap-1 text-sm text-slate-9000 hover:text-slate-300 transition-colors mb-4 border border-slate-700 rounded-full px-3 py-1"
     >
       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
       Back to {previousLabel}
@@ -343,13 +343,13 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   }, [paper]);
 
   if (loading) {
-    return <div className="text-center py-20 text-stone-500">Loading...</div>;
+    return <div className="text-center py-20 text-slate-9000">Loading...</div>;
   }
 
   if (error || !paper) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
+        <p className="text-red-400 mb-3">{error || "Paper not found"}</p>
         <BackButton />
       </div>
     );
@@ -367,7 +367,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
       <article className="mb-8">
         <div className="flex flex-col md:flex-row md:items-start gap-3 mb-3">
-          <h1 className="text-2xl font-bold text-stone-900 leading-tight flex-1">
+          <h1 className="text-2xl font-bold text-slate-100 leading-tight flex-1">
             {paper.title || "Untitled"}
           </h1>
           {(isReady || isNotRequested) ? (
@@ -380,7 +380,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
               onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
             />
           ) : isProcessing ? (
-            <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+            <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3">
               {narrationLoading ? (
                 <NarrationProgress paper={paper} />
               ) : (
@@ -390,9 +390,9 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           ) : null}
         </div>
 
-        <p className="text-sm text-stone-500 mb-2">
+        <p className="text-sm text-slate-9000 mb-2">
           {authors.length > 0 && (
-            <span className="font-semibold text-stone-700">{authors.join(", ")}</span>
+            <span className="font-semibold text-slate-300">{authors.join(", ")}</span>
           )}
           {authors.length > 0 && paper.published_date && <span> &middot; </span>}
           {paper.published_date && (
@@ -404,32 +404,32 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
         {narrationError && (
           <div className="mb-2">
-            <span className="text-xs text-red-600">{narrationError}</span>
+            <span className="text-xs text-red-400">{narrationError}</span>
           </div>
         )}
 
         {paper.abstract && (
-          <p className="text-base text-stone-600 leading-relaxed">
-            <span className="font-black text-stone-900 uppercase tracking-wide text-sm">Abstract</span>{" "}
+          <p className="text-base text-slate-400 leading-relaxed">
+            <span className="font-black text-slate-100 uppercase tracking-wide text-sm">Abstract</span>{" "}
             {paper.abstract}
           </p>
         )}
       </article>
 
       {isFailed && (
-        <div className="max-w-md bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="max-w-md bg-red-950/50 border border-red-800 rounded-lg p-4">
           <p className="font-medium text-red-800">Narration failed</p>
           {paper.error_message && (
-            <p className="text-sm text-red-600 mt-1">{paper.error_message}</p>
+            <p className="text-sm text-red-400 mt-1">{paper.error_message}</p>
           )}
         </div>
       )}
 
       {/* PDF viewer — hidden on mobile */}
-      <div className="hidden md:block mt-10 border border-stone-300 rounded-xl overflow-hidden">
+      <div className="hidden md:block mt-10 border border-slate-700 rounded-xl overflow-hidden">
         <iframe
           src={`https://arxiv.org/pdf/${paper.id}#zoom=page-width`}
-          className="w-full bg-white"
+          className="w-full bg-slate-900"
           style={{ height: "1245px" }}
           title={`PDF: ${paper.title}`}
         />
@@ -448,11 +448,11 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       {showCaptchaModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowCaptchaModal(false)}>
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+            className="bg-slate-900 rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-stone-900 mb-2">Verification Required</h3>
-            <p className="text-sm text-stone-600 mb-5">
+            <h3 className="text-lg font-bold text-slate-100 mb-2">Verification Required</h3>
+            <p className="text-sm text-slate-400 mb-5">
               Please complete the verification to continue.
             </p>
             <TurnstileWidget onVerify={handleCaptchaVerify} />

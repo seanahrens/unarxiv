@@ -72,30 +72,30 @@ export default function AdminPage() {
   }, [authenticated]);
 
   if (checkingSession) {
-    return <div className="text-center py-20 text-stone-400 text-sm">Loading...</div>;
+    return <div className="text-center py-20 text-slate-500 text-sm">Loading...</div>;
   }
 
   if (!authenticated) {
     return (
       <div className="max-w-sm mx-auto mt-20">
-        <h1 className="text-xl font-bold text-stone-900 mb-4">Admin Access</h1>
+        <h1 className="text-xl font-bold text-slate-100 mb-4">Admin Access</h1>
         <form onSubmit={handleLogin}>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Admin password"
-            className="w-full px-4 py-2.5 border border-stone-300 rounded-lg mb-3
-                       focus:outline-none focus:ring-2 focus:ring-stone-400"
+            className="w-full px-4 py-2.5 border border-slate-700 rounded-lg mb-3
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500"
             autoFocus
           />
           {error && (
-            <p className="text-sm text-red-600 mb-3">{error}</p>
+            <p className="text-sm text-red-400 mb-3">{error}</p>
           )}
           <button
             type="submit"
             disabled={verifying}
-            className="w-full px-4 py-2.5 bg-stone-900 hover:bg-stone-700 text-white
+            className="w-full px-4 py-2.5 bg-slate-100 hover:bg-indigo-600 text-white
                        text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
             {verifying ? "Verifying..." : "Continue"}
@@ -199,20 +199,20 @@ export default function AdminPage() {
         &larr; Back to papers
       </a>
 
-      <h1 className="text-2xl font-bold text-stone-900 mb-6">Admin</h1>
+      <h1 className="text-2xl font-bold text-slate-100 mb-6">Admin</h1>
 
       <div className="space-y-3 mb-8">
         {internalLinks.map((link) => (
           <a
             key={link.url}
             href={link.url}
-            className={`block bg-white rounded-lg border p-4 hover:shadow-md transition-shadow no-underline ${
+            className={`block bg-slate-900 rounded-lg border p-4 hover:shadow-md transition-shadow no-underline ${
               link.label === "Curate Papers" && hasLowRatings
                 ? "border-orange-300"
-                : "border-stone-300"
+                : "border-slate-700"
             }`}
           >
-            <h3 className="text-base font-semibold text-stone-900 flex items-center gap-2">
+            <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
               {link.label}
               {link.label === "Curate Papers" && hasLowRatings && (
                 <span className="text-orange-500" title="Papers with low narration ratings need attention">
@@ -222,7 +222,7 @@ export default function AdminPage() {
                 </span>
               )}
             </h3>
-            <p className="text-sm text-stone-500 mt-1">
+            <p className="text-sm text-slate-9000 mt-1">
               {link.description}
               {link.label === "Curate Papers" && hasLowRatings && (
                 <span className="text-orange-600 font-medium ml-1">
@@ -236,13 +236,13 @@ export default function AdminPage() {
 
       {contributors.length > 0 && (
         <>
-          <h2 className="text-xs font-medium text-stone-400 uppercase tracking-wider mb-4">
+          <h2 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-4">
             Top Contributors
           </h2>
-          <div className="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
+          <div className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden mb-8">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-stone-100 text-left text-xs text-stone-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-800 text-left text-xs text-slate-500 uppercase tracking-wider">
                   <th className="px-4 py-2.5">Name</th>
                   <th className="px-4 py-2.5">Location</th>
                   <th className="px-4 py-2.5 text-right">Papers</th>
@@ -250,15 +250,15 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {contributors.map((c, i) => (
-                  <tr key={i} className={`border-b border-stone-50 ${c.is_you ? "bg-emerald-50" : ""}`}>
-                    <td className="px-4 py-2.5 font-medium text-stone-900">
+                  <tr key={i} className={`border-b border-slate-800 ${c.is_you ? "bg-indigo-950/30" : ""}`}>
+                    <td className="px-4 py-2.5 font-medium text-slate-100">
                       {c.name}
                       {c.is_you && (
-                        <span className="ml-2 text-xs text-emerald-600 font-normal">(you)</span>
+                        <span className="ml-2 text-xs text-indigo-400 font-normal">(you)</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-stone-500">{c.location}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-stone-700">{c.paper_count}</td>
+                    <td className="px-4 py-2.5 text-slate-9000">{c.location}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-slate-300">{c.paper_count}</td>
                   </tr>
                 ))}
               </tbody>
@@ -267,7 +267,7 @@ export default function AdminPage() {
         </>
       )}
 
-      <h2 className="text-xs font-medium text-stone-400 uppercase tracking-wider mb-4">
+      <h2 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-4">
         External Dashboards
       </h2>
 
@@ -278,12 +278,12 @@ export default function AdminPage() {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center text-center bg-white rounded-xl border border-stone-200
-                       p-5 hover:border-stone-300 hover:shadow-md transition-all no-underline"
+            className="flex flex-col items-center text-center bg-slate-900 rounded-xl border border-slate-700
+                       p-5 hover:border-slate-700 hover:shadow-md transition-all no-underline"
           >
-            <div className="text-stone-400 mb-3">{link.icon}</div>
-            <h3 className="text-sm font-semibold text-stone-900">{link.label}</h3>
-            <p className="text-xs text-stone-400 mt-1">{link.description}</p>
+            <div className="text-slate-500 mb-3">{link.icon}</div>
+            <h3 className="text-sm font-semibold text-slate-100">{link.label}</h3>
+            <p className="text-xs text-slate-500 mt-1">{link.description}</p>
           </a>
         ))}
       </div>

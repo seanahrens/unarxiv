@@ -36,20 +36,20 @@ function RatingsModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col"
+        className="bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-bold text-stone-900 mb-1">Ratings</h3>
-        <p className="text-sm text-stone-500 mb-4 truncate">{paperTitle}</p>
+        <h3 className="text-lg font-bold text-slate-100 mb-1">Ratings</h3>
+        <p className="text-sm text-slate-9000 mb-4 truncate">{paperTitle}</p>
 
         {loading ? (
-          <div className="text-center py-8 text-stone-400 text-sm">Loading...</div>
+          <div className="text-center py-8 text-slate-500 text-sm">Loading...</div>
         ) : ratings.length === 0 ? (
-          <div className="text-center py-8 text-stone-400 text-sm">No ratings yet</div>
+          <div className="text-center py-8 text-slate-500 text-sm">No ratings yet</div>
         ) : (
           <div className="overflow-y-auto flex-1 space-y-3">
             {ratings.map((r, i) => (
-              <div key={i} className="flex gap-3 border-b border-stone-100 pb-3 last:border-0">
+              <div key={i} className="flex gap-3 border-b border-slate-800 pb-3 last:border-0">
                 <div className="shrink-0 flex gap-0.5 text-amber-400 pt-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <svg key={s} width="14" height="14" viewBox="0 0 24 24" strokeWidth="1.5">
@@ -63,11 +63,11 @@ function RatingsModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   {r.comment ? (
-                    <p className="text-sm text-stone-700">{r.comment}</p>
+                    <p className="text-sm text-slate-300">{r.comment}</p>
                   ) : (
-                    <p className="text-sm text-stone-400 italic">No comment</p>
+                    <p className="text-sm text-slate-500 italic">No comment</p>
                   )}
-                  <p className="text-xs text-stone-400 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     {new Date(r.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -76,10 +76,10 @@ function RatingsModal({
           </div>
         )}
 
-        <div className="flex justify-end mt-4 pt-3 border-t border-stone-100">
+        <div className="flex justify-end mt-4 pt-3 border-t border-slate-800">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 transition-colors"
+            className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
           >
             Close
           </button>
@@ -220,7 +220,7 @@ export default function CuratePage() {
   }, [password, selected]);
 
   if (!password) {
-    return <div className="text-center py-20 text-stone-400">Redirecting...</div>;
+    return <div className="text-center py-20 text-slate-500">Redirecting...</div>;
   }
 
   return (
@@ -229,23 +229,23 @@ export default function CuratePage() {
         <div>
           <a
             href="/admin"
-            className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-2 inline-block"
+            className="text-sm text-slate-500 hover:text-slate-400 transition-colors mb-2 inline-block"
           >
             &larr; Back to admin
           </a>
-          <h1 className="text-2xl font-bold text-stone-900">Curate Papers</h1>
+          <h1 className="text-2xl font-bold text-slate-100">Curate Papers</h1>
         </div>
-        <span className="text-sm text-stone-400">{papers.length} papers</span>
+        <span className="text-sm text-slate-500">{papers.length} papers</span>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="bg-red-950/50 border border-red-800 rounded-lg p-3 mb-4">
+          <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
 
-      <div className="flex items-center gap-3 mb-4 bg-stone-50 border border-stone-200 rounded-lg px-4 py-2.5">
-        <span className="text-sm text-stone-600">
+      <div className="flex items-center gap-3 mb-4 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5">
+        <span className="text-sm text-slate-400">
           {selected.size > 0 ? `${selected.size} selected` : "None selected"}
         </span>
         <div className="relative" ref={reprocessMenuRef}>
@@ -270,16 +270,16 @@ export default function CuratePage() {
             </button>
           </div>
           {reprocessMenuOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-10 min-w-[180px]">
+            <div className="absolute top-full left-0 mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-lg z-10 min-w-[180px]">
               <button
                 onClick={() => handleBulkReprocess("script_only")}
-                className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors rounded-t-lg"
+                className="w-full text-left px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-900 transition-colors rounded-t-lg"
               >
                 Reprocess Script
               </button>
               <button
                 onClick={() => handleBulkReprocess("narration_only")}
-                className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors rounded-b-lg border-t border-stone-100"
+                className="w-full text-left px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-900 transition-colors rounded-b-lg border-t border-slate-800"
               >
                 Reprocess Narration
               </button>
@@ -297,7 +297,7 @@ export default function CuratePage() {
         <button
           onClick={handleBulkDelete}
           disabled={selected.size === 0 || deleting.size > 0 || processing.size > 0}
-          className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200
+          className="px-3 py-1.5 text-xs font-medium text-red-400 bg-red-950/50 border border-red-800
                      hover:bg-red-100 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {deleting.size > 0 ? "Deleting..." : selected.size > 0 ? `Delete ${selected.size}` : "Delete"}
@@ -305,7 +305,7 @@ export default function CuratePage() {
         {selected.size > 0 && (
           <button
             onClick={() => setSelected(new Set())}
-            className="px-3 py-1.5 text-xs font-medium text-stone-500 hover:text-stone-700 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-slate-9000 hover:text-slate-300 transition-colors"
           >
             Clear
           </button>
@@ -313,7 +313,7 @@ export default function CuratePage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-stone-400 text-sm">Loading...</div>
+        <div className="text-center py-16 text-slate-500 text-sm">Loading...</div>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center gap-3 px-4 py-2">
@@ -323,17 +323,17 @@ export default function CuratePage() {
               onChange={toggleSelectAll}
               className="w-4 h-4 accent-stone-800"
             />
-            <span className="text-xs text-stone-400 font-medium">Select all</span>
+            <span className="text-xs text-slate-500 font-medium">Select all</span>
           </div>
           {papers.map((paper) => (
             <div
               key={paper.id}
-              className={`flex items-center gap-3 bg-white border rounded-xl px-4 py-3 ${
+              className={`flex items-center gap-3 bg-slate-900 border rounded-xl px-4 py-3 ${
                 selected.has(paper.id)
-                  ? "border-stone-400"
+                  ? "border-slate-600"
                   : paper.has_low_rating
                   ? "border-orange-300"
-                  : "border-stone-200"
+                  : "border-slate-700"
               }`}
             >
               <input
@@ -345,11 +345,11 @@ export default function CuratePage() {
               <div className="flex-1 min-w-0">
                 <a
                   href={`/abs/${paper.id}`}
-                  className="text-sm font-medium text-stone-900 hover:text-stone-600 transition-colors no-underline truncate block"
+                  className="text-sm font-medium text-slate-100 hover:text-slate-400 transition-colors no-underline truncate block"
                 >
                   {paper.title || "Untitled"}
                 </a>
-                <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                   <span className="font-mono">{paper.id}</span>
                   <button
                     onClick={() => {
@@ -357,7 +357,7 @@ export default function CuratePage() {
                       setCopiedId(paper.id);
                       setTimeout(() => setCopiedId((c) => c === paper.id ? null : c), 1500);
                     }}
-                    className="text-stone-300 hover:text-stone-500 transition-colors"
+                    className="text-slate-500 hover:text-slate-9000 transition-colors"
                     title="Copy arXiv ID"
                   >
                     {copiedId === paper.id ? (
@@ -374,9 +374,9 @@ export default function CuratePage() {
                   <span>&middot;</span>
                   <span className={
                     paper.status === "complete"
-                      ? "text-emerald-600"
+                      ? "text-indigo-400"
                       : paper.status === "failed"
-                      ? "text-red-600"
+                      ? "text-red-400"
                       : "text-amber-600"
                   }>
                     {paper.status}
@@ -417,10 +417,10 @@ export default function CuratePage() {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-400">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                         </svg>
-                        <span className="text-stone-600 font-medium">
+                        <span className="text-slate-400 font-medium">
                           {paper.avg_rating != null ? paper.avg_rating.toFixed(1) : "—"}
                         </span>
-                        <span className="text-stone-400">({paper.rating_count})</span>
+                        <span className="text-slate-500">({paper.rating_count})</span>
                       </button>
                     </>
                   )}

@@ -28,8 +28,8 @@ export default function PlaylistNavButton() {
       onClick={handleClick}
       className={`inline-flex items-center gap-1.5 text-sm no-underline transition-colors relative border rounded-full px-3 py-1.5 ${
         isOnPlaylist
-          ? "text-stone-900 bg-stone-200 border-stone-400"
-          : "text-stone-700 hover:text-stone-900 hover:bg-stone-100 border-stone-300"
+          ? "text-slate-100 bg-slate-700 border-slate-600"
+          : "text-slate-300 hover:text-slate-100 hover:bg-slate-800 border-slate-700"
       }`}
     >
       <svg width="16" height="16" viewBox="0 0 576 512" fill="currentColor" aria-hidden="true">

@@ -148,9 +148,9 @@ export default function PlaylistPage() {
   return (
     <div className="space-y-2 md:space-y-8 -mx-6 md:mx-0">
       {/* ─── My Additions ────────────────────────────────────────── */}
-      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
-          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
+      <section className="bg-slate-900 border-y md:border border-slate-700 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-slate-700">
+          <h2 className="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -161,9 +161,9 @@ export default function PlaylistPage() {
         </div>
 
         {additionsLoading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">Loading...</div>
+          <div className="text-slate-9000 text-sm py-3 text-center">Loading...</div>
         ) : myAdditions.length === 0 ? (
-          <div className="text-stone-500 text-sm py-3 text-center">
+          <div className="text-slate-9000 text-sm py-3 text-center">
             Papers you add to unarXiv will appear here.
           </div>
         ) : (
@@ -199,7 +199,7 @@ export default function PlaylistPage() {
                           setMyAdditions((prev) => prev.filter((p) => p.id !== paper.id));
                         }
                       }}
-                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                      className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
                       title="Remove from site"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -216,9 +216,9 @@ export default function PlaylistPage() {
       </section>
 
       {/* ─── My Collections ──────────────────────────────────────── */}
-      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200 flex items-center justify-between">
-          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
+      <section className="bg-slate-900 border-y md:border border-slate-700 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-slate-700 flex items-center justify-between">
+          <h2 className="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2">
             {/* Material: folder_copy */}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 6H1v13c0 1.1.9 2 2 2h17v-2H3V6z" />
@@ -228,7 +228,7 @@ export default function PlaylistPage() {
           </h2>
           <button
             onClick={handleCreateList}
-            className="w-8 h-8 flex items-center justify-center border border-stone-300 text-stone-500 hover:text-stone-700 hover:border-stone-400 hover:bg-stone-50 rounded-lg transition-colors"
+            className="w-8 h-8 flex items-center justify-center border border-slate-700 text-slate-9000 hover:text-slate-300 hover:border-slate-600 hover:bg-slate-900 rounded-lg transition-colors"
             title="Create new collection"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -239,9 +239,9 @@ export default function PlaylistPage() {
         </div>
 
         {listsLoading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">Loading...</div>
+          <div className="text-slate-9000 text-sm py-3 text-center">Loading...</div>
         ) : myLists.length === 0 ? (
-          <div className="text-stone-500 text-sm py-3 text-center">
+          <div className="text-slate-9000 text-sm py-3 text-center">
             No collections yet. Create one with the + button above.
           </div>
         ) : (
@@ -249,23 +249,23 @@ export default function PlaylistPage() {
             {myLists.map((list) => (
               <div
                 key={list.id}
-                className="flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 hover:bg-stone-100 transition-colors cursor-pointer"
+                className="flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 hover:bg-slate-800 transition-colors cursor-pointer"
                 onClick={() => { router.push(`/l?id=${list.id}&edit=1`); }}
               >
                 {/* Material: folder */}
-                <span className="text-stone-400 shrink-0">
+                <span className="text-slate-500 shrink-0">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
                   </svg>
                 </span>
 
                 <span className="flex-1 min-w-0 text-sm truncate">
-                  <span className="font-semibold text-stone-800">{list.name}</span>
+                  <span className="font-semibold text-slate-200">{list.name}</span>
                   {list.paper_count > 0 && (
-                    <span className="text-stone-400 font-normal"> ({list.paper_count})</span>
+                    <span className="text-slate-500 font-normal"> ({list.paper_count})</span>
                   )}
                   {list.description && (
-                    <span className="text-stone-400 font-normal"> — {list.description}</span>
+                    <span className="text-slate-500 font-normal"> — {list.description}</span>
                   )}
                 </span>
 
@@ -273,7 +273,7 @@ export default function PlaylistPage() {
                   {/* Copy link button */}
                   <button
                     onClick={(e) => handleCopyListUrl(list.id, e)}
-                    className={`shrink-0 transition-colors p-1 flex items-center gap-1 ${copiedListId === list.id ? "text-emerald-500" : "text-stone-400 hover:text-stone-700"}`}
+                    className={`shrink-0 transition-colors p-1 flex items-center gap-1 ${copiedListId === list.id ? "text-emerald-500" : "text-slate-500 hover:text-slate-300"}`}
                     title={copiedListId === list.id ? "Copied!" : "Copy share link"}
                   >
                     {copiedListId === list.id ? (
@@ -294,7 +294,7 @@ export default function PlaylistPage() {
 
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteList(list.id); }}
-                    className="text-stone-400 hover:text-stone-700 transition-colors shrink-0 p-1"
+                    className="text-slate-500 hover:text-slate-300 transition-colors shrink-0 p-1"
                     title="Delete collection"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -311,9 +311,9 @@ export default function PlaylistPage() {
 
       {/* ─── Listen History (last section) ───────────────────────── */}
       {(historyLoading || readHistory.length > 0) && (
-        <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
-          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
+        <section className="bg-slate-900 border-y md:border border-slate-700 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-slate-700">
+          <h2 className="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
             </svg>
@@ -322,9 +322,9 @@ export default function PlaylistPage() {
         </div>
 
         {historyLoading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">Loading...</div>
+          <div className="text-slate-9000 text-sm py-3 text-center">Loading...</div>
         ) : readHistory.length === 0 ? (
-          <div className="text-stone-500 text-sm py-3 text-center">No completed listens yet.</div>
+          <div className="text-slate-9000 text-sm py-3 text-center">No completed listens yet.</div>
         ) : (
           <div className="divide-y divide-stone-200">
             {readHistory.map((entry) => {
@@ -342,7 +342,7 @@ export default function PlaylistPage() {
                         markAsUnread(entry.paperId);
                         setReadHistory((prev) => prev.filter((h) => h.paperId !== entry.paperId));
                       }}
-                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                      className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
                       title="Mark as unread"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

@@ -18,8 +18,8 @@ export default function ContactEmail() {
 
   if (revealed) {
     return (
-      <p className="text-sm text-stone-600">
-        <a href={`mailto:${email}`} className="text-stone-800 font-medium underline hover:text-stone-600">{email}</a>
+      <p className="text-sm text-slate-400">
+        <a href={`mailto:${email}`} className="text-slate-200 font-medium underline hover:text-slate-400">{email}</a>
       </p>
     );
   }
@@ -35,7 +35,7 @@ export default function ContactEmail() {
   return (
     <button
       onClick={() => setShowChallenge(true)}
-      className="text-sm text-stone-800 font-medium underline hover:text-stone-600 cursor-pointer bg-transparent border-none p-0"
+      className="text-sm text-slate-200 font-medium underline hover:text-slate-400 cursor-pointer bg-transparent border-none p-0"
     >
       Show email address
     </button>

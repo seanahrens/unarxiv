@@ -40,7 +40,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       {/* Paper link */}
       <Link
         href={`/p?id=${paperId}`}
-        className="text-stone-600 hover:text-stone-800 transition-colors shrink-0"
+        className="text-slate-400 hover:text-slate-200 transition-colors shrink-0"
         title="View paper"
       >
         <AudioFileIcon size={30} />
@@ -49,7 +49,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       {/* Title + seekable progress */}
       <div className="flex-1 min-w-0 overflow-hidden">
         <span
-          className="block text-xs text-stone-600 truncate"
+          className="block text-xs text-slate-400 truncate"
           title={paperTitle || ""}
         >
           {paperTitle || "Unknown paper"}
@@ -57,24 +57,24 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
         <div
           ref={progressRef}
           onClick={handleSeek}
-          className="w-full h-1.5 bg-stone-200 rounded-full mt-0.5 cursor-pointer group"
+          className="w-full h-1.5 bg-slate-700 rounded-full mt-0.5 cursor-pointer group"
         >
           <div
-            className="h-full bg-stone-500 rounded-full transition-[width] duration-200 group-hover:bg-stone-600"
+            className="h-full bg-slate-9000 rounded-full transition-[width] duration-200 group-hover:bg-slate-400"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* Duration shorthand */}
-      <span className="text-3xs font-mono text-stone-500 tabular-nums shrink-0 min-w-[28px] text-right">
+      <span className="text-3xs font-mono text-slate-9000 tabular-nums shrink-0 min-w-[28px] text-right">
         {duration ? fmtShort(duration) : "--"}
       </span>
 
       {/* Skip Back */}
       <button
         onClick={() => actions.skipBack()}
-        className="text-stone-600 hover:text-stone-800 transition-colors shrink-0"
+        className="text-slate-400 hover:text-slate-200 transition-colors shrink-0"
         title="Back 15s"
       >
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -85,7 +85,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       {/* Play/Pause */}
       <button
         onClick={actions.togglePlay}
-        className="w-7 h-7 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors shrink-0"
+        className="w-7 h-7 flex items-center justify-center bg-indigo-600 hover:bg-slate-400 text-white rounded-full transition-colors shrink-0"
         title={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? (
@@ -103,7 +103,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       {/* Skip Forward */}
       <button
         onClick={() => actions.skipForward()}
-        className="text-stone-600 hover:text-stone-800 transition-colors shrink-0"
+        className="text-slate-400 hover:text-slate-200 transition-colors shrink-0"
         title="Forward 15s"
       >
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -114,7 +114,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
       {/* Speed */}
       <button
         onClick={actions.cycleSpeed}
-        className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-2.5 transition-colors shrink-0 min-w-[46px] text-center"
+        className="text-3xs font-mono text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 rounded px-1.5 py-2.5 transition-colors shrink-0 min-w-[46px] text-center"
         title="Speed"
       >
         {playbackRate}x
@@ -131,7 +131,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
   }
 
   return (
-    <div className="border-b border-stone-200 bg-white/80 backdrop-blur-sm">
+    <div className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-sm">
       <div className="max-w-5xl mx-auto px-6 py-2 flex items-center gap-2 min-w-0">
         {controls}
       </div>
