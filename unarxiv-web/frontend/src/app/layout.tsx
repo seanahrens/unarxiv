@@ -21,6 +21,7 @@ import PlaylistNavButton from "@/components/PlaylistNavButton";
 import FlyToPlaylist from "@/components/FlyToPlaylist";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
+import NavigationHistoryWrapper from "@/components/NavigationHistoryWrapper";
 
 export const metadata: Metadata = {
   title: "unarXiv — Listen to Research Papers",
@@ -46,6 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${quicksand.variable} ${ibmPlexMono.variable}`}>
       <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
+        <NavigationHistoryWrapper>
         <AudioProvider>
         <PlaylistProvider>
         <FlyToPlaylist />
@@ -101,6 +103,7 @@ export default function RootLayout({
         </a>
         </PlaylistProvider>
         </AudioProvider>
+        </NavigationHistoryWrapper>
       </body>
     </html>
   );

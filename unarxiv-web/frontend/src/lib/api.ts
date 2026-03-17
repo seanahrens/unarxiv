@@ -326,6 +326,49 @@ export function formatDurationShort(seconds: number): string {
   return `${(mins / 60).toFixed(1)}h`;
 }
 
+/** Returns true for papers that are actively being processed (queued → generating_audio). */
+export function isInProgress(status: string): boolean {
+  return status === "queued" || status === "preparing" || status === "generating_audio";
+}
+
+/**
+ * Format a paper's authors for display.
+ * Shows up to `maxShown` names then "+ N more". Defaults to 3.
+ */
+export function formatAuthors(authors: string[], maxShown = 3): string {
+  if (authors.length === 0) return "";
+  const shown = authors.slice(0, maxShown);
+  const rest = authors.length - shown.length;
+  return rest > 0 ? `${shown.join(", ")} +${rest} more` : shown.join(", ");
+}
+
+/**
+ * Format an ISO date string (YYYY-MM-DD) as "Mon D YYYY".
+ * Falls back to the raw string on parse error.
+ */
+export function formatPaperDate(dateStr: string): string {
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    return `${MONTHS[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Format an ISO date string (YYYY-MM-DD) as a 4-digit year.
+ * Falls back to the raw string on parse error.
+ */
+export function formatPaperYear(dateStr: string): string {
+  try {
+    return String(new Date(dateStr + "T00:00:00").getFullYear());
+  } catch {
+    return dateStr;
+  }
+}
+
 // Extract an arXiv ID (YYMM.NNNNN with optional vN) from anywhere in a string.
 const ARXIV_ID_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
 

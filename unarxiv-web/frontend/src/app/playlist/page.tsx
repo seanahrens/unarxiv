@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
-import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, type Paper } from "@/lib/api";
+import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, audioUrl, isInProgress, formatAuthors, type Paper } from "@/lib/api";
 import {
   getMyListTokens,
   getTokenForList,
@@ -91,9 +91,7 @@ export default function PlaylistPage() {
 
   // Poll for in-progress additions
   useEffect(() => {
-    const inProgress = myAdditions.filter((p) =>
-      ["queued", "preparing", "generating_audio"].includes(p.status)
-    );
+    const inProgress = myAdditions.filter((p) => isInProgress(p.status));
     if (inProgress.length === 0) return;
 
     const interval = setInterval(async () => {
@@ -240,7 +238,7 @@ export default function PlaylistPage() {
           <div className="divide-y divide-stone-200">
             {myAdditions.map((paper) => {
               const isActive = state.paperId === paper.id;
-              const isInProgress = ["queued", "preparing", "generating_audio"].includes(paper.status);
+              const paperInProgress = isInProgress(paper.status);
 
               return (
                 <div
@@ -252,12 +250,12 @@ export default function PlaylistPage() {
                       href={`/p?id=${paper.id}`}
                       className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
                         paper.status === "complete" ? "text-stone-500 hover:text-stone-700" :
-                        isInProgress ? "text-purple-300" :
+                        paperInProgress ? "text-purple-300" :
                         "text-stone-400"
                       }`}
                       title="View paper"
                     >
-                      {paper.status === "complete" ? <AudioFileIcon size={28} /> : isInProgress ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
+                      {paper.status === "complete" ? <AudioFileIcon size={28} /> : paperInProgress ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
                     </Link>
 
                     {paper.status === "complete" ? (
@@ -270,14 +268,8 @@ export default function PlaylistPage() {
                         </span>
                         {paper.authors && paper.authors.length > 0 && (
                           <span className="text-[11px] text-stone-500 truncate block">
-                            <span className="md:hidden">
-                              {paper.authors[0]}
-                              {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                            </span>
-                            <span className="hidden md:inline">
-                              {paper.authors.slice(0, 3).join(", ")}
-                              {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                            </span>
+                            <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
+                            <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
                           </span>
                         )}
                       </button>
@@ -291,17 +283,11 @@ export default function PlaylistPage() {
                         </span>
                         {paper.authors && paper.authors.length > 0 && (
                           <span className="text-[11px] text-stone-500 truncate block">
-                            <span className="md:hidden">
-                              {paper.authors[0]}
-                              {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                            </span>
-                            <span className="hidden md:inline">
-                              {paper.authors.slice(0, 3).join(", ")}
-                              {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                            </span>
+                            <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
+                            <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
                           </span>
                         )}
-                        {isInProgress && (
+                        {paperInProgress && (
                           <div className="mt-1">
                             <NarrationProgress paper={paper} />
                           </div>
@@ -464,12 +450,12 @@ export default function PlaylistPage() {
                     href={`/p?id=${entry.paperId}`}
                     className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
                       paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
-                      ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? "text-purple-300" :
+                      isInProgress(paper?.status || "") ? "text-purple-300" :
                       "text-stone-400"
                     }`}
                     title="View paper"
                   >
-                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
+                    {paper?.status === "complete" ? <AudioFileIcon size={28} /> : isInProgress(paper?.status || "") ? <ProcessingFileIcon size={28} /> : <FileIcon size={28} />}
                   </Link>
 
                   {paper?.status === "complete" ? (
@@ -482,14 +468,8 @@ export default function PlaylistPage() {
                       </span>
                       {paper?.authors && paper.authors.length > 0 && (
                         <span className="text-[11px] text-stone-500 truncate block">
-                          <span className="md:hidden">
-                            {paper.authors[0]}
-                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                          </span>
-                          <span className="hidden md:inline">
-                            {paper.authors.slice(0, 3).join(", ")}
-                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                          </span>
+                          <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
+                          <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
                         </span>
                       )}
                     </button>
@@ -503,14 +483,8 @@ export default function PlaylistPage() {
                       </span>
                       {paper?.authors && paper.authors.length > 0 && (
                         <span className="text-[11px] text-stone-500 truncate block">
-                          <span className="md:hidden">
-                            {paper.authors[0]}
-                            {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                          </span>
-                          <span className="hidden md:inline">
-                            {paper.authors.slice(0, 3).join(", ")}
-                            {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                          </span>
+                          <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
+                          <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
                         </span>
                       )}
                     </Link>

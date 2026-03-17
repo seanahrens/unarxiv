@@ -2,7 +2,7 @@
 
 import { useRef, memo } from "react";
 import Link from "next/link";
-import { Paper, formatDurationShort } from "@/lib/api";
+import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear } from "@/lib/api";
 
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { isRead, markAsUnread } from "@/lib/readStatus";
@@ -28,25 +28,9 @@ function formatEtaShort(detail: string | null): string | null {
   return null;
 }
 
-function formatShortDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + "T00:00:00");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
-  } catch {
-    return dateStr;
-  }
-}
 
-function formatYear(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + "T00:00:00");
-    return `${d.getFullYear()}`;
-  } catch {
-    return dateStr;
-  }
-}
+
+
 
 const STATUS_LABELS: Record<string, string> = {
   not_requested: "",
@@ -61,7 +45,7 @@ function PaperCard({ paper }: PaperCardProps) {
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
-  const isProcessing = !isReady && !isFailed && !isNotRequested;
+  const isProcessing = isInProgress(paper.status);
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const removeBtnRef = useRef<HTMLButtonElement>(null);
@@ -148,12 +132,11 @@ function PaperCard({ paper }: PaperCardProps) {
           <p className="text-xs text-stone-500 mb-2">
             {paper.authors.length > 0 && (
               <span className="text-stone-600">
-                {paper.authors.slice(0, 3).join(", ")}
-                {paper.authors.length > 3 && ` +${paper.authors.length - 3} more`}
+                {formatAuthors(paper.authors)}
               </span>
             )}
             {paper.authors.length > 0 && paper.published_date && <span> &middot; </span>}
-            {paper.published_date && <span>{formatYear(paper.published_date)}</span>}
+            {paper.published_date && <span>{formatPaperYear(paper.published_date)}</span>}
           </p>
 
           {paper.abstract && (
