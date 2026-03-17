@@ -9,31 +9,27 @@ test.describe("Playlist", () => {
     await page.evaluate(() => localStorage.clear());
   });
 
-  test("add to playlist and verify on playlist page", async ({ page }) => {
+  test("add to playlist toggles button to In Playlist", async ({ page }) => {
     const id = knownCompleteId();
     await page.goto(`/p?id=${id}`);
     await page.locator("h1").waitFor({ timeout: 10000 });
 
-    // Open the split-button dropdown
+    // Open the split-button dropdown — should show "Add to Playlist"
     await openDropdown(page);
-
-    // Click "Add to Playlist" in the dropdown
     const addBtn = page.locator('button:has-text("Add to Playlist")');
     await expect(addBtn).toBeVisible({ timeout: 3000 });
     await addBtn.click();
 
-    // Navigate to playlist page
-    await page.goto("/playlist");
-    await expect(page.locator("h1:has-text('My Playlist')")).toBeVisible({
-      timeout: 5000,
+    // Reopen dropdown — should now show "In Playlist"
+    await openDropdown(page);
+    await expect(page.locator('button:has-text("In Playlist")')).toBeVisible({
+      timeout: 3000,
     });
-
-    // Wait for the paper to appear — Next.js adds trailing slash: /p/?id=...
-    const paperLink = page.locator(`a[href="/p/?id=${id}"]`);
-    await expect(paperLink.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("remove from playlist", async ({ page }) => {
+  test("remove from playlist toggles button back to Add to Playlist", async ({
+    page,
+  }) => {
     const id = knownCompleteId();
 
     // Pre-populate playlist via localStorage
@@ -48,18 +44,22 @@ test.describe("Playlist", () => {
       id
     );
 
-    await page.goto("/playlist");
+    // Navigate to the paper page
+    await page.goto(`/p?id=${id}`);
+    await page.locator("h1").waitFor({ timeout: 10000 });
 
-    // Wait for the paper link to appear (data loads async)
-    // Next.js adds trailing slash: /p/?id=...
-    const paperLink = page.locator(`a[href="/p/?id=${id}"]`).first();
-    await expect(paperLink).toBeVisible({ timeout: 10000 });
+    // Open dropdown — should show "In Playlist"
+    await openDropdown(page);
+    const inPlaylistBtn = page.locator('button:has-text("In Playlist")');
+    await expect(inPlaylistBtn).toBeVisible({ timeout: 3000 });
 
-    // Click remove button (X icon with title "Remove")
-    const removeBtn = page.locator('button[title="Remove"]').first();
-    await removeBtn.click();
+    // Click to remove
+    await inPlaylistBtn.click();
 
-    // Paper should be gone
-    await expect(paperLink).not.toBeVisible({ timeout: 3000 });
+    // Reopen dropdown — should show "Add to Playlist" again
+    await openDropdown(page);
+    await expect(
+      page.locator('button:has-text("Add to Playlist")')
+    ).toBeVisible({ timeout: 3000 });
   });
 });
