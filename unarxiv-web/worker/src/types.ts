@@ -88,7 +88,7 @@ export interface ListResponse {
   paper_count: number;
 }
 
-export function paperToResponse(paper: Paper, audioBaseUrl: string): PaperResponse {
+export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse {
   return {
     id: paper.id,
     arxiv_url: paper.arxiv_url,
@@ -99,7 +99,7 @@ export function paperToResponse(paper: Paper, audioBaseUrl: string): PaperRespon
     status: paper.status,
     error_message: paper.error_message,
     progress_detail: paper.progress_detail,
-    audio_url: paper.status === "complete" ? `${audioBaseUrl}/api/papers/${paper.id}/audio` : null,
+    audio_url: paper.status === "complete" ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,
     audio_size_bytes: paper.audio_size_bytes,
     duration_seconds: paper.duration_seconds,
     created_at: paper.created_at,
