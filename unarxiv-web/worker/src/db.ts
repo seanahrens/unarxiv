@@ -328,6 +328,36 @@ export async function getRating(db: D1Database, paperId: string, ip: string): Pr
     .first<RatingRow>();
 }
 
+// Bayesian average constants:
+// C = prior weight (2 ratings worth of prior), m = prior mean (3.0 = midpoint of 1–5 scale).
+// With C=2, ~5 real ratings are needed before the average meaningfully departs from 3.0.
+const PRIOR_WEIGHT = 2;
+const PRIOR_MEAN = 3.0;
+
+/**
+ * Recompute and persist Bayesian average, rating_count, rating_sum, and has_low_rating
+ * for the given paper after any rating insert/delete.
+ */
+async function recomputeBayesianAvg(db: D1Database, paperId: string): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE papers SET
+         rating_count = (SELECT COUNT(*) FROM ratings WHERE paper_id = ?),
+         rating_sum = (SELECT COALESCE(SUM(stars), 0) FROM ratings WHERE paper_id = ?),
+         bayesian_avg = CASE
+           WHEN (SELECT COUNT(*) FROM ratings WHERE paper_id = ?) = 0 THEN NULL
+           ELSE CAST(
+             (? * ? + COALESCE((SELECT SUM(stars) FROM ratings WHERE paper_id = ?), 0))
+             AS REAL
+           ) / (? + COALESCE((SELECT COUNT(*) FROM ratings WHERE paper_id = ?), 0))
+         END,
+         has_low_rating = EXISTS(SELECT 1 FROM ratings WHERE paper_id = ? AND stars <= 3)
+       WHERE id = ?`
+    )
+    .bind(paperId, paperId, paperId, PRIOR_WEIGHT, PRIOR_MEAN, paperId, PRIOR_WEIGHT, paperId, paperId, paperId)
+    .run();
+}
+
 /** Upsert a rating and update the paper's Bayesian average. */
 export async function upsertRating(
   db: D1Database,
@@ -349,25 +379,7 @@ export async function upsertRating(
     .bind(paperId, ip, stars, comment)
     .run();
 
-  // Recompute Bayesian average for this paper
-  // Bayesian average: (C * m + sum_ratings) / (C + n)
-  // where C = prior weight (e.g. 2), m = global mean (default 3.0)
-  const PRIOR_WEIGHT = 2;
-  const PRIOR_MEAN = 3.0;
-  await db
-    .prepare(
-      `UPDATE papers SET
-         rating_count = (SELECT COUNT(*) FROM ratings WHERE paper_id = ?),
-         rating_sum = (SELECT COALESCE(SUM(stars), 0) FROM ratings WHERE paper_id = ?),
-         bayesian_avg = CAST(
-           (? * ? + COALESCE((SELECT SUM(stars) FROM ratings WHERE paper_id = ?), 0))
-           AS REAL
-         ) / (? + COALESCE((SELECT COUNT(*) FROM ratings WHERE paper_id = ?), 0)),
-         has_low_rating = EXISTS(SELECT 1 FROM ratings WHERE paper_id = ? AND stars <= 3)
-       WHERE id = ?`
-    )
-    .bind(paperId, paperId, PRIOR_WEIGHT, PRIOR_MEAN, paperId, PRIOR_WEIGHT, paperId, paperId, paperId)
-    .run();
+  await recomputeBayesianAvg(db, paperId);
 
   return (await getRating(db, paperId, ip))!;
 }
@@ -379,26 +391,7 @@ export async function deleteRatingForIp(db: D1Database, paperId: string, ip: str
     .bind(paperId, ip)
     .run();
 
-  // Recompute Bayesian average
-  const PRIOR_WEIGHT = 2;
-  const PRIOR_MEAN = 3.0;
-  await db
-    .prepare(
-      `UPDATE papers SET
-         rating_count = (SELECT COUNT(*) FROM ratings WHERE paper_id = ?),
-         rating_sum = (SELECT COALESCE(SUM(stars), 0) FROM ratings WHERE paper_id = ?),
-         bayesian_avg = CASE
-           WHEN (SELECT COUNT(*) FROM ratings WHERE paper_id = ?) = 0 THEN NULL
-           ELSE CAST(
-             (? * ? + COALESCE((SELECT SUM(stars) FROM ratings WHERE paper_id = ?), 0))
-             AS REAL
-           ) / (? + COALESCE((SELECT COUNT(*) FROM ratings WHERE paper_id = ?), 0))
-         END,
-         has_low_rating = EXISTS(SELECT 1 FROM ratings WHERE paper_id = ? AND stars <= 3)
-       WHERE id = ?`
-    )
-    .bind(paperId, paperId, paperId, PRIOR_WEIGHT, PRIOR_MEAN, paperId, PRIOR_WEIGHT, paperId, paperId, paperId)
-    .run();
+  await recomputeBayesianAvg(db, paperId);
 }
 
 /** Get all papers with rating data for admin curate page. */
