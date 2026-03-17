@@ -24,10 +24,7 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 
 ## Deployment
 
-Source the Cloudflare API token before deploying (adjust path as needed):
-```bash
-export $(cat .env | xargs)
-```
+Cloudflare credentials are picked up automatically from the environment (wrangler OAuth login or `CLOUDFLARE_API_TOKEN`). No `.env` sourcing needed if already authenticated.
 
 ```bash
 # Worker API
