@@ -100,6 +100,501 @@ export default {
 /** Pattern for a 4-character list ID (lowercase alphanumeric). */
 const LIST_ID_PATTERN = "[a-z0-9]{4}";
 
+// ─── Inline handlers extracted for the route table ───────────────────────────
+
+async function handleBatchPapers(request: Request, env: Env, baseUrl: string): Promise<Response> {
+  const body = await request.json<{ ids?: string[] }>();
+  const ids = body.ids;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return json({ error: "ids must be a non-empty array" }, 400);
+  }
+  if (ids.length > 50) {
+    return json({ error: "Maximum 50 IDs per request" }, 400);
+  }
+  const papers = await getPapersBatch(env.DB, ids);
+  return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
+}
+
+async function handleRating(request: Request, env: Env, paperId: string): Promise<Response> {
+  const method = request.method;
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (method === "GET") {
+    const rating = await getRating(env.DB, paperId, ip);
+    if (!rating) return json({ rating: null });
+    return json({
+      paper_id: rating.paper_id,
+      stars: rating.stars,
+      comment: rating.comment,
+      created_at: rating.created_at,
+      updated_at: rating.updated_at,
+    });
+  }
+  if (method === "POST") {
+    const body = await request.json<{ stars?: number; comment?: string }>();
+    const stars = body.stars;
+    if (!stars || stars < 1 || stars > 5) {
+      return json({ error: "stars must be 1-5" }, 400);
+    }
+    const rating = await upsertRating(env.DB, paperId, ip, stars, body.comment || "");
+    return json({
+      paper_id: rating.paper_id,
+      stars: rating.stars,
+      comment: rating.comment,
+      created_at: rating.created_at,
+      updated_at: rating.updated_at,
+    });
+  }
+  if (method === "DELETE") {
+    await deleteRatingForIp(env.DB, paperId, ip);
+    return json({ ok: true });
+  }
+  return json({ error: "Method not allowed" }, 405);
+}
+
+async function handleMyAdditions(request: Request, env: Env, baseUrl: string): Promise<Response> {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const papers = await getPapersBySubmitterIp(env.DB, ip);
+  return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
+}
+
+async function handleDeleteMyAddition(request: Request, env: Env, id: string): Promise<Response> {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const paper = await getPaper(env.DB, id);
+  if (!paper) return json({ error: "Paper not found" }, 404);
+  if (paper.submitted_by_ip !== ip) return json({ error: "Not your paper" }, 403);
+  if (paper.audio_r2_key) {
+    try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
+  }
+  await deletePaper(env.DB, id);
+  return json({ ok: true });
+}
+
+async function handleAdminVerify(request: Request, env: Env): Promise<Response> {
+  const password = request.headers.get("X-Admin-Password");
+  if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
+    return json({ error: "Invalid password" }, 401);
+  }
+  return json({ ok: true });
+}
+
+async function handleAdminStats(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const raw = await getTopContributors(env.DB, 10);
+  const callerIp = request.headers.get("CF-Connecting-IP") || "";
+  const names = ["Alice", "Bob", "Charlie", "Dana", "Eli", "Faye", "Gus", "Hana", "Ivan", "Jia",
+                 "Kai", "Luna", "Max", "Nora", "Omar", "Pia", "Quinn", "Ravi", "Sara", "Teo"];
+  const contributors = raw.map((c, i) => ({
+    name: c.ip === callerIp ? "You" : names[i] || `User ${i + 1}`,
+    location: [c.city, c.country].filter(Boolean).join(", ") || "Unknown",
+    paper_count: c.paper_count,
+    is_you: c.ip === callerIp,
+  }));
+  const yourPaperIds = raw
+    .find((c) => c.ip === callerIp)
+    ? (await env.DB.prepare("SELECT id FROM papers WHERE submitted_by_ip = ?").bind(callerIp).all<{ id: string }>()).results.map((r) => r.id)
+    : [];
+  return json({ contributors, your_paper_ids: yourPaperIds });
+}
+
+async function handleAdminPapersWithRatings(request: Request, env: Env, baseUrl: string): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const papers = await getAllPapersWithRatings(env.DB);
+  return json({
+    papers: papers.map((p) => ({
+      ...paperToResponse(p, baseUrl),
+      avg_rating: p.bayesian_avg,
+      rating_count: p.rating_count || 0,
+      has_low_rating: !!p.has_low_rating,
+    })),
+  });
+}
+
+async function handleAdminPaperRatings(request: Request, env: Env, paperId: string): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const ratings = await getAllRatingsForPaper(env.DB, paperId);
+  return json({ ratings: ratings.map((r) => ({ stars: r.stars, comment: r.comment, created_at: r.created_at })) });
+}
+
+async function handleAdminClearRatings(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const body = await request.json<{ paper_ids: string[] }>();
+  if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
+    return json({ error: "paper_ids array required" }, 400);
+  }
+  for (const id of body.paper_ids) {
+    await clearRatingsForPaper(env.DB, id);
+  }
+  return json({ ok: true, cleared: body.paper_ids.length });
+}
+
+async function handleAdminHasLowRatings(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const hasLow = await hasAnyLowRatings(env.DB);
+  return json({ has_low_ratings: hasLow });
+}
+
+async function handleAdminLists(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const lists = await getAllLists(env.DB);
+  return json({
+    lists: lists.map((l) => ({
+      id: l.id, name: l.name, description: l.description, owner_token: l.owner_token,
+      creator_ip: l.creator_ip, created_at: l.created_at, paper_count: l.paper_count,
+    })),
+  });
+}
+
+async function handleCreateList(request: Request, env: Env): Promise<Response> {
+  const body = await request.json<{ name?: string; description?: string }>();
+  if (!body.name || !body.name.trim()) {
+    return json({ error: "name is required" }, 400);
+  }
+  const id = await generateListId(env.DB);
+  const ownerToken = crypto.randomUUID().replace(/-/g, "");
+  const ip = request.headers.get("CF-Connecting-IP") || null;
+  const list = await createList(env.DB, id, ownerToken, body.name.trim(), (body.description || "").trim(), ip);
+  return json({
+    list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: 0 },
+    owner_token: ownerToken,
+  }, 201);
+}
+
+async function handleMyLists(request: Request, env: Env): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  if (!token) return json({ error: "X-List-Token header required" }, 401);
+  const lists = await getListsByToken(env.DB, token);
+  return json({
+    lists: lists.map((l) => ({
+      id: l.id, name: l.name, description: l.description,
+      created_at: l.created_at, updated_at: l.updated_at, paper_count: l.paper_count,
+    })),
+  });
+}
+
+async function handleGetList(request: Request, env: Env, listId: string, baseUrl: string): Promise<Response> {
+  const list = await getList(env.DB, listId);
+  if (!list) return json({ error: "List not found" }, 404);
+  const items = await getListItems(env.DB, list.id);
+  const paperIds = items.map((i) => i.paper_id);
+  const papers = paperIds.length > 0 ? await getPapersBatch(env.DB, paperIds) : [];
+  const paperMap = new Map(papers.map((p) => [p.id, p]));
+  const orderedPapers = paperIds.map((id) => {
+    const p = paperMap.get(id);
+    return p ? paperToResponse(p, baseUrl) : { id, not_found: true };
+  });
+  return json({
+    list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: items.length },
+    papers: orderedPapers,
+  });
+}
+
+async function handleUpdateList(request: Request, env: Env, listId: string): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  const list = await getList(env.DB, listId);
+  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  const body = await request.json<{ name?: string; description?: string }>();
+  await updateList(env.DB, list.id, (body.name ?? list.name).trim(), (body.description ?? list.description).trim());
+  return json({ ok: true });
+}
+
+async function handleDeleteList(request: Request, env: Env, listId: string): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  const list = await getList(env.DB, listId);
+  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  await deleteList(env.DB, list.id);
+  return json({ ok: true });
+}
+
+async function handleAddListItems(request: Request, env: Env, listId: string): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  const list = await getList(env.DB, listId);
+  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  const body = await request.json<{ paper_ids?: string[] }>();
+  if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
+    return json({ error: "paper_ids array required" }, 400);
+  }
+  const added = await addListItems(env.DB, list.id, body.paper_ids);
+  return json({ ok: true, added });
+}
+
+async function handleRemoveListItem(request: Request, env: Env, listId: string, paperId: string): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  const list = await getList(env.DB, listId);
+  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  await removeListItem(env.DB, list.id, paperId);
+  return json({ ok: true });
+}
+
+async function handleReorderList(request: Request, env: Env, listId: string): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  const list = await getList(env.DB, listId);
+  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  const body = await request.json<{ paper_ids?: string[] }>();
+  if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
+    return json({ error: "paper_ids array required" }, 400);
+  }
+  await reorderListItems(env.DB, list.id, body.paper_ids);
+  return json({ ok: true });
+}
+
+async function handleImportList(request: Request, env: Env, listId: string, baseUrl: string): Promise<Response> {
+  const token = request.headers.get("X-List-Token");
+  const list = await getList(env.DB, listId);
+  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  const body = await request.json<{ raw_text?: string }>();
+  if (!body.raw_text) return json({ error: "raw_text required" }, 400);
+
+  const chunks = body.raw_text.split(/[\s,;]+/).filter(Boolean);
+  const parsed = new Map<string, boolean>();
+  const invalid: string[] = [];
+  for (const chunk of chunks) {
+    const id = parseArxivId(chunk);
+    if (id) {
+      parsed.set(id, true);
+    } else if (chunk.trim()) {
+      invalid.push(chunk);
+    }
+  }
+
+  const ids = [...parsed.keys()];
+  if (ids.length === 0) {
+    return json({ added: [], invalid });
+  }
+
+  const existing = await getPapersBatch(env.DB, ids);
+  const existingIds = new Set(existing.map((p) => p.id));
+  const missing = ids.filter((id) => !existingIds.has(id));
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
+  const toAdd = missing.slice(0, 20);
+  for (const arxivId of toAdd) {
+    try {
+      const meta = await scrapeArxivMetadata(arxivId);
+      await insertPaper(env.DB, {
+        id: meta.id,
+        arxiv_url: meta.arxiv_url,
+        title: meta.title,
+        authors: meta.authors,
+        abstract: meta.abstract,
+        published_date: meta.published_date,
+        submitted_by_ip: ip,
+        submitted_by_country: cf?.country || undefined,
+        submitted_by_city: cf?.city || undefined,
+      });
+    } catch {
+      invalid.push(arxivId);
+    }
+  }
+  for (const id of missing.slice(20)) {
+    invalid.push(id);
+  }
+
+  const validIds = ids.filter((id) => !invalid.includes(id));
+  const actuallyAdded = await addListItems(env.DB, list.id, validIds);
+  const duplicateCount = validIds.length - actuallyAdded;
+
+  const allPapers = validIds.length > 0 ? await getPapersBatch(env.DB, validIds) : [];
+  return json({
+    added: allPapers.map((p) => paperToResponse(p, baseUrl)),
+    duplicates: duplicateCount,
+    invalid,
+  });
+}
+
+// ─── Route Table ─────────────────────────────────────────────────────────────
+
+type RouteHandler = (
+  request: Request,
+  env: Env,
+  url: URL,
+  matches: RegExpMatchArray
+) => Promise<Response>;
+
+interface RouteEntry {
+  method: string | null; // null = any method (for multi-method handlers like rating)
+  pattern: RegExp;
+  handler: RouteHandler;
+}
+
+function buildRouteTable(baseUrl: string): RouteEntry[] {
+  return [
+    // Static paths — listed before regex patterns to preserve priority
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/preview$/,
+      handler: (req) => handlePreviewPaper(req),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/batch$/,
+      handler: (req, env) => handleBatchPapers(req, env, baseUrl),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/papers$/,
+      handler: (req, env, url) => handleListPapers(env, url, baseUrl),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers$/,
+      handler: (req, env) => handleSubmitPaper(req, env, baseUrl),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/narration-check$/,
+      handler: (req, env) => handleNarrationCheck(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/my-additions$/,
+      handler: (req, env) => handleMyAdditions(req, env, baseUrl),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/admin\/verify$/,
+      handler: (req, env) => handleAdminVerify(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/stats$/,
+      handler: (req, env) => handleAdminStats(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/papers-with-ratings$/,
+      handler: (req, env) => handleAdminPapersWithRatings(req, env, baseUrl),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/admin\/clear-ratings$/,
+      handler: (req, env) => handleAdminClearRatings(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/has-low-ratings$/,
+      handler: (req, env) => handleAdminHasLowRatings(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/lists$/,
+      handler: (req, env) => handleAdminLists(req, env),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/lists$/,
+      handler: (req, env) => handleCreateList(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/my-lists$/,
+      handler: (req, env) => handleMyLists(req, env),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/webhooks\/modal$/,
+      handler: (req, env) => handleModalWebhook(req, env),
+    },
+    // Regex patterns with capture groups
+    {
+      method: "GET",
+      pattern: /^\/api\/papers\/([^/]+)\/audio$/,
+      handler: (_req, env, _url, m) => handleGetAudio(env, m[1]),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/papers\/([^/]+)\/transcript$/,
+      handler: (_req, env, _url, m) => handleGetTranscript(env, m[1]),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/papers\/([^/]+)\/progress$/,
+      handler: (_req, env, _url, m) => handleGetProgress(env, m[1], baseUrl),
+    },
+    {
+      method: null, // GET, POST, DELETE
+      pattern: /^\/api\/papers\/([^/]+)\/rating$/,
+      handler: (req, env, _url, m) => handleRating(req, env, m[1]),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/([^/]+)\/visit$/,
+      handler: (req, env, _url, m) => handleRecordVisit(req, env, m[1]),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/([^/]+)\/narrate$/,
+      handler: (req, env, _url, m) => handleNarratePaper(req, env, m[1], baseUrl),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/([^/]+)\/reprocess$/,
+      handler: (req, env, _url, m) => handleReprocessPaper(req, env, m[1], baseUrl),
+    },
+    {
+      method: "DELETE",
+      pattern: /^\/api\/my-additions\/([^/]+)$/,
+      handler: (req, env, _url, m) => handleDeleteMyAddition(req, env, m[1]),
+    },
+    {
+      method: "DELETE",
+      pattern: /^\/api\/papers\/([^/]+)$/,
+      handler: (req, env, _url, m) => handleDeletePaper(req, env, m[1]),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/papers\/([^/]+)$/,
+      handler: (_req, env, _url, m) => handleGetPaper(env, m[1], baseUrl),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/papers\/([^/]+)\/ratings$/,
+      handler: (req, env, _url, m) => handleAdminPaperRatings(req, env, m[1]),
+    },
+    {
+      method: "GET",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`),
+      handler: (req, env, _url, m) => handleGetList(req, env, m[1], baseUrl),
+    },
+    {
+      method: "PUT",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`),
+      handler: (req, env, _url, m) => handleUpdateList(req, env, m[1]),
+    },
+    {
+      method: "DELETE",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`),
+      handler: (req, env, _url, m) => handleDeleteList(req, env, m[1]),
+    },
+    {
+      method: "POST",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/items$`),
+      handler: (req, env, _url, m) => handleAddListItems(req, env, m[1]),
+    },
+    {
+      method: "DELETE",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/items\\/([^/]+)$`),
+      handler: (req, env, _url, m) => handleRemoveListItem(req, env, m[1], m[2]),
+    },
+    {
+      method: "PUT",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/reorder$`),
+      handler: (req, env, _url, m) => handleReorderList(req, env, m[1]),
+    },
+    {
+      method: "POST",
+      pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/import$`),
+      handler: (req, env, _url, m) => handleImportList(req, env, m[1], baseUrl),
+    },
+  ];
+}
+
 async function handleRequest(
   request: Request,
   env: Env,
@@ -108,423 +603,14 @@ async function handleRequest(
   method: string
 ): Promise<Response> {
   const baseUrl = url.origin;
+  const routes = buildRouteTable(baseUrl);
 
-  // POST /api/papers/preview — must be before /api/papers/:id match
-  if (path === "/api/papers/preview" && method === "POST") {
-    return handlePreviewPaper(request);
-  }
-
-  // POST /api/papers/batch — fetch multiple papers by ID
-  if (path === "/api/papers/batch" && method === "POST") {
-    const body = await request.json<{ ids?: string[] }>();
-    const ids = body.ids;
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return json({ error: "ids must be a non-empty array" }, 400);
+  for (const route of routes) {
+    if (route.method !== null && route.method !== method) continue;
+    const m = path.match(route.pattern);
+    if (m) {
+      return route.handler(request, env, url, m);
     }
-    if (ids.length > 50) {
-      return json({ error: "Maximum 50 IDs per request" }, 400);
-    }
-    const papers = await getPapersBatch(env.DB, ids);
-    return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
-  }
-
-  // GET /api/papers
-  if (path === "/api/papers" && method === "GET") {
-    return handleListPapers(env, url, baseUrl);
-  }
-
-  // POST /api/papers
-  if (path === "/api/papers" && method === "POST") {
-    return handleSubmitPaper(request, env, baseUrl);
-  }
-
-  // GET /api/papers/:id/audio
-  const audioMatch = path.match(/^\/api\/papers\/([^/]+)\/audio$/);
-  if (audioMatch && method === "GET") {
-    return handleGetAudio(env, audioMatch[1]);
-  }
-
-  // GET /api/papers/:id/transcript
-  const transcriptMatch = path.match(/^\/api\/papers\/([^/]+)\/transcript$/);
-  if (transcriptMatch && method === "GET") {
-    return handleGetTranscript(env, transcriptMatch[1]);
-  }
-
-  // GET /api/papers/:id/progress
-  const progressMatch = path.match(/^\/api\/papers\/([^/]+)\/progress$/);
-  if (progressMatch && method === "GET") {
-    return handleGetProgress(env, progressMatch[1], baseUrl);
-  }
-
-  // GET / POST / DELETE /api/papers/:id/rating
-  const ratingMatch = path.match(/^\/api\/papers\/([^/]+)\/rating$/);
-  if (ratingMatch) {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const paperId = ratingMatch[1];
-    if (method === "GET") {
-      const rating = await getRating(env.DB, paperId, ip);
-      if (!rating) return json({ rating: null });
-      return json({
-        paper_id: rating.paper_id,
-        stars: rating.stars,
-        comment: rating.comment,
-        created_at: rating.created_at,
-        updated_at: rating.updated_at,
-      });
-    }
-    if (method === "POST") {
-      const body = await request.json<{ stars?: number; comment?: string }>();
-      const stars = body.stars;
-      if (!stars || stars < 1 || stars > 5) {
-        return json({ error: "stars must be 1-5" }, 400);
-      }
-      const rating = await upsertRating(env.DB, paperId, ip, stars, body.comment || "");
-      return json({
-        paper_id: rating.paper_id,
-        stars: rating.stars,
-        comment: rating.comment,
-        created_at: rating.created_at,
-        updated_at: rating.updated_at,
-      });
-    }
-    if (method === "DELETE") {
-      await deleteRatingForIp(env.DB, paperId, ip);
-      return json({ ok: true });
-    }
-  }
-
-  // POST /api/papers/:id/visit
-  const visitMatch = path.match(/^\/api\/papers\/([^/]+)\/visit$/);
-  if (visitMatch && method === "POST") {
-    return handleRecordVisit(request, env, visitMatch[1]);
-  }
-
-  // DELETE /api/papers/:id
-  const deleteMatch = path.match(/^\/api\/papers\/([^/]+)$/);
-  if (deleteMatch && method === "DELETE") {
-    return handleDeletePaper(request, env, deleteMatch[1]);
-  }
-
-  // GET /api/papers/:id
-  const paperMatch = path.match(/^\/api\/papers\/([^/]+)$/);
-  if (paperMatch && method === "GET") {
-    return handleGetPaper(env, paperMatch[1], baseUrl);
-  }
-
-  // POST /api/papers/:id/narrate — request voice narration
-  const narrateMatch = path.match(/^\/api\/papers\/([^/]+)\/narrate$/);
-  if (narrateMatch && method === "POST") {
-    return handleNarratePaper(request, env, narrateMatch[1], baseUrl);
-  }
-
-  // GET /api/narration-check — check if captcha is required for caller
-  if (path === "/api/narration-check" && method === "GET") {
-    return handleNarrationCheck(request, env);
-  }
-
-  // GET /api/my-additions — papers submitted by this caller's IP
-  if (path === "/api/my-additions" && method === "GET") {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const papers = await getPapersBySubmitterIp(env.DB, ip);
-    return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
-  }
-
-  // DELETE /api/my-additions/:id — delete own paper (IP must match submitter)
-  const myDeleteMatch = path.match(/^\/api\/my-additions\/([^/]+)$/);
-  if (myDeleteMatch && method === "DELETE") {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const paper = await getPaper(env.DB, myDeleteMatch[1]);
-    if (!paper) return json({ error: "Paper not found" }, 404);
-    if (paper.submitted_by_ip !== ip) return json({ error: "Not your paper" }, 403);
-    if (paper.audio_r2_key) {
-      try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
-    }
-    await deletePaper(env.DB, myDeleteMatch[1]);
-    return json({ ok: true });
-  }
-
-  // POST /api/papers/:id/reprocess
-  const reprocessMatch = path.match(/^\/api\/papers\/([^/]+)\/reprocess$/);
-  if (reprocessMatch && method === "POST") {
-    return handleReprocessPaper(request, env, reprocessMatch[1], baseUrl);
-  }
-
-  // POST /api/admin/verify
-  if (path === "/api/admin/verify" && method === "POST") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Invalid password" }, 401);
-    }
-    return json({ ok: true });
-  }
-
-  // GET /api/admin/stats
-  if (path === "/api/admin/stats" && method === "GET") {
-    const authErr = requireAdmin(request, env);
-    if (authErr) return authErr;
-    const raw = await getTopContributors(env.DB, 10);
-    const callerIp = request.headers.get("CF-Connecting-IP") || "";
-    const names = ["Alice", "Bob", "Charlie", "Dana", "Eli", "Faye", "Gus", "Hana", "Ivan", "Jia",
-                   "Kai", "Luna", "Max", "Nora", "Omar", "Pia", "Quinn", "Ravi", "Sara", "Teo"];
-    const contributors = raw.map((c, i) => ({
-      name: c.ip === callerIp ? "You" : names[i] || `User ${i + 1}`,
-      location: [c.city, c.country].filter(Boolean).join(", ") || "Unknown",
-      paper_count: c.paper_count,
-      is_you: c.ip === callerIp,
-    }));
-    // Also return which paper IDs belong to the caller
-    const yourPaperIds = raw
-      .find((c) => c.ip === callerIp)
-      ? (await env.DB.prepare("SELECT id FROM papers WHERE submitted_by_ip = ?").bind(callerIp).all<{ id: string }>()).results.map((r) => r.id)
-      : [];
-    return json({ contributors, your_paper_ids: yourPaperIds });
-  }
-
-  // GET /api/admin/papers-with-ratings — curate page data
-  if (path === "/api/admin/papers-with-ratings" && method === "GET") {
-    const authErr = requireAdmin(request, env);
-    if (authErr) return authErr;
-    const papers = await getAllPapersWithRatings(env.DB);
-    return json({
-      papers: papers.map((p) => ({
-        ...paperToResponse(p, baseUrl),
-        avg_rating: p.bayesian_avg,
-        rating_count: p.rating_count || 0,
-        has_low_rating: !!p.has_low_rating,
-      })),
-    });
-  }
-
-  // GET /api/admin/papers/:id/ratings — all ratings for a paper
-  const adminRatingsMatch = path.match(/^\/api\/admin\/papers\/([^/]+)\/ratings$/);
-  if (adminRatingsMatch && method === "GET") {
-    const authErr = requireAdmin(request, env);
-    if (authErr) return authErr;
-    const ratings = await getAllRatingsForPaper(env.DB, adminRatingsMatch[1]);
-    return json({ ratings: ratings.map((r) => ({ stars: r.stars, comment: r.comment, created_at: r.created_at })) });
-  }
-
-  // POST /api/admin/clear-ratings — clear ratings for given paper IDs
-  if (path === "/api/admin/clear-ratings" && method === "POST") {
-    const authErr = requireAdmin(request, env);
-    if (authErr) return authErr;
-    const body = await request.json<{ paper_ids: string[] }>();
-    if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
-      return json({ error: "paper_ids array required" }, 400);
-    }
-    for (const id of body.paper_ids) {
-      await clearRatingsForPaper(env.DB, id);
-    }
-    return json({ ok: true, cleared: body.paper_ids.length });
-  }
-
-  // GET /api/admin/has-low-ratings — dashboard alert check
-  if (path === "/api/admin/has-low-ratings" && method === "GET") {
-    const authErr = requireAdmin(request, env);
-    if (authErr) return authErr;
-    const hasLow = await hasAnyLowRatings(env.DB);
-    return json({ has_low_ratings: hasLow });
-  }
-
-  // --- Lists ---
-
-  // POST /api/lists — create a new list
-  if (path === "/api/lists" && method === "POST") {
-    const body = await request.json<{ name?: string; description?: string }>();
-    if (!body.name || !body.name.trim()) {
-      return json({ error: "name is required" }, 400);
-    }
-    const id = await generateListId(env.DB);
-    const ownerToken = crypto.randomUUID().replace(/-/g, "");
-    const ip = request.headers.get("CF-Connecting-IP") || null;
-    const list = await createList(env.DB, id, ownerToken, body.name.trim(), (body.description || "").trim(), ip);
-    return json({
-      list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: 0 },
-      owner_token: ownerToken,
-    }, 201);
-  }
-
-  // GET /api/my-lists — get lists owned by token
-  if (path === "/api/my-lists" && method === "GET") {
-    const token = request.headers.get("X-List-Token");
-    if (!token) return json({ error: "X-List-Token header required" }, 401);
-    const lists = await getListsByToken(env.DB, token);
-    return json({
-      lists: lists.map((l) => ({
-        id: l.id, name: l.name, description: l.description,
-        created_at: l.created_at, updated_at: l.updated_at, paper_count: l.paper_count,
-      })),
-    });
-  }
-
-  // GET /api/admin/lists — all lists with tokens (admin recovery)
-  if (path === "/api/admin/lists" && method === "GET") {
-    const authErr = requireAdmin(request, env);
-    if (authErr) return authErr;
-    const lists = await getAllLists(env.DB);
-    return json({
-      lists: lists.map((l) => ({
-        id: l.id, name: l.name, description: l.description, owner_token: l.owner_token,
-        creator_ip: l.creator_ip, created_at: l.created_at, paper_count: l.paper_count,
-      })),
-    });
-  }
-
-  // GET /api/lists/:id — get list with papers (public)
-  const listGetMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`));
-  if (listGetMatch && method === "GET") {
-    const list = await getList(env.DB, listGetMatch[1]);
-    if (!list) return json({ error: "List not found" }, 404);
-    const items = await getListItems(env.DB, list.id);
-    const paperIds = items.map((i) => i.paper_id);
-    const papers = paperIds.length > 0 ? await getPapersBatch(env.DB, paperIds) : [];
-    const paperMap = new Map(papers.map((p) => [p.id, p]));
-    // Return papers in list order, with null for papers not in DB
-    const orderedPapers = paperIds.map((id) => {
-      const p = paperMap.get(id);
-      return p ? paperToResponse(p, baseUrl) : { id, not_found: true };
-    });
-    return json({
-      list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: items.length },
-      papers: orderedPapers,
-    });
-  }
-
-  // PUT /api/lists/:id — update name/description
-  const listPutMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`));
-  if (listPutMatch && method === "PUT") {
-    const token = request.headers.get("X-List-Token");
-    const list = await getList(env.DB, listPutMatch[1]);
-    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-    const body = await request.json<{ name?: string; description?: string }>();
-    await updateList(env.DB, list.id, (body.name ?? list.name).trim(), (body.description ?? list.description).trim());
-    return json({ ok: true });
-  }
-
-  // DELETE /api/lists/:id — delete list
-  const listDeleteMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`));
-  if (listDeleteMatch && method === "DELETE") {
-    const token = request.headers.get("X-List-Token");
-    const list = await getList(env.DB, listDeleteMatch[1]);
-    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-    await deleteList(env.DB, list.id);
-    return json({ ok: true });
-  }
-
-  // POST /api/lists/:id/items — add papers to list
-  const listItemsAddMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/items$`));
-  if (listItemsAddMatch && method === "POST") {
-    const token = request.headers.get("X-List-Token");
-    const list = await getList(env.DB, listItemsAddMatch[1]);
-    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-    const body = await request.json<{ paper_ids?: string[] }>();
-    if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
-      return json({ error: "paper_ids array required" }, 400);
-    }
-    const added = await addListItems(env.DB, list.id, body.paper_ids);
-    return json({ ok: true, added });
-  }
-
-  // DELETE /api/lists/:id/items/:paperId — remove paper from list
-  const listItemRemoveMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/items\\/([^/]+)$`));
-  if (listItemRemoveMatch && method === "DELETE") {
-    const token = request.headers.get("X-List-Token");
-    const list = await getList(env.DB, listItemRemoveMatch[1]);
-    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-    await removeListItem(env.DB, list.id, listItemRemoveMatch[2]);
-    return json({ ok: true });
-  }
-
-  // PUT /api/lists/:id/reorder — reorder list items
-  const listReorderMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/reorder$`));
-  if (listReorderMatch && method === "PUT") {
-    const token = request.headers.get("X-List-Token");
-    const list = await getList(env.DB, listReorderMatch[1]);
-    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-    const body = await request.json<{ paper_ids?: string[] }>();
-    if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
-      return json({ error: "paper_ids array required" }, 400);
-    }
-    await reorderListItems(env.DB, list.id, body.paper_ids);
-    return json({ ok: true });
-  }
-
-  // POST /api/lists/:id/import — bulk import arXiv IDs
-  const listImportMatch = path.match(new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})\\/import$`));
-  if (listImportMatch && method === "POST") {
-    const token = request.headers.get("X-List-Token");
-    const list = await getList(env.DB, listImportMatch[1]);
-    if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-    const body = await request.json<{ raw_text?: string }>();
-    if (!body.raw_text) return json({ error: "raw_text required" }, 400);
-
-    // Parse all arXiv IDs from text
-    const chunks = body.raw_text.split(/[\s,;]+/).filter(Boolean);
-    const parsed = new Map<string, boolean>(); // id -> valid
-    const invalid: string[] = [];
-    for (const chunk of chunks) {
-      const id = parseArxivId(chunk);
-      if (id) {
-        parsed.set(id, true);
-      } else if (chunk.trim()) {
-        invalid.push(chunk);
-      }
-    }
-
-    const ids = [...parsed.keys()];
-    if (ids.length === 0) {
-      return json({ added: [], invalid });
-    }
-
-    // Check which exist in DB
-    const existing = await getPapersBatch(env.DB, ids);
-    const existingIds = new Set(existing.map((p) => p.id));
-    const missing = ids.filter((id) => !existingIds.has(id));
-
-    // Auto-add missing papers from arXiv (cap at 20)
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
-    const toAdd = missing.slice(0, 20);
-    for (const arxivId of toAdd) {
-      try {
-        const meta = await scrapeArxivMetadata(arxivId);
-        await insertPaper(env.DB, {
-          id: meta.id,
-          arxiv_url: meta.arxiv_url,
-          title: meta.title,
-          authors: meta.authors,
-          abstract: meta.abstract,
-          published_date: meta.published_date,
-          submitted_by_ip: ip,
-          submitted_by_country: cf?.country || undefined,
-          submitted_by_city: cf?.city || undefined,
-        });
-      } catch {
-        invalid.push(arxivId);
-      }
-    }
-    // IDs beyond the cap are added to invalid
-    for (const id of missing.slice(20)) {
-      invalid.push(id);
-    }
-
-    // Add all valid IDs to list
-    const validIds = ids.filter((id) => !invalid.includes(id));
-    const actuallyAdded = await addListItems(env.DB, list.id, validIds);
-    const duplicateCount = validIds.length - actuallyAdded;
-
-    // Fetch final paper data
-    const allPapers = validIds.length > 0 ? await getPapersBatch(env.DB, validIds) : [];
-    return json({
-      added: allPapers.map((p) => paperToResponse(p, baseUrl)),
-      duplicates: duplicateCount,
-      invalid,
-    });
-  }
-
-  // POST /api/webhooks/modal
-  if (path === "/api/webhooks/modal" && method === "POST") {
-    return handleModalWebhook(request, env);
   }
 
   return json({ error: "Not found" }, 404);
