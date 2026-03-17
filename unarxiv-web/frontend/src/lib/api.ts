@@ -139,7 +139,8 @@ export async function submitPaper(
 
 export async function requestNarration(
   paperId: string,
-  turnstileToken?: string
+  turnstileToken?: string,
+  sourcePriority?: "latex" | "pdf"
 ): Promise<Paper> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const adminPw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("admin_password") : null;
@@ -147,6 +148,7 @@ export async function requestNarration(
 
   const body: Record<string, string> = {};
   if (turnstileToken) body.turnstile_token = turnstileToken;
+  if (sourcePriority) body.source_priority = sourcePriority;
 
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/narrate`, {
     method: "POST",
@@ -194,12 +196,16 @@ export async function reprocessPaperApi(
   id: string,
   password: string,
   wipeReviews: boolean = false,
-  mode: "full" | "script_only" | "narration_only" = "full"
+  mode: "full" | "script_only" | "narration_only" = "full",
+  sourcePriority?: "latex" | "pdf"
 ): Promise<Paper> {
+  const body: Record<string, unknown> = { wipe_reviews: wipeReviews, mode };
+  if (sourcePriority) body.source_priority = sourcePriority;
+
   const res = await fetch(`${API_BASE}/api/papers/${id}/reprocess`, {
     method: "POST",
     headers: { "X-Admin-Password": password, "Content-Type": "application/json" },
-    body: JSON.stringify({ wipe_reviews: wipeReviews, mode }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -315,7 +321,7 @@ export function transcriptUrl(id: string): string {
 export function formatDuration(seconds: number | null): string {
   if (!seconds) return "";
   const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
+  const m = Math.round((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m} min`;
 }

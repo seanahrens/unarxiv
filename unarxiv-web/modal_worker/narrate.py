@@ -82,12 +82,15 @@ def _download_from_r2(r2_key: str) -> str | None:
     timeout=3600,  # 1 hour max per paper
     retries=0,
 )
-def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_title: str = "", paper_author: str = "", mode: str = "full"):
+def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_title: str = "", paper_author: str = "", mode: str = "full", source_priority: str = "latex"):
     """Download, process, and narrate an arXiv paper.
 
     mode: "full" (default) = regenerate script + audio
           "script_only"    = regenerate script only, keep existing audio
           "narration_only" = re-narrate from existing transcript in R2
+
+    source_priority: "latex" (default) = try LaTeX source first, fall back to PDF
+                     "pdf"             = try PDF first, fall back to LaTeX source
     """
     import sys
     sys.path.insert(0, "/app")
@@ -114,77 +117,95 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 raise RuntimeError(f"No transcript found in R2 for {arxiv_id}")
             print(f"Loaded transcript: {len(speech):,} chars")
         else:
-            # --- Stage 1: Download, extract, process TeX ---
+            # --- Stage 1: Download, extract, process source ---
             send_status(callback_url, secret, arxiv_id, status="preparing")
-            print(f"Downloading {tex_source_url}...")
 
-            with httpx.Client(timeout=120, follow_redirects=True) as client:
-                resp = client.get(
-                    tex_source_url,
-                    headers={"User-Agent": "unarXiv/1.0"},
-                )
-                resp.raise_for_status()
+            pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
+            authors_list = [a.strip() for a in paper_author.split(",")] if paper_author else []
 
-            with open(tar_path, "wb") as f:
-                f.write(resp.content)
+            def _download(url: str) -> httpx.Response:
+                with httpx.Client(timeout=120, follow_redirects=True) as client:
+                    r = client.get(url, headers={"User-Agent": "unarXiv/1.0"})
+                    r.raise_for_status()
+                    return r
 
-            print(f"Downloaded {len(resp.content)} bytes")
-
-            # --- Extract ---
-            print("Extracting...")
-
-            os.makedirs(source_dir, exist_ok=True)
-
-            # arXiv's /src/ endpoint returns LaTeX source when available,
-            # falling back to PDF when no LaTeX exists.  We detect the
-            # format via magic bytes and use the appropriate pipeline.
-            is_pdf = tex_to_audio.is_pdf_file(tar_path)
-
-            if is_pdf:
-                # --- PDF fallback: no LaTeX source, extract text from PDF ---
-                print("Source is a PDF (no LaTeX available). Extracting text from PDF...")
-                # Parse authors list from the comma-separated string
-                pdf_authors = [a.strip() for a in paper_author.split(",")] if paper_author else []
-                speech = tex_to_audio.build_speech_text_from_pdf(
-                    tar_path,
+            def _process_as_pdf(data: bytes) -> str:
+                """Build speech text from PDF bytes."""
+                pdf_path = os.path.join(work_dir, f"{arxiv_id}.pdf")
+                with open(pdf_path, "wb") as f:
+                    f.write(data)
+                return tex_to_audio.build_speech_text_from_pdf(
+                    pdf_path,
                     title=paper_title,
-                    date="",  # date already in metadata, not reliably in PDF
-                    authors=pdf_authors,
+                    date="",
+                    authors=authors_list,
                 )
-            else:
-                # Handle tar.gz archives, gzip'd single .tex files, and plain .tex files
-                content_type = resp.headers.get("content-type", "")
-                if "gzip" in content_type or "tar" in content_type or tar_path.endswith(".gz"):
+
+            def _process_as_latex(data: bytes, content_type: str) -> str:
+                """Extract LaTeX from archive/file and build speech text."""
+                src_path = os.path.join(work_dir, f"{arxiv_id}.tar.gz")
+                with open(src_path, "wb") as f:
+                    f.write(data)
+
+                os.makedirs(source_dir, exist_ok=True)
+                if "gzip" in content_type or "tar" in content_type or src_path.endswith(".gz"):
                     try:
-                        with tarfile.open(tar_path, "r:*") as tf:
+                        with tarfile.open(src_path, "r:*") as tf:
                             tf.extractall(source_dir)
                     except tarfile.TarError:
-                        # Not a tar archive — might be a single gzip'd .tex file
                         import gzip
                         try:
-                            with gzip.open(tar_path, "rb") as gz:
+                            with gzip.open(src_path, "rb") as gz:
                                 decompressed = gz.read()
                             with open(os.path.join(source_dir, "main.tex"), "wb") as f:
                                 f.write(decompressed)
                             print(f"Decompressed single gzip'd .tex file ({len(decompressed):,} bytes)")
                         except gzip.BadGzipFile:
-                            # Truly a plain .tex file, not compressed at all
-                            os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+                            os.rename(src_path, os.path.join(source_dir, "main.tex"))
                 else:
-                    # Likely a single .tex file
-                    os.rename(tar_path, os.path.join(source_dir, "main.tex"))
+                    os.rename(src_path, os.path.join(source_dir, "main.tex"))
 
-                # --- Process TeX ---
                 print("Processing LaTeX...")
-
                 latex = tex_to_audio.read_latex_from_dir(source_dir)
-                # Parse fallback authors from the comma-separated string sent by the worker
-                fallback_authors = [a.strip() for a in paper_author.split(",")] if paper_author else []
-                speech = tex_to_audio.build_speech_text(
+                return tex_to_audio.build_speech_text(
                     latex, source_stem=f"arXiv-{arxiv_id}",
                     fallback_title=paper_title,
-                    fallback_authors=fallback_authors,
+                    fallback_authors=authors_list,
                 )
+
+            if source_priority == "pdf":
+                # --- PDF-first: download PDF directly, fall back to LaTeX ---
+                print(f"Source priority: PDF. Downloading {pdf_url}...")
+                try:
+                    resp = _download(pdf_url)
+                    print(f"Downloaded PDF: {len(resp.content)} bytes")
+                    speech = _process_as_pdf(resp.content)
+                except Exception as pdf_err:
+                    print(f"PDF failed ({pdf_err}), falling back to LaTeX source...")
+                    resp = _download(tex_source_url)
+                    print(f"Downloaded LaTeX source: {len(resp.content)} bytes")
+                    with open(tar_path, "wb") as f:
+                        f.write(resp.content)
+                    if tex_to_audio.is_pdf_file(tar_path):
+                        speech = _process_as_pdf(resp.content)
+                    else:
+                        speech = _process_as_latex(resp.content, resp.headers.get("content-type", ""))
+            else:
+                # --- LaTeX-first (default): download /src/, fall back to PDF ---
+                print(f"Source priority: LaTeX. Downloading {tex_source_url}...")
+                resp = _download(tex_source_url)
+                print(f"Downloaded {len(resp.content)} bytes")
+
+                with open(tar_path, "wb") as f:
+                    f.write(resp.content)
+
+                is_pdf = tex_to_audio.is_pdf_file(tar_path)
+
+                if is_pdf:
+                    print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
+                    speech = _process_as_pdf(resp.content)
+                else:
+                    speech = _process_as_latex(resp.content, resp.headers.get("content-type", ""))
 
             print(f"Generated speech text: {len(speech):,} chars")
 
@@ -329,6 +350,9 @@ def trigger_narration(request: dict):
     paper_title = request.get("paper_title", "")
     paper_author = request.get("paper_author", "")
     mode = request.get("mode", "full")
+    source_priority = request.get("source_priority", "latex")
+    if source_priority not in ("latex", "pdf"):
+        source_priority = "latex"
 
     if not all([arxiv_id, callback_url]):
         return {"error": "arxiv_id and callback_url required"}
@@ -336,6 +360,6 @@ def trigger_narration(request: dict):
         return {"error": "tex_source_url required for this mode"}
 
     # Spawn the narration as an async job
-    narrate_paper.spawn(arxiv_id, tex_source_url or "", callback_url, paper_title, paper_author, mode)
+    narrate_paper.spawn(arxiv_id, tex_source_url or "", callback_url, paper_title, paper_author, mode, source_priority)
 
-    return {"status": "dispatched", "arxiv_id": arxiv_id, "mode": mode}
+    return {"status": "dispatched", "arxiv_id": arxiv_id, "mode": mode, "source_priority": source_priority}

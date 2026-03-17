@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
-import { audioUrl, formatDuration, type Paper } from "@/lib/api";
+import { audioUrl, formatDuration, requestNarration, type Paper } from "@/lib/api";
 import { getMyListTokens } from "@/lib/lists";
 import ListSubmenu from "@/components/ListSubmenu";
 
@@ -62,6 +63,7 @@ export default function PaperActionsMenu({
   onClose,
   containerRef,
 }: PaperActionsMenuProps) {
+  const router = useRouter();
   const { state, actions } = useAudio();
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const { downloading, download } = useDownload();
@@ -127,9 +129,13 @@ export default function PaperActionsMenu({
       )}
 
       {/* Generate Audio — only when showGenerateItem AND paper not requested */}
-      {showGenerateItem && isNotRequested && onGenerate && (
+      {showGenerateItem && isNotRequested && (
         <>
-          <button onClick={() => { onGenerate(); onClose(); }} className={MENU_ITEM}>
+          <button onClick={() => {
+            if (onGenerate) { onGenerate(); }
+            else { requestNarration(paper.id).catch(() => {}); router.push(`/p?id=${paper.id}`); }
+            onClose();
+          }} className={MENU_ITEM}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
               <path d="M19.07 4.93a10 10 0 010 14.14" />
@@ -145,8 +151,7 @@ export default function PaperActionsMenu({
       <button onClick={handlePlaylistToggle} className={MENU_ITEM}>
         {inPlaylist ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
+            <polyline points="20 6 9 17 4 12" />
           </svg>
         ) : (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -154,7 +159,7 @@ export default function PaperActionsMenu({
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         )}
-        {inPlaylist ? "Remove from Playlist" : "Add to Playlist"}
+        {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
 
       {/* Rate Narration — only when complete */}
