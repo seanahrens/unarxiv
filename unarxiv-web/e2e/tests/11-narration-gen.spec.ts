@@ -19,7 +19,7 @@ test.describe("Narration Generation", () => {
   }) => {
     // Step 1: Import the paper via search
     await page.goto("/");
-    const searchInput = page.locator('input[type="text"]').first();
+    const searchInput = page.locator('[data-testid="search-input"]');
     await searchInput.fill(TEST_ARXIV_ID);
     await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`), {
       timeout: 15000,

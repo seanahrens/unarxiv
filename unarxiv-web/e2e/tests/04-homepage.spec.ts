@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Homepage", () => {
   test("homepage loads and shows paper cards", async ({ page }) => {
     await page.goto("/");
-    const cards = page.locator('a[href*="/p/"][href*="id="]');
+    const cards = page.locator('[data-testid="paper-card"]');
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(1);
@@ -11,7 +11,7 @@ test.describe("Homepage", () => {
 
   test("clicking a paper card navigates to paper page", async ({ page }) => {
     await page.goto("/");
-    const firstCard = page.locator('a[href*="/p/"][href*="id="]').first();
+    const firstCard = page.locator('[data-testid="paper-card"]').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
     await firstCard.click();
     await expect(page).toHaveURL(/\/p\/\?id=/);
