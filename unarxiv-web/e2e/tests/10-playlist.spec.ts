@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { knownCompleteId } from "../helpers/fixtures";
+import { openDropdown } from "../helpers/page-actions";
 
 test.describe("Playlist", () => {
   test.beforeEach(async ({ page }) => {
@@ -14,9 +15,7 @@ test.describe("Playlist", () => {
     await page.locator("h1").waitFor({ timeout: 10000 });
 
     // Open the split-button dropdown
-    const chevronBtn = page.locator('button:has(svg polyline[points="6 9 12 15 18 9"])');
-    await expect(chevronBtn).toBeVisible({ timeout: 5000 });
-    await chevronBtn.click();
+    await openDropdown(page);
 
     // Click "Add to Playlist" in the dropdown
     const addBtn = page.locator('button:has-text("Add to Playlist")');

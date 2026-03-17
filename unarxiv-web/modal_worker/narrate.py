@@ -41,11 +41,10 @@ def send_status(callback_url: str, secret: str, arxiv_id: str, **kwargs):
         print(f"Warning: callback failed: {e}")
 
 
-def upload_to_r2(local_path: str, r2_key: str, content_type: str = "audio/mpeg") -> int:
-    """Upload a file to Cloudflare R2 via S3 API. Returns file size in bytes."""
+def _make_r2_client():
+    """Return a boto3 S3 client configured for Cloudflare R2."""
     import boto3
-
-    s3 = boto3.client(
+    return boto3.client(
         "s3",
         endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
         aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
@@ -53,6 +52,10 @@ def upload_to_r2(local_path: str, r2_key: str, content_type: str = "audio/mpeg")
         region_name="auto",
     )
 
+
+def upload_to_r2(local_path: str, r2_key: str, content_type: str = "audio/mpeg") -> int:
+    """Upload a file to Cloudflare R2 via S3 API. Returns file size in bytes."""
+    s3 = _make_r2_client()
     file_size = os.path.getsize(local_path)
     s3.upload_file(
         local_path,
@@ -65,15 +68,7 @@ def upload_to_r2(local_path: str, r2_key: str, content_type: str = "audio/mpeg")
 
 def _download_from_r2(r2_key: str) -> str | None:
     """Download a text file from R2. Returns content or None if not found."""
-    import boto3
-
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
-        aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],
-        region_name="auto",
-    )
+    s3 = _make_r2_client()
     try:
         obj = s3.get_object(Bucket=os.environ["R2_BUCKET_NAME"], Key=r2_key)
         return obj["Body"].read().decode("utf-8")

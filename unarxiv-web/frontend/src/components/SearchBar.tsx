@@ -79,6 +79,7 @@ export default function SearchBar({
         </svg>
         <input
           type="text"
+          data-testid="search-input"
           value={value}
           onChange={handleChange}
           onFocus={() => setFocused(true)}

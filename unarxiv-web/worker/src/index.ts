@@ -152,46 +152,41 @@ async function handleRequest(
     return handleGetProgress(env, progressMatch[1], baseUrl);
   }
 
-  // GET /api/papers/:id/rating — get caller's rating
-  const ratingGetMatch = path.match(/^\/api\/papers\/([^/]+)\/rating$/);
-  if (ratingGetMatch && method === "GET") {
+  // GET / POST / DELETE /api/papers/:id/rating
+  const ratingMatch = path.match(/^\/api\/papers\/([^/]+)\/rating$/);
+  if (ratingMatch) {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const rating = await getRating(env.DB, ratingGetMatch[1], ip);
-    if (!rating) return json({ rating: null });
-    return json({
-      paper_id: rating.paper_id,
-      stars: rating.stars,
-      comment: rating.comment,
-      created_at: rating.created_at,
-      updated_at: rating.updated_at,
-    });
-  }
-
-  // POST /api/papers/:id/rating — submit or update rating
-  const ratingPostMatch = path.match(/^\/api\/papers\/([^/]+)\/rating$/);
-  if (ratingPostMatch && method === "POST") {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const body = await request.json<{ stars?: number; comment?: string }>();
-    const stars = body.stars;
-    if (!stars || stars < 1 || stars > 5) {
-      return json({ error: "stars must be 1-5" }, 400);
+    const paperId = ratingMatch[1];
+    if (method === "GET") {
+      const rating = await getRating(env.DB, paperId, ip);
+      if (!rating) return json({ rating: null });
+      return json({
+        paper_id: rating.paper_id,
+        stars: rating.stars,
+        comment: rating.comment,
+        created_at: rating.created_at,
+        updated_at: rating.updated_at,
+      });
     }
-    const rating = await upsertRating(env.DB, ratingPostMatch[1], ip, stars, body.comment || "");
-    return json({
-      paper_id: rating.paper_id,
-      stars: rating.stars,
-      comment: rating.comment,
-      created_at: rating.created_at,
-      updated_at: rating.updated_at,
-    });
-  }
-
-  // DELETE /api/papers/:id/rating — delete caller's rating
-  const ratingDeleteMatch = path.match(/^\/api\/papers\/([^/]+)\/rating$/);
-  if (ratingDeleteMatch && method === "DELETE") {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    await deleteRatingForIp(env.DB, ratingDeleteMatch[1], ip);
-    return json({ ok: true });
+    if (method === "POST") {
+      const body = await request.json<{ stars?: number; comment?: string }>();
+      const stars = body.stars;
+      if (!stars || stars < 1 || stars > 5) {
+        return json({ error: "stars must be 1-5" }, 400);
+      }
+      const rating = await upsertRating(env.DB, paperId, ip, stars, body.comment || "");
+      return json({
+        paper_id: rating.paper_id,
+        stars: rating.stars,
+        comment: rating.comment,
+        created_at: rating.created_at,
+        updated_at: rating.updated_at,
+      });
+    }
+    if (method === "DELETE") {
+      await deleteRatingForIp(env.DB, paperId, ip);
+      return json({ ok: true });
+    }
   }
 
   // POST /api/papers/:id/visit

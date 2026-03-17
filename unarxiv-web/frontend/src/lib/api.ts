@@ -326,6 +326,25 @@ export function formatDurationShort(seconds: number): string {
   return `${(mins / 60).toFixed(1)}h`;
 }
 
+export function isInProgress(status: string): boolean {
+  return ["queued", "preparing", "generating_audio"].includes(status);
+}
+
+export function formatAuthors(authors: string[], maxShown = 3): string {
+  if (authors.length === 0) return "";
+  if (authors.length <= maxShown) return authors.join(", ");
+  return `${authors.slice(0, maxShown).join(", ")} + ${authors.length - maxShown} more`;
+}
+
+export function formatPaperDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+export function formatPaperYear(dateStr: string): string {
+  return dateStr?.slice(0, 4) || "";
+}
+
 // Extract an arXiv ID (YYMM.NNNNN with optional vN) from anywhere in a string.
 const ARXIV_ID_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
 

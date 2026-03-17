@@ -47,7 +47,11 @@ test.describe("Global Media Player", () => {
     await page.evaluate(() => {
       (document.querySelector("audio") as HTMLAudioElement).currentTime = 30;
     });
-    await page.waitForTimeout(200);
+    // Wait for seek to settle before reading currentTime
+    await page.waitForFunction(
+      () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime >= 25,
+      { timeout: 3000 }
+    );
 
     const timeBefore = await page.evaluate(
       () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime

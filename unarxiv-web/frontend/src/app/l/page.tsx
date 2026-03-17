@@ -56,8 +56,9 @@ function ListsPageContent() {
   return (
     <div className="text-center py-20">
       <p className="text-stone-500 text-sm">No collection specified.</p>
-      <Link href="/playlist" className="text-stone-600 hover:text-stone-800 underline text-sm mt-2 inline-block">
-        Back to My Collections
+      <Link href="/playlist" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mt-2 border border-stone-300 rounded-full px-3 py-1 no-underline">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
+        Back to My Lists
       </Link>
     </div>
   );
@@ -247,8 +248,9 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
     return (
       <div className="text-center py-20">
         <p className="text-stone-500 text-sm">{error || "Collection not found"}</p>
-        <Link href="/playlist" className="text-stone-600 hover:text-stone-800 underline text-sm mt-2 inline-block">
-          Back to My Collections
+        <Link href="/playlist" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mt-2 border border-stone-300 rounded-full px-3 py-1 no-underline">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
+          Back to My Lists
         </Link>
       </div>
     );
@@ -279,12 +281,10 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
               }
               window.location.href = "/playlist";
             }}
-            className="text-sm text-stone-500 hover:text-stone-700 flex items-center gap-1 transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors border border-stone-300 rounded-full px-3 py-1"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Collections
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
+            Back to My Lists
           </button>
           <div className="flex items-center gap-2">
             <span className={`text-xs transition-opacity ${saving ? "text-stone-400 opacity-100" : saved ? "text-emerald-500 opacity-100" : "opacity-0"}`}>
