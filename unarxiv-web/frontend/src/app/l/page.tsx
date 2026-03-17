@@ -17,6 +17,7 @@ import {
   importBulk,
   type ListWithPapers,
   type ImportResult,
+  DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
 import { type Paper } from "@/lib/api";
 import PaperCard from "@/components/PaperCard";
@@ -79,6 +80,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   const [showEditMenu, setShowEditMenu] = useState(false);
   const [page, setPage] = useState(0);
   const descRef = useRef<HTMLTextAreaElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const editMenuRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +103,14 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   }, [listId, ownerToken]);
 
   useEffect(() => { loadList(); }, [loadList]);
+
+  // Auto-select title for new collections
+  useEffect(() => {
+    if (data && startInEditMode && editName === DEFAULT_COLLECTION_NAME && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set page title
   useEffect(() => {
@@ -182,6 +192,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   const handleRemove = async (paperId: string) => {
     if (!ownerToken) return;
+    if (!confirm("Remove this paper from the collection?")) return;
     try {
       await removeItemFromList(listId, ownerToken, paperId);
       setData((prev) => prev ? {
@@ -267,20 +278,34 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   // ─── Edit View (owner + edit mode) ──────────────────────────────────────────
 
-  if (editMode) { // TODO: restore `isOwner && editMode` after testing
+  if (isOwner && editMode) {
     return (
-      <div className="space-y-4 md:space-y-6 -mx-6 md:mx-0">
+      <div className="space-y-4 -mx-6 md:mx-0">
         {/* Top bar: back + Public View button with share submenu */}
         <div className="px-6 md:px-0 flex items-center justify-between">
-          <Link
-            href="/playlist"
+          <button
+            onClick={async () => {
+              // Auto-delete empty untitled collections
+              if (
+                ownerToken &&
+                editName.trim() === DEFAULT_COLLECTION_NAME &&
+                !editDesc.trim() &&
+                data.papers.length === 0
+              ) {
+                try {
+                  await deleteListApi(listId, ownerToken);
+                  removeListToken(listId);
+                } catch {}
+              }
+              window.location.href = "/playlist";
+            }}
             className="text-sm text-stone-500 hover:text-stone-700 flex items-center gap-1 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
             Collections
-          </Link>
+          </button>
           <div className="flex items-center gap-2">
             <span className={`text-xs transition-opacity ${saving ? "text-stone-400 opacity-100" : saved ? "text-emerald-500 opacity-100" : "opacity-0"}`}>
               {saving ? "Saving..." : "Saved"}
@@ -297,7 +322,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
                   <line x1="2" y1="12" x2="22" y2="12" />
                   <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                 </svg>
-                Public View
+                View Public Page
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -314,20 +339,21 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
                       <line x1="2" y1="12" x2="22" y2="12" />
                       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
-                    View public page
+                    View Public Page
                   </a>
                   <button
                     onClick={() => handleCopyLink()}
                     className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-stone-50 transition-colors w-full text-left ${copied ? "text-emerald-600" : "text-stone-700"}`}
                   >
                     {copied ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                     ) : (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                       </svg>
                     )}
                     {copied ? "Link copied!" : "Copy share link"}
@@ -341,12 +367,13 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
         {/* Name + description fields */}
         <div className="px-6 md:px-0 space-y-2">
           <input
+            ref={nameInputRef}
             type="text"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleSave}
-            placeholder="Collection name"
-            className="w-full text-xl md:text-2xl font-bold text-stone-900 bg-transparent border-b-2 border-transparent focus:border-stone-400 outline-none pb-1 transition-colors placeholder:text-stone-300"
+            placeholder="Collection Name"
+            className="w-full text-xl md:text-2xl font-bold text-stone-900 bg-transparent outline-none pb-1 transition-colors placeholder:text-stone-300"
             maxLength={100}
           />
           <textarea
@@ -354,8 +381,8 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
             value={editDesc}
             onChange={(e) => setEditDesc(e.target.value)}
             onBlur={handleSave}
-            placeholder="Description here..."
-            className="w-full text-sm text-stone-600 bg-transparent border-b border-stone-100 focus:border-stone-300 outline-none pb-1 resize-none transition-colors placeholder:text-stone-400 overflow-hidden"
+            placeholder="Description"
+            className="w-full text-sm text-stone-600 bg-transparent outline-none pb-1 resize-none transition-colors placeholder:text-stone-400 overflow-hidden"
             rows={1}
             maxLength={500}
           />
@@ -364,13 +391,9 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
         {/* Papers */}
         <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
           <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
-            <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
+            <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 384 512" fill="currentColor">
+                <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM192 272V464c0 8.8-7.2 16-16 16s-16-7.2-16-16V352l-28.3 18.9c-7.3 4.9-17.2 2.9-22.1-4.4s-2.9-17.2 4.4-22.1l48-32c4.8-3.2 10.9-3.8 16.2-1.7s9.8 7.4 9.8 13.1V272c0 8.8-7.2 16-16 16s-16-7.2-16-16zm96 0v38.1c0 19-8.4 37-23 49.2l-32.6 27.2c-6.8 5.6-7.7 15.6-2.1 22.4s15.6 7.7 22.4 2.1l4.3-3.6V464c0 8.8 7.2 16 16 16s16-7.2 16-16V272c0-8.8-7.2-16-16-16s-16 7.2-16 16z" />
               </svg>
               Papers
             </h2>
@@ -388,32 +411,25 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
           )}
           {/* Inline import form — footer of Papers section */}
           <div className="border-t border-stone-200 px-4 md:px-5 py-3 space-y-2">
-            <div className="relative">
-              {!importText && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-xs text-stone-400">
-                  Paste arXiv (or unarXiv) URLs or IDs to add papers
-                </div>
-              )}
-              <textarea
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                onPaste={(e) => {
-                  const text = e.clipboardData.getData("text");
-                  if (text.trim()) {
-                    setTimeout(() => handleImport(text), 300);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleImport();
-                  }
-                }}
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 resize-none bg-stone-50"
-                rows={1}
-                autoFocus
-              />
-            </div>
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text");
+                if (text.trim()) {
+                  setTimeout(() => handleImport(text), 300);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleImport();
+                }
+              }}
+              placeholder="Paste arXiv (or unarXiv) URLs or IDs to add papers"
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 resize-none border-2 border-stone-400 bg-stone-100"
+              rows={1}
+            />
             {importResult && (
               <div className="text-xs space-y-1">
                 {(() => {
@@ -447,19 +463,6 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
           </div>
         </section>
 
-        {/* Danger zone */}
-        <div className="px-6 md:px-0 pt-4 border-t border-stone-100">
-          <button
-            onClick={handleDelete}
-            className="text-xs text-stone-400 hover:text-red-500 transition-colors flex items-center gap-1"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-            Delete this collection
-          </button>
-        </div>
       </div>
     );
   }
@@ -467,18 +470,11 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   // ─── Public View (default for everyone, including owner) ──────────────────
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-xl md:text-2xl font-bold text-stone-900">{data.list.name}</h1>
-            {visiblePapers.length > 0 && (
-              <span className="text-xs text-stone-400 whitespace-nowrap">
-                {visiblePapers.length} paper{visiblePapers.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
+          <h1 className="text-xl md:text-2xl font-bold text-stone-900">{data.list.name}</h1>
           {data.list.description && (
             <p className="text-sm text-stone-500 mt-1.5 whitespace-pre-wrap leading-relaxed">{data.list.description}</p>
           )}
@@ -494,7 +490,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              Edit
+              Edit Collection
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
@@ -515,20 +511,21 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                    Edit collection
+                    Edit Collection
                   </button>
                   <button
                     onClick={() => handleCopyLink()}
                     className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-stone-50 transition-colors w-full text-left ${copied ? "text-emerald-600" : "text-stone-700"}`}
                   >
                     {copied ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                     ) : (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                       </svg>
                     )}
                     {copied ? "Link copied!" : "Copy share link"}
@@ -542,7 +539,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
       {/* Papers */}
       {visiblePapers.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-8">
           <p className="text-stone-400 text-sm">This collection is empty.</p>
           {isOwner && (
             <button
@@ -561,38 +558,45 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
         const totalPages = Math.ceil(visiblePapers.length / perPage);
         const paginated = visiblePapers.slice(page * perPage, (page + 1) * perPage);
         return (
-          <>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="p-1.5 text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </button>
-                <span className="text-xs text-stone-400 tabular-nums">
-                  {page + 1}/{totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="p-1.5 text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              </div>
-            )}
-            <div className="grid gap-4">
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
+                A Collection of {visiblePapers.length} Paper{visiblePapers.length !== 1 ? "s" : ""}
+              </h2>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 12L6 8L10 4" />
+                    </svg>
+                  </button>
+                  <span className="text-xs text-stone-400 tabular-nums min-w-[3ch] text-center">
+                    {page + 1}/{totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                    className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+                    aria-label="Next page"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 4L10 8L6 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="grid gap-3">
               {paginated.map((p) => (
                 <PaperCard key={p.id} paper={p as Paper} />
               ))}
             </div>
-          </>
+          </section>
         );
       })()}
     </div>

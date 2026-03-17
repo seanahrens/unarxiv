@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getMyListTokens, addItemsToList, fetchList } from "@/lib/lists";
+import { getMyListTokens, addItemsToList, removeItemFromList, fetchList } from "@/lib/lists";
 
 interface ListSubmenuProps {
   paperId: string;
@@ -40,12 +40,18 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
 
   if (entries.length === 0) return null;
 
-  const handleAdd = async (listId: string) => {
+  const handleToggle = async (listId: string) => {
     const token = tokens[listId]?.ownerToken;
     if (!token) return;
+    const isAdded = addedTo.has(listId);
     try {
-      await addItemsToList(listId, token, [paperId]);
-      setAddedTo((prev) => new Set([...prev, listId]));
+      if (isAdded) {
+        await removeItemFromList(listId, token, paperId);
+        setAddedTo((prev) => { const next = new Set(prev); next.delete(listId); return next; });
+      } else {
+        await addItemsToList(listId, token, [paperId]);
+        setAddedTo((prev) => new Set([...prev, listId]));
+      }
     } catch {}
   };
 
@@ -53,8 +59,6 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
     <div
       ref={subRef}
       className="relative"
-      onMouseEnter={() => setSubOpen(true)}
-      onMouseLeave={() => setSubOpen(false)}
     >
       <button
         onClick={() => setSubOpen(!subOpen)}
@@ -73,28 +77,21 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
       </button>
 
       {subOpen && (
-        <div className="absolute right-full top-0 mr-1 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[160px] py-1">
+        <div className="absolute right-full top-0 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[160px] py-1">
           {entries.map(([listId, entry]) => {
             const isAdded = addedTo.has(listId);
             return (
               <button
                 key={listId}
-                onClick={() => {
-                  if (!isAdded) handleAdd(listId);
-                  onClose();
-                }}
-                disabled={isAdded}
-                className="w-full flex items-center gap-2 px-4 py-2 text-xs text-stone-700 hover:bg-stone-100 transition-colors disabled:opacity-50"
+                onClick={() => handleToggle(listId)}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-xs hover:bg-stone-100 transition-colors ${isAdded ? "text-emerald-600" : "text-stone-700"}`}
               >
                 {isAdded ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 ) : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
+                  <span className="w-3 h-3 inline-block" />
                 )}
                 <span className="truncate">{entry.name || "Untitled"}</span>
               </button>

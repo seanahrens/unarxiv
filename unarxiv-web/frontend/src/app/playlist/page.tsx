@@ -15,6 +15,7 @@ import {
   fetchMyLists,
   deleteListApi,
   type ListMeta,
+  DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -37,11 +38,6 @@ export default function PlaylistPage() {
   // My Lists state
   const [myLists, setMyLists] = useState<ListMeta[]>([]);
   const [listsLoading, setListsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createDesc, setCreateDesc] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState("");
   const [copiedListId, setCopiedListId] = useState<string | null>(null);
 
   // Fetch playlist papers
@@ -154,20 +150,13 @@ export default function PlaylistPage() {
   };
 
   const handleCreateList = async () => {
-    if (!createName.trim()) return;
-    setCreating(true);
-    setCreateError("");
     try {
-      const { list, owner_token } = await createListApi(createName.trim(), createDesc.trim());
+      const { list, owner_token } = await createListApi(DEFAULT_COLLECTION_NAME, "");
       saveListToken(list.id, owner_token, list.name);
-      setCreateName("");
-      setCreateDesc("");
-      setShowCreateModal(false);
-      setMyLists((prev) => [list, ...prev]);
+      window.location.href = `/l?id=${list.id}&edit=1`;
     } catch (e: any) {
-      setCreateError(e.message || "Failed to create list");
+      alert(e.message || "Failed to create collection");
     }
-    setCreating(false);
   };
 
   const handleDeleteList = async (listId: string) => {
@@ -363,7 +352,7 @@ export default function PlaylistPage() {
             My Collections
           </h2>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleCreateList}
             className="w-8 h-8 flex items-center justify-center border border-stone-300 text-stone-500 hover:text-stone-700 hover:border-stone-400 hover:bg-stone-50 rounded-lg transition-colors"
             title="Create new collection"
           >
@@ -409,17 +398,21 @@ export default function PlaylistPage() {
                   {/* Copy link button */}
                   <button
                     onClick={(e) => handleCopyListUrl(list.id, e)}
-                    className={`shrink-0 transition-colors p-1 ${copiedListId === list.id ? "text-emerald-500" : "text-stone-400 hover:text-stone-700"}`}
+                    className={`shrink-0 transition-colors p-1 flex items-center gap-1 ${copiedListId === list.id ? "text-emerald-500" : "text-stone-400 hover:text-stone-700"}`}
                     title={copiedListId === list.id ? "Copied!" : "Copy share link"}
                   >
                     {copiedListId === list.id ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <>
+                        <span className="text-xs text-emerald-500 whitespace-nowrap">Link Copied!</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      </>
                     ) : (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                       </svg>
                     )}
                   </button>
@@ -544,56 +537,6 @@ export default function PlaylistPage() {
       </section>
       )}
 
-      {/* ─── Create List Modal ───────────────────────────────────── */}
-      {showCreateModal && (
-        <div
-          className="!m-0 fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-stone-900">Create a Collection</h3>
-            <div className="space-y-2">
-              <input
-                type="text"
-                placeholder="List name"
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
-                maxLength={100}
-                autoFocus
-              />
-              <textarea
-                placeholder="Description (optional)"
-                value={createDesc}
-                onChange={(e) => setCreateDesc(e.target.value)}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-400 resize-none"
-                rows={3}
-                maxLength={500}
-              />
-            </div>
-            {createError && <p className="text-red-500 text-xs">{createError}</p>}
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateList}
-                disabled={!createName.trim() || creating}
-                className="px-4 py-2 bg-stone-900 text-white text-sm rounded-lg hover:bg-stone-700 disabled:opacity-50 transition-colors"
-              >
-                {creating ? "Creating..." : "Create"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

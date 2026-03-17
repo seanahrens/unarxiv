@@ -340,10 +340,6 @@ function PlayButtonWithMenu({
             )}
             {inPlaylist ? "Remove from Playlist" : "Add to Playlist"}
           </button>
-          {Object.keys(getMyListTokens()).length > 0 && (
-            <><div className="border-t border-stone-200 mx-3" />
-            <ListSubmenu paperId={paper.id} onClose={() => setMenuOpen(false)} /></>
-          )}
           {isReady && (<><div className="border-t border-stone-200 mx-3" />
             <button
               onClick={() => { onRate(); setMenuOpen(false); }}
@@ -396,6 +392,10 @@ function PlayButtonWithMenu({
             </svg>
             View on arXiv
           </a>
+          {Object.keys(getMyListTokens()).length > 0 && (
+            <><div className="border-t border-stone-200 mx-3" />
+            <ListSubmenu paperId={paper.id} onClose={() => setMenuOpen(false)} /></>
+          )}
         </div>
       )}
     </div>
@@ -447,10 +447,6 @@ function GenerateButtonWithMenu({
       </button>
       {menuOpen && (
         <div className="absolute top-full right-0 mt-1 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[180px] py-1">
-          {Object.keys(getMyListTokens()).length > 0 && (
-            <><ListSubmenu paperId={paper.id} onClose={() => setMenuOpen(false)} />
-            <div className="border-t border-stone-200 mx-3" /></>
-          )}
           <button
             onClick={() => { download(`https://arxiv.org/pdf/${paper.id}`, pdfFilename); setMenuOpen(false); }}
             disabled={downloading}
@@ -478,6 +474,10 @@ function GenerateButtonWithMenu({
             </svg>
             View on arXiv
           </a>
+          {Object.keys(getMyListTokens()).length > 0 && (
+            <><div className="border-t border-stone-200 mx-3" />
+            <ListSubmenu paperId={paper.id} onClose={() => setMenuOpen(false)} /></>
+          )}
         </div>
       )}
     </div>
