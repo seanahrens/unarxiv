@@ -59,13 +59,11 @@ export function updateListTokenName(listId: string, name: string): void {
   }
 }
 
-/** Get a combined token from all list tokens (for X-List-Token header). */
-export function getCombinedToken(): string | null {
+/** Get the first stored owner token (used for X-List-Token header in my-lists queries). */
+export function getFirstOwnerToken(): string | null {
   const store = loadTokens();
   const entries = Object.values(store);
   if (entries.length === 0) return null;
-  // Use the first token — all lists by same user share the same token in practice
-  // But since tokens are per-list, we return the first one for my-lists queries
   return entries[0].ownerToken;
 }
 
