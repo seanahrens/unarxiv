@@ -113,6 +113,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
         <button
           key={star}
           type="button"
+          data-testid={`star-${star}`}
           className={`transition-colors ${
             star <= (hover || value) ? "text-amber-400" : "text-stone-300"
           } hover:scale-110 transition-transform`}
@@ -186,7 +187,7 @@ function RatingModal({
   }, [paperId, onCleared, onClose]);
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div data-testid="rating-modal" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div
         className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
@@ -303,6 +304,7 @@ function PlayButtonWithMenu({
         )}
       </button>
       <button
+        data-testid="split-button-chevron"
         onClick={() => setMenuOpen(!menuOpen)}
         className={`${BTN_BASE} px-1.5 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 border-l border-l-stone-700`}
         style={{ borderRadius: "0 0.75rem 0.75rem 0", marginLeft: "-1px" }}
