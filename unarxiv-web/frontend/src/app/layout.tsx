@@ -19,8 +19,10 @@ const ibmPlexMono = IBM_Plex_Mono({
 import HeaderPlayer from "@/components/HeaderPlayer";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
 import FlyToPlaylist from "@/components/FlyToPlaylist";
+import { Suspense } from "react";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
+import { NavigationHistoryProvider } from "@/contexts/NavigationHistoryContext";
 
 export const metadata: Metadata = {
   title: "unarXiv — Listen to Research Papers",
@@ -48,6 +50,8 @@ export default function RootLayout({
       <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
         <AudioProvider>
         <PlaylistProvider>
+        <Suspense>
+        <NavigationHistoryProvider>
         <FlyToPlaylist />
         <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
@@ -99,6 +103,8 @@ export default function RootLayout({
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
           </svg>
         </a>
+        </NavigationHistoryProvider>
+        </Suspense>
         </PlaylistProvider>
         </AudioProvider>
       </body>
