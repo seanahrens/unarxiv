@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
-import { audioUrl, type Paper } from "@/lib/api";
+import { audioUrl, isInProgress, formatAuthors, type Paper } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 import ProcessingFileIcon from "@/components/ProcessingFileIcon";
@@ -146,13 +146,13 @@ export default function DraggablePaperList({
               href={`/p?id=${paperId}`}
               className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
                 paper?.status === "complete" ? "text-stone-500 hover:text-stone-700" :
-                ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? "text-purple-300" :
+                isInProgress(paper?.status || "") ? "text-purple-300" :
                 "text-stone-400"
               }`}
               title="View paper"
             >
               {paper?.status === "complete" ? <AudioFileIcon size={28} /> :
-               ["queued", "preparing", "generating_audio"].includes(paper?.status || "") ? <ProcessingFileIcon size={28} /> :
+               isInProgress(paper?.status || "") ? <ProcessingFileIcon size={28} /> :
                <FileIcon size={28} />}
             </Link>
 
@@ -163,14 +163,8 @@ export default function DraggablePaperList({
                 </span>
                 {paper?.authors && paper.authors.length > 0 && (
                   <span className="text-[11px] text-stone-500 truncate block">
-                    <span className="md:hidden">
-                      {paper.authors[0]}
-                      {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                    </span>
-                    <span className="hidden md:inline">
-                      {paper.authors.slice(0, 3).join(", ")}
-                      {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                    </span>
+                    <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
+                    <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
                   </span>
                 )}
               </button>
@@ -183,14 +177,8 @@ export default function DraggablePaperList({
                   <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
                 ) : paper?.authors && paper.authors.length > 0 ? (
                   <span className="text-[11px] text-stone-500 truncate block">
-                    <span className="md:hidden">
-                      {paper.authors[0]}
-                      {paper.authors.length > 1 && ` +${paper.authors.length - 1}`}
-                    </span>
-                    <span className="hidden md:inline">
-                      {paper.authors.slice(0, 3).join(", ")}
-                      {paper.authors.length > 3 && ` +${paper.authors.length - 3}`}
-                    </span>
+                    <span className="md:hidden">{formatAuthors(paper.authors, 1)}</span>
+                    <span className="hidden md:inline">{formatAuthors(paper.authors)}</span>
                   </span>
                 ) : null}
               </Link>
