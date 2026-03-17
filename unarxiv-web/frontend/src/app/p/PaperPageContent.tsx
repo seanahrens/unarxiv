@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import { useAudio } from "@/contexts/AudioContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, formatDuration, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, formatDuration, isInProgress, formatPaperDate, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
@@ -471,19 +472,12 @@ function GenerateButtonWithMenu({
   );
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + "T00:00:00");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
-  } catch {
-    return dateStr;
-  }
-}
+function formatDate(dateStr: string): string { return formatPaperDate(dateStr); }
 
 export default function PaperPageContent({ paperId: propId }: { paperId?: string } = {}) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { previousPath, previousLabel } = useNavigationHistory();
   const id = propId || searchParams.get("id") || "";
   const [paper, setPaper] = useState<Paper | null>(null);
   const [loading, setLoading] = useState(true);
@@ -593,9 +587,13 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     return (
       <div className="text-center py-20">
         <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
-        <Link href="/" className="text-sm text-stone-600 hover:text-stone-800 transition-colors">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="inline -mt-px"><polygon points="2,12 22,2 22,22" /></svg> BACK TO PAPERS
-        </Link>
+        <button
+          onClick={() => router.push(previousPath || "/")}
+          className="text-sm text-stone-600 hover:text-stone-800 transition-colors inline-flex items-center gap-1.5 border border-stone-300 rounded-full px-3 py-1 hover:bg-stone-50 cursor-pointer"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="-mt-px"><polygon points="2,12 22,2 22,22" /></svg>
+          Back to {previousLabel}
+        </button>
       </div>
     );
   }
@@ -603,17 +601,18 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
-  const isProcessing = !isReady && !isFailed && !isNotRequested;
+  const isProcessing = isInProgress(paper.status);
   const authors: string[] = paper.authors || [];
 
   return (
     <div>
-      <Link
-        href="/"
-        className="text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 inline-block"
+      <button
+        onClick={() => router.push(previousPath || "/")}
+        className="text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 inline-flex items-center gap-1.5 border border-stone-300 rounded-full px-3 py-1 hover:bg-stone-50 cursor-pointer"
       >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="inline -mt-px"><polygon points="2,12 22,2 22,22" /></svg> BACK TO PAPERS
-      </Link>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="-mt-px"><polygon points="2,12 22,2 22,22" /></svg>
+        Back to {previousLabel}
+      </button>
 
       <article className="mb-8">
         <div className="flex flex-col md:flex-row md:items-start gap-3 mb-3">
