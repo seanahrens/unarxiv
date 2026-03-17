@@ -78,7 +78,7 @@ export async function updatePaperStatus(
   }
 ): Promise<void> {
   const sets = ["status = ?"];
-  const values: any[] = [status];
+  const values: (string | number | null)[] = [status];
 
   if (details?.progress_detail !== undefined) {
     sets.push("progress_detail = ?");
