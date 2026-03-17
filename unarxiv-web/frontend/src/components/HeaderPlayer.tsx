@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
@@ -8,6 +8,8 @@ import { formatDurationShort } from "@/lib/api";
 
 export default function HeaderPlayer({ inline }: { inline?: boolean }) {
   const { state, actions } = useAudio();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { paperId, paperTitle, isPlaying, currentTime, duration, playbackRate } = state;
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +33,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
     actions.seek(ratio * duration);
   }, [duration, actions]);
 
-  if (!isActive) return null;
+  if (!mounted || !isActive) return null;
 
   const controls = (
     <>
