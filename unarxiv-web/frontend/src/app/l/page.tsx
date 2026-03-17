@@ -229,7 +229,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
       setImportResult(result);
       await loadList();
     } catch (e: any) {
-      setImportResult({ added: [], invalid: [e.message || "Import failed"] });
+      setImportResult({ added: [], invalid: [e.message || "Import failed"], duplicates: 0 });
     }
     setImporting(false);
   };
