@@ -1,109 +1,58 @@
-# unarXiv Codebase Review — 2026-03-17
+# unarXiv Codebase Review — 2026-03-17 (outstanding items session)
 
-## Changes Made This Session
+## What Was Done
 
-All changes landed in `refactor/daily-review-2026-03-17`, merged to `main`, pushed, and deployed.
+All items carried over as "Outstanding Issues" from the prior daily review session were addressed. Changes landed in `refactor/outstanding-2026-03-17`, merged to `main`, pushed, and deployed.
 
 ### Worker (`unarxiv-web/worker/`)
 
-1. **Extract `recomputeBayesianAvg` helper in `db.ts`**
-   The `PRIOR_WEIGHT = 2` / `PRIOR_MEAN = 3.0` constants and the 10-bind Bayesian average SQL were copy-pasted between `upsertRating` and `deleteRatingForIp`. Extracted to a private `recomputeBayesianAvg(db, paperId)` function. Both callers now invoke it. Added a comment explaining the Bayesian prior choice.
-   - File: `unarxiv-web/worker/src/db.ts`
+1. **Remove dead Turnstile code** (`index.ts`)
+   Removed the commented-out `getNarrationCountLastHour` call, `verifyTurnstile` call, and the full `verifyTurnstile` function definition. The code had been disabled but left in place; it now no longer exists in the file.
 
-2. **Add Modal.com comment; remove redundant authors type guard in `index.ts`**
-   Added a clarifying comment to `handleModalWebhook` noting "Modal" = Modal.com platform, not a UI dialog. Removed the `typeof paper.authors === "string" ? ... : ...` guard in `handleReprocessPaper` — `paper.authors` is always a JSON string from D1, so the runtime check was dead code.
-   - File: `unarxiv-web/worker/src/index.ts`
+2. **Type-safe `request.cf`** (`index.ts`)
+   Replaced two `(request as any).cf` casts with `(request as Request<unknown, IncomingRequestCfProperties>).cf` using the imported type from `@cloudflare/workers-types`. Changed `|| null` to `|| undefined` on `cf?.country` and `cf?.city` to satisfy the `string | undefined` signature expected by `insertPaper`.
+
+3. **`const values: any[]` → typed array** (`db.ts`)
+   Changed `const values: any[] = [status]` in `updatePaperStatus` to `const values: (string | number | null)[] = [status]`.
+
+4. **Rename `audioBaseUrl` → `apiOrigin`** (`types.ts`)
+   Parameter to `paperToResponse` renamed to accurately reflect it receives the full API origin URL, not just a base path for audio.
+
+5. **Extract `LIST_ID_PATTERN` constant** (`index.ts`)
+   Added `const LIST_ID_PATTERN = "[a-z0-9]{4}"` before `handleRequest`. All 7 hardcoded occurrences of `[a-z0-9]{4}` in route regex patterns replaced with `new RegExp(...)` using the constant.
+
+6. **`addListItems` batch inserts** (`db.ts`)
+   Replaced the per-item insert loop with `db.batch()`, reducing D1 round-trips from N to 1 for bulk imports.
 
 ### Frontend (`unarxiv-web/frontend/`)
 
-3. **Clean up `PaperPageContent.tsx`**
-   Three changes in one commit:
-   - Removed trivial `formatDate` wrapper function; call site now calls `formatPaperDate()` directly.
-   - Removed `checkNarrationRateLimit` pre-flight call (Turnstile is currently disabled; the call added a wasteful round-trip before every narration request). Turnstile is now handled reactively: if the narrate endpoint returns a Turnstile error, the captcha modal is shown.
-   - Replaced inline `style={{ borderRadius: ... }}` and `style={{ marginLeft: "-1px" }}` on the split buttons with Tailwind utility classes (`rounded-l-xl`, `rounded-r-xl`, `-ml-px`).
-   - File: `unarxiv-web/frontend/src/app/p/PaperPageContent.tsx`
+7. **`ListSubmenu` membership cache** (`ListSubmenu.tsx`)
+   Added a `membershipCache` ref to avoid re-fetching all list memberships every time the submenu opens for the same paper. Cache is invalidated when the `paperId` changes and kept in sync when items are toggled.
 
-4. **Extract purple progress gradient from `PaperCard` inline style to CSS class**
-   `PaperCard.tsx` had a long inline `style={{ background: "repeating-linear-gradient(..." }}` for the in-progress indicator. Extracted to `.progress-flow-purple` in `globals.css`, alongside the existing `.progress-flow` (blue variant). Both classes are now documented in the CSS with a comment noting the intentional color difference (blue = narration progress bar; purple = subtle in-list processing state).
-   - Files: `unarxiv-web/frontend/src/components/PaperCard.tsx`, `unarxiv-web/frontend/src/app/globals.css`
+8. **Extract `PaperListRow` component** (new: `PaperListRow.tsx`)
+   The paper row pattern (status icon + title/authors block + action slot) was duplicated across `DraggablePaperList.tsx`, the "My Additions" section in `playlist/page.tsx`, and the "Listen History" section in `playlist/page.tsx`. Extracted into a shared `PaperListRow` component with `actions` and `extra` slot props. All three sites refactored to use it.
 
-5. **Remove `confirm()` dialogs from individual actions in playlist page**
-   `playlist/page.tsx` had two `confirm()` dialogs on individual (non-bulk) actions, violating the CLAUDE.md convention "No confirm dialogs on individual actions, only bulk operations":
-   - `if (!confirm("Delete this list? This cannot be undone.")) return;`
-   - `if (!confirm("Remove this paper from unarXiv?")) return;`
-   Both removed.
-   - File: `unarxiv-web/frontend/src/app/playlist/page.tsx`
+9. **Silent error in `handleSave`** (`l/page.tsx`)
+   Changed `catch {}` to `catch (e: unknown) { console.error("Failed to save collection:", e); }` so errors are no longer swallowed silently.
 
-6. **Remove `confirm()` from individual delete collection action in `l/page.tsx`**
-   Same convention violation: `if (!confirm("Delete this collection permanently? This cannot be undone.")) return;` removed from `handleDelete`.
-   - File: `unarxiv-web/frontend/src/app/l/page.tsx`
-
-7. **Rename `getCombinedToken` to `getFirstOwnerToken` in `lists.ts`**
-   The old name implied it merged tokens from multiple lists. In practice it returns the first stored owner token for `my-lists` header queries. Renamed for accuracy. The function is exported but currently not called from any page (it is available for future use). Updated JSDoc comment.
-   - File: `unarxiv-web/frontend/src/lib/lists.ts`
+10. **Register `text-2xs` and `text-3xs` in `@theme`** (`globals.css`)
+    Added custom size tokens (`--text-2xs: 0.6875rem`, `--text-3xs: 0.625rem`) to the `@theme` block. Replaced all `text-[11px]` and `text-[10px]` occurrences in `layout.tsx`, `HeaderPlayer.tsx`, `NarrationProgress.tsx`, `PaperCard.tsx`, and `l/page.tsx` with the named utilities.
 
 ---
 
-## Deployment Status
+## What Was Skipped
 
-- Build: `next build` — clean, no TypeScript errors
-- Worker TypeScript: `tsc --noEmit` — clean
-- Worker deploy: deployed to `unarxiv-api.seanahrens.workers.dev` (Version: `f3026ead`)
-- Frontend deploy: deployed to Cloudflare Pages (`texreader-frontend`)
+- **Re-scrape in `handleNarratePaper`** (item 1 from outstanding list): This is a behavioral change that needs more careful testing to ensure `arxivSrcUrl` is always an adequate substitute for the live scrape. Deferred.
+- **Route dispatch table refactor** (item 14): Large structural change with no immediate bug fix. Deferred.
+- **Remove `AudioPlayer.tsx` dead file**: The file exists but removing it is a separate cleanup commit that can be done independently.
+- **`tex_to_audio.py` duplicate at repo root**: File removal confirmed as out of scope for this refactor session.
+- **`unarXiv L1ST` page title**: Copy change, deferred to content/UX pass.
 
 ---
 
-## Outstanding Issues (Not Fixed This Session)
+## Deploy Status
 
-The items below were identified but not addressed. They are ordered by estimated impact.
-
-### High priority
-
-1. **Re-scrape in `handleNarratePaper`** (`index.ts` ~line 751)
-   Every narration dispatch calls `await scrapeArxivMetadata(id)` even though the metadata was already stored in D1. Use `arxivSrcUrl(id)` from `arxiv.ts` instead. Eliminates an outbound HTTP call on every narration request.
-
-2. **`addListItems` inserts one-at-a-time** (`db.ts` lines ~573–593)
-   Replace the per-item insert loop with `db.batch()`. Reduces D1 round-trips from N to 1 for bulk imports.
-
-3. **`ListSubmenu` fetches full list on every open** (`src/components/ListSubmenu.tsx` lines ~22–39)
-   Fires one `fetchList` call per owned collection each time the submenu opens. A membership check endpoint or including `paper_ids` in `/api/my-lists` would be far cheaper.
-
-### Medium priority
-
-4. **Dead code cleanup**
-   - `src/components/AudioPlayer.tsx` — not imported anywhere; superseded by `HeaderPlayer` + `AudioContext`
-   - `verifyTurnstile` in `index.ts` — defined but never called
-   - `getNarrationCountLastHour` in `db.ts` — only referenced in commented-out Turnstile block
-
-5. **`PaperListRow` component extraction**
-   The paper row pattern (icon + title/author block + action button) is repeated across `DraggablePaperList.tsx`, the "My Additions" section in `playlist/page.tsx`, and the "Listen History" section in `playlist/page.tsx`. Extract into a shared component.
-
-6. **Silent error in `handleSave` in `l/page.tsx`**
-   The `catch {}` block swallows save errors. Users get no feedback on failure. Should at minimum log; ideally surface a toast.
-
-7. **`unarXiv L1ST` page title in `l/page.tsx` line ~118**
-   `document.title = \`${data.list.name} — unarXiv L1ST\`` — "L1ST" is inconsistent with the rest of the brand. Should be "unarXiv Collections" or similar.
-
-8. **`audioBaseUrl` parameter name in `paperToResponse` (types.ts ~line 91)**
-   The parameter receives the full API origin URL, not a base URL for audio. Rename to `apiOrigin`.
-
-9. **`tex_to_audio.py` exists at two paths**
-   - `unarxiv-web/modal_worker/tex_to_audio.py` — the authoritative production copy (deployed via Modal)
-   - `/tex_to_audio.py` at the repo root — development artifact
-   Edits to the root copy do not affect production. The root copy should be removed or symlinked to the modal_worker copy.
-
-### Low priority
-
-10. **`request.cf` cast to `any`** in `index.ts` (~lines 500, 666)
-    Use `IncomingRequestCfProperties` from `@cloudflare/workers-types` for type safety.
-
-11. **`type any` in `db.ts` line ~81**: `const values: any[] = [status]` — use `(string | number | null)[]`.
-
-12. **Repeated `text-[11px]` / `text-[10px]` arbitrary Tailwind values**
-    Register `text-2xs` in `@theme` to avoid repeated bracket syntax.
-
-13. **Magic 4-char list ID regex duplicated 4 times** in `index.ts`
-    Extract `const LIST_ID_PATTERN = "[a-z0-9]{4}"` and reference it.
-
-14. **Route dispatch is a linear if-chain** (~30 blocks in `handleRequest`)
-    A route table (object mapping `"METHOD /path"` → handler) would make the route inventory self-documenting and greppable.
+- `npm run build` (frontend): clean, zero errors
+- `npx tsc --noEmit` (worker): clean, zero errors
+- Worker deployed: `unarxiv-api` version `ca9a1149-518c-41f9-af28-2678dddfc144`
+- Frontend deployed: `https://f249d701.texreader-frontend.pages.dev`
