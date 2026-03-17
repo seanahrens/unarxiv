@@ -304,7 +304,7 @@ function PlayButtonWithMenu({
         )}
       </button>
       <button
-        data-testid="split-button-chevron"
+        data-testid="open-paper-actions"
         onClick={() => setMenuOpen(!menuOpen)}
         className={`${BTN_BASE} px-1.5 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 border-l border-l-stone-700`}
         style={{ borderRadius: "0 0.75rem 0.75rem 0", marginLeft: "-1px" }}

@@ -2,13 +2,13 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 /**
- * Open the split-button dropdown on the paper page.
- * Prefers data-testid="split-button-chevron"; falls back to SVG-path selector
+ * Open the paper actions dropdown on the paper page.
+ * Prefers data-testid="open-paper-actions"; falls back to SVG-path selector
  * for runs against production before the frontend is deployed.
  */
 export async function openDropdown(page: Page): Promise<void> {
   const chevron = page.locator(
-    '[data-testid="split-button-chevron"], button:has(svg polyline[points="6 9 12 15 18 9"])'
+    '[data-testid="open-paper-actions"], button:has(svg polyline[points="6 9 12 15 18 9"])'
   );
   await expect(chevron).toBeVisible({ timeout: 5000 });
   await chevron.click();
