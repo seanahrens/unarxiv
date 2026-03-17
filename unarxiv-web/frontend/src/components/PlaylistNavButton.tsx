@@ -20,16 +20,7 @@ export default function PlaylistNavButton() {
         <line x1="3" y1="12" x2="3.01" y2="12" />
         <line x1="3" y1="18" x2="3.01" y2="18" />
       </svg>
-      <span className="font-semibold">Playlist</span>
-      {playlistCount > 0 && (
-        <span
-          className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-medium text-stone-600 bg-stone-200 rounded-full transition-transform ${
-            badgePulse ? "scale-125" : "scale-100"
-          }`}
-        >
-          {playlistCount}
-        </span>
-      )}
+      <span className="font-semibold">My Lists</span>
     </Link>
   );
 }

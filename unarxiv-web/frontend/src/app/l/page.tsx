@@ -115,7 +115,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   // Set page title
   useEffect(() => {
     if (data) {
-      document.title = `${data.list.name} — unarXiv`;
+      document.title = `${data.list.name} — unarXiv L1ST`;
     }
     return () => { document.title = "unarXiv"; };
   }, [data?.list.name]);
@@ -372,6 +372,12 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                descRef.current?.focus();
+              }
+            }}
             placeholder="Collection Name"
             className="w-full text-xl md:text-2xl font-bold text-stone-900 bg-transparent outline-none pb-1 transition-colors placeholder:text-stone-300"
             maxLength={100}
