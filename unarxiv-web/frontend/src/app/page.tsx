@@ -142,17 +142,17 @@ function HomePageContent() {
       setLoading(true);
 
       Promise.all([
-        fetchPapers({ sort: "popular", per_page: 6 }),
+        fetchPapers({ sort: "popular", per_page: 9 }),
         fetchPapers({ sort: "recent", per_page: 25 }),
       ])
         .then(([popularData, recentData]) => {
           const popular = popularData.papers;
           setPopularPapers(popular);
 
-          // Deduplicate: remove popular papers from recent, take first 25
+          // Deduplicate: remove popular papers from recent, take first 9
           const popularIds = new Set(popular.map((p) => p.id));
           const deduped = recentData.papers.filter((p) => !popularIds.has(p.id));
-          setNewPapers(deduped.slice(0, 6));
+          setNewPapers(deduped.slice(0, 9));
         })
         .catch(console.error)
         .finally(() => setLoading(false));

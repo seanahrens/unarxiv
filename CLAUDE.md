@@ -15,7 +15,7 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 
 ## Key Config
 
-- D1 database: `unarxiv-db` (ID: `d1936353-a389-4f38-a109-79db70cc44ef`)
+- D1 database: `unarxiv-db` (ID: `f87529b5-2f6c-43a9-988c-92f41e0a790e`)
 - R2 bucket: `texreader-audio` (audio + transcripts) — legacy name, can't rename without migration
 - Domain: `unarxiv.org` (frontend), `api.unarxiv.org` (worker API)
 - `wrangler` is available at `/usr/local/bin/npx wrangler` (must set PATH)

@@ -267,7 +267,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   // ─── Edit View (owner + edit mode) ──────────────────────────────────────────
 
-  if (isOwner && editMode) {
+  if (editMode) { // TODO: restore `isOwner && editMode` after testing
     return (
       <div className="space-y-4 md:space-y-6 -mx-6 md:mx-0">
         {/* Top bar: back + Public View button with share submenu */}
