@@ -138,7 +138,7 @@ export default function DraggablePaperList({
             onTouchStart={(e) => handleTouchStart(e, idx)}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className={`flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 transition-colors ${
+            className={`flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 transition-colors ${
               dragIdx === idx ? "opacity-30" : isActive ? "bg-blue-100" : "hover:bg-stone-100"
             } ${dragAbove ? "border-t-2 !border-t-stone-400" : ""} ${dragBelow ? "border-b-2 !border-b-stone-400" : ""}`}
           >
@@ -196,8 +196,8 @@ export default function DraggablePaperList({
               </Link>
             )}
 
-            <span className="text-stone-500 cursor-grab shrink-0 touch-none">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <span className="text-stone-400 cursor-grab shrink-0 touch-none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="4" y1="8" x2="20" y2="8" />
                 <line x1="4" y1="12" x2="20" y2="12" />
                 <line x1="4" y1="16" x2="20" y2="16" />
@@ -205,7 +205,7 @@ export default function DraggablePaperList({
             </span>
             <button
               onClick={() => onRemove(paperId)}
-              className="text-stone-500 hover:text-stone-700 transition-colors shrink-0"
+              className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
               title="Remove"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
