@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PaperCard from "@/components/PaperCard";
+import Paginator from "@/components/Paginator";
 import ArxivCta from "@/components/ArxivCta";
 import SiteName from "@/components/SiteName";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
@@ -38,33 +39,7 @@ function PaperSection({ title, papers }: { title: string; papers: Paper[] }) {
         <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
           {title}
         </h2>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => p - 1)}
-              disabled={page === 0}
-              className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
-              aria-label="Previous page"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 12L6 8L10 4" />
-              </svg>
-            </button>
-            <span className="text-xs text-stone-400 tabular-nums min-w-[3ch] text-center">
-              {page + 1}/{totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= totalPages - 1}
-              className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
-              aria-label="Next page"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 4L10 8L6 12" />
-              </svg>
-            </button>
-          </div>
-        )}
+        <Paginator page={page} totalPages={totalPages} onChange={setPage} />
       </div>
       <div className="grid gap-3">
         {visible.map((paper) => (

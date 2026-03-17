@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -22,6 +23,7 @@ import {
 import { type Paper } from "@/lib/api";
 import PaperCard from "@/components/PaperCard";
 import DraggablePaperList from "@/components/DraggablePaperList";
+import Paginator from "@/components/Paginator";
 
 export default function ListsPage() {
   return (
@@ -115,7 +117,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   // Set page title
   useEffect(() => {
     if (data) {
-      document.title = `${data.list.name} — unarXiv L1ST`;
+      document.title = `${data.list.name} — unarXiv Collections`;
     }
     return () => { document.title = "unarXiv"; };
   }, [data?.list.name]);
@@ -128,29 +130,8 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
     el.style.height = el.scrollHeight + "px";
   }, [editDesc, editMode]);
 
-  // Close share menu on outside click
-  useEffect(() => {
-    if (!showShareMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
-        setShowShareMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showShareMenu]);
-
-  // Close edit menu on outside click
-  useEffect(() => {
-    if (!showEditMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) {
-        setShowEditMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showEditMenu]);
+  useClickOutside(shareMenuRef, () => setShowShareMenu(false), showShareMenu);
+  useClickOutside(editMenuRef, () => setShowEditMenu(false), showEditMenu);
 
   const paperMap: Record<string, Paper> = {};
   const paperIds: string[] = [];
@@ -192,7 +173,6 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   const handleRemove = async (paperId: string) => {
     if (!ownerToken) return;
-    if (!confirm("Remove this paper from the collection?")) return;
     try {
       await removeItemFromList(listId, ownerToken, paperId);
       setData((prev) => prev ? {
@@ -569,33 +549,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
               <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
                 A Collection of {visiblePapers.length} Paper{visiblePapers.length !== 1 ? "s" : ""}
               </h2>
-              {totalPages > 1 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                    className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
-                    aria-label="Previous page"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10 12L6 8L10 4" />
-                    </svg>
-                  </button>
-                  <span className="text-xs text-stone-400 tabular-nums min-w-[3ch] text-center">
-                    {page + 1}/{totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                    disabled={page >= totalPages - 1}
-                    className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-default transition-colors"
-                    aria-label="Next page"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 4L10 8L6 12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
+              <Paginator page={page} totalPages={totalPages} onChange={setPage} />
             </div>
             <div className="grid gap-3">
               {paginated.map((p) => (

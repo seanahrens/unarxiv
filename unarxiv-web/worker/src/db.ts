@@ -221,22 +221,6 @@ export async function getGlobalSubmissionCount(db: D1Database): Promise<number> 
   return result?.count ?? 0;
 }
 
-/** Check narration requests in last hour (for conditional captcha). */
-export async function getNarrationCountLastHour(
-  db: D1Database,
-  ip: string
-): Promise<number> {
-  const result = await db
-    .prepare(
-      `SELECT COUNT(*) as count FROM submissions
-       WHERE ip_address = ? AND submitted_at > datetime('now', '-1 hour')`
-    )
-    .bind(ip)
-    .first<{ count: number }>();
-
-  return result?.count ?? 0;
-}
-
 /** Record a submission for rate limiting. */
 export async function recordSubmission(db: D1Database, ip: string): Promise<void> {
   await db
@@ -575,22 +559,15 @@ export async function addListItems(
     .prepare("SELECT COALESCE(MAX(position), -1) as mp FROM list_items WHERE list_id = ?")
     .bind(listId)
     .first<{ mp: number }>();
-  let pos = (maxPos?.mp ?? -1) + 1;
-  let added = 0;
-  for (const paperId of paperIds) {
-    try {
-      await db
-        .prepare("INSERT INTO list_items (list_id, paper_id, position) VALUES (?, ?, ?)")
-        .bind(listId, paperId, pos)
-        .run();
-      pos++;
-      added++;
-    } catch (e: any) {
-      if (e.message?.includes("UNIQUE")) continue; // duplicate, skip
-      throw e;
-    }
-  }
-  return added;
+  const startPos = (maxPos?.mp ?? -1) + 1;
+  // Batch all inserts in a single round-trip; INSERT OR IGNORE silently skips duplicates
+  const stmts = paperIds.map((paperId, i) =>
+    db
+      .prepare("INSERT OR IGNORE INTO list_items (list_id, paper_id, position) VALUES (?, ?, ?)")
+      .bind(listId, paperId, startPos + i)
+  );
+  const results = await db.batch(stmts);
+  return results.reduce((sum, r) => sum + (r.meta.changes ?? 0), 0);
 }
 
 /** Remove a paper from a list. */

@@ -1,6 +1,5 @@
 import type { Paper } from "./api";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.unarxiv.org";
+import { API_BASE } from "./api";
 const STORAGE_KEY = "list_tokens";
 
 export const DEFAULT_COLLECTION_NAME = "Untitled Collection";

@@ -18,7 +18,7 @@
 
 import type { Env, Paper } from "./types";
 import { paperToResponse } from "./types";
-import { parseArxivId, scrapeArxivMetadata } from "./arxiv";
+import { parseArxivId, scrapeArxivMetadata, arxivSrcUrl } from "./arxiv";
 import {
   getPaper,
   getPapersBatch,
@@ -34,7 +34,6 @@ import {
   recordVisit,
   getSubmissionCount,
   getGlobalSubmissionCount,
-  getNarrationCountLastHour,
   recordSubmission,
   cleanup,
   getRating,
@@ -262,10 +261,8 @@ async function handleRequest(
 
   // GET /api/admin/stats
   if (path === "/api/admin/stats" && method === "GET") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const authErr = requireAdmin(request, env);
+    if (authErr) return authErr;
     const raw = await getTopContributors(env.DB, 10);
     const callerIp = request.headers.get("CF-Connecting-IP") || "";
     const names = ["Alice", "Bob", "Charlie", "Dana", "Eli", "Faye", "Gus", "Hana", "Ivan", "Jia",
@@ -286,10 +283,8 @@ async function handleRequest(
 
   // GET /api/admin/papers-with-ratings — curate page data
   if (path === "/api/admin/papers-with-ratings" && method === "GET") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const authErr = requireAdmin(request, env);
+    if (authErr) return authErr;
     const papers = await getAllPapersWithRatings(env.DB);
     return json({
       papers: papers.map((p) => ({
@@ -304,20 +299,16 @@ async function handleRequest(
   // GET /api/admin/papers/:id/ratings — all ratings for a paper
   const adminRatingsMatch = path.match(/^\/api\/admin\/papers\/([^/]+)\/ratings$/);
   if (adminRatingsMatch && method === "GET") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const authErr = requireAdmin(request, env);
+    if (authErr) return authErr;
     const ratings = await getAllRatingsForPaper(env.DB, adminRatingsMatch[1]);
     return json({ ratings: ratings.map((r) => ({ stars: r.stars, comment: r.comment, created_at: r.created_at })) });
   }
 
   // POST /api/admin/clear-ratings — clear ratings for given paper IDs
   if (path === "/api/admin/clear-ratings" && method === "POST") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const authErr = requireAdmin(request, env);
+    if (authErr) return authErr;
     const body = await request.json<{ paper_ids: string[] }>();
     if (!body.paper_ids || !Array.isArray(body.paper_ids)) {
       return json({ error: "paper_ids array required" }, 400);
@@ -330,10 +321,8 @@ async function handleRequest(
 
   // GET /api/admin/has-low-ratings — dashboard alert check
   if (path === "/api/admin/has-low-ratings" && method === "GET") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const authErr = requireAdmin(request, env);
+    if (authErr) return authErr;
     const hasLow = await hasAnyLowRatings(env.DB);
     return json({ has_low_ratings: hasLow });
   }
@@ -371,10 +360,8 @@ async function handleRequest(
 
   // GET /api/admin/lists — all lists with tokens (admin recovery)
   if (path === "/api/admin/lists" && method === "GET") {
-    const password = request.headers.get("X-Admin-Password");
-    if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const authErr = requireAdmin(request, env);
+    if (authErr) return authErr;
     const lists = await getAllLists(env.DB);
     return json({
       lists: lists.map((l) => ({
@@ -746,10 +733,9 @@ async function handleNarratePaper(
   await updatePaperStatus(env.DB, id, "queued");
   await recordSubmission(env.DB, ip);
 
-  // Dispatch to Modal
+  // Dispatch to Modal — tex_source_url is deterministic from the arXiv ID, no need to re-scrape
   if (env.MODAL_FUNCTION_URL) {
     try {
-      const meta = await scrapeArxivMetadata(id);
       await fetch(env.MODAL_FUNCTION_URL, {
         method: "POST",
         headers: {
@@ -758,10 +744,10 @@ async function handleNarratePaper(
         },
         body: JSON.stringify({
           arxiv_id: id,
-          tex_source_url: meta.tex_source_url,
+          tex_source_url: arxivSrcUrl(id),
           callback_url: `${baseUrl}/api/webhooks/modal`,
           paper_title: paper.title,
-          paper_author: JSON.parse(paper.authors).join(", "),
+          paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
         }),
       });
     } catch (e: any) {
@@ -788,10 +774,8 @@ async function handleReprocessPaper(
   id: string,
   baseUrl: string
 ): Promise<Response> {
-  const password = request.headers.get("X-Admin-Password");
-  if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-    return json({ error: "Unauthorized" }, 401);
-  }
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
 
   // Parse body: mode ("full" | "script_only" | "narration_only"), wipe_reviews
   let wipeReviews = false;
@@ -886,10 +870,8 @@ async function handleDeletePaper(
   env: Env,
   id: string
 ): Promise<Response> {
-  const password = request.headers.get("X-Admin-Password");
-  if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-    return json({ error: "Unauthorized" }, 401);
-  }
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
 
   // Delete audio from R2 if exists
   const paper = await getPaper(env.DB, id);
@@ -1005,6 +987,18 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** Return a 401 Response if the request does not supply the correct admin password, else null. */
+function requireAdmin(request: Request, env: Env): Response | null {
+  const password = request.headers.get("X-Admin-Password");
+  if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+  return null;
+}
+
+// verifyTurnstile is disabled while Turnstile captcha is turned off.
+// Uncomment and wire up when re-enabling Turnstile.
+/*
 async function verifyTurnstile(
   token: string,
   ip: string,
@@ -1029,6 +1023,7 @@ async function verifyTurnstile(
   const result = await response.json<{ success: boolean }>();
   return result.success;
 }
+*/
 
 function json(data: any, status = 200, extraHeaders?: Record<string, string>): Response {
   const headers: Record<string, string> = {

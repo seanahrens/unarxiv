@@ -18,15 +18,15 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 - D1 database: `unarxiv-db` (ID: `f87529b5-2f6c-43a9-988c-92f41e0a790e`)
 - R2 bucket: `texreader-audio` (audio + transcripts) — legacy name, can't rename without migration
 - Domain: `unarxiv.org` (frontend), `api.unarxiv.org` (worker API)
-- `wrangler` is available at `/usr/local/bin/npx wrangler` (must set PATH)
+- `wrangler` is invoked via `npx wrangler` (install with `npm install -g wrangler` or use local devDep)
 - Admin password stored as Worker secret (`ADMIN_PASSWORD`)
 - Rate limits: 10/day/IP, global daily cap configurable via `DAILY_GLOBAL_LIMIT`
 
 ## Deployment
 
-Source the Cloudflare API token before deploying:
+Source the Cloudflare API token before deploying (adjust path as needed):
 ```bash
-export $(cat /home/user/unarxiv/.env | xargs)
+export $(cat .env | xargs)
 ```
 
 ```bash
@@ -35,7 +35,7 @@ cd unarxiv-web/worker && npx wrangler deploy
 
 # Frontend
 cd unarxiv-web/frontend && npm run build
-npx wrangler pages deploy out --project-name=unarxiv-frontend
+npx wrangler pages deploy out --project-name=texreader-frontend
 
 # Modal worker
 cd unarxiv-web/modal_worker && modal deploy narrate.py
@@ -63,5 +63,16 @@ SQLite CHECK constraints can't be altered — must recreate table to change them
 
 - Tailwind CSS with stone color palette
 - No confirm dialogs on individual actions, only bulk operations
-- Bot protection: Cloudflare Turnstile on paper submission only
+- Bot protection: Cloudflare Turnstile integrated but currently disabled (code in `worker/src/index.ts`)
 - Popularity: unique visits per IP per paper (not per-view)
+
+## Routes
+
+- `/` — homepage with search, popular, and newly-added paper sections
+- `/p?id=<arxiv_id>` — paper detail page with audio player and narration controls
+- `/s?id=<arxiv_id>` — narration script/transcript viewer
+- `/playlist` — user's local playlist, listen history, additions, and collections
+- `/l?id=<list_id>` — public/edit view for a user collection (also `/l/<list_id>` short URL)
+- `/abs/<arxiv_id>` — redirects to `/p?id=<arxiv_id>` (Cloudflare Pages Function)
+- `/admin` — admin dashboard (password-gated)
+- `/admin/curate` — paper management with bulk reprocess/delete

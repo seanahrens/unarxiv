@@ -15,8 +15,8 @@ cd worker
 wrangler d1 create unarxiv-db
 # Copy the database_id from the output into wrangler.toml
 
-# Create R2 bucket
-wrangler r2 bucket create unarxiv-audio
+# Create R2 bucket (note: existing deployment uses legacy name "texreader-audio")
+wrangler r2 bucket create texreader-audio
 
 # Initialize the database schema
 wrangler d1 execute unarxiv-db --file=../schema.sql
@@ -40,7 +40,7 @@ modal secret create unarxiv-secrets \
   R2_ACCOUNT_ID=<your-cloudflare-account-id> \
   R2_ACCESS_KEY_ID=<r2-access-key> \
   R2_SECRET_ACCESS_KEY=<r2-secret-key> \
-  R2_BUCKET_NAME=unarxiv-audio \
+  R2_BUCKET_NAME=texreader-audio \
   CALLBACK_SECRET=<same-as-MODAL_WEBHOOK_SECRET>
 
 # Deploy
@@ -71,13 +71,13 @@ npm install
 npm run build
 
 # Deploy to Cloudflare Pages
-npx wrangler pages deploy out --project-name=unarxiv-frontend
+npx wrangler pages deploy out --project-name=texreader-frontend
 ```
 
 ## 5. Custom Domain
 
 In Cloudflare dashboard:
-1. Go to Pages > unarxiv-frontend > Custom domains
+1. Go to Pages > texreader-frontend > Custom domains
 2. Add `unarxiv.org`
 3. Cloudflare will auto-configure DNS
 

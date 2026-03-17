@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { verifyAdminPassword, fetchAdminStats, type Contributor } from "@/lib/api";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.unarxiv.org";
+import { verifyAdminPassword, fetchAdminStats, API_BASE, type Contributor } from "@/lib/api";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");

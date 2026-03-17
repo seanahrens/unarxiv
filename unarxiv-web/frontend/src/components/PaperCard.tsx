@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, memo } from "react";
 import Link from "next/link";
 import { Paper, formatDurationShort } from "@/lib/api";
 
@@ -57,7 +57,7 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-export default function PaperCard({ paper }: PaperCardProps) {
+function PaperCard({ paper }: PaperCardProps) {
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
@@ -166,3 +166,7 @@ export default function PaperCard({ paper }: PaperCardProps) {
     </Link>
   );
 }
+
+export default memo(PaperCard, (prev, next) =>
+  prev.paper.id === next.paper.id && prev.paper.status === next.paper.status
+);
