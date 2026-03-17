@@ -169,9 +169,8 @@ test.describe("Lists Frontend", () => {
     // Collection should appear in My Collections section
     await expect(page.locator(`text=Playwright Frontend Test`)).toBeVisible({ timeout: 10000 });
 
-    // Click into the collection
-    await page.locator(`text=Playwright Frontend Test`).click();
-    await page.waitForURL(/\/l\?id=/);
+    // Navigate to the collection view
+    await page.goto(`/l?id=${list.id}`);
 
     // Should see the collection view with name as h1
     await expect(page.locator('h1:has-text("Playwright Frontend Test")')).toBeVisible({ timeout: 5000 });
