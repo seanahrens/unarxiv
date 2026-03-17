@@ -26,12 +26,19 @@ button,
 }
 .animate-fade-out { animation: fade-out 1.2s ease-out forwards; }
 
-/* Tooltip fade in */
+/* Tooltip fade in (centered tooltip) */
 @keyframes fade-in {
   0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
   100% { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .animate-fade-in { animation: fade-in 0.15s ease-out forwards; }
+
+/* Panel fade in (no translate — for popups/dropdowns that have explicit position) */
+@keyframes panel-fade-in {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-panel-fade-in { animation: panel-fade-in 0.15s ease-out forwards; }
 
 /* Audio player seek bar thumb */
 input[type="range"]::-webkit-slider-thumb {

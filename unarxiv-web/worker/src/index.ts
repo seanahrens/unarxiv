@@ -19,7 +19,7 @@
 import type { IncomingRequestCfProperties } from "@cloudflare/workers-types";
 import type { Env, Paper } from "./types";
 import { paperToResponse } from "./types";
-import { parseArxivId, scrapeArxivMetadata, arxivSrcUrl } from "./arxiv";
+import { parseArxivId, scrapeArxivMetadata, arxivSrcUrl, arxivPdfUrl } from "./arxiv";
 import {
   getPaper,
   getPapersBatch,
@@ -773,6 +773,13 @@ async function handleNarratePaper(
     return json({ error: "Narration already requested" }, 400);
   }
 
+  // Parse optional source_priority from body
+  let sourcePriority = "latex";
+  try {
+    const body = await request.clone().json<{ source_priority?: string; turnstile_token?: string }>();
+    if (body?.source_priority === "pdf") sourcePriority = "pdf";
+  } catch {}
+
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const isAdmin = env.ADMIN_PASSWORD && request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD;
 
@@ -816,6 +823,7 @@ async function handleNarratePaper(
           callback_url: `${baseUrl}/api/webhooks/modal`,
           paper_title: paper.title,
           paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
+          source_priority: sourcePriority,
         }),
       });
     } catch (e: any) {
@@ -845,15 +853,17 @@ async function handleReprocessPaper(
   const authErr = requireAdmin(request, env);
   if (authErr) return authErr;
 
-  // Parse body: mode ("full" | "script_only" | "narration_only"), wipe_reviews
+  // Parse body: mode ("full" | "script_only" | "narration_only"), wipe_reviews, source_priority
   let wipeReviews = false;
   let mode = "full";
+  let sourcePriority = "latex";
   try {
-    const body = await request.json<{ wipe_reviews?: boolean; mode?: string }>();
+    const body = await request.json<{ wipe_reviews?: boolean; mode?: string; source_priority?: string }>();
     wipeReviews = !!body?.wipe_reviews;
     if (body?.mode && ["full", "script_only", "narration_only"].includes(body.mode)) {
       mode = body.mode;
     }
+    if (body?.source_priority === "pdf") sourcePriority = "pdf";
   } catch {
     // No body or invalid JSON is fine
   }
@@ -922,6 +932,7 @@ async function handleReprocessPaper(
           paper_title: metadata?.title || paper.title,
           paper_author: (metadata?.authors || []).join(", "),
           mode,
+          source_priority: sourcePriority,
         }),
       });
     } catch (e: any) {

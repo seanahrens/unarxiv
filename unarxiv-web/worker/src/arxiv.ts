@@ -18,6 +18,11 @@ export function arxivSrcUrl(id: string): string {
   return `https://arxiv.org/src/${id}`;
 }
 
+/** Build the PDF download URL. */
+export function arxivPdfUrl(id: string): string {
+  return `https://arxiv.org/pdf/${id}`;
+}
+
 export interface ArxivMetadata {
   id: string;
   arxiv_url: string;

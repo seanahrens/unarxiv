@@ -103,6 +103,7 @@ export default function PlayerBar() {
   const [showCollapsedRow, setShowCollapsedRow] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
   const [playlistPapers, setPlaylistPapers] = useState<Record<string, Paper>>({});
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [flashing, setFlashing] = useState(false);
@@ -190,6 +191,26 @@ export default function PlayerBar() {
       .catch(() => {})
       .finally(() => setPlaylistLoading(false));
   }, [showPlaylist, playlist]);
+
+  // Toggle playlist popup — use e.currentTarget so we always get the clicked button's rect
+  const togglePlaylist = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const bar = barRef.current;
+    if (bar) {
+      const btnRect = e.currentTarget.getBoundingClientRect();
+      const barRect = bar.getBoundingClientRect();
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        setPopupStyle({ left: 0, right: 0, bottom: window.innerHeight - barRect.top });
+      } else {
+        setPopupStyle({
+          right: window.innerWidth - btnRect.right,
+          bottom: window.innerHeight - barRect.top,
+          maxWidth: 512,
+        });
+      }
+    }
+    setShowPlaylist((prev) => !prev);
+  }, []);
 
   // Persist collapse preference
   // When expanding: hide collapsed row immediately, animate expanded in
@@ -327,9 +348,7 @@ export default function PlayerBar() {
 
   // Playlist popup overlay — wait for data before rendering to avoid layout shift
   const playlistPopup = showPlaylist && !playlistLoading && (
-    <div className="absolute bottom-full left-0 right-0 mb-0 z-[101] pointer-events-none">
-      <div className="md:max-w-5xl md:mx-auto md:px-4 md:flex md:justify-end pointer-events-none">
-        <div className="w-full md:max-w-lg pointer-events-auto animate-fade-in">
+    <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
       <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] min-h-[200px] flex flex-col">
         <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
           <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
@@ -372,8 +391,6 @@ export default function PlayerBar() {
           )}
         </div>
       </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -381,7 +398,7 @@ export default function PlayerBar() {
   const playlistButton = (size = 20) => (
     <button
       id="player-playlist-button"
-      onClick={() => setShowPlaylist((p) => !p)}
+      onClick={togglePlaylist}
       className={`transition-colors shrink-0 flex items-center ${showPlaylist ? "text-stone-900" : "text-stone-600 hover:text-stone-800"}`}
       title="Toggle playlist"
     >
@@ -397,7 +414,7 @@ export default function PlayerBar() {
   // Shortcut help overlay
   const shortcutOverlay = showShortcuts && (
     <div
-      className="absolute bottom-full left-0 right-0 mb-2 mx-4 md:mx-auto md:max-w-md bg-stone-800 text-white rounded-lg shadow-xl p-4 text-sm z-60"
+      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[calc(100%-2rem)] max-w-md bg-stone-800 text-white rounded-lg shadow-xl p-4 text-sm z-60"
     >
       <div className="flex items-center justify-between mb-3">
         <span className="font-medium">Keyboard Shortcuts</span>
@@ -555,7 +572,7 @@ export default function PlayerBar() {
 
               {/* Mobile layout: scrubber row + controls row */}
               <div className="md:hidden">
-                {/* Top row: icon + scrubber + speed + collapse */}
+                {/* Top row: icon + scrubber + collapse */}
                 <div className="flex items-center h-10 px-3 pt-1.5 gap-2">
                   <Link href={`/p?id=${paperId}`} className="text-stone-500 hover:text-stone-700 transition-colors shrink-0 flex items-center">
                     <AudioFileIcon size={28} />
@@ -566,52 +583,56 @@ export default function PlayerBar() {
                     isPlaying={isPlaying}
                     onSeek={handleSeek}
                   />
-                  <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center" title="Speed">
-                    {playbackRate}x
-                  </button>
-                  {playlistButton()}
+                  {/* Playlist button with doubled tap width */}
+                  <div className="flex items-center justify-center w-10 shrink-0">
+                    {playlistButton()}
+                  </div>
                   <button onClick={toggleCollapse} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0 flex items-center" title="Collapse player">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </button>
                 </div>
-                {/* Bottom row: transport controls + stacked time on right */}
-                <div className="relative flex items-center justify-center px-3 py-2">
+                {/* Bottom row: speed left + transport center + time right */}
+                <div className="relative flex items-center px-3 py-2">
+                  {/* Left: speed button */}
+                  <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center" title="Speed">
+                    {playbackRate}x
+                  </button>
                   {/* Center: transport controls with prev/next */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 mx-auto">
                     <button onClick={() => skipToPlaylistItem("prev")} className="text-stone-500 hover:text-stone-800 transition-colors" title="Previous in playlist">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                         <rect x="4" y="5" width="2.5" height="14" rx="0.5" />
                         <polygon points="19,5 9,12 19,19" />
                       </svg>
                     </button>
                     <button onClick={() => actions.skipBack()} className="text-stone-500 hover:text-stone-800 transition-colors" title="Back 10s">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg>
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg>
                     </button>
                     <button
                       onClick={actions.togglePlay}
-                      className="w-10 h-10 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors"
+                      className="w-11 h-11 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors"
                       title={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
                       ) : (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
                       )}
                     </button>
                     <button onClick={() => actions.skipForward()} className="text-stone-500 hover:text-stone-800 transition-colors" title="Forward 10s">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" /></svg>
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" /></svg>
                     </button>
                     <button onClick={() => skipToPlaylistItem("next")} className="text-stone-500 hover:text-stone-800 transition-colors" title="Next in playlist">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                         <polygon points="5,5 15,12 5,19" />
                         <rect x="17.5" y="5" width="2.5" height="14" rx="0.5" />
                       </svg>
                     </button>
                   </div>
                   {/* Right: stacked elapsed / total */}
-                  <div className="absolute right-3 flex flex-col items-end">
+                  <div className="flex flex-col items-end shrink-0">
                     <span className="text-3xs font-mono text-stone-500 tabular-nums leading-tight">{fmtTime(currentTime)}</span>
                     <span className="text-3xs font-mono text-stone-400 tabular-nums leading-tight">{duration ? fmtTime(duration) : "--"}</span>
                   </div>
