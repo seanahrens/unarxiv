@@ -158,7 +158,6 @@ export default function PlaylistPage() {
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!confirm("Delete this list? This cannot be undone.")) return;
     const token = getTokenForList(listId);
     if (!token) return;
     try {
@@ -302,7 +301,6 @@ export default function PlaylistPage() {
 
                     <button
                       onClick={async () => {
-                        if (!confirm("Remove this paper from unarXiv?")) return;
                         const ok = await deleteMyAddition(paper.id);
                         if (ok) {
                           if (state.paperId === paper.id) actions.stop();

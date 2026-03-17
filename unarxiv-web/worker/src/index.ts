@@ -827,7 +827,7 @@ async function handleReprocessPaper(
     // narration_only: just reset audio fields, keep transcript and metadata
     await resetPaperForReprocess(env.DB, id, {
       title: paper.title,
-      authors: typeof paper.authors === "string" ? JSON.parse(paper.authors) : paper.authors,
+      authors: JSON.parse(paper.authors),
       abstract: paper.abstract,
       published_date: paper.published_date,
     });
@@ -948,6 +948,7 @@ async function handleRecordVisit(request: Request, env: Env, id: string): Promis
   return json({ ok: true });
 }
 
+// "Modal" here refers to Modal.com (the serverless Python platform), not a UI dialog.
 async function handleModalWebhook(request: Request, env: Env): Promise<Response> {
   // Verify webhook secret
   const authHeader = request.headers.get("Authorization");

@@ -8,7 +8,7 @@ import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import { useAudio } from "@/contexts/AudioContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, checkNarrationRateLimit, formatDuration, isInProgress, formatPaperDate, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, audioUrl, fetchRating, submitRating, deleteRating, requestNarration, formatDuration, isInProgress, formatPaperDate, type Paper, type Rating } from "@/lib/api";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
@@ -286,8 +286,7 @@ function PlayButtonWithMenu({
     <div className="relative inline-flex w-full md:w-auto shrink-0" ref={menuRef}>
       <button
         onClick={handlePlay}
-        className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-stone-900 border-stone-900 hover:bg-stone-700`}
-        style={{ borderRadius: "0.75rem 0 0 0.75rem" }}
+        className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 rounded-l-xl rounded-r-none`}
       >
         {isPlaying ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -307,8 +306,7 @@ function PlayButtonWithMenu({
       <button
         data-testid="open-paper-actions"
         onClick={() => setMenuOpen(!menuOpen)}
-        className={`${BTN_BASE} px-1.5 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 border-l border-l-stone-700`}
-        style={{ borderRadius: "0 0.75rem 0.75rem 0", marginLeft: "-1px" }}
+        className={`${BTN_BASE} px-1.5 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 border-l border-l-stone-700 rounded-r-xl rounded-l-none -ml-px`}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <polyline points="6 9 12 15 18 9" />
@@ -421,15 +419,13 @@ function GenerateButtonWithMenu({
       <button
         onClick={onGenerate}
         disabled={disabled}
-        className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed`}
-        style={{ borderRadius: "0.75rem 0 0 0.75rem" }}
+        className={`${BTN_BASE} min-w-[140px] flex-1 md:flex-initial gap-2 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
       >
         Generate Audio Narration
       </button>
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className={`${BTN_BASE} px-1.5 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 border-l border-l-emerald-800`}
-        style={{ borderRadius: "0 0.75rem 0.75rem 0", marginLeft: "-1px" }}
+        className={`${BTN_BASE} px-1.5 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <polyline points="6 9 12 15 18 9" />
@@ -473,8 +469,6 @@ function GenerateButtonWithMenu({
     </div>
   );
 }
-
-function formatDate(dateStr: string): string { return formatPaperDate(dateStr); }
 
 function BackButton() {
   const router = useRouter();
@@ -568,20 +562,18 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     // Optimistically show progress bar immediately (before any network calls)
     setPaper({ ...paper, status: "queued" as any });
     try {
-      const { captcha_required } = await checkNarrationRateLimit();
-      if (captcha_required) {
-        // Revert — need captcha first
-        setPaper(paper);
-        setShowCaptchaModal(true);
-        setNarrationLoading(false);
-        return;
-      }
       const updated = await requestNarration(paper.id);
       setPaper(updated);
     } catch (e: any) {
       // Revert optimistic update on failure
       setPaper(paper);
-      setNarrationError(e.message || "Failed to request narration");
+      // If the server requires Turnstile verification (currently disabled but kept for future),
+      // show the captcha modal; otherwise surface the error directly.
+      if ((e.message || "").includes("Turnstile")) {
+        setShowCaptchaModal(true);
+      } else {
+        setNarrationError(e.message || "Failed to request narration");
+      }
     } finally {
       setNarrationLoading(false);
     }
@@ -657,7 +649,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           )}
           {authors.length > 0 && paper.published_date && <span> &middot; </span>}
           {paper.published_date && (
-            <span>{formatDate(paper.published_date)}</span>
+            <span>{formatPaperDate(paper.published_date)}</span>
           )}
           <span> &middot; </span>
           <CopyableId id={paper.id} />
