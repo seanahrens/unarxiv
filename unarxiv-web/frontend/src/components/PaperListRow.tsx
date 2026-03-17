@@ -35,10 +35,12 @@ export default function PaperListRow({
   const { state, actions: audioActions } = useAudio();
   const inProgress = isInProgress(paper.status);
 
-  const handlePlay = () => {
+  const handlePlay = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (state.paperId === paperId) {
       audioActions.togglePlay();
     } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      window.dispatchEvent(new CustomEvent("playerbar-play", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }));
       audioActions.loadPaper(paperId, paper.title, audioUrl(paperId));
     }
   };

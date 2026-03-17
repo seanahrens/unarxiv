@@ -20,7 +20,7 @@ const NavigationHistoryContext = createContext<NavigationHistory>({
 
 function labelForPath(path: string): string {
   if (path === "/" || path === "") return "Papers";
-  if (path.startsWith("/playlist")) return "My Lists";
+  if (path.startsWith("/my-papers")) return "My Papers";
   if (path.startsWith("/p")) return "Paper";
   if (path.startsWith("/s")) return "Script";
   if (path.startsWith("/l")) return "Collection";

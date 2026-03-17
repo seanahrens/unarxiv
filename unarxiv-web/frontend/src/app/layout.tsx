@@ -16,7 +16,7 @@ const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-mono-brand",
 });
 
-import HeaderPlayer from "@/components/HeaderPlayer";
+import PlayerBar from "@/components/PlayerBar";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
 import FlyToPlaylist from "@/components/FlyToPlaylist";
 import { Suspense } from "react";
@@ -64,45 +64,29 @@ export default function RootLayout({
                 <SiteName className="text-lg tracking-tight" />
               </Link>
             </div>
-            {/* Center: player (desktop only) — flex-1 centers it between logo and playlist */}
-            <div className="hidden md:flex flex-1 min-w-0 px-5">
-              <HeaderPlayer inline />
-            </div>
             {/* Right: playlist button */}
-            <div className="flex items-center gap-3 shrink-0 ml-auto md:ml-0">
+            <div className="flex items-center gap-3 shrink-0 ml-auto">
               <PlaylistNavButton />
             </div>
-          </div>
-          {/* Mobile: player below header content, still inside sticky header */}
-          <div className="md:hidden">
-            <HeaderPlayer />
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         <footer className="w-full py-6">
-          <div className="max-w-5xl mx-auto px-6 flex items-start justify-between">
+          <div className="max-w-5xl mx-auto px-6 flex flex-col items-center text-center gap-1">
             <Link
               href="/about"
               className="text-sm text-stone-500 hover:text-stone-700 transition-colors no-underline"
             >
               About
             </Link>
-            <div className="text-right">
-              <p className="text-2xs text-stone-500 max-w-md">
-                arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
-              </p>
-            </div>
+            <p className="text-2xs text-stone-500 max-w-md">
+              arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
+            </p>
           </div>
         </footer>
-        <a
-          href="/admin"
-          className="fixed bottom-4 right-4 z-40 text-stone-400 hover:text-stone-500 transition-colors"
-          title="Admin"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-          </svg>
-        </a>
+        {/* Spacer so fixed player bar doesn't obscure content */}
+        <div className="h-28 md:h-16" aria-hidden />
+        <PlayerBar />
         </NavigationHistoryProvider>
         </Suspense>
         </PlaylistProvider>

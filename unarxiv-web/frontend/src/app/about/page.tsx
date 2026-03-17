@@ -123,11 +123,6 @@ export default function AboutPage() {
           </section>
         </div>
 
-        {/* Legal */}
-        <p className="text-xs text-stone-400 text-center pt-2">
-          arXiv is a registered trademark of Cornell University. <SiteName /> is not
-          affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
-        </p>
       </div>
 
     </div>

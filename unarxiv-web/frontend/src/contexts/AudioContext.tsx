@@ -270,15 +270,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (audio) audio.currentTime = time;
   }, []);
 
-  const skipBack = useCallback((seconds = 15) => {
-    if (typeof seconds !== "number") seconds = 15;
+  const skipBack = useCallback((seconds = 10) => {
+    if (typeof seconds !== "number") seconds = 10;
     const audio = audioRef.current;
     if (!audio || !isFinite(audio.currentTime)) return;
     audio.currentTime = Math.max(0, audio.currentTime - seconds);
   }, []);
 
-  const skipForward = useCallback((seconds = 15) => {
-    if (typeof seconds !== "number") seconds = 15;
+  const skipForward = useCallback((seconds = 10) => {
+    if (typeof seconds !== "number") seconds = 10;
     const audio = audioRef.current;
     if (!audio || !isFinite(audio.currentTime) || !isFinite(audio.duration) || audio.duration <= 0) return;
     audio.currentTime = Math.min(audio.duration, audio.currentTime + seconds);

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePlaylist } from "@/contexts/PlaylistContext";
+import { useRouter } from "next/navigation";
 import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
 import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, isInProgress, type Paper } from "@/lib/api";
@@ -17,16 +17,13 @@ import {
   type ListMeta,
   DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
-import DraggablePaperList from "@/components/DraggablePaperList";
 import PaperListRow from "@/components/PaperListRow";
 import NarrationProgress, { POLL_INTERVAL_MS } from "@/components/NarrationProgress";
 
 export default function PlaylistPage() {
-  const { playlist, removeFromPlaylist, reorderPlaylist } = usePlaylist();
+  const router = useRouter();
   const { state, actions } = useAudio();
-  const [papers, setPapers] = useState<Record<string, Paper>>({});
   const [historyPapers, setHistoryPapers] = useState<Record<string, Paper>>({});
-  const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
 
   const [readHistory, setReadHistory] = useState<{ paperId: string; readAt: string }[]>([]);
@@ -37,25 +34,6 @@ export default function PlaylistPage() {
   const [myLists, setMyLists] = useState<ListMeta[]>([]);
   const [listsLoading, setListsLoading] = useState(true);
   const [copiedListId, setCopiedListId] = useState<string | null>(null);
-
-  // Fetch playlist papers
-  useEffect(() => {
-    const ids = playlist.map((e) => e.paperId);
-    if (ids.length === 0) {
-      setPapers({});
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetchPapersBatch(ids)
-      .then((fetched) => {
-        const map: Record<string, Paper> = {};
-        fetched.forEach((p) => (map[p.id] = p));
-        setPapers(map);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [playlist]);
 
   // Fetch history papers
   useEffect(() => {
@@ -141,7 +119,7 @@ export default function PlaylistPage() {
     try {
       const { list, owner_token } = await createListApi(DEFAULT_COLLECTION_NAME, "");
       saveListToken(list.id, owner_token, list.name);
-      window.location.href = `/l?id=${list.id}&edit=1`;
+      router.push(`/l?id=${list.id}&edit=1`);
     } catch (e: any) {
       alert(e.message || "Failed to create collection");
     }
@@ -169,41 +147,6 @@ export default function PlaylistPage() {
 
   return (
     <div className="space-y-2 md:space-y-8 -mx-6 md:mx-0">
-      {/* ─── My Playlist ─────────────────────────────────────────── */}
-      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200 flex items-center justify-between">
-          <h1 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="3" y="10" width="11" height="2" />
-              <rect x="3" y="6" width="11" height="2" />
-              <rect x="3" y="14" width="7" height="2" />
-              <polygon points="16,13 16,21 22,17" />
-            </svg>
-            My Playlist
-          </h1>
-        </div>
-
-        {playlist.length === 0 && !loading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">
-            Your playlist is empty.
-          </div>
-        ) : (
-          <DraggablePaperList
-            items={playlist.map((e) => e.paperId)}
-            papers={papers}
-            loading={loading}
-            onReorder={reorderPlaylist}
-            onRemove={removeFromPlaylist}
-            emptyMessage="Your playlist is empty."
-            emptyAction={
-              <Link href="/" className="text-stone-600 hover:text-stone-800 underline text-sm">
-                Add papers from the home page
-              </Link>
-            }
-          />
-        )}
-      </section>
-
       {/* ─── My Additions ────────────────────────────────────────── */}
       <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
         <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
@@ -307,7 +250,7 @@ export default function PlaylistPage() {
               <div
                 key={list.id}
                 className="flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 hover:bg-stone-100 transition-colors cursor-pointer"
-                onClick={() => { window.location.href = `/l?id=${list.id}&edit=1`; }}
+                onClick={() => { router.push(`/l?id=${list.id}&edit=1`); }}
               >
                 {/* Material: folder */}
                 <span className="text-stone-400 shrink-0">

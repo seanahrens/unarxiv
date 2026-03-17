@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import {
@@ -56,7 +56,7 @@ function ListsPageContent() {
   return (
     <div className="text-center py-20">
       <p className="text-stone-500 text-sm">No collection specified.</p>
-      <Link href="/playlist" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mt-2 border border-stone-300 rounded-full px-3 py-1 no-underline">
+      <Link href="/my-papers" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mt-2 border border-stone-300 rounded-full px-3 py-1 no-underline">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
         Back to My Lists
       </Link>
@@ -67,6 +67,7 @@ function ListsPageContent() {
 // ─── List View (with id) ────────────────────────────────────────────────────
 
 function ListView({ listId, startInEditMode }: { listId: string; startInEditMode?: boolean }) {
+  const router = useRouter();
   const [data, setData] = useState<ListWithPapers | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -107,9 +108,11 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   useEffect(() => { loadList(); }, [loadList]);
 
-  // Auto-select title for new collections
+  // Auto-select title for new collections (only on first load)
+  const didAutoSelect = useRef(false);
   useEffect(() => {
-    if (data && startInEditMode && editName === DEFAULT_COLLECTION_NAME && nameInputRef.current) {
+    if (data && !didAutoSelect.current && startInEditMode && editName === DEFAULT_COLLECTION_NAME && nameInputRef.current) {
+      didAutoSelect.current = true;
       nameInputRef.current.focus();
       nameInputRef.current.select();
     }
@@ -228,7 +231,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
     try {
       await deleteListApi(listId, ownerToken);
       removeListToken(listId);
-      window.location.href = "/playlist";
+      router.push("/my-papers");
     } catch {
       alert("Failed to delete collection");
     }
@@ -249,7 +252,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
     return (
       <div className="text-center py-20">
         <p className="text-stone-500 text-sm">{error || "Collection not found"}</p>
-        <Link href="/playlist" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mt-2 border border-stone-300 rounded-full px-3 py-1 no-underline">
+        <Link href="/my-papers" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mt-2 border border-stone-300 rounded-full px-3 py-1 no-underline">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
           Back to My Lists
         </Link>
@@ -280,7 +283,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
                   removeListToken(listId);
                 } catch {}
               }
-              window.location.href = "/playlist";
+              router.push("/my-papers");
             }}
             className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors border border-stone-300 rounded-full px-3 py-1"
           >

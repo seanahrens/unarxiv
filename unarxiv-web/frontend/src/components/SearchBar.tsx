@@ -117,7 +117,7 @@ export default function SearchBar({
       >
         <div className="pt-3">
         <div className="bg-white border border-stone-300 rounded-xl p-6 shadow-sm">
-          <p className="font-bold text-stone-900 mb-3 text-lg">How does <SiteName /> work?</p>
+          <p className="font-bold text-stone-900 mb-3 text-lg text-center">How does <SiteName /> work?</p>
           <p className="mb-4 text-sm text-stone-600 leading-relaxed">
             We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.
             For us to have a paper, it first needs to be added.

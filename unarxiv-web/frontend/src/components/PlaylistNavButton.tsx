@@ -7,7 +7,7 @@ export default function PlaylistNavButton() {
   const { playlistCount, badgePulse } = usePlaylist();
   const pathname = usePathname();
   const router = useRouter();
-  const isOnPlaylist = pathname === "/playlist" || pathname === "/playlist/";
+  const isOnPlaylist = pathname === "/my-papers" || pathname === "/my-papers/";
 
   const handleClick = () => {
     if (isOnPlaylist) {
@@ -18,7 +18,7 @@ export default function PlaylistNavButton() {
         router.push("/");
       }
     } else {
-      router.push("/playlist");
+      router.push("/my-papers");
     }
   };
 
@@ -32,15 +32,10 @@ export default function PlaylistNavButton() {
           : "text-stone-700 hover:text-stone-900 hover:bg-stone-100 border-stone-300"
       }`}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6" />
-        <line x1="8" y1="12" x2="21" y2="12" />
-        <line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" />
-        <line x1="3" y1="12" x2="3.01" y2="12" />
-        <line x1="3" y1="18" x2="3.01" y2="18" />
+      <svg width="16" height="16" viewBox="0 0 576 512" fill="currentColor" aria-hidden="true">
+        <path d="M384 480h48c11.4 0 21.9-6 27.6-15.9l112-192c5.8-9.9 5.8-22.1 .1-32.1S555.5 224 544 224H144c-11.4 0-21.9 6-27.6 15.9L4.4 431.9c-5.8 9.9-5.8 22.1-.1 32.1S20.5 480 32 480H384zm-16-48H49.5l96-164.3H497.5l-96 164.3H368zM48 320V128c0-8.8 7.2-16 16-16h120l40 40h176c8.8 0 16 7.2 16 16v32h48v-32c0-35.3-28.7-64-64-64H243.9L203.9 64H64C28.7 64 0 92.7 0 128v261.3l48-82.3z" />
       </svg>
-      <span className="font-semibold">My Lists</span>
+      <span className="font-semibold">My Papers</span>
     </button>
   );
 }

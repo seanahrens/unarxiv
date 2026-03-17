@@ -1,17 +1,19 @@
 "use client";
 
-import { useRef, memo } from "react";
+import { memo, useState, useRef } from "react";
 import Link from "next/link";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear } from "@/lib/api";
 
-import { usePlaylist } from "@/contexts/PlaylistContext";
-import { isRead, markAsUnread } from "@/lib/readStatus";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 import ProcessingFileIcon from "@/components/ProcessingFileIcon";
+import PaperActionsMenu from "@/components/PaperActionsMenu";
 
 interface PaperCardProps {
   paper: Paper;
+  onGenerate?: (paperId: string) => void;
+  onRate?: (paperId: string) => void;
 }
 
 function formatEtaShort(detail: string | null): string | null {
@@ -38,67 +40,54 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-function PaperCard({ paper }: PaperCardProps) {
+function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = isInProgress(paper.status);
-  const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
-  const addBtnRef = useRef<HTMLButtonElement>(null);
-  const removeBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleAddToPlaylist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isRead(paper.id)) {
-      if (!confirm("You've already listened to this. Are you sure you want to add it to your playlist? We will unmark it as read.")) return;
-      markAsUnread(paper.id);
-    }
-    const rect = addBtnRef.current?.getBoundingClientRect();
-    addToPlaylist(paper.id, rect || undefined);
-  };
-
-  const handleRemoveFromPlaylist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const rect = removeBtnRef.current?.getBoundingClientRect();
-    removeFromPlaylist(paper.id, rect || undefined);
-  };
-
-  const inPlaylist = isReady && isInPlaylist(paper.id);
+  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
 
   return (
     <Link
       href={`/p?id=${paper.id}`}
       data-testid="paper-card"
-      className="block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400"
+      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
     >
-      {isReady && (
-        inPlaylist ? (
-          <button
-            ref={removeBtnRef}
-            onClick={handleRemoveFromPlaylist}
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-400 bg-stone-300 text-stone-600 hover:bg-stone-400 hover:text-stone-700 transition-colors z-10"
-            title="Remove from playlist"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </button>
-        ) : (
-          <button
-            ref={addBtnRef}
-            onClick={handleAddToPlaylist}
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg border border-stone-300 text-stone-500 hover:text-stone-700 hover:border-stone-400 hover:bg-stone-50 transition-colors z-10 bg-white"
-            title="Add to playlist"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-        )
-      )}
+      {/* Actions dropdown — upper right */}
+      <div
+        ref={menuRef}
+        className="absolute top-2 right-2 z-30"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      >
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setMenuOpen(!menuOpen);
+          }}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+          title="Actions"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {menuOpen && (
+          <PaperActionsMenu
+            paper={paper}
+            showPlayItem
+            showGenerateItem
+            onRate={onRate ? () => onRate(paper.id) : undefined}
+            onGenerate={onGenerate ? () => onGenerate(paper.id) : undefined}
+            onClose={() => setMenuOpen(false)}
+            containerRef={menuRef}
+          />
+        )}
+      </div>
+
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
         <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-stone-400"}`}>
@@ -117,7 +106,7 @@ function PaperCard({ paper }: PaperCardProps) {
         {/* Card content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-1">
-            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug">
+            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6">
               {paper.title || "Untitled"}
             </h3>
             {isFailed && (

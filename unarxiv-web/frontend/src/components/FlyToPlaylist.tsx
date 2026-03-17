@@ -15,7 +15,7 @@ export default function FlyToPlaylist() {
       return;
     }
 
-    const target = document.getElementById("playlist-nav-button");
+    const target = document.getElementById("player-playlist-button") || document.getElementById("playlist-nav-button");
     if (!target) {
       setStyle({ display: "none" });
       return;
@@ -69,7 +69,7 @@ export default function FlyToPlaylist() {
       return;
     }
 
-    const source = document.getElementById("playlist-nav-button");
+    const source = document.getElementById("player-playlist-button") || document.getElementById("playlist-nav-button");
     if (!source) {
       setRemoveStyle({ display: "none" });
       return;

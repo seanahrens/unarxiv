@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
 import ArxivCta from "@/components/ArxivCta";
@@ -51,6 +51,7 @@ function PaperSection({ title, papers }: { title: string; papers: Paper[] }) {
 }
 
 function HomePageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const arxivParam = searchParams.get("arxiv") || "";
   const qParam = searchParams.get("q") || "";
@@ -87,7 +88,7 @@ function HomePageContent() {
       (async () => {
         try {
           const dbPaper = await fetchPaper(arxivId);
-          window.location.href = `/p?id=${dbPaper.id}`;
+          router.push(`/p?id=${dbPaper.id}`);
           return;
         } catch {
           // Not in DB — fetch from arXiv and create
@@ -95,7 +96,7 @@ function HomePageContent() {
         try {
           const meta = await previewPaper(arxivParam);
           const paper = await submitPaper(meta.arxiv_url, meta);
-          window.location.href = `/p?id=${paper.id}`;
+          router.push(`/p?id=${paper.id}`);
         } catch (e: any) {
           setPreviewError(e.message || "Could not fetch paper details");
           setPreviewing(false);
