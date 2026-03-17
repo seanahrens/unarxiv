@@ -27,6 +27,7 @@
 - [ ] Typing "2602.21593" in search bar detects arXiv ID and redirects to paper page
 - [ ] Imported paper page shows title, authors, abstract
 - [ ] API confirms paper exists with status "not_requested"
+- [ ] "Papers I Added" section visible on /playlist
 - [ ] Admin delete removes the test paper (GET returns 404 after)
 
 ## 4. Homepage [04-homepage.spec.ts]
@@ -42,7 +43,7 @@
 
 ## 6. Text Search [06-text-search.spec.ts]
 
-- [ ] Searching "neural" returns at least one result
+- [ ] Searching "AI" returns at least one result
 - [ ] Multi-word search updates URL with query parameters
 - [ ] Gibberish search returns zero results
 
@@ -57,8 +58,8 @@
 
 ## 8. Downloads [08-downloads.spec.ts]
 
-- [ ] Download dropdown shows "Download PDF" and "Download MP3" options
-- [ ] MP3 audio endpoint returns 200 with audio content-type
+- [ ] Download dropdown shows "Download PDF" and "Download Audio" options
+- [ ] Audio endpoint returns 200 or 206 with audio content
 
 ## 9. Ratings [09-ratings.spec.ts]
 
@@ -72,3 +73,20 @@
 ## 11. Narration Generation [11-narration-gen.spec.ts] (SLOW — full suite only)
 
 - [ ] Import paper, generate narration, poll until complete, verify audio stream
+
+## 12. Turnstile [12-turnstile.spec.ts] (SKIPPED — Turnstile currently disabled)
+
+- [ ] About page "Show email address" renders Turnstile without sitekey errors
+
+## 13. Lists/Collections [13-lists.spec.ts]
+
+- [ ] API: create list, get (public), add items, update metadata, auth required for mutations
+- [ ] API: reorder items, remove item, my-lists returns owned lists, delete list
+- [ ] Frontend: My Collections section visible on /playlist
+- [ ] Frontend: create via API + store token → collection appears in My Collections → view at /l?id=
+- [ ] Admin: can see all lists with tokens (skipped if no ADMIN_PASSWORD)
+
+## 14. Transcript Viewer [14-transcript.spec.ts]
+
+- [ ] /s?id= loads h1 title and no error for a complete paper
+- [ ] Transcript API endpoint returns 200/206 with text content-type
