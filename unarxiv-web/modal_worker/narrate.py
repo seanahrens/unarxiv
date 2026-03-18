@@ -371,19 +371,17 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             tex_to_audio._tts_chunk(chunk, chunk_path, tex_to_audio.DEFAULT_VOICE)
             chunk_paths.append(chunk_path)
 
-            # Report progress every 3 chunks or on last chunk
-            if (i + 1) % 3 == 0 or i == total_chunks - 1:
-                done = i + 1
-                remaining_chunks = total_chunks - done
-                elapsed = time.time() - audio_start_time
-                if done > 0:
-                    secs_per_chunk = elapsed / done
-                    remaining_secs = int(secs_per_chunk * remaining_chunks)
-                    send_status(
-                        callback_url, secret, arxiv_id,
-                        status="generating_audio",
-                        progress_detail=f"eta:{remaining_secs}",
-                    )
+            # Report progress after every chunk for responsive ETA updates
+            done = i + 1
+            remaining_chunks = total_chunks - done
+            elapsed = time.time() - audio_start_time
+            secs_per_chunk = elapsed / done
+            remaining_secs = int(secs_per_chunk * remaining_chunks)
+            send_status(
+                callback_url, secret, arxiv_id,
+                status="generating_audio",
+                progress_detail=f"eta:{remaining_secs}",
+            )
 
         # Concatenate chunks with ffmpeg
         # Note: paths are generated internally (not user-controlled)
