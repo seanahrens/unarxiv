@@ -370,24 +370,20 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           <h1 className="text-2xl font-bold text-stone-900 leading-tight flex-1">
             {paper.title || "Untitled"}
           </h1>
-          {(isReady || isNotRequested) ? (
-            <PaperActionButton
-              paper={paper}
-              onRate={() => setShowRatingModal(true)}
-              onGenerate={handleRequestNarration}
-              generateDisabled={narrationLoading}
-              onAddToPlaylist={handleAddToPlaylist}
-              onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
-            />
-          ) : isProcessing ? (
-            <div className="w-full md:w-auto md:min-w-[260px] shrink-0 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
-              {narrationLoading ? (
-                <NarrationProgress paper={paper} />
-              ) : (
-                <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
-              )}
+          <PaperActionButton
+            paper={paper}
+            onRate={() => setShowRatingModal(true)}
+            onGenerate={handleRequestNarration}
+            generateDisabled={narrationLoading}
+            onAddToPlaylist={handleAddToPlaylist}
+            onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
+          />
+          {/* Hidden poller for processing state — drives status updates & completion */}
+          {isProcessing && !narrationLoading && (
+            <div className="hidden">
+              <NarrationProgress paperId={paper.id} onComplete={handleComplete} onStatusChange={handleComplete} />
             </div>
-          ) : null}
+          )}
         </div>
 
         <p className="text-sm text-stone-500 mb-2">

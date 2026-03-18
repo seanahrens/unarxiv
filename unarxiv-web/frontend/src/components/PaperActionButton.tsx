@@ -3,11 +3,11 @@
 import { useState, useRef } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useAudio } from "@/contexts/AudioContext";
-import { audioUrl, formatDuration, isInProgress, type Paper } from "@/lib/api";
+import { audioUrl, formatDuration, isInProgress, parseEtaSeconds, type Paper } from "@/lib/api";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
 
-const SparklesIcon = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
   </svg>
 );
@@ -31,17 +31,24 @@ const ChevronIcon = ({ size = 12 }: { size?: number }) => (
   </svg>
 );
 
+const STATUS_LABELS: Record<string, string> = {
+  queued: "Queued",
+  preparing: "Scripting",
+  generating_audio: "Narrating",
+};
+
+function formatEtaShort(seconds: number): string {
+  if (seconds <= 0) return "";
+  if (seconds < 60) return `~${Math.round(seconds / 5) * 5}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round((seconds % 60) / 10) * 10;
+  if (secs === 0) return `~${mins}m`;
+  return `~${mins}m ${secs}s`;
+}
+
 /**
- * Unified play/generate button with dropdown menu.
- * Used on both paper detail page (default) and PaperCard (compact).
- *
- * compact=false (default, paper show):
- *   - Play: icon + "Play" + duration, larger font (text-sm)
- *   - Narrate: sparkles icon + "Narrate", larger font (text-sm)
- *
- * compact=true (PaperCard):
- *   - Play: icon only on mobile, icon + "Play" on desktop, less padding
- *   - Narrate: sparkles icon only on mobile, sparkles + "Narrate" on desktop, less padding
+ * Unified play/generate/progress button with dropdown menu.
+ * Handles all paper states: complete, not_requested, and processing.
  */
 export default function PaperActionButton({
   paper,
@@ -52,6 +59,7 @@ export default function PaperActionButton({
   onAddToPlaylist,
   onRemoveFromPlaylist,
   onMenuToggle,
+  etaSeconds,
 }: {
   paper: Paper;
   compact?: boolean;
@@ -61,6 +69,8 @@ export default function PaperActionButton({
   onAddToPlaylist?: (rect?: DOMRect) => void;
   onRemoveFromPlaylist?: (rect?: DOMRect) => void;
   onMenuToggle?: (open: boolean) => void;
+  /** Override ETA seconds (e.g. from polling countdown). Falls back to paper.progress_detail. */
+  etaSeconds?: number | null;
 }) {
   const { state, actions } = useAudio();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,9 +86,6 @@ export default function PaperActionButton({
   const isComplete = paper.status === "complete";
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = isInProgress(paper.status);
-
-  // Don't render anything if processing (caller handles NarrationProgress)
-  if (isProcessing) return null;
 
   const isGloballyActive = state.paperId === paper.id;
   const isPlaying = isGloballyActive && state.isPlaying;
@@ -106,6 +113,7 @@ export default function PaperActionButton({
   const compactColors = "text-stone-700 bg-white border-stone-300 hover:bg-stone-100 hover:text-stone-900";
   const compactChevronBorder = "border-l-stone-300";
 
+  // --- COMPLETE: Play button ---
   if (isComplete) {
     const colors = compact ? compactColors : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
     const chevronBorder = compact ? compactChevronBorder : "border-l-stone-700";
@@ -148,6 +156,46 @@ export default function PaperActionButton({
     );
   }
 
+  // --- PROCESSING: Spinning sparkles + status label + ETA ---
+  if (isProcessing) {
+    const statusLabel = STATUS_LABELS[paper.status] || "Processing";
+    const eta = etaSeconds ?? parseEtaSeconds(paper.progress_detail);
+    const etaText = (eta !== null && eta > 0) ? formatEtaShort(eta) : null;
+    const colors = compact ? compactColors : "text-stone-600 bg-stone-50 border-stone-300 hover:bg-stone-100";
+    const chevronBorder = compact ? compactChevronBorder : "border-l-stone-300";
+
+    return (
+      <div className={wrapperClass} ref={menuRef}>
+        <div
+          className={`${btnBase} ${compact ? "h-auto py-1" : "min-w-[140px] flex-1 md:flex-initial h-auto py-1.5"} gap-2 ${colors} rounded-l-xl rounded-r-none cursor-default`}
+        >
+          <SparklesIcon className="animate-spin" />
+          {!compact && (
+            <div className="flex flex-col items-start leading-tight">
+              <span>{statusLabel}</span>
+              {etaText && <span className="text-2xs text-stone-400">{etaText}</span>}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => toggleMenu(!menuOpen)}
+          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
+        >
+          <ChevronIcon />
+        </button>
+        {menuOpen && (
+          <PaperActionsMenu
+            paper={paper}
+            showPlayItem={false}
+            onClose={() => toggleMenu(false)}
+            containerRef={menuRef}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // --- NOT REQUESTED: Narrate button ---
   if (isNotRequested) {
     return (
       <div className={wrapperClass} ref={menuRef}>
