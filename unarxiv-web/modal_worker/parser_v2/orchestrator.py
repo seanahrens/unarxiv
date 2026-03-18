@@ -93,7 +93,7 @@ def _try_latex(
 
     # Always use arXiv-scraped metadata (reliable, consistent format).
     # Paper-extracted metadata is ignored — arXiv is the source of truth.
-    return build_script(body, title or "Untitled", authors, date)
+    return build_script(body, title or "Untitled", authors, date, source_type="LaTeX")
 
 
 def _try_pdf(
@@ -107,4 +107,4 @@ def _try_pdf(
     from parser_v2.script_builder import build_script
 
     body = parse_pdf(path, title=title, authors=authors)
-    return build_script(body, title, authors, date)
+    return build_script(body, title, authors, date, source_type="PDF")

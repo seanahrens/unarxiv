@@ -19,15 +19,19 @@ def build_script(
     title: str,
     authors: list[str],
     date: str,
+    source_type: str = "unknown",
 ) -> str:
     """Wrap cleaned body text with a spoken header and footer.
 
     The header/footer format matches the existing system so scripts
     are drop-in compatible.
+
+    Args:
+        source_type: "LaTeX" or "PDF" — recorded in the version tag.
     """
     header = _build_header(title or "Untitled", date, authors)
     footer = _build_footer(title or "Untitled", date, authors)
-    version_tag = f"\n\n[parser {PARSER_VERSION}]"
+    version_tag = f"\n\n[{source_type} {PARSER_VERSION}]"
     return header + "\n" + body.strip() + footer + version_tag
 
 

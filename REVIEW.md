@@ -21,7 +21,5 @@
 
 ## Deploy Status
 
-| Target | Status |
-|--------|--------|
-| Cloudflare Worker (`unarxiv-api`) | ✅ Deployed (version `185aa416-80c5-44b9-9402-1ed0e8a2d0a4`) |
-| Cloudflare Pages (`texreader-frontend`) | ✅ Deployed (`2a6458ef`) |
+- **Worker** (`unarxiv-api`): Version `724a36ca` — deployed 2026-03-18
+- **Frontend** (`unarxiv-frontend`): Deployment `9aacf3dd` — deployed 2026-03-18

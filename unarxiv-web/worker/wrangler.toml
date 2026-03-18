@@ -19,5 +19,4 @@ database_id = "f87529b5-2f6c-43a9-988c-92f41e0a790e"
 
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"
-bucket_name = "texreader-audio"
-# R2 bucket name can't be renamed — would require manual migration to "unarxiv-audio"
+bucket_name = "unarxiv-audio"

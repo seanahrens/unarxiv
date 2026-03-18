@@ -19,24 +19,21 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 ## Key Config
 
 - D1 database: `unarxiv-db` (ID: `f87529b5-2f6c-43a9-988c-92f41e0a790e`)
-- R2 bucket: `texreader-audio` (audio + transcripts) — legacy name, can't rename without migration
+- R2 bucket: `unarxiv-audio` (audio + transcripts)
 - Domain: `unarxiv.org` (frontend), `api.unarxiv.org` (worker API)
 - `wrangler` is invoked via `npx wrangler` (install with `npm install -g wrangler` or use local devDep)
 - Admin password stored as Worker secret (`ADMIN_PASSWORD`)
 - Rate limits: 10/day/IP, global daily cap configurable via `DAILY_GLOBAL_LIMIT`
 
-### Service Names (legacy vs current)
+### Service Names
 
-Some Cloudflare/Modal resources retain the old "texreader" project name because
-renaming requires manual migration. The canonical names are:
-
-| Resource             | Actual name            | Notes                                |
-|----------------------|------------------------|--------------------------------------|
-| CF Worker API        | `unarxiv-api`          | current name                         |
-| CF Pages (frontend)  | `texreader-frontend`   | legacy — renaming requires new Pages project |
-| Modal app            | `unarxiv-worker`       | current name                         |
-| Modal secret         | `texreader-secrets`    | legacy — renaming requires recreating secret |
-| R2 bucket            | `texreader-audio`      | legacy — renaming requires data migration |
+| Resource             | Name                   |
+|----------------------|------------------------|
+| CF Worker API        | `unarxiv-api`          |
+| CF Pages (frontend)  | `unarxiv-frontend`     |
+| Modal app            | `unarxiv-worker`       |
+| Modal secret         | `unarxiv-secrets`      |
+| R2 bucket            | `unarxiv-audio`        |
 
 ## Deployment
 
@@ -48,7 +45,7 @@ cd unarxiv-web/worker && npx wrangler deploy
 
 # Frontend
 cd unarxiv-web/frontend && npm run build
-npx wrangler pages deploy out --project-name=texreader-frontend
+npx wrangler pages deploy out --project-name=unarxiv-frontend
 
 # Modal worker
 cd unarxiv-web/modal_worker && modal deploy narrate.py

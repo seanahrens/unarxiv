@@ -30,17 +30,16 @@ image = (
     .add_local_dir("parser_v2", "/app/parser_v2", ignore=["test_data/*", "__pycache__/*"])
 )
 
-# Modal secret: "texreader-secrets" (legacy name — renaming requires recreating in Modal)
+# Modal secret: "unarxiv-secrets" (legacy name — renaming requires recreating in Modal)
 # Required keys:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 #   CALLBACK_SECRET (shared with Worker's MODAL_WEBHOOK_SECRET)
 # Optional:
 #   PARSER_VERSION: "v2" (default) or "legacy"
 #
-# Legacy naming note:
-#   Modal secret "texreader-secrets" and R2 bucket "texreader-audio" retain
-#   the old project name. Renaming either requires manual migration.
-#   The app itself is "unarxiv-worker" and the CF Worker is "unarxiv-api".
+# All services now use the "unarxiv" naming convention:
+#   Modal secret: "unarxiv-secrets", R2 bucket: "unarxiv-audio",
+#   Modal app: "unarxiv-worker", CF Worker: "unarxiv-api".
 
 
 def send_status(callback_url: str, secret: str, arxiv_id: str, **kwargs):
@@ -100,7 +99,7 @@ def _use_legacy_parser() -> bool:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("texreader-secrets")],
+    secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=3600,  # 1 hour max per paper
     retries=0,
 )
@@ -453,7 +452,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 # Web endpoint for the Cloudflare Worker to call
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("texreader-secrets")],
+    secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=60,
 )
 @modal.fastapi_endpoint(method="POST")
