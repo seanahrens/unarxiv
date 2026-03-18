@@ -143,6 +143,113 @@ function stripHtml(html: string): string {
   );
 }
 
+// ─── ArXiv API Search ────────────────────────────────────────────────────────
+
+export interface ArxivSearchResult {
+  id: string;
+  title: string;
+  authors: string[];
+  abstract: string;
+  published_date: string;
+  arxiv_url: string;
+}
+
+export interface ArxivSearchResponse {
+  papers: ArxivSearchResult[];
+  total: number;
+}
+
+/**
+ * Search the arXiv API (Atom feed) for papers matching a query.
+ * Returns parsed results and total count.
+ */
+export async function searchArxiv(
+  query: string,
+  start: number,
+  maxResults: number
+): Promise<ArxivSearchResponse> {
+  const params = new URLSearchParams({
+    search_query: `all:${query}`,
+    start: String(start),
+    max_results: String(maxResults),
+    sortBy: "relevance",
+    sortOrder: "descending",
+  });
+
+  const res = await fetch(`https://export.arxiv.org/api/query?${params}`, {
+    headers: { "User-Agent": "unarXiv/1.0 (research paper narration tool)" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`arXiv API error: ${res.status}`);
+  }
+
+  const xml = await res.text();
+
+  // Parse total results
+  const totalMatch = xml.match(/<opensearch:totalResults[^>]*>(\d+)<\/opensearch:totalResults>/);
+  const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+
+  // Parse entries
+  const papers: ArxivSearchResult[] = [];
+  const entries = xml.split(/<entry>/);
+  // First chunk is the feed header, skip it
+  for (let i = 1; i < entries.length; i++) {
+    const entry = entries[i];
+
+    // Extract arXiv ID from <id> URL
+    const idMatch = entry.match(/<id>https?:\/\/arxiv\.org\/abs\/([^<]+)<\/id>/);
+    if (!idMatch) continue;
+    // Strip version suffix (e.g. "2401.12345v1" → "2401.12345")
+    const rawId = idMatch[1];
+    const id = rawId.replace(/v\d+$/, "");
+
+    // Title
+    const titleMatch = entry.match(/<title>([\s\S]*?)<\/title>/);
+    const title = titleMatch
+      ? decodeXmlEntities(titleMatch[1]).replace(/\s+/g, " ").trim()
+      : "Untitled";
+
+    // Authors
+    const authors: string[] = [];
+    const authorMatches = entry.matchAll(/<author>\s*<name>([^<]+)<\/name>/g);
+    for (const m of authorMatches) {
+      authors.push(decodeXmlEntities(m[1]).trim());
+    }
+
+    // Abstract (called <summary> in Atom)
+    const summaryMatch = entry.match(/<summary>([\s\S]*?)<\/summary>/);
+    const abstract = summaryMatch
+      ? decodeXmlEntities(summaryMatch[1]).replace(/\s+/g, " ").trim()
+      : "";
+
+    // Published date → YYYY-MM-DD
+    const pubMatch = entry.match(/<published>(\d{4}-\d{2}-\d{2})/);
+    const published_date = pubMatch ? pubMatch[1] : "";
+
+    papers.push({
+      id,
+      title,
+      authors,
+      abstract,
+      published_date,
+      arxiv_url: `https://arxiv.org/abs/${id}`,
+    });
+  }
+
+  return { papers, total };
+}
+
+function decodeXmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'");
+}
+
 /** Strip LaTeX commands/markup from text, leaving readable plain text. */
 function cleanLatex(text: string): string {
   return text

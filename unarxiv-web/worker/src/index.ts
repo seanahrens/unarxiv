@@ -19,7 +19,7 @@
 import type { IncomingRequestCfProperties } from "@cloudflare/workers-types";
 import type { Env, Paper } from "./types";
 import { paperToResponse } from "./types";
-import { parseArxivId, scrapeArxivMetadata, arxivSrcUrl, arxivPdfUrl } from "./arxiv";
+import { parseArxivId, scrapeArxivMetadata, searchArxiv, arxivSrcUrl, arxivPdfUrl } from "./arxiv";
 import {
   getPaper,
   getPapersBatch,
@@ -66,8 +66,9 @@ export default {
 
     // CORS headers
     const origin = request.headers.get("Origin") || "";
-    const allowedOrigins = ["https://unarxiv.org", "http://localhost:3000"];
-    const corsOrigin = allowedOrigins.includes(origin) ? origin : "https://unarxiv.org";
+    const isAllowed =
+      origin === "https://unarxiv.org" || origin.startsWith("http://localhost:");
+    const corsOrigin = isAllowed ? origin : "https://unarxiv.org";
     const corsHeaders = {
       "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -409,6 +410,23 @@ async function handleImportList(request: Request, env: Env, listId: string, base
   });
 }
 
+async function handleArxivSearch(url: URL): Promise<Response> {
+  const query = url.searchParams.get("q") || "";
+  if (!query.trim()) {
+    return json({ papers: [], total: 0, page: 1, per_page: 10 });
+  }
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+  const perPage = Math.min(50, Math.max(1, parseInt(url.searchParams.get("per_page") || "10")));
+  const start = (page - 1) * perPage;
+
+  try {
+    const result = await searchArxiv(query, start, perPage);
+    return json({ papers: result.papers, total: result.total, page, per_page: perPage });
+  } catch (e: any) {
+    return json({ error: e.message }, 502);
+  }
+}
+
 // ─── Route Table ─────────────────────────────────────────────────────────────
 
 type RouteHandler = (
@@ -436,6 +454,11 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "POST",
       pattern: /^\/api\/papers\/batch$/,
       handler: (req, env) => handleBatchPapers(req, env, baseUrl),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/arxiv\/search$/,
+      handler: (_req, _env, url) => handleArxivSearch(url),
     },
     {
       method: "GET",

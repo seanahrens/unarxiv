@@ -4,10 +4,17 @@
     {
       "name": "frontend-dev",
       "runtimeExecutable": "/bin/sh",
-      "runtimeArgs": ["-c", "export PATH=/usr/local/bin:/opt/homebrew/bin:$PATH && npx next dev --webpack"],
+      "runtimeArgs": ["-c", "export NEXT_PUBLIC_API_URL=http://localhost:8787 && export PATH=/usr/local/bin:/opt/homebrew/bin:$PATH && npx next dev --webpack"],
       "port": 3000,
       "cwd": "unarxiv-web/frontend",
       "autoPort": true
+    },
+    {
+      "name": "worker-dev",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "export PATH=/usr/local/bin:/opt/homebrew/bin:$PATH && npx wrangler dev --local --port 8787"],
+      "port": 8787,
+      "cwd": "unarxiv-web/worker"
     }
   ]
 }

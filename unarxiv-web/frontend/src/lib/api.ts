@@ -365,6 +365,35 @@ export function isArxivUrl(input: string): boolean {
   return ARXIV_ID_RE.test(input.trim());
 }
 
+// --- ArXiv API Search ---
+
+export interface ArxivSearchResult {
+  id: string;
+  title: string;
+  authors: string[];
+  abstract: string;
+  published_date: string;
+  arxiv_url: string;
+}
+
+export interface ArxivSearchResponse {
+  papers: ArxivSearchResult[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export async function searchArxiv(query: string, page: number = 1, perPage: number = 10): Promise<ArxivSearchResponse> {
+  const params = new URLSearchParams({
+    q: query,
+    page: String(page),
+    per_page: String(perPage),
+  });
+  const res = await fetch(`${API_BASE}/api/arxiv/search?${params}`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
 export function extractArxivId(input: string): string | null {
   const m = input.trim().match(ARXIV_ID_RE);
   return m ? m[1] : null; // m[1] is the base ID without version suffix
