@@ -609,6 +609,15 @@ export async function getRecentPublicLists(
   return results.results;
 }
 
+/** Get papers in queued status, ordered by created_at ascending (oldest first). */
+export async function getQueuedPapers(db: D1Database, limit: number = 5): Promise<Paper[]> {
+  const results = await db
+    .prepare("SELECT * FROM papers WHERE status = 'queued' ORDER BY created_at ASC LIMIT ?")
+    .bind(limit)
+    .all<Paper>();
+  return results.results;
+}
+
 /** Cleanup old visits and submissions (call periodically). */
 export async function cleanup(db: D1Database): Promise<void> {
   await db.batch([
