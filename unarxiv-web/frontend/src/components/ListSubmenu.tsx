@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getMyListTokens, addItemsToList, removeItemFromList, fetchList } from "@/lib/lists";
+import { useRouter } from "next/navigation";
+import { getMyListTokens, addItemsToList, removeItemFromList, fetchList, createListApi, saveListToken, DEFAULT_COLLECTION_NAME } from "@/lib/lists";
 
 interface ListSubmenuProps {
   paperId: string;
@@ -9,6 +10,7 @@ interface ListSubmenuProps {
 }
 
 export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
+  const router = useRouter();
   const tokens = getMyListTokens();
   const entries = Object.entries(tokens);
   const [subOpen, setSubOpen] = useState(false);
@@ -47,8 +49,6 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
     check();
   }, [subOpen, paperId, entries.length]);
 
-  if (entries.length === 0) return null;
-
   const handleToggle = async (listId: string) => {
     const token = tokens[listId]?.ownerToken;
     if (!token) return;
@@ -74,6 +74,15 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
           return next;
         });
       }
+    } catch {}
+  };
+
+  const handleCreateNew = async () => {
+    try {
+      const { list, owner_token } = await createListApi(DEFAULT_COLLECTION_NAME, "");
+      saveListToken(list.id, owner_token, list.name);
+      onClose();
+      router.push(`/l?id=${list.id}&edit=1`);
     } catch {}
   };
 
@@ -119,6 +128,19 @@ export default function ListSubmenu({ paperId, onClose }: ListSubmenuProps) {
               </button>
             );
           })}
+
+          {/* Divider + Create New */}
+          {entries.length > 0 && <div className="border-t border-stone-200 mx-3 my-1" />}
+          <button
+            onClick={handleCreateNew}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span className="font-medium">Create New</span>
+          </button>
         </div>
       )}
     </div>

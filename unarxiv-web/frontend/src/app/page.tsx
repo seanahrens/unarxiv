@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
 import ArxivCta from "@/components/ArxivCta";
@@ -15,8 +16,10 @@ import {
   extractArxivId,
   type Paper,
 } from "@/lib/api";
+import { fetchRecentLists, type ListMeta } from "@/lib/lists";
 
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 6;
+const MAX_PAGES = 10;
 
 export default function HomePage() {
   return (
@@ -26,27 +29,36 @@ export default function HomePage() {
   );
 }
 
-function PaperSection({ title, papers }: { title: string; papers: Paper[] }) {
-  const [page, setPage] = useState(0);
-  const totalPages = Math.ceil(papers.length / PAGE_SIZE);
-  const visible = papers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-
-  if (papers.length === 0) return null;
+function CollectionsSidebar({ collections }: { collections: ListMeta[] }) {
+  if (collections.length === 0) return null;
 
   return (
-    <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
-          {title}
-        </h2>
-        <Paginator page={page} totalPages={totalPages} onChange={setPage} />
-      </div>
-      <div className="grid gap-3">
-        {visible.map((paper) => (
-          <PaperCard key={paper.id} paper={paper} />
+    <aside>
+      <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider mb-3">
+        Collections
+      </h2>
+      <div className="flex flex-col gap-2">
+        {collections.map((list) => (
+          <Link
+            key={list.id}
+            href={`/l?id=${list.id}`}
+            className="block p-3 bg-white border border-stone-200 rounded-lg hover:border-stone-300 hover:shadow-sm transition-all"
+          >
+            <div className="text-sm font-medium text-stone-800 truncate">
+              {list.name}
+            </div>
+            {list.description && (
+              <div className="text-xs text-stone-500 mt-0.5 line-clamp-2">
+                {list.description}
+              </div>
+            )}
+            <div className="text-xs text-stone-400 mt-1">
+              {list.paper_count} {list.paper_count === 1 ? "paper" : "papers"}
+            </div>
+          </Link>
         ))}
       </div>
-    </section>
+    </aside>
   );
 }
 
@@ -56,8 +68,9 @@ function HomePageContent() {
   const arxivParam = searchParams.get("arxiv") || "";
   const qParam = searchParams.get("q") || "";
   const [searchPapers, setSearchPapers] = useState<Paper[]>([]);
-  const [popularPapers, setPopularPapers] = useState<Paper[]>([]);
   const [newPapers, setNewPapers] = useState<Paper[]>([]);
+  const [page, setPage] = useState(0);
+  const [collections, setCollections] = useState<ListMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -65,11 +78,10 @@ function HomePageContent() {
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
 
-  // React to search params: load popular papers, search results, or trigger arXiv flow
+  // React to search params: load papers or trigger arXiv flow
   useEffect(() => {
     if (arxivParam) {
       // ArXiv ID detected — try lookup, but also run a text search in parallel
-      // so we have results to show if the arXiv lookup fails
       setPreviewError("");
       const arxivId = extractArxivId(arxivParam);
       if (!arxivId) return;
@@ -78,21 +90,17 @@ function HomePageContent() {
       setPreviewing(true);
       setLoading(true);
 
-      // Run text search in parallel
       fetchPapers({ q: arxivParam })
         .then((data) => setSearchPapers(data.papers))
         .catch(console.error)
         .finally(() => setLoading(false));
 
-      // Try arXiv lookup — redirect on success, fall back to search results on failure
       (async () => {
         try {
           const dbPaper = await fetchPaper(arxivId);
           router.push(`/p?id=${dbPaper.id}`);
           return;
-        } catch {
-          // Not in DB — fetch from arXiv and create
-        }
+        } catch {}
         try {
           const meta = await previewPaper(arxivParam);
           const paper = await submitPaper(meta.arxiv_url, meta);
@@ -103,7 +111,6 @@ function HomePageContent() {
         }
       })();
     } else if (qParam) {
-      // Text search
       setSearchQuery(qParam);
       setPreviewError("");
       setLoading(true);
@@ -112,28 +119,26 @@ function HomePageContent() {
         .catch(console.error)
         .finally(() => setLoading(false));
     } else {
-      // No params — load popular + recent sections
       setSearchQuery("");
       setPreviewError("");
       setLoading(true);
+      setPage(0);
 
       Promise.all([
-        fetchPapers({ sort: "popular", per_page: 9 }),
-        fetchPapers({ sort: "recent", per_page: 25 }),
+        fetchPapers({ sort: "recent", per_page: PAGE_SIZE * MAX_PAGES, status: "complete" }),
+        fetchRecentLists(20),
       ])
-        .then(([popularData, recentData]) => {
-          const popular = popularData.papers;
-          setPopularPapers(popular);
-
-          // Deduplicate: remove popular papers from recent, take first 9
-          const popularIds = new Set(popular.map((p) => p.id));
-          const deduped = recentData.papers.filter((p) => !popularIds.has(p.id));
-          setNewPapers(deduped.slice(0, 9));
+        .then(([recentData, recentLists]) => {
+          setNewPapers(recentData.papers.filter((p) => p.status === "complete"));
+          setCollections(recentLists);
         })
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   }, [qParam, arxivParam]);
+
+  const totalPages = Math.min(MAX_PAGES, Math.ceil(newPapers.length / PAGE_SIZE));
+  const visiblePapers = newPapers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div>
@@ -187,12 +192,33 @@ function HomePageContent() {
             </>
           ) : loading ? (
             <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
-          ) : popularPapers.length === 0 && newPapers.length === 0 ? (
+          ) : newPapers.length === 0 ? (
             <ArxivCta />
           ) : (
-            <div className="flex flex-col gap-8">
-              <PaperSection title="Popular" papers={popularPapers} />
-              <PaperSection title="Newly Added" papers={newPapers} />
+            <div className="flex gap-8">
+              {/* Main content — newly added papers */}
+              <div className="flex-1 min-w-0">
+                <section>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
+                      Newly Added
+                    </h2>
+                    <Paginator page={page} totalPages={totalPages} onChange={setPage} />
+                  </div>
+                  <div className="grid gap-3">
+                    {visiblePapers.map((paper) => (
+                      <PaperCard key={paper.id} paper={paper} />
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              {/* Sidebar — collections */}
+              {collections.length > 0 && (
+                <div className="hidden lg:block w-64 flex-shrink-0">
+                  <CollectionsSidebar collections={collections} />
+                </div>
+              )}
             </div>
           )}
         </>

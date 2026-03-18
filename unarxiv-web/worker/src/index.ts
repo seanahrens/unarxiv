@@ -56,6 +56,7 @@ import {
   addListItems,
   removeListItem,
   reorderListItems,
+  getRecentPublicLists,
 } from "./db";
 
 export default {
@@ -269,6 +270,18 @@ async function handleMyLists(request: Request, env: Env): Promise<Response> {
   const token = request.headers.get("X-List-Token");
   if (!token) return json({ error: "X-List-Token header required" }, 401);
   const lists = await getListsByToken(env.DB, token);
+  return json({
+    lists: lists.map((l) => ({
+      id: l.id, name: l.name, description: l.description,
+      created_at: l.created_at, updated_at: l.updated_at, paper_count: l.paper_count,
+    })),
+  });
+}
+
+async function handleRecentLists(env: Env, url: URL): Promise<Response> {
+  const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "10")));
+  const offset = Math.max(0, parseInt(url.searchParams.get("offset") || "0"));
+  const lists = await getRecentPublicLists(env.DB, limit, offset);
   return json({
     lists: lists.map((l) => ({
       id: l.id, name: l.name, description: l.description,
@@ -559,6 +572,11 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     },
     {
       method: "GET",
+      pattern: /^\/api\/lists\/recent$/,
+      handler: (_req, env, url) => handleRecentLists(env, url),
+    },
+    {
+      method: "GET",
       pattern: new RegExp(`^\\/api\\/lists\\/(${LIST_ID_PATTERN})$`),
       handler: (req, env, _url, m) => handleGetList(req, env, m[1], baseUrl),
     },
@@ -637,7 +655,8 @@ async function handleListPapers(env: Env, url: URL, baseUrl: string): Promise<Re
       papers = await searchPapers(env.DB, query, perPage, offset);
     }
   } else if (sort === "recent") {
-    papers = await getRecentPapers(env.DB, perPage, offset);
+    const status = url.searchParams.get("status") || undefined;
+    papers = await getRecentPapers(env.DB, perPage, offset, status);
   } else if (sort === "all") {
     papers = await getAllPapers(env.DB, perPage, offset);
   } else {
