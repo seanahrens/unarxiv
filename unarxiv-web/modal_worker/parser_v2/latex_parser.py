@@ -1,0 +1,866 @@
+"""
+latex_parser.py — Converts LaTeX source files into TTS-ready plaintext.
+
+Architecture:
+    1. Source loading (tar extraction, \\input expansion)
+    2. Metadata extraction (title, authors, date)
+    3. Document body extraction (between \\begin{document} and \\end{document})
+    4. Structural pass: remove non-prose environments (figures, tables, bibliography)
+    5. Section/list structure → spoken markers
+    6. Citation stripping (references AND inline markers)
+    7. Math → spoken text conversion
+    8. Formatting tag stripping (preserve inner text)
+    9. Accent/character normalization
+    10. Final cleanup
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import tarfile
+from typing import Optional
+
+from parser_v2.math_to_speech import math_to_speech, inline_math_to_speech
+from parser_v2.latex_accents import latex_accents_to_unicode, GREEK_TO_ENGLISH
+from parser_v2.script_builder import finalize_body
+
+
+# ---------------------------------------------------------------------------
+# Source loading
+# ---------------------------------------------------------------------------
+
+def parse_latex_tar(tar_path: str) -> tuple[str, dict]:
+    """Parse LaTeX from a tar archive. Returns (body_text, metadata)."""
+    latex = _read_latex_from_tar(tar_path)
+    return _process_latex(latex, source_stem=_stem_from_path(tar_path))
+
+
+def parse_latex_file(tex_path: str) -> tuple[str, dict]:
+    """Parse a single .tex file. Returns (body_text, metadata)."""
+    latex = open(tex_path, encoding="utf-8", errors="replace").read()
+    return _process_latex(latex, source_stem=_stem_from_path(tex_path))
+
+
+def _stem_from_path(path: str) -> str:
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def _expand_simple_macros(latex: str) -> str:
+    """Expand simple zero-argument \\newcommand definitions.
+
+    Only handles \\newcommand{\\name}{replacement} with no arguments.
+    This catches common patterns like \\newcommand{\\mistral}{Mistral 7B}.
+    """
+    # Find all \newcommand{\name}{body} with no arguments (no [N])
+    macros: dict[str, str] = {}
+    for m in re.finditer(
+        r"\\(?:new|renew|provide)command\*?\{(\\[a-zA-Z]+)\}\s*\{([^{}]*)\}",
+        latex
+    ):
+        cmd_name = m.group(1)
+        replacement = m.group(2).strip()
+        # Only expand short text macros (not complex stuff)
+        if len(replacement) < 100 and "\\" not in replacement:
+            macros[cmd_name] = replacement
+
+    # Apply expansions (up to 3 passes for chained macros)
+    for _ in range(3):
+        for cmd, repl in macros.items():
+            latex = re.sub(re.escape(cmd) + r"(?![a-zA-Z])", repl, latex)
+
+    return latex
+
+
+def _process_latex(latex: str, source_stem: str = "") -> tuple[str, dict]:
+    """Main pipeline: raw LaTeX → (body_text, metadata_dict)."""
+    # Expand simple user-defined macros before processing
+    latex = _expand_simple_macros(latex)
+    meta = _extract_metadata(latex, source_stem)
+    body = _extract_body(latex)
+    body = _strip_non_prose(body)
+    body = _convert_structure_to_speech(body)
+    body = _strip_citations(body)
+    body = _convert_greek_letters(body)  # before math handling so Greek in math gets spoken
+    body = _handle_math(body)
+    body = _strip_formatting_tags(body)
+    body = _normalize_text(body)
+    body = finalize_body(body)
+    return body, meta
+
+
+# ---------------------------------------------------------------------------
+# Tar extraction and \input expansion
+# ---------------------------------------------------------------------------
+
+def _read_latex_from_tar(tar_path: str) -> str:
+    """Read and expand LaTeX from a tar archive without extracting to disk."""
+    with tarfile.open(tar_path, "r:*") as tf:
+        members = {m.name: m for m in tf.getmembers() if m.isfile()}
+        members_lower = {k.lower(): k for k in members}
+
+        def read_member(member) -> str:
+            return tf.extractfile(member).read().decode("utf-8", errors="replace")
+
+        def resolve_member(ref: str, current_dir: str):
+            candidates = [ref + ".tex", ref] if not ref.endswith(".tex") else [ref]
+            for candidate in candidates:
+                search_paths = []
+                if current_dir:
+                    search_paths.append(os.path.normpath(os.path.join(current_dir, candidate)))
+                search_paths.append(os.path.normpath(candidate))
+                for base in search_paths:
+                    if base in members:
+                        return members[base]
+                    key = base.lower().lstrip("./")
+                    if key in members_lower:
+                        return members[members_lower[key]]
+            return None
+
+        def expand(src: str, current_dir: str, visited: set[str]) -> str:
+            def replacer(m: re.Match) -> str:
+                member = resolve_member(m.group(2).strip(), current_dir)
+                if member is None:
+                    return ""  # silently skip missing includes
+                norm = os.path.normpath(member.name)
+                if norm in visited:
+                    return ""
+                visited.add(norm)
+                result = expand(read_member(member), os.path.dirname(member.name), visited)
+                visited.discard(norm)
+                return result
+            return re.sub(r"\\(input|include)\{([^}]+)\}", replacer, src)
+
+        entry = _find_entry_tex(tf, members, read_member)
+        source = read_member(entry)
+        return expand(source, os.path.dirname(entry.name),
+                      visited={os.path.normpath(entry.name)})
+
+
+def _find_entry_tex(tf, members: dict, read_member) -> object:
+    """Locate the root .tex file using priority rules:
+    1. main.tex (shallowest depth)
+    2. Any .tex with \\documentclass + \\begin{document} (prefer those with \\title)
+    """
+    tex_members = [m for m in members.values() if m.name.lower().endswith(".tex")]
+
+    # Priority 1: main.tex
+    mains = [m for m in tex_members if os.path.basename(m.name).lower() == "main.tex"]
+    if mains:
+        return min(mains, key=lambda m: m.name.count("/"))
+
+    # Priority 2: .tex with full document structure
+    roots = []
+    for m in tex_members:
+        try:
+            src = read_member(m)
+        except Exception:
+            continue
+        if r"\documentclass" in src and r"\begin{document}" in src:
+            has_title = -1 if r"\title{" in src else 0
+            roots.append((has_title, m.name.count("/"), m))
+
+    if roots:
+        return min(roots)[2]
+
+    raise FileNotFoundError(f"No root .tex file found in archive")
+
+
+# ---------------------------------------------------------------------------
+# Metadata extraction
+# ---------------------------------------------------------------------------
+
+_MONTH_NAMES = [
+    "", "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
+
+
+def _extract_metadata(latex: str, source_stem: str = "") -> dict:
+    """Extract title, date, and authors from LaTeX source."""
+    # --- Title ---
+    raw_title = _extract_cmd_arg(latex, "title") or ""
+    raw_sub = _extract_cmd_arg(latex, "subtitle")
+
+    title = _strip_inline_latex(raw_title)
+    if raw_sub:
+        subtitle = _strip_inline_latex(raw_sub)
+        if subtitle:
+            title = f"{title}: {subtitle}"
+
+    # Try ICML title if standard title is empty
+    if not title or title == "Untitled":
+        icml = _extract_cmd_arg(latex, "icmltitle")
+        if icml:
+            title = _strip_inline_latex(icml)
+
+    if not title:
+        title = "Untitled"
+
+    # --- Date ---
+    date_str = ""
+    preamble_end = latex.find(r"\begin{document}")
+    preamble = latex[:preamble_end] if preamble_end != -1 else latex[:3000]
+    date_m = re.search(r"\\date\{(.+?)\}", preamble, re.DOTALL)
+    if date_m:
+        raw_date = _strip_inline_latex(date_m.group(1))
+        if raw_date and re.search(
+            r"\d|january|february|march|april|may|june|july|august|september|october|november|december",
+            raw_date, re.IGNORECASE
+        ):
+            date_str = raw_date
+
+    # Fallback: parse arXiv ID from source_stem
+    if not date_str and source_stem:
+        arxiv_m = re.search(r"(\d{2})(\d{2})\.\d{4,5}", source_stem)
+        if arxiv_m:
+            year = 2000 + int(arxiv_m.group(1))
+            month = int(arxiv_m.group(2))
+            if 1 <= month <= 12:
+                date_str = f"{_MONTH_NAMES[month]} {year}"
+
+    # --- Authors ---
+    authors = _extract_authors(latex)
+
+    return {"title": title, "date": date_str, "authors": authors}
+
+
+def _extract_authors(latex: str) -> list[str]:
+    """Extract author names from various LaTeX author formats."""
+    authors: list[str] = []
+
+    # Try \\icmlauthor{Name}{Affiliation}
+    icml = re.findall(r"\\icmlauthor\{([^}]+)\}", latex)
+    if icml:
+        authors = [_strip_inline_latex(a) for a in icml]
+
+    # Try multiple separate \\author{} commands
+    if not authors:
+        multi = re.findall(r"\\author\b[^{]*\{", latex)
+        if len(multi) > 1:
+            names = []
+            pos = 0
+            while True:
+                idx = latex.find("\\author", pos)
+                if idx == -1:
+                    break
+                end_cmd = idx + len("\\author")
+                if end_cmd < len(latex) and latex[end_cmd].isalpha():
+                    pos = end_cmd
+                    continue
+                arg = _extract_cmd_arg(latex[idx:], "author")
+                if arg:
+                    name = _strip_inline_latex(arg)
+                    if name and "@" not in name and len(name) < 80:
+                        names.append(name)
+                pos = end_cmd + 1
+            authors = names
+
+    # Try single \\author{} with \\and separators
+    if not authors:
+        raw = _extract_cmd_arg(latex, "author")
+        if raw:
+            parts = re.split(r"\\and\b|\\AND\b", raw)
+            for part in parts:
+                name = _strip_inline_latex(part)
+                if name and "@" not in name and len(name) < 80:
+                    authors.append(name)
+
+    # Deduplicate preserving order
+    seen: set[str] = set()
+    unique = []
+    for a in authors:
+        if a and a not in seen:
+            seen.add(a)
+            unique.append(a)
+    return unique
+
+
+# ---------------------------------------------------------------------------
+# Body extraction
+# ---------------------------------------------------------------------------
+
+def _extract_body(latex: str) -> str:
+    """Extract text between \\begin{document} and \\end{document}."""
+    body = re.search(r"\\begin\{document\}(.*?)\\end\{document\}", latex, re.DOTALL)
+    return body.group(1) if body else latex
+
+
+# ---------------------------------------------------------------------------
+# Non-prose stripping (figures, tables, bibliography, etc.)
+# ---------------------------------------------------------------------------
+
+def _strip_non_prose(text: str) -> str:
+    """Remove all environments and commands that don't contain readable prose."""
+
+    # Strip LaTeX comments
+    text = re.sub(r"(?<!\\)%.*$", "", text, flags=re.MULTILINE)
+
+    # Remove command/environment definitions
+    text = _drop_command_defs(text)
+
+    # Remove color commands (keep inner text of \textcolor)
+    text = re.sub(r"\\definecolor\{[^}]*\}\{[^}]*\}\{[^}]*\}", "", text)
+    text = re.sub(r"\\textcolor\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\colorbox\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\fcolorbox\{[^}]*\}\{[^}]*\}\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\color\{[^}]*\}", "", text)
+
+    # Remove \hypersetup, tikz, pgfplots
+    for cmd in ("hypersetup", "tikz", "usetikzlibrary", "pgfplotsset", "tikzset"):
+        text = _drop_braced_command(text, cmd)
+    # Remove \tikzstyle{name}=[...] definitions
+    text = re.sub(r"\\tikzstyle\{[^}]*\}\s*=\s*\[[^\]]*\]", "", text, flags=re.DOTALL)
+
+    # Remove acknowledgements section (greedy to end of section or document)
+    # Match sections whose title CONTAINS "Acknowledg" anywhere (handles compound titles)
+    text = re.sub(
+        r"\\(?:sub)*section\*?\{[^}]*Acknowledg(?:e?ments?)[^}]*\}.*?(?=\\section[^a-zA-Z]|\Z)",
+        "", text, flags=re.DOTALL | re.IGNORECASE,
+    )
+    text = re.sub(r"\\begin\{acks\}.*?\\end\{acks\}", "", text, flags=re.DOTALL)
+    # Also catch "Acknowledgments" as a paragraph header
+    text = re.sub(
+        r"\\paragraph\*?\{[^}]*Acknowledg(?:e?ments?)[^}]*\}.*?(?=\\(?:sub)*section|\\paragraph|\Z)",
+        "", text, flags=re.DOTALL | re.IGNORECASE,
+    )
+
+    # Remove appendix
+    text = re.sub(r"\\appendix\b.*", "", text, flags=re.DOTALL)
+    text = re.sub(
+        r"\\section\*?\{Appendix(?:es)?\}.*",
+        "", text, flags=re.DOTALL | re.IGNORECASE,
+    )
+
+    # Remove author/affiliation metadata from body
+    for cmd in ("icmlauthor", "icmltitle", "icmltitlerunning",
+                "icmlaffiliation", "icmlcorrespondingauthor",
+                "affiliation", "correspondingauthor", "altaffiliation",
+                "shorttitle", "shortauthors", "orcidlink", "orcid",
+                "email", "thanks", "keywords"):
+        text = _drop_braced_command(text, cmd)
+    text = _drop_braced_command(text, "author")
+    text = _drop_braced_command(text, "title")
+
+    # Strip \twocolumn[...] optional args
+    text = _strip_twocolumn(text)
+
+    # Remove figure, table, bibliography environments entirely
+    text = re.sub(
+        r"\\begin\{(figure|table|icmlauthorlist|thebibliography)[*]?\}.*?\\end\{\1[*]?\}",
+        "", text, flags=re.DOTALL,
+    )
+    # Also strip from first \bibitem onward
+    text = re.sub(r"\\bibitem\{[^}]*\}.*", "", text, flags=re.DOTALL)
+
+    # Remove display math environments (equations, align, etc.)
+    text = re.sub(
+        r"\\begin\{(equation\*?|align\*?|eqnarray\*?|multline\*?|gather\*?|"
+        r"aligned|split|subequations|dcases|cases)\}.*?\\end\{\1\}",
+        "", text, flags=re.DOTALL,
+    )
+
+    # Remove \includegraphics commands (with optional args like [width=0.29])
+    text = re.sub(r"\\includegraphics(?:\[[^\]]*\])?\{[^}]*\}", "", text)
+    # Also strip bare \includegraphics with just optional args and no braces
+    text = re.sub(r"\\includegraphics(?:\[[^\]]*\])?", "", text)
+
+    # Remove \centering, \caption (keep caption text but we'll lose it with figures)
+    text = re.sub(r"\\centering\b", "", text)
+    text = _drop_braced_command(text, "caption")
+    text = _drop_braced_command(text, "captionof")
+
+    # Remove \wrapfigure, wraptable, minipage with figure content
+    text = re.sub(r"\\begin\{(wrapfigure|wraptable)\}.*?\\end\{\1\}", "", text, flags=re.DOTALL)
+    # Remove minipage environments that contain \includegraphics (figure content)
+    text = re.sub(r"\\begin\{minipage\}.*?\\end\{minipage\}", "", text, flags=re.DOTALL)
+    # Remove tikzpicture, forest, pgfpicture environments
+    text = re.sub(r"\\begin\{(tikzpicture|forest|pgfpicture)\}.*?\\end\{\1\}", "", text, flags=re.DOTALL)
+    # Remove algorithm environments (pseudocode)
+    text = re.sub(r"\\begin\{(algorithm|algorithmic|algorithmicx|algorithm2e)\}.*?\\end\{\1\}", "", text, flags=re.DOTALL)
+    # Remove lstlisting environments (code blocks)
+    text = re.sub(r"\\begin\{(lstlisting|verbatim|minted|Verbatim)\}.*?\\end\{\1\}", "", text, flags=re.DOTALL)
+    # Remove tikz style definitions that leak (my-box=[ ... ])
+    text = re.sub(r"[a-z-]+=\[\s*(?:rectangle|draw|rounded|minimum|fill|text|align|inner|line|font)[^\]]*\]", "", text)
+
+    # Remove footnotes and marginpars
+    text = _drop_braced_command(text, "footnote")
+    text = _drop_braced_command(text, "footnotetext")
+    text = _drop_braced_command(text, "marginpar")
+
+    # Remove layout/navigation commands
+    text = re.sub(r"\\label\{[^}]*\}", "", text)
+    text = re.sub(
+        r"\\(maketitle|tableofcontents|printbibliography|bibliographystyle|"
+        r"bibliography|listoffigures|listoftables|newpage|clearpage|"
+        r"cleardoublepage|vspace|hspace|vfill|hfill|noindent|medskip|"
+        r"bigskip|smallskip|hypertarget|tightlist|pagestyle|"
+        r"thispagestyle|fancyhf|lfoot|rfoot|lhead|rhead|cfoot|chead|"
+        r"printindex|glsaddall|printglossary|"
+        r"itemsep|parsep|topsep|partopsep|labelsep|leftmargin|"
+        r"setlength|setcounter|addtocounter|"
+        r"icmlsetsymbol|icmlkeywords|printAffiliationsAndNotice|"
+        r"DeclareSectionCommand|RedeclareSectionCommand|"
+        r"columnwidth|textwidth|linewidth)[^\n]*\n?",
+        "", text,
+    )
+
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Structure → spoken markers
+# ---------------------------------------------------------------------------
+
+_ORDINALS = [
+    "", "First", "Second", "Third", "Fourth", "Fifth",
+    "Sixth", "Seventh", "Eighth", "Ninth", "Tenth",
+]
+
+
+def _ordinal(n: int) -> str:
+    if 1 <= n < len(_ORDINALS):
+        return _ORDINALS[n]
+    return f"{n}th"
+
+
+def _convert_structure_to_speech(text: str) -> str:
+    """Convert LaTeX structural commands into natural spoken text.
+
+    Unlike the old parser which uses intermediate marker tokens, we
+    directly produce the spoken output in a single pass.
+    """
+    # Abstract
+    text = re.sub(r"\\begin\{abstract\}", "\n\nAbstract.\n\n", text)
+    text = re.sub(r"\\end\{abstract\}", "\n\n", text)
+
+    # Sections — produce spoken section headers
+    text = re.sub(r"\\section\*?\{([^}]+)\}", r"\n\n\1.\n\n", text)
+    text = re.sub(r"\\subsection\*?\{([^}]+)\}", r"\n\n\1.\n\n", text)
+    text = re.sub(r"\\subsubsection\*?\{([^}]+)\}", r"\n\n\1.\n\n", text)
+    text = re.sub(r"\\paragraph\*?\{([^}]+)\}", r"\n\n\1.\n\n", text)
+
+    # Example environments
+    text = re.sub(r"\\begin\{example\}", "\n\nFor example:\n", text)
+    text = re.sub(r"\\end\{example\}", "\n\n", text)
+
+    # Convert enumerate/itemize to spoken lists
+    text = _convert_lists(text)
+
+    # Strip remaining environment tags but keep body
+    text = re.sub(r"\\begin\{[^}]+\}(\[[^\]]*\])?", "", text)
+    text = re.sub(r"\\end\{[^}]+\}", "", text)
+
+    return text
+
+
+def _convert_lists(text: str) -> str:
+    """Convert enumerate/itemize environments to spoken text.
+
+    Processes nested lists by tracking depth and type.
+    """
+    result = []
+    enum_counters: list[int] = []  # stack of counters for nested enumerates
+    in_list_type: list[str] = []   # stack: "enum" or "item"
+
+    lines = text.split("\n")
+    for line in lines:
+        stripped = line.strip()
+
+        # Check for enumerate start
+        if re.match(r"\\begin\{(enumerate|compactenum)\}", stripped):
+            enum_counters.append(0)
+            in_list_type.append("enum")
+            continue
+        if re.match(r"\\end\{(enumerate|compactenum)\}", stripped):
+            if enum_counters:
+                enum_counters.pop()
+            if in_list_type:
+                in_list_type.pop()
+            result.append("")
+            continue
+
+        # Check for itemize start
+        if re.match(r"\\begin\{(itemize|compactitem|inparaenum)\}", stripped):
+            in_list_type.append("item")
+            continue
+        if re.match(r"\\end\{(itemize|compactitem|inparaenum)\}", stripped):
+            if in_list_type:
+                in_list_type.pop()
+            result.append("")
+            continue
+
+        # Handle \item
+        item_m = re.match(r"\\item\s*(.*)", stripped)
+        if item_m:
+            content = item_m.group(1)
+            if in_list_type and in_list_type[-1] == "enum" and enum_counters:
+                enum_counters[-1] += 1
+                result.append(f"{_ordinal(enum_counters[-1])}, {content}")
+            else:
+                result.append(content)
+            continue
+
+        result.append(line)
+
+    return "\n".join(result)
+
+
+# ---------------------------------------------------------------------------
+# Citation stripping
+# ---------------------------------------------------------------------------
+
+def _strip_citations(text: str) -> str:
+    """Remove all citation commands and clean up orphaned punctuation.
+
+    Handles: \\cite, \\citep, \\citet, \\citeauthor, etc.
+    Also handles optional args: \\citep[e.g.][]{keys}
+    """
+    # Remove all \cite variants with optional args
+    text = re.sub(r"\\cite[a-z]*(?:\[[^\]]*\])*\{[^}]*\}", "", text)
+
+    # Remove cross-references but KEEP figure/section/table references text
+    # \\ref{fig:1} → "" but "Figure \\ref{fig:1}" → "Figure 1" is ideal
+    # Since we can't resolve refs, we remove the \ref command
+    text = re.sub(r"\\(eqref|pageref)\{[^}]*\}", "", text)
+
+    # For \ref, \autoref, \cref — these typically follow "Figure", "Section", etc.
+    # We want to KEEP the reference word but remove the \ref command
+    # "Figure~\\ref{fig:1}" → "Figure "
+    text = re.sub(r"\\(ref|autoref|cref|Cref|vref)\{[^}]*\}", "", text)
+
+    # Remove URLs and hyperlinks (keep link text)
+    text = re.sub(r"\\href\{[^}]*\}\{([^}]+)\}", r"\1", text)
+    text = re.sub(r"\\url\{[^}]*\}", "", text)
+
+    # Clean up orphaned reference text pointing to nothing
+    # "Figure " or "Table " at end of sentence or before comma
+    text = re.sub(r"\b(Figure|Fig\.|Table|Eq\.|Equation)\s*~?\s*(?=[,.\s]|$)", "", text, flags=re.MULTILINE)
+
+    # Clean up empty parentheses/brackets left by dropped citations
+    text = re.sub(r"\(\s*\)", "", text)
+    text = re.sub(r"\[\s*\]", "", text)
+
+    # Clean up doubled punctuation from citation removal: "text. ." → "text."
+    text = re.sub(r"([.!?])\s*\.\s", r"\1 ", text)
+
+    # Clean up spaces before punctuation left by removals
+    text = re.sub(r"\s+([.,;:!?])", r"\1", text)
+
+    # Clean up "text ," or "text  " double spaces
+    text = re.sub(r"\s{2,}", " ", text)
+
+    # Clean up trailing space before period/comma from stripped citations
+    # "text ." → "text."
+    text = re.sub(r" +([.,;:!?])", r"\1", text)
+
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Math handling
+# ---------------------------------------------------------------------------
+
+def _convert_greek_letters(text: str) -> str:
+    """Convert Greek letter commands to English names early in the pipeline.
+
+    This runs before math handling so that Greek letters inside inline
+    math ($\Phi$, $\alpha$) get properly spoken.
+    """
+    for cmd, name in GREEK_TO_ENGLISH.items():
+        text = re.sub(re.escape(cmd) + r"(?![a-zA-Z])", f" {name} ", text)
+    return text
+
+
+def _handle_math(text: str) -> str:
+    """Convert math expressions to spoken form or remove them.
+
+    Strategy:
+    - Display math (\\[...\\], $$...$$): Remove entirely (too complex to speak)
+    - Inline math ($...$): Attempt to convert to spoken form
+    - Superscripts/subscripts: Remove notation artifacts
+    """
+    # Remove display math
+    text = re.sub(r"\\\[.*?\\\]", "", text, flags=re.DOTALL)
+    text = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL)
+
+    # Convert inline math to spoken form
+    text = re.sub(r"\$([^$]+)\$", lambda m: inline_math_to_speech(m.group(1)), text)
+
+    # Remove leftover superscript/subscript with braces
+    text = re.sub(r"[\^_]\{[^}]*\}", "", text)
+    # Remove bare ^/_ followed by a single non-word-boundary char
+    text = re.sub(r"[\^_](?=[a-zA-Z0-9*])(?!\w{2})", "", text)
+
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Formatting tag stripping
+# ---------------------------------------------------------------------------
+
+def _strip_formatting_tags(text: str) -> str:
+    """Strip formatting commands but preserve the text they wrap.
+
+    Handles arbitrarily nested tags by repeatedly applying the pattern.
+    """
+    # Inline formatting — strip command, keep inner content
+    # We do multiple passes to handle nesting like \textbf{\emph{text}}
+    formatting_cmds = (
+        "textbf", "emph", "textit", "texttt", "text", "textrm", "textsf",
+        "textsc", "textsl", "textup", "textnormal",
+        "mathbf", "mathit", "mathrm", "mathsf", "mathtt", "mathcal",
+        "boldsymbol", "bm",
+        "highlight", "newterm", "term", "ul", "st",
+        "underline", "overline",
+    )
+
+    for _ in range(3):  # multiple passes for nested formatting
+        for cmd in formatting_cmds:
+            text = re.sub(rf"\\{cmd}\{{([^}}]*)\}}", r"\1", text)
+
+    # Remove \mbox, \hbox, \vbox — keep content
+    for cmd in ("mbox", "hbox", "vbox", "fbox", "makebox", "framebox", "parbox"):
+        text = re.sub(rf"\\{cmd}(?:\[[^\]]*\])?\{{([^}}]*)\}}", r"\1", text)
+
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Text normalization
+# ---------------------------------------------------------------------------
+
+def _normalize_text(text: str) -> str:
+    """Final text normalization for TTS readability."""
+
+    # Convert LaTeX accents to Unicode
+    text = latex_accents_to_unicode(text)
+
+    # Common abbreviations → spoken form
+    text = re.sub(r"e\.g\.~?", "for example, ", text)
+    text = re.sub(r"i\.e\.~?", "that is, ", text)
+    text = re.sub(r"cf\.~?", "compare ", text)
+    text = re.sub(r"et al\.(?!\.)", "et al.", text)  # keep et al. as is (TTS reads it fine)
+    text = re.sub(r"w\.r\.t\.~?", "with respect to ", text)
+    text = re.sub(r"w\.l\.o\.g\.~?", "without loss of generality, ", text)
+
+    # LaTeX punctuation
+    text = re.sub(r"\\ldots\{?\}?", "...", text)
+    text = text.replace("---", ", ")
+    text = text.replace("--", " to ")
+    text = text.replace("``", '"').replace("''", '"').replace("`", "'")
+    text = text.replace("~", " ")
+    text = text.replace("\\ ", " ")
+    text = text.replace("\\\\", " ")
+    text = text.replace("\\_", " ")
+    text = text.replace("\\#", "")
+    text = text.replace("\\$", "dollar ")
+    text = re.sub(r"\\&", " and ", text)
+    text = text.replace("\\%", " percent")
+
+    # ORCID identifiers
+    text = re.sub(r"\\orcid\{[^}]*\}", "", text)
+    text = re.sub(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]", "", text)
+
+    # Strip any remaining LaTeX commands — keep braced content
+    text = re.sub(r"\\[a-zA-Z]+\*?\{([^}]*)\}", r"\1", text)
+    # Strip remaining bare commands
+    text = re.sub(r"\\[a-zA-Z]+\*?", " ", text)
+    # Strip bare braces
+    text = re.sub(r"[{}]", "", text)
+    # Strip orphaned optional arg brackets (short ones only)
+    text = re.sub(r"\[[^\]]{0,80}\]", "", text)
+    # Strip stray backslashes
+    text = text.replace("\\", "")
+    # Strip dollar signs
+    text = text.replace("$", "")
+
+    # Clean up orphaned reference phrases pointing at nothing
+    # "as shown in." → "as shown."
+    text = re.sub(r"\b(shown|depicted|illustrated|described|defined|discussed|presented|listed|given|reported|displayed|summarized|outlined)\s+in\s*([.,;)])", r"\1\2", text)
+    text = re.sub(r"\bsee\s*\.", ".", text)
+    text = re.sub(r"\(see\s*\)", "", text)
+    text = re.sub(r"such as\s*\.", ".", text)
+    # "in , reducing" → ", reducing"  (dangling "in" before comma)
+    text = re.sub(r"\bin\s*,", ",", text)
+    text = re.sub(r"\bin\s*\.", ".", text)
+    # "at ." → "."
+    text = re.sub(r"\bat\s+\.", ".", text)
+    # "from ." → "."
+    text = re.sub(r"\bfrom\s+\.", ".", text)
+
+    # "Figure" / "Table" etc. with no number following → remove
+    text = re.sub(r"\b(Figure|Fig\.|Table|Section|Eq\.|Equation)\s*(?=[,.\s;:)]|$)", "", text, flags=re.MULTILINE)
+
+    # Clean up doubled punctuation
+    text = re.sub(r"([.!?])\s*\.", r"\1", text)
+    text = re.sub(r",\s*,", ",", text)
+    text = re.sub(r"\(\s*,", "(", text)
+    text = re.sub(r",\s*\)", ")", text)
+    text = re.sub(r"\(\s*\)", "", text)
+
+    # Clean up stray whitespace artifacts
+    text = re.sub(r" +", " ", text)
+
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Brace-aware helpers
+# ---------------------------------------------------------------------------
+
+def _skip_braced_group(text: str, pos: int) -> int:
+    """Advance past a {...} group starting at pos."""
+    if pos >= len(text) or text[pos] != "{":
+        return pos
+    depth = 1
+    i = pos + 1
+    while i < len(text) and depth:
+        depth += (text[i] == "{") - (text[i] == "}")
+        i += 1
+    return i
+
+
+def _skip_bracketed_group(text: str, pos: int) -> int:
+    """Advance past an optional [...] group starting at pos."""
+    if pos >= len(text) or text[pos] != "[":
+        return pos
+    depth = 1
+    i = pos + 1
+    while i < len(text) and depth:
+        if text[i] == "[":
+            depth += 1
+        elif text[i] == "]":
+            depth -= 1
+        i += 1
+    return i
+
+
+def _drop_braced_command(text: str, command: str) -> str:
+    """Remove all \\command{...} from text, handling nested braces."""
+    result = []
+    i = 0
+    needle = "\\" + command
+    while i < len(text):
+        if text[i:i + len(needle)] == needle and (
+            i + len(needle) >= len(text) or not text[i + len(needle)].isalpha()
+        ):
+            i += len(needle)
+            # skip optional [...] then required {...}
+            while i < len(text) and text[i] in " \t\n":
+                i += 1
+            i = _skip_bracketed_group(text, i)
+            i = _skip_braced_group(text, i)
+        else:
+            result.append(text[i])
+            i += 1
+    return "".join(result)
+
+
+def _drop_command_defs(text: str) -> str:
+    """Remove \\newcommand, \\renewcommand, \\def definitions."""
+    result = []
+    i = 0
+    prefixes = ("\\newcommand", "\\renewcommand",
+                "\\newenvironment", "\\renewenvironment",
+                "\\providecommand", "\\DeclareRobustCommand",
+                "\\DeclareMathOperator")
+    while i < len(text):
+        matched = False
+        for pfx in prefixes:
+            if text[i:i + len(pfx)] == pfx and (
+                i + len(pfx) >= len(text) or not text[i + len(pfx)].isalpha()
+            ):
+                i += len(pfx)
+                if i < len(text) and text[i] == "*":
+                    i += 1
+                i = _skip_braced_group(text, i)
+                i = _skip_bracketed_group(text, i)
+                i = _skip_bracketed_group(text, i)
+                i = _skip_braced_group(text, i)
+                i = _skip_braced_group(text, i)
+                matched = True
+                break
+        if not matched:
+            if text[i:i + 4] == "\\def" and (
+                i + 4 < len(text) and not text[i + 4].isalpha()
+            ):
+                i += 4
+                if i < len(text) and text[i] == "\\":
+                    i += 1
+                    while i < len(text) and text[i].isalpha():
+                        i += 1
+                while i < len(text) and text[i] not in "{\n":
+                    i += 1
+                i = _skip_braced_group(text, i)
+            else:
+                result.append(text[i])
+                i += 1
+    return "".join(result)
+
+
+def _strip_twocolumn(text: str) -> str:
+    """Strip \\twocolumn[...] optional args but keep body text."""
+    result = []
+    i = 0
+    while i < len(text):
+        needle = "\\twocolumn"
+        if text[i:i + len(needle)] == needle:
+            i += len(needle)
+            while i < len(text) and text[i] in " \t\n":
+                i += 1
+            i = _skip_bracketed_group(text, i)
+        else:
+            result.append(text[i])
+            i += 1
+    return "".join(result)
+
+
+def _extract_cmd_arg(text: str, command: str) -> Optional[str]:
+    """Extract the brace-balanced argument of \\command{...}.
+
+    Matches \\command exactly (not \\commandfoo), and tries all occurrences
+    in order, returning the first one that has a valid braced argument.
+    """
+    needle = f"\\{command}"
+    search_start = 0
+    while True:
+        pos = text.find(needle, search_start)
+        if pos == -1:
+            return None
+        # Ensure exact command match (not \titlebox when looking for \title)
+        end_cmd = pos + len(needle)
+        if end_cmd < len(text) and text[end_cmd].isalpha():
+            search_start = end_cmd
+            continue
+        i = end_cmd
+        while i < len(text) and text[i] in " \t\n":
+            i += 1
+        if i < len(text) and text[i] == "[":
+            i = _skip_bracketed_group(text, i)
+            while i < len(text) and text[i] in " \t\n":
+                i += 1
+        if i >= len(text) or text[i] != "{":
+            search_start = end_cmd
+            continue
+        start = i + 1
+        end = _skip_braced_group(text, i)
+        return text[start:end - 1]
+
+
+def _strip_inline_latex(text: str) -> str:
+    """Remove LaTeX markup from short inline strings (title, author, etc.)."""
+    text = re.sub(r"%.*$", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\$[^$]*\$", "", text)
+    text = re.sub(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]", "", text)
+    text = re.sub(r"\\text[a-zA-Z]+\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\emph\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\\[a-zA-Z]+\{[^}]*\}", "", text)
+    text = re.sub(r"\\[a-zA-Z]+", "", text)
+    text = latex_accents_to_unicode(text)
+    text = text.replace("``", '"').replace("''", '"').replace("`", "'")
+    text = text.replace("\\ ", " ")
+    text = re.sub(r"[{}\\]", "", text)
+    text = re.sub(r"[$^_]", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()

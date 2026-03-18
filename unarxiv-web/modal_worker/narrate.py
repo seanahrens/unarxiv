@@ -2,6 +2,12 @@
 unarXiv Modal Worker — Narrates arXiv papers and uploads MP3s to R2.
 
 Deploy: modal deploy narrate.py
+
+Parser versions:
+  - parser_v2 (default): Modular next-gen parser with better math, citation,
+    and formatting handling. Always uses arXiv-scraped metadata.
+  - tex_to_audio_legacy: Original monolithic parser, kept for A/B comparison.
+    Set PARSER_VERSION=legacy to use it.
 """
 
 import modal
@@ -17,13 +23,19 @@ image = (
     .apt_install("ffmpeg")
     .pip_install("edge-tts>=6.1.0", "mutagen>=1.47.0", "httpx>=0.27.0", "boto3>=1.34.0", "fastapi[standard]", "pymupdf>=1.24.0")
     .run_commands("python -c 'import edge_tts; print(edge_tts.__version__)'")  # verify edge-tts installed
+    # Legacy parser (kept for A/B switching via PARSER_VERSION=legacy)
+    .add_local_file("tex_to_audio_legacy.py", "/app/tex_to_audio_legacy.py")
+    # Active parser_v2 modules
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py")
+    .add_local_dir("parser_v2", "/app/parser_v2", ignore=["test_data/*", "__pycache__/*"])
 )
 
 # Secrets: set via `modal secret create texreader-secrets ...`
 # Required keys:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 #   CALLBACK_SECRET (shared with Worker's MODAL_WEBHOOK_SECRET)
+# Optional:
+#   PARSER_VERSION: "v2" (default) or "legacy"
 
 
 def send_status(callback_url: str, secret: str, arxiv_id: str, **kwargs):
@@ -76,6 +88,11 @@ def _download_from_r2(r2_key: str) -> str | None:
         return None
 
 
+def _use_legacy_parser() -> bool:
+    """Check if the legacy parser should be used instead of parser_v2."""
+    return os.environ.get("PARSER_VERSION", "v2").lower() == "legacy"
+
+
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("texreader-secrets")],
@@ -94,8 +111,17 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
     """
     import sys
     sys.path.insert(0, "/app")
+
+    # tex_to_audio is always loaded for TTS utilities (chunking, voice, tagging)
     import tex_to_audio
     import httpx
+
+    use_legacy = _use_legacy_parser()
+    parser_label = "legacy" if use_legacy else "v2"
+    print(f"Using parser: {parser_label}")
+
+    if use_legacy:
+        import tex_to_audio_legacy as legacy_parser
 
     secret = os.environ.get("CALLBACK_SECRET", "")
 
@@ -129,24 +155,46 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                     r.raise_for_status()
                     return r
 
-            def _process_as_pdf(data: bytes) -> str:
-                """Build speech text from PDF bytes."""
-                pdf_path = os.path.join(work_dir, f"{arxiv_id}.pdf")
-                with open(pdf_path, "wb") as f:
+            # ---------------------------------------------------------------
+            # parser_v2 processing functions
+            # ---------------------------------------------------------------
+
+            def _save_source(data: bytes, filename: str) -> str:
+                """Write source bytes to work_dir and return the path."""
+                path = os.path.join(work_dir, filename)
+                with open(path, "wb") as f:
                     f.write(data)
-                return tex_to_audio.build_speech_text_from_pdf(
+                return path
+
+            def _process_v2(source_path: str, pdf_path: str | None = None) -> str:
+                """Route to parser_v2 with arXiv metadata."""
+                from parser_v2 import parse_paper
+                return parse_paper(
+                    source_path=source_path,
+                    source_priority=source_priority,
+                    fallback_title=paper_title,
+                    fallback_authors=authors_list,
+                    fallback_date="",  # arXiv date inserted by worker at query time
+                    pdf_path=pdf_path,
+                )
+
+            # ---------------------------------------------------------------
+            # Legacy parser processing functions (for A/B switching)
+            # ---------------------------------------------------------------
+
+            def _process_legacy_pdf(data: bytes) -> str:
+                """Build speech text from PDF bytes using legacy parser."""
+                pdf_path = _save_source(data, f"{arxiv_id}.pdf")
+                return legacy_parser.build_speech_text_from_pdf(
                     pdf_path,
                     title=paper_title,
                     date="",
                     authors=authors_list,
                 )
 
-            def _process_as_latex(data: bytes, content_type: str) -> str:
-                """Extract LaTeX from archive/file and build speech text."""
-                src_path = os.path.join(work_dir, f"{arxiv_id}.tar.gz")
-                with open(src_path, "wb") as f:
-                    f.write(data)
-
+            def _process_legacy_latex(data: bytes, content_type: str) -> str:
+                """Extract LaTeX from archive and build speech via legacy parser."""
+                src_path = _save_source(data, f"{arxiv_id}.tar.gz")
                 os.makedirs(source_dir, exist_ok=True)
                 if "gzip" in content_type or "tar" in content_type or src_path.endswith(".gz"):
                     try:
@@ -165,49 +213,113 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 else:
                     os.rename(src_path, os.path.join(source_dir, "main.tex"))
 
-                print("Processing LaTeX...")
-                latex = tex_to_audio.read_latex_from_dir(source_dir)
-                return tex_to_audio.build_speech_text(
+                print("Processing LaTeX (legacy)...")
+                latex = legacy_parser.read_latex_from_dir(source_dir)
+                return legacy_parser.build_speech_text(
                     latex, source_stem=f"arXiv-{arxiv_id}",
                     fallback_title=paper_title,
                     fallback_authors=authors_list,
                 )
 
-            if source_priority == "pdf":
-                # --- PDF-first: download PDF directly, fall back to LaTeX ---
-                print(f"Source priority: PDF. Downloading {pdf_url}...")
-                try:
-                    resp = _download(pdf_url)
-                    print(f"Downloaded PDF: {len(resp.content)} bytes")
-                    speech = _process_as_pdf(resp.content)
-                except Exception as pdf_err:
-                    print(f"PDF failed ({pdf_err}), falling back to LaTeX source...")
+            # ---------------------------------------------------------------
+            # Source download and routing
+            # ---------------------------------------------------------------
+
+            if use_legacy:
+                # ---- Legacy parser path ----
+                if source_priority == "pdf":
+                    print(f"Source priority: PDF. Downloading {pdf_url}...")
+                    try:
+                        resp = _download(pdf_url)
+                        print(f"Downloaded PDF: {len(resp.content)} bytes")
+                        speech = _process_legacy_pdf(resp.content)
+                    except Exception as pdf_err:
+                        print(f"PDF failed ({pdf_err}), falling back to LaTeX source...")
+                        resp = _download(tex_source_url)
+                        print(f"Downloaded LaTeX source: {len(resp.content)} bytes")
+                        with open(tar_path, "wb") as f:
+                            f.write(resp.content)
+                        if tex_to_audio.is_pdf_file(tar_path):
+                            speech = _process_legacy_pdf(resp.content)
+                        else:
+                            speech = _process_legacy_latex(resp.content, resp.headers.get("content-type", ""))
+                else:
+                    print(f"Source priority: LaTeX. Downloading {tex_source_url}...")
                     resp = _download(tex_source_url)
-                    print(f"Downloaded LaTeX source: {len(resp.content)} bytes")
+                    print(f"Downloaded {len(resp.content)} bytes")
                     with open(tar_path, "wb") as f:
                         f.write(resp.content)
                     if tex_to_audio.is_pdf_file(tar_path):
-                        speech = _process_as_pdf(resp.content)
+                        print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
+                        speech = _process_legacy_pdf(resp.content)
                     else:
-                        speech = _process_as_latex(resp.content, resp.headers.get("content-type", ""))
+                        speech = _process_legacy_latex(resp.content, resp.headers.get("content-type", ""))
             else:
-                # --- LaTeX-first (default): download /src/, fall back to PDF ---
-                print(f"Source priority: LaTeX. Downloading {tex_source_url}...")
-                resp = _download(tex_source_url)
-                print(f"Downloaded {len(resp.content)} bytes")
+                # ---- parser_v2 path (default) ----
+                # Download both sources so parser_v2 can try priority then fallback
+                latex_path = None
+                pdf_local_path = None
 
-                with open(tar_path, "wb") as f:
-                    f.write(resp.content)
+                if source_priority == "pdf":
+                    # Download PDF first
+                    print(f"Source priority: PDF. Downloading {pdf_url}...")
+                    try:
+                        resp = _download(pdf_url)
+                        print(f"Downloaded PDF: {len(resp.content)} bytes")
+                        pdf_local_path = _save_source(resp.content, f"{arxiv_id}.pdf")
+                    except Exception as e:
+                        print(f"PDF download failed: {e}")
 
-                is_pdf = tex_to_audio.is_pdf_file(tar_path)
+                    # Also try to get LaTeX as fallback
+                    try:
+                        resp = _download(tex_source_url)
+                        latex_path = _save_source(resp.content, f"{arxiv_id}.tar.gz")
+                        if tex_to_audio.is_pdf_file(latex_path):
+                            # /src/ endpoint returned a PDF (no LaTeX available)
+                            if not pdf_local_path:
+                                pdf_local_path = latex_path
+                            latex_path = None
+                    except Exception:
+                        pass
 
-                if is_pdf:
-                    print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
-                    speech = _process_as_pdf(resp.content)
+                    # Route to parser_v2
+                    if pdf_local_path:
+                        speech = _process_v2(
+                            source_path=pdf_local_path,
+                            pdf_path=pdf_local_path,
+                        )
+                    elif latex_path:
+                        speech = _process_v2(source_path=latex_path)
+                    else:
+                        raise RuntimeError("Both PDF and LaTeX downloads failed")
+
                 else:
-                    speech = _process_as_latex(resp.content, resp.headers.get("content-type", ""))
+                    # LaTeX-first (default)
+                    print(f"Source priority: LaTeX. Downloading {tex_source_url}...")
+                    resp = _download(tex_source_url)
+                    print(f"Downloaded {len(resp.content)} bytes")
+                    latex_path = _save_source(resp.content, f"{arxiv_id}.tar.gz")
 
-            print(f"Generated speech text: {len(speech):,} chars")
+                    is_pdf = tex_to_audio.is_pdf_file(latex_path)
+
+                    if is_pdf:
+                        print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
+                        pdf_local_path = latex_path
+                        latex_path = None
+                    else:
+                        # Also try downloading PDF as fallback for parser_v2
+                        try:
+                            pdf_resp = _download(pdf_url)
+                            pdf_local_path = _save_source(pdf_resp.content, f"{arxiv_id}.pdf")
+                        except Exception:
+                            pass  # PDF fallback is optional
+
+                    speech = _process_v2(
+                        source_path=latex_path or pdf_local_path,
+                        pdf_path=pdf_local_path,
+                    )
+
+            print(f"Generated speech text ({parser_label}): {len(speech):,} chars")
 
             # Save transcript to R2
             transcript_path = os.path.join(work_dir, f"{arxiv_id}-transcript.txt")
@@ -267,14 +379,17 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                         progress_detail=f"eta:{remaining_secs}",
                     )
 
-        # Concatenate chunks
+        # Concatenate chunks with ffmpeg
+        # Note: paths are generated internally (not user-controlled)
         list_file = os.path.join(tmp_dir, "list.txt")
         with open(list_file, "w") as fh:
             fh.writelines(f"file '{p}'\n" for p in chunk_paths)
 
-        ret = os.system(
-            f'ffmpeg -y -f concat -safe 0 -i "{list_file}" '
-            f'-acodec copy "{output_path}" 2>/dev/null'
+        import subprocess
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
+             "-i", list_file, "-acodec", "copy", output_path],
+            capture_output=True,
         )
 
         # Cleanup temp chunks
@@ -282,20 +397,12 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             if os.path.exists(p):
                 os.remove(p)
 
-        if ret != 0:
+        if result.returncode != 0:
             raise RuntimeError("ffmpeg concatenation failed")
 
-        # Tag the MP3 — prefer pre-scraped metadata over LaTeX extraction
-        if paper_title and paper_author:
-            tag_title = paper_title
-            tag_author = paper_author
-        elif mode != "narration_only":
-            meta = tex_to_audio.extract_full_metadata(latex, f"arXiv-{arxiv_id}")
-            tag_title = meta["title"] or "Untitled"
-            tag_author = ", ".join(meta["authors"]) if meta["authors"] else "Unknown"
-        else:
-            tag_title = paper_title or "Untitled"
-            tag_author = paper_author or "Unknown"
+        # Tag the MP3 — always use arXiv-scraped metadata
+        tag_title = paper_title or "Untitled"
+        tag_author = paper_author or "Unknown"
         tex_to_audio.tag_mp3(output_path, title=tag_title, author=tag_author, arxiv_id=arxiv_id)
 
         # Get duration
