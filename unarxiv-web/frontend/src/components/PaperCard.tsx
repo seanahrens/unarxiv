@@ -54,7 +54,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
     <Link
       href={`/p?id=${paper.id}`}
       data-testid="paper-card"
-      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
+      className={`block relative border-2 border-black p-5 bs-card no-underline bg-white ${menuOpen ? "z-40" : ""}`}
     >
       {/* Actions dropdown — upper right */}
       <div
@@ -68,7 +68,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
             e.stopPropagation();
             setMenuOpen(!menuOpen);
           }}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+          className="w-7 h-7 flex items-center justify-center text-[#444] hover:text-black transition-colors"
           title="Actions"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -100,25 +100,25 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
               <span className="text-3xs text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
             </>
           ) : paper.duration_seconds ? (
-            <span className="text-3xs text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
+            <span className="text-3xs text-[#444] font-[family-name:var(--font-mono-brand)] mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}
         </div>
         {/* Card content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-1">
-            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6">
+            <h3 className="text-sm font-bold text-black leading-tight pr-6 line-clamp-2">
               {paper.title || "Untitled"}
             </h3>
             {isFailed && (
-              <span className="shrink-0 text-2xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">
+              <span className="shrink-0 text-2xs px-2 py-0.5 font-bold font-[family-name:var(--font-mono-brand)] border border-[#d32f2f] text-[#d32f2f] uppercase">
                 {STATUS_LABELS[paper.status] || paper.status}
               </span>
             )}
           </div>
 
-          <p className="text-xs text-stone-500 mb-2">
+          <p className="text-xs font-[family-name:var(--font-mono-brand)] text-[#444] mb-2">
             {paper.authors.length > 0 && (
-              <span className="text-stone-600">
+              <span className="text-[#444]">
                 {formatAuthors(paper.authors)}
               </span>
             )}
@@ -127,7 +127,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
           </p>
 
           {paper.abstract && (
-            <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+            <p className="text-xs text-[#444] line-clamp-3 leading-relaxed">
               {paper.abstract}
             </p>
           )}

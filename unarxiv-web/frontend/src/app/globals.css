@@ -100,6 +100,16 @@ input[type="range"]::-moz-range-thumb {
   animation: fly-to-player 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
+/* Broadsheet: hard drop shadows */
+.bs-card {
+  box-shadow: 4px 4px 0 #000;
+  transition: box-shadow 0.1s, border-color 0.1s;
+}
+.bs-card:hover {
+  box-shadow: 2px 2px 0 #d32f2f;
+  border-color: #d32f2f !important;
+}
+
 /* Narration progress — infinite flowing bar */
 @keyframes progress-flow {
   0% { background-position: 200% 0; }

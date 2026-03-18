@@ -26,22 +26,28 @@ export default function HomePage() {
   );
 }
 
+const SECTION_NUMBERS: Record<string, string> = {
+  "Popular": "01",
+  "Newly Added": "02",
+};
+
 function PaperSection({ title, papers }: { title: string; papers: Paper[] }) {
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(papers.length / PAGE_SIZE);
   const visible = papers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const sectionNum = SECTION_NUMBERS[title] || "00";
 
   if (papers.length === 0) return null;
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
-          {title}
-        </h2>
+      <div className="flex items-center gap-4 mb-4">
+        <span className="text-3xl font-bold font-[family-name:var(--font-mono-brand)] text-[#d32f2f]">{sectionNum}</span>
+        <h2 className="text-lg font-bold uppercase tracking-widest font-[family-name:var(--font-mono-brand)]">{title}</h2>
+        <div className="flex-1 h-[2px] bg-black" />
         <Paginator page={page} totalPages={totalPages} onChange={setPage} />
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-4 md:grid-cols-2">
         {visible.map((paper) => (
           <PaperCard key={paper.id} paper={paper} />
         ))}
@@ -138,12 +144,14 @@ function HomePageContent() {
   return (
     <div>
       {!searchQuery && (
-        <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-6 text-center">
-          <svg width="20" height="20" viewBox="0 0 640 640" fill="currentColor" className="inline-block align-middle mr-2">
-            <path d="M144 288C144 190.8 222.8 112 320 112C417.2 112 496 190.8 496 288L496 332.8C481.9 324.6 465.5 320 448 320L432 320C405.5 320 384 341.5 384 368L384 496C384 522.5 405.5 544 432 544L448 544C501 544 544 501 544 448L544 288C544 164.3 443.7 64 320 64C196.3 64 96 164.3 96 288L96 448C96 501 139 544 192 544L208 544C234.5 544 256 522.5 256 496L256 368C256 341.5 234.5 320 208 320L192 320C174.5 320 158.1 324.7 144 332.8L144 288zM144 416C144 389.5 165.5 368 192 368L208 368L208 496L192 496C165.5 496 144 474.5 144 448L144 416zM496 416L496 448C496 474.5 474.5 496 448 496L432 496L432 368L448 368C474.5 368 496 389.5 496 416z" />
-          </svg>
-          Listen to <a href="https://arxiv.org" target="_blank" rel="noopener noreferrer" className="font-bold no-underline text-stone-600 hover:text-stone-800 transition-colors">arXiv</a> Papers. Unlimited.<span className="hidden md:inline"> Free.</span>
-        </h2>
+        <div className="border-b-2 border-black pb-6 mt-4 mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight font-[family-name:var(--font-mono-brand)] leading-none mb-2">
+            LISTEN TO <a href="https://arxiv.org" target="_blank" rel="noopener noreferrer" className="text-[#d32f2f] no-underline hover:underline">ARXIV</a> PAPERS.
+          </h1>
+          <p className="text-lg font-bold uppercase tracking-widest font-[family-name:var(--font-mono-brand)] text-[#444]">
+            UNLIMITED. FREE. NARRATED.
+          </p>
+        </div>
       )}
 
       <HeaderSearchBar />
@@ -152,15 +160,15 @@ function HomePageContent() {
 
       {/* Previewing spinner */}
       {previewing && (
-        <div className="text-center py-10 text-stone-500 text-sm">
+        <div className="text-center py-10 text-[#444] text-sm font-[family-name:var(--font-mono-brand)] uppercase tracking-widest">
           Fetching paper details from arXiv...
         </div>
       )}
 
       {/* Preview error */}
       {previewError && (
-        <div className="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
-          <p className="text-sm text-red-700">{previewError}</p>
+        <div className="mb-8 bg-white border-2 border-[#d32f2f] p-4">
+          <p className="text-sm text-[#d32f2f] font-[family-name:var(--font-mono-brand)]">{previewError}</p>
         </div>
       )}
 
@@ -169,14 +177,18 @@ function HomePageContent() {
         <>
           {searchQuery ? (
             <>
-              <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
-                {`Results for "${searchQuery}"`}
-              </h2>
+              <div className="flex items-center gap-4 mt-4 mb-4">
+                <span className="text-3xl font-bold font-[family-name:var(--font-mono-brand)] text-[#d32f2f]">—</span>
+                <h2 className="text-lg font-bold uppercase tracking-widest font-[family-name:var(--font-mono-brand)]">
+                  {`Results for "${searchQuery}"`}
+                </h2>
+                <div className="flex-1 h-[2px] bg-black" />
+              </div>
               {loading ? (
-                <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+                <div className="text-center py-16 text-[#444] text-sm font-[family-name:var(--font-mono-brand)] uppercase tracking-widest">Loading...</div>
               ) : (
                 <>
-                  <div className="grid gap-3">
+                  <div className="grid gap-4 md:grid-cols-2">
                     {searchPapers.map((paper) => (
                       <PaperCard key={paper.id} paper={paper} />
                     ))}
@@ -186,7 +198,7 @@ function HomePageContent() {
               )}
             </>
           ) : loading ? (
-            <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+            <div className="text-center py-16 text-[#444] text-sm font-[family-name:var(--font-mono-brand)] uppercase tracking-widest">Loading...</div>
           ) : popularPapers.length === 0 && newPapers.length === 0 ? (
             <ArxivCta />
           ) : (
