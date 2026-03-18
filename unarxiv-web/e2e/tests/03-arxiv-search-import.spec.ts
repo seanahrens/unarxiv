@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { cleanupTestPaper, getPaper } from "../helpers/api";
-import { TEST_ARXIV_ID } from "../helpers/fixtures";
+import { TEST_ARXIV_ID, SEARCH_INPUT } from "../helpers/fixtures";
 
 // These tests MUST run in order since each depends on the previous
 test.describe.serial("ArXiv Search Import", () => {
@@ -14,7 +14,7 @@ test.describe.serial("ArXiv Search Import", () => {
 
   test("typing arXiv ID in search imports paper", async ({ page }) => {
     await page.goto("/");
-    const searchInput = page.locator('[data-testid="search-input"], input[type="text"]').first();
+    const searchInput = page.locator(SEARCH_INPUT).first();
     await searchInput.fill(TEST_ARXIV_ID);
 
     // Should detect arXiv ID and redirect to paper page

@@ -1,8 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-// Prefer data-testid selectors; fall back to legacy selectors for pre-deployment runs
-const PAPER_CARD = '[data-testid="paper-card"], a[href*="/p/"][href*="id="]';
-const SEARCH_INPUT = '[data-testid="search-input"], input[type="text"]';
+import { PAPER_CARD, SEARCH_INPUT } from "../helpers/fixtures";
 
 test.describe("Text Search", () => {
   test("searching a common term returns results", async ({ page }) => {

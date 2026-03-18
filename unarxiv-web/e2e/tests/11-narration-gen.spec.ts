@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { cleanupTestPaper, getPaper } from "../helpers/api";
-import { TEST_ARXIV_ID, API_BASE } from "../helpers/fixtures";
+import { TEST_ARXIV_ID, API_BASE, SEARCH_INPUT } from "../helpers/fixtures";
 
 // This test is slow (~2 min) and excluded from the "fast" project
 test.describe("Narration Generation", () => {
@@ -19,7 +19,7 @@ test.describe("Narration Generation", () => {
   }) => {
     // Step 1: Import the paper via search
     await page.goto("/");
-    const searchInput = page.locator('[data-testid="search-input"], input[type="text"]').first();
+    const searchInput = page.locator(SEARCH_INPUT).first();
     await searchInput.fill(TEST_ARXIV_ID);
     await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`), {
       timeout: 15000,

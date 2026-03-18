@@ -1,7 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-// Prefer data-testid selectors; fall back to href pattern for pre-deployment runs
-const PAPER_CARD = '[data-testid="paper-card"], a[href*="/p/"][href*="id="]';
+import { PAPER_CARD } from "../helpers/fixtures";
 
 test.describe("Homepage", () => {
   test("homepage loads and shows paper cards", async ({ page }) => {
