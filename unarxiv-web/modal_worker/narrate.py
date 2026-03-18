@@ -346,7 +346,9 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         # --- Generate audio (full + narration_only modes) ---
         # Strip the version tag before TTS — it's for the transcript only
         import re
-        tts_text = re.sub(r"\n\n\[parser [^\]]+\]\s*$", "", speech)
+        tts_text = re.sub(r"\n\nSoftware Version [A-Z]\d+\s*$", "", speech)
+        # Also strip legacy format if still encountered
+        tts_text = re.sub(r"\n\n\[[^\]]+\]\s*$", "", tts_text)
         chunks = tex_to_audio._split_into_chunks(tts_text)
         total_chunks = len(chunks)
         print(f"Generating audio... ({total_chunks} chunks)")
@@ -375,9 +377,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             if (i + 1) % 3 == 0 or i == total_chunks - 1:
                 done = i + 1
                 remaining_chunks = total_chunks - done
-                # Calculate ETA from measured chunk processing speed
                 elapsed = time.time() - audio_start_time
-                if done > 0 and remaining_chunks > 0:
+                if done > 0:
                     secs_per_chunk = elapsed / done
                     remaining_secs = int(secs_per_chunk * remaining_chunks)
                     send_status(
