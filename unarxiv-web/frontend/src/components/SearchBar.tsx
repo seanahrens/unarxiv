@@ -73,7 +73,7 @@ export default function SearchBar({
   return (
     <div className="w-full">
       <div className="relative">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -84,9 +84,9 @@ export default function SearchBar({
           onChange={handleChange}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          className="w-full pl-10 pr-11 py-3 text-base border border-stone-300 rounded-xl
-                     focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent
-                     bg-white shadow-sm"
+          className="w-full pl-10 pr-11 py-3 text-base border-2 border-black rounded-none
+                     focus:outline-none focus:border-[#d32f2f]
+                     bg-white font-[family-name:var(--font-mono-brand)]"
         />
         {showPlaceholder && (
           <div className="absolute inset-0 flex items-center pl-10 pr-11 pointer-events-none text-base text-stone-400">
@@ -99,8 +99,9 @@ export default function SearchBar({
           onClick={toggleDrawer}
           aria-label="How does unarXiv work?"
           className={`absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center
-                      rounded-full bg-stone-500 text-white text-sm font-bold leading-none
-                      hover:bg-stone-600 transition-colors focus:outline-none
+                      bg-black text-white text-sm font-bold leading-none
+                      hover:bg-[#d32f2f] transition-colors focus:outline-none
+                      font-[family-name:var(--font-mono-brand)]
                       ${shouldPulse ? "animate-help-pulse" : ""}`}
         >
           ?
@@ -116,13 +117,13 @@ export default function SearchBar({
         }}
       >
         <div className="pt-3">
-        <div className="bg-white border border-stone-300 rounded-xl p-6 shadow-sm">
-          <p className="font-bold text-stone-900 mb-3 text-lg text-center">How does <SiteName /> work?</p>
-          <p className="mb-4 text-sm text-stone-600 leading-relaxed">
+        <div className="bg-white border-2 border-black p-6">
+          <p className="font-bold text-black mb-3 text-sm uppercase tracking-widest font-[family-name:var(--font-mono-brand)] text-center">How does <SiteName /> work?</p>
+          <p className="mb-4 text-sm text-[#444] leading-relaxed font-[family-name:var(--font-mono-brand)]">
             We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.
             For us to have a paper, it first needs to be added.
           </p>
-          <p className="text-sm text-stone-700 font-medium leading-relaxed mb-4 border-l-2 border-stone-300 pl-3">
+          <p className="text-sm text-black font-medium leading-relaxed mb-4 border-l-2 border-black pl-3 font-[family-name:var(--font-mono-brand)]">
             To add a paper, drop the arXiv URL in the search above — or browse to an arxiv.org paper &amp; add &lsquo;un&rsquo; to the URL &amp; hit enter.
           </p>
           <ArxivCta showHeading={false} inlineBrowse staticUrl className="py-0" />
