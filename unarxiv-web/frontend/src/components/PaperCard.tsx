@@ -3,7 +3,7 @@
 import { memo, useState, useRef } from "react";
 import Link from "next/link";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear } from "@/lib/api";
+import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, parseEtaSeconds } from "@/lib/api";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -17,17 +17,10 @@ interface PaperCardProps {
 }
 
 function formatEtaShort(detail: string | null): string | null {
-  if (!detail) return null;
-  // Parse "eta:240" or legacy "30%|eta:240" format
-  const etaMatch = detail.match(/eta:(\d+)/);
-  if (etaMatch) {
-    const secs = parseInt(etaMatch[1]);
-    if (secs <= 0) return null;
-    if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
-    const mins = Math.floor(secs / 60);
-    return `~${mins}m`;
-  }
-  return null;
+  const secs = parseEtaSeconds(detail);
+  if (secs === null || secs <= 0) return null;
+  if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
+  return `~${Math.floor(secs / 60)}m`;
 }
 
 

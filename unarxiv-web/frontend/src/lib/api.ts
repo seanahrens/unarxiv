@@ -351,6 +351,13 @@ export function formatPaperYear(dateStr: string): string {
   return dateStr?.slice(0, 4) || "";
 }
 
+/** Parse "eta:240" or "30%|eta:240" progress_detail → seconds remaining, or null. */
+export function parseEtaSeconds(detail: string | null): number | null {
+  if (!detail) return null;
+  const m = detail.match(/eta:(\d+)/);
+  return m ? parseInt(m[1]) : null;
+}
+
 // Extract an arXiv ID (YYMM.NNNNN with optional vN) from anywhere in a string.
 const ARXIV_ID_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
 

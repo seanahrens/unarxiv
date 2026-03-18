@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchPaper, type Paper } from "@/lib/api";
+import { fetchPaper, parseEtaSeconds, type Paper } from "@/lib/api";
 
 /** Polling interval in ms for in-progress narrations. */
 export const POLL_INTERVAL_MS = 1500;
@@ -11,14 +11,6 @@ const STATUS_LABELS: Record<string, string> = {
   preparing: "Scripting",
   generating_audio: "Narrating",
 };
-
-/** Parse "eta:240" → { etaSeconds: 240 } */
-function parseEta(detail: string | null): { etaSeconds: number | null } {
-  if (!detail) return { etaSeconds: null };
-  const etaMatch = detail.match(/eta:(\d+)/);
-  if (etaMatch) return { etaSeconds: parseInt(etaMatch[1]) };
-  return { etaSeconds: null };
-}
 
 function formatEta(seconds: number): string {
   if (seconds <= 0) return "";
@@ -99,7 +91,7 @@ export default function NarrationProgress({
   const label = status ? STATUS_LABELS[status] : null;
   if (!label) return null;
 
-  const { etaSeconds } = parseEta(detail);
+  const etaSeconds = parseEtaSeconds(detail);
   // Show backend ETA during audio generation, or default ~60s estimate for early stages
   const DEFAULT_ETA_SECONDS = 55;
   const etaText = (etaSeconds !== null && etaSeconds > 0)
