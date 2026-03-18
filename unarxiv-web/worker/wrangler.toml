@@ -8,8 +8,7 @@ compatibility_date = "2024-12-01"
 # MODAL_WEBHOOK_SECRET
 # ADMIN_PASSWORD
 TURNSTILE_SITE_KEY = "0x4AAAAAACq7Empy5Tza8tKi"
-# TODO: Update after redeploying Modal with new app name "unarxiv-worker"
-MODAL_FUNCTION_URL = "https://seanahrens--texreader-worker-trigger-narration.modal.run"
+MODAL_FUNCTION_URL = "https://seanahrens--unarxiv-worker-trigger-narration.modal.run"
 DAILY_GLOBAL_LIMIT = "50"
 PER_IP_DAILY_LIMIT = "10"
 
