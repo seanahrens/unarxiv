@@ -11,6 +11,10 @@ TURNSTILE_SITE_KEY = "0x4AAAAAACq7Empy5Tza8tKi"
 MODAL_FUNCTION_URL = "https://seanahrens--unarxiv-worker-trigger-narration.modal.run"
 DAILY_GLOBAL_LIMIT = "50"
 PER_IP_DAILY_LIMIT = "10"
+QUEUE_BATCH_SIZE = "3"
+
+[triggers]
+crons = ["*/5 * * * *"]
 
 [[d1_databases]]
 binding = "DB"
