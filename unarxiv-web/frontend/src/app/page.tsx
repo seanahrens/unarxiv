@@ -144,13 +144,19 @@ function HomePageContent() {
   return (
     <div>
       {!searchQuery && (
-        <div className="border-b-2 border-black pb-6 mt-4 mb-6">
+        <div className="border-b-2 border-black pb-4 mt-4 mb-6">
           <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tight font-[family-name:var(--font-mono-brand)] leading-none mb-2">
             LISTEN TO <a href="https://arxiv.org" target="_blank" rel="noopener noreferrer" className="text-[#d32f2f] no-underline hover:underline">ARXIV</a> PAPERS.
           </h1>
-          <p className="text-lg font-bold uppercase tracking-widest font-[family-name:var(--font-mono-brand)] text-[#444]">
+          <p className="text-lg font-bold uppercase tracking-widest font-[family-name:var(--font-mono-brand)] text-[#444] mb-3">
             UNLIMITED. FREE. NARRATED.
           </p>
+          {/* Waveform / equalizer decoration */}
+          <svg viewBox="0 0 400 32" className="w-full h-8" fill="none" aria-hidden>
+            {[4,7,14,9,20,12,6,18,24,10,16,22,8,15,28,11,19,25,7,13,21,9,17,23,5,16,26,10,18,24,8,14,20,12,22,6,15,27,9,19,25,11,17,23,7,13,21,10,18,26,8,14,22,12,20,16,9,24,7,15,19,11,27,13,21,17,8,23,10,18,25,12,16,20,9,14,22,7,19,28].map((h, i) => (
+              <rect key={i} x={i * 5} y={(32 - h) / 2} width="3" height={h} fill="#d32f2f" opacity="0.7" />
+            ))}
+          </svg>
         </div>
       )}
 

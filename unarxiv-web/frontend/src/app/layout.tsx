@@ -46,8 +46,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${quicksand.variable} ${ibmPlexMono.variable}`}>
-      <body className="bg-white text-black min-h-screen antialiased font-[family-name:var(--font-mono-brand)]">
+    <html lang="en" className={`${quicksand.variable} ${ibmPlexMono.variable} bg-black`}>
+      <body className="bg-white text-black min-h-screen antialiased font-[family-name:var(--font-mono-brand)] flex flex-col">
         <AudioProvider>
         <PlaylistProvider>
         <Suspense>

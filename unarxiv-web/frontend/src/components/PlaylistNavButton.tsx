@@ -26,10 +26,10 @@ export default function PlaylistNavButton() {
     <button
       id="playlist-nav-button"
       onClick={handleClick}
-      className={`inline-flex items-center gap-1.5 text-sm no-underline transition-colors relative border rounded-full px-3 py-1.5 ${
+      className={`inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider font-[family-name:var(--font-mono-brand)] transition-colors relative border-2 px-3 py-1.5 ${
         isOnPlaylist
-          ? "text-stone-900 bg-stone-200 border-stone-400"
-          : "text-stone-700 hover:text-stone-900 hover:bg-stone-100 border-stone-300"
+          ? "text-white bg-black border-black"
+          : "text-black bg-white border-black hover:bg-[#d32f2f] hover:text-white hover:border-[#d32f2f]"
       }`}
     >
       <svg width="16" height="16" viewBox="0 0 576 512" fill="currentColor" aria-hidden="true">
