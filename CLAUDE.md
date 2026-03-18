@@ -11,7 +11,10 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 
 - **Frontend**: `unarxiv-web/frontend/` — Next.js on Cloudflare Pages
 - **API**: `unarxiv-web/worker/` — Cloudflare Workers (TypeScript), bindings in `wrangler.toml`
-- **Narration**: `unarxiv-web/modal_worker/` — Modal serverless Python, wraps `tex_to_audio.py`
+- **Narration**: `unarxiv-web/modal_worker/` — Modal serverless Python
+  - `parser_v2/` — active parser (default), modular LaTeX+PDF → TTS script
+  - `tex_to_audio.py` — TTS utilities (chunking, voice, tagging) shared by both parsers
+  - `tex_to_audio_legacy.py` — old monolithic parser, switchable via `PARSER_VERSION=legacy`
 
 ## Key Config
 
@@ -21,6 +24,19 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 - `wrangler` is invoked via `npx wrangler` (install with `npm install -g wrangler` or use local devDep)
 - Admin password stored as Worker secret (`ADMIN_PASSWORD`)
 - Rate limits: 10/day/IP, global daily cap configurable via `DAILY_GLOBAL_LIMIT`
+
+### Service Names (legacy vs current)
+
+Some Cloudflare/Modal resources retain the old "texreader" project name because
+renaming requires manual migration. The canonical names are:
+
+| Resource             | Actual name            | Notes                                |
+|----------------------|------------------------|--------------------------------------|
+| CF Worker API        | `unarxiv-api`          | current name                         |
+| CF Pages (frontend)  | `texreader-frontend`   | legacy — renaming requires new Pages project |
+| Modal app            | `unarxiv-worker`       | current name                         |
+| Modal secret         | `texreader-secrets`    | legacy — renaming requires recreating secret |
+| R2 bucket            | `texreader-audio`      | legacy — renaming requires data migration |
 
 ## Deployment
 

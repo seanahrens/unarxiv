@@ -30,12 +30,17 @@ image = (
     .add_local_dir("parser_v2", "/app/parser_v2", ignore=["test_data/*", "__pycache__/*"])
 )
 
-# Secrets: set via `modal secret create texreader-secrets ...`
+# Modal secret: "texreader-secrets" (legacy name — renaming requires recreating in Modal)
 # Required keys:
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 #   CALLBACK_SECRET (shared with Worker's MODAL_WEBHOOK_SECRET)
 # Optional:
 #   PARSER_VERSION: "v2" (default) or "legacy"
+#
+# Legacy naming note:
+#   Modal secret "texreader-secrets" and R2 bucket "texreader-audio" retain
+#   the old project name. Renaming either requires manual migration.
+#   The app itself is "unarxiv-worker" and the CF Worker is "unarxiv-api".
 
 
 def send_status(callback_url: str, secret: str, arxiv_id: str, **kwargs):
