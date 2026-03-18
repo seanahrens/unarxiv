@@ -84,9 +84,9 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
           key={star}
           type="button"
           data-testid={`star-${star}`}
-          className={`transition-colors ${
+          className={`transition-all ${
             star <= (hover || value) ? "text-amber-400" : "text-stone-300"
-          } hover:scale-110 transition-transform`}
+          } hover:scale-110`}
           onMouseEnter={() => setHover(star)}
           onMouseLeave={() => setHover(0)}
           onClick={() => onChange(star)}
