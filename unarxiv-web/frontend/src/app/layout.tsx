@@ -47,19 +47,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${quicksand.variable} ${ibmPlexMono.variable}`}>
-      <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
+      <body className="bg-[#0a0a0a] text-[#f0f0f0] min-h-screen antialiased signal-theme">
         <AudioProvider>
         <PlaylistProvider>
         <Suspense>
         <NavigationHistoryProvider>
         <FlyToPlaylist />
-        <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <header className="border-b border-white/5 bg-[#0a0a0a]/90 backdrop-blur-md sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center">
             {/* Left: logo — fixed width so center column stays centered */}
             <div className="flex items-center gap-3 shrink-0">
-              <Link href="/" className="flex items-center gap-1 no-underline text-stone-900 transition-colors">
+              <Link href="/" className="flex items-center gap-1 no-underline text-[#f0f0f0] transition-colors">
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="self-center">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M 11 5.414 L 11 15 C 11 15.552 11.448 16 12 16 C 12.552 16 13 15.552 13 15 L 13 5.414 L 15.293 7.707 C 15.683 8.098 16.317 8.098 16.707 7.707 C 17.098 7.317 17.098 6.683 16.707 6.293 L 12.707 2.293 C 12.317 1.902 11.683 1.902 11.293 2.293 L 7.293 6.293 C 6.902 6.683 6.902 7.317 7.293 7.707 C 7.683 8.098 8.317 8.098 8.707 7.707 L 11 5.414 Z M 4 4 C 4 4 3.447 4.077 3.253 4.398 C 2.998 4.819 3 6 3 6 L 3 17 C 3 18.657 4.343 20 6 20 L 18 20 C 19.657 20 21 18.657 21 17 L 21 6 C 21 6 21.08 4.713 20.704 4.26 C 20.544 4.068 20 4 20 4 C 19.448 4 19 4.448 19 5 L 19 17 C 19 17.552 18.552 18 18 18 L 6 18 C 5.448 18 5 17.552 5 17 L 5 5 C 5 4.448 4.552 4 4 4 Z" fill="#292524"/>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M 11 5.414 L 11 15 C 11 15.552 11.448 16 12 16 C 12.552 16 13 15.552 13 15 L 13 5.414 L 15.293 7.707 C 15.683 8.098 16.317 8.098 16.707 7.707 C 17.098 7.317 17.098 6.683 16.707 6.293 L 12.707 2.293 C 12.317 1.902 11.683 1.902 11.293 2.293 L 7.293 6.293 C 6.902 6.683 6.902 7.317 7.293 7.707 C 7.683 8.098 8.317 8.098 8.707 7.707 L 11 5.414 Z M 4 4 C 4 4 3.447 4.077 3.253 4.398 C 2.998 4.819 3 6 3 6 L 3 17 C 3 18.657 4.343 20 6 20 L 18 20 C 19.657 20 21 18.657 21 17 L 21 6 C 21 6 21.08 4.713 20.704 4.26 C 20.544 4.068 20 4 20 4 C 19.448 4 19 4.448 19 5 L 19 17 C 19 17.552 18.552 18 18 18 L 6 18 C 5.448 18 5 17.552 5 17 L 5 5 C 5 4.448 4.552 4 4 4 Z" fill="#00e5cc"/>
                 </svg>
                 <SiteName className="text-lg tracking-tight" />
               </Link>
@@ -71,15 +71,15 @@ export default function RootLayout({
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
-        <footer className="w-full py-6">
+        <footer className="w-full py-6 bg-[#0a0a0a] border-t border-white/5">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center text-center gap-1">
             <Link
               href="/about"
-              className="text-sm text-stone-500 hover:text-stone-700 transition-colors no-underline"
+              className="text-sm text-[#808080] hover:text-[#f0f0f0] transition-colors no-underline"
             >
               About
             </Link>
-            <p className="text-2xs text-stone-500 max-w-md">
+            <p className="text-2xs text-[#808080] max-w-md">
               arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
             </p>
           </div>

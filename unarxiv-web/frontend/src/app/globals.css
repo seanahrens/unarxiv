@@ -63,6 +63,27 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
+/* Signal: neon glow effects */
+.signal-card {
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.signal-card:hover {
+  box-shadow: 0 0 0 1px rgba(0,229,204,0.5), 0 4px 24px rgba(0,229,204,0.12);
+  border-color: rgba(0,229,204,0.3) !important;
+}
+.signal-hero-glow {
+  background: radial-gradient(ellipse at 50% -20%, rgba(0,229,204,0.15) 0%, transparent 60%);
+}
+/* Override range input thumb for dark theme */
+.signal-theme input[type="range"]::-webkit-slider-thumb {
+  background: #00e5cc;
+  border-color: #0a0a0a;
+}
+.signal-theme input[type="range"]::-moz-range-thumb {
+  background: #00e5cc;
+  border-color: #0a0a0a;
+}
+
 /* Equalizer bars animation for now-playing indicator */
 @keyframes eq-bar-1 {
   0%, 100% { height: 3px; }
@@ -82,9 +103,9 @@ input[type="range"]::-moz-range-thumb {
 
 /* PlayerBar flash when new paper loads */
 @keyframes player-flash {
-  0% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0.5); }
-  25% { box-shadow: 0 -4px 20px 4px rgba(120, 113, 108, 0.3); }
-  100% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(0, 229, 204, 0.5); }
+  25% { box-shadow: 0 -4px 20px 4px rgba(0, 229, 204, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 229, 204, 0); }
 }
 .animate-player-flash {
   animation: player-flash 0.8s ease-out;
