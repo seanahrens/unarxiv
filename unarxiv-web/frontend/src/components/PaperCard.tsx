@@ -54,7 +54,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
     <Link
       href={`/p?id=${paper.id}`}
       data-testid="paper-card"
-      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
+      className={`block relative rounded-2xl p-5 glass-card no-underline ${menuOpen ? "z-40" : ""}`}
     >
       {/* Actions dropdown — upper right */}
       <div
@@ -68,7 +68,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
             e.stopPropagation();
             setMenuOpen(!menuOpen);
           }}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors"
           title="Actions"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -90,7 +90,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
 
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
-        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-stone-400"}`}>
+        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-violet-400"}`}>
           {isReady ? <AudioFileIcon size={34} /> : isProcessing ? <ProcessingFileIcon size={34} /> : <FileIcon size={34} />}
           {isProcessing ? (
             <>
@@ -100,25 +100,25 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
               <span className="text-3xs text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
             </>
           ) : paper.duration_seconds ? (
-            <span className="text-3xs text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
+            <span className="text-3xs text-white/50 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}
         </div>
         {/* Card content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-1">
-            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6">
+            <h3 className="text-sm font-semibold text-white/95 line-clamp-2 leading-snug pr-6">
               {paper.title || "Untitled"}
             </h3>
             {isFailed && (
-              <span className="shrink-0 text-2xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">
+              <span className="shrink-0 text-2xs px-2 py-0.5 rounded-full font-medium bg-red-900/50 text-red-300">
                 {STATUS_LABELS[paper.status] || paper.status}
               </span>
             )}
           </div>
 
-          <p className="text-xs text-stone-500 mb-2">
+          <p className="text-xs text-white/55 mb-2">
             {paper.authors.length > 0 && (
-              <span className="text-stone-600">
+              <span className="text-white/55">
                 {formatAuthors(paper.authors)}
               </span>
             )}
@@ -127,7 +127,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
           </p>
 
           {paper.abstract && (
-            <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+            <p className="text-xs text-white/45 line-clamp-3 leading-relaxed">
               {paper.abstract}
             </p>
           )}
