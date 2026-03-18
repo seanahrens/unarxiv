@@ -34,8 +34,8 @@ import {
   getTopContributors,
   recordVisit,
   getSubmissionCount,
-  getGlobalSubmissionCount,
   recordSubmission,
+  getQueuedPapers,
   cleanup,
   getRating,
   upsertRating,
@@ -91,9 +91,10 @@ export default {
     }
   },
 
-  // Scheduled cleanup of old visits/submissions (configure in wrangler.toml)
+  // Scheduled: cleanup old data + drain narration queue
   async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
     await cleanup(env.DB);
+    await drainNarrationQueue(env);
   },
 };
 
@@ -781,35 +782,34 @@ async function handleNarratePaper(
   } catch {}
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const isAdmin = env.ADMIN_PASSWORD && request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD;
 
-  if (!isAdmin) {
-    // Rate limiting
-    const ipLimit = parseInt(env.PER_IP_DAILY_LIMIT || "10");
-    const ipCount = await getSubmissionCount(env.DB, ip);
-    if (ipCount >= ipLimit) {
-      return json(
-        { error: `Rate limit exceeded. Maximum ${ipLimit} narrations per day.` },
-        429
-      );
-    }
+  // IP-based rate limiting is intentionally disabled. Narration requests only write a DB row
+  // (status = 'queued'); the actual Modal job is dispatched by the scheduled cron. There is no
+  // meaningful per-user cost to queuing, so restricting it adds friction without protection.
+  // The submissions table and PER_IP_DAILY_LIMIT var are retained in case we re-enable later.
 
-    const globalLimit = parseInt(env.DAILY_GLOBAL_LIMIT || "50");
-    const globalCount = await getGlobalSubmissionCount(env.DB);
-    if (globalCount >= globalLimit) {
-      return json(
-        { error: "The service is at capacity for today. Please try again tomorrow." },
-        503
-      );
-    }
-  }
-
-  // Update status to queued
+  // Enqueue: mark as queued in DB. The scheduled cron drains the queue and dispatches to Modal.
   await updatePaperStatus(env.DB, id, "queued");
   await recordSubmission(env.DB, ip);
 
-  // Dispatch to Modal — tex_source_url is deterministic from the arXiv ID, no need to re-scrape
-  if (env.MODAL_FUNCTION_URL) {
+  const updated = await getPaper(env.DB, id);
+  return json(paperToResponse(updated!, baseUrl));
+}
+
+/**
+ * Drain the narration queue: pick up to QUEUE_BATCH_SIZE queued papers and dispatch
+ * each to Modal. Called by the scheduled cron — this is the only place Modal is invoked.
+ */
+async function drainNarrationQueue(env: Env): Promise<void> {
+  if (!env.MODAL_FUNCTION_URL) return;
+
+  const batchSize = parseInt(env.QUEUE_BATCH_SIZE || "3");
+  const baseUrl = "https://api.unarxiv.org";
+  const papers = await getQueuedPapers(env.DB, batchSize);
+
+  for (const paper of papers) {
+    // Mark as preparing immediately so a concurrent cron run won't double-dispatch
+    await updatePaperStatus(env.DB, paper.id, "preparing");
     try {
       await fetch(env.MODAL_FUNCTION_URL, {
         method: "POST",
@@ -818,21 +818,20 @@ async function handleNarratePaper(
           Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
         },
         body: JSON.stringify({
-          arxiv_id: id,
-          tex_source_url: arxivSrcUrl(id),
+          arxiv_id: paper.id,
+          tex_source_url: arxivSrcUrl(paper.id),
           callback_url: `${baseUrl}/api/webhooks/modal`,
           paper_title: paper.title,
           paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
-          source_priority: sourcePriority,
+          source_priority: "latex",
         }),
       });
     } catch (e: any) {
-      console.error("Failed to dispatch to Modal:", e);
+      console.error(`Failed to dispatch ${paper.id} to Modal:`, e);
+      // Revert to queued so the next cron run retries
+      await updatePaperStatus(env.DB, paper.id, "queued");
     }
   }
-
-  const updated = await getPaper(env.DB, id);
-  return json(paperToResponse(updated!, baseUrl));
 }
 
 async function handleNarrationCheck(

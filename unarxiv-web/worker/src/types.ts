@@ -7,6 +7,7 @@ export interface Env {
   MODAL_WEBHOOK_SECRET: string;
   DAILY_GLOBAL_LIMIT: string;
   PER_IP_DAILY_LIMIT: string;
+  QUEUE_BATCH_SIZE: string;
   ADMIN_PASSWORD: string;
 }
 
