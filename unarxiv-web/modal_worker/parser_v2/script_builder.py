@@ -11,7 +11,8 @@ import re
 
 # Parser version identifier — appended to every script output.
 # Increment on any parser logic change.
-PARSER_VERSION = "v2.00"
+# Format: L = LaTeX source, P = PDF source, number = version.
+PARSER_VERSION = 3
 
 
 def build_script(
@@ -31,7 +32,8 @@ def build_script(
     """
     header = _build_header(title or "Untitled", date, authors)
     footer = _build_footer(title or "Untitled", date, authors)
-    version_tag = f"\n\n[{source_type} {PARSER_VERSION}]"
+    prefix = "L" if source_type == "LaTeX" else "P"
+    version_tag = f"\n\nSoftware Version {prefix}{PARSER_VERSION}"
     return header + "\n" + body.strip() + footer + version_tag
 
 
@@ -53,10 +55,9 @@ def _build_footer(title: str, date: str, authors: list[str]) -> str:
         f"\n\n"
         f"Thanks for listening. "
         f"This has been an audio narration of {info} "
-        f"This paper was narrated by un. archive dot org, a project by Sean Ahrens. "
+        f"This paper was narrated by un. archive dot org, developed by Sean Ahrens & Claude. "
         f"un. archive.org lets you listen to archive papers for free. "
-        f"Simply visit a paper on archive, strangely spelled; A; R; X; I; V; dot org, "
-        f"then pre pend the letters; U; N; to the domain name, spelling un; archive.org"
+        f"Horribly spelled, it's U; N; A; R; X; I; V; dot org."
     )
 
 
