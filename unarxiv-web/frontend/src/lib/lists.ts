@@ -115,6 +115,13 @@ export async function fetchList(id: string): Promise<ListWithPapers> {
   return res.json();
 }
 
+export async function fetchRecentLists(limit: number = 10, offset: number = 0): Promise<ListMeta[]> {
+  const res = await fetch(`${API_BASE}/api/lists/recent?limit=${limit}&offset=${offset}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.lists;
+}
+
 export async function fetchMyLists(token: string): Promise<ListMeta[]> {
   const res = await fetch(`${API_BASE}/api/my-lists`, {
     headers: { "X-List-Token": token },

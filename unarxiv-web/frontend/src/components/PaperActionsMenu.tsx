@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, requestNarration, type Paper } from "@/lib/api";
-import { getMyListTokens } from "@/lib/lists";
 import ListSubmenu from "@/components/ListSubmenu";
 
 function useDownload() {
@@ -222,13 +221,9 @@ export default function PaperActionsMenu({
         View on arXiv
       </button>
 
-      {/* Collection submenu — only when user has collections */}
-      {Object.keys(getMyListTokens()).length > 0 && (
-        <>
-          <div className={DIVIDER} />
-          <ListSubmenu paperId={paper.id} onClose={onClose} />
-        </>
-      )}
+      {/* Collection submenu */}
+      <div className={DIVIDER} />
+      <ListSubmenu paperId={paper.id} onClose={onClose} />
     </div>
   );
 }

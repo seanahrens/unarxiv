@@ -28,12 +28,14 @@ export async function fetchPapers(params: {
   sort?: string;
   page?: number;
   per_page?: number;
+  status?: string;
 }): Promise<PaperListResponse> {
   const searchParams = new URLSearchParams();
   if (params.q) searchParams.set("q", params.q);
   if (params.sort) searchParams.set("sort", params.sort);
   if (params.page) searchParams.set("page", String(params.page));
   if (params.per_page) searchParams.set("per_page", String(params.per_page));
+  if (params.status) searchParams.set("status", params.status);
 
   const res = await fetch(`${API_BASE}/api/papers?${searchParams}`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);

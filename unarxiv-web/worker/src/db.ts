@@ -171,15 +171,16 @@ export async function getPopularPapers(
 export async function getRecentPapers(
   db: D1Database,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  status?: string
 ): Promise<Paper[]> {
+  const sql = status
+    ? `SELECT * FROM papers WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+    : `SELECT * FROM papers ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+  const bindings = status ? [status, limit, offset] : [limit, offset];
   const results = await db
-    .prepare(
-      `SELECT * FROM papers
-       ORDER BY created_at DESC
-       LIMIT ? OFFSET ?`
-    )
-    .bind(limit, offset)
+    .prepare(sql)
+    .bind(...bindings)
     .all<Paper>();
 
   return results.results;
@@ -587,12 +588,24 @@ export async function reorderListItems(
   }
 }
 
-/** Get papers in queued status, ordered by created_at ascending (oldest first). */
-export async function getQueuedPapers(db: D1Database, limit: number = 5): Promise<Paper[]> {
+/** Get recently updated public lists (non-empty, named). */
+export async function getRecentPublicLists(
+  db: D1Database,
+  limit: number = 20,
+  offset: number = 0
+): Promise<(List & { paper_count: number })[]> {
   const results = await db
-    .prepare("SELECT * FROM papers WHERE status = 'queued' ORDER BY created_at ASC LIMIT ?")
-    .bind(limit)
-    .all<Paper>();
+    .prepare(
+      `SELECT l.*, COALESCE(c.cnt, 0) as paper_count
+       FROM lists l
+       LEFT JOIN (SELECT list_id, COUNT(*) as cnt FROM list_items GROUP BY list_id) c ON c.list_id = l.id
+       WHERE COALESCE(c.cnt, 0) > 0
+         AND l.name != '' AND l.name != 'Untitled Collection'
+       ORDER BY l.updated_at DESC
+       LIMIT ? OFFSET ?`
+    )
+    .bind(limit, offset)
+    .all<List & { paper_count: number }>();
   return results.results;
 }
 
