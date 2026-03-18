@@ -51,6 +51,7 @@ export default function PaperActionButton({
   generateDisabled,
   onAddToPlaylist,
   onRemoveFromPlaylist,
+  onMenuToggle,
 }: {
   paper: Paper;
   compact?: boolean;
@@ -59,12 +60,18 @@ export default function PaperActionButton({
   generateDisabled?: boolean;
   onAddToPlaylist?: (rect?: DOMRect) => void;
   onRemoveFromPlaylist?: (rect?: DOMRect) => void;
+  onMenuToggle?: (open: boolean) => void;
 }) {
   const { state, actions } = useAudio();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
+  const toggleMenu = (open: boolean) => {
+    setMenuOpen(open);
+    onMenuToggle?.(open);
+  };
+
+  useClickOutside(menuRef, () => toggleMenu(false), menuOpen);
 
   const isComplete = paper.status === "complete";
   const isNotRequested = paper.status === "not_requested";
@@ -95,17 +102,21 @@ export default function PaperActionButton({
     ? "relative inline-flex shrink-0"
     : "relative inline-flex w-full md:w-auto shrink-0";
 
+  // Color schemes
+  const playColors = compact
+    ? "text-white bg-stone-500 border-stone-500 hover:bg-stone-600"
+    : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
+  const playChevronBorder = compact ? "border-l-stone-400" : "border-l-stone-700";
+
   if (isComplete) {
     return (
       <div className={wrapperClass} ref={menuRef}>
         <button
           onClick={handlePlay}
-          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 text-white bg-stone-900 border-stone-900 hover:bg-stone-700 rounded-l-xl rounded-r-none`}
+          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${playColors} rounded-l-xl rounded-r-none`}
         >
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
-          {compact ? (
-            <span className="hidden md:inline">{isPlaying ? "Pause" : "Play"}</span>
-          ) : (
+          {!compact && (
             <>
               <span>{isPlaying ? "Pause" : "Play"}</span>
               {paper.duration_seconds && (
@@ -116,8 +127,8 @@ export default function PaperActionButton({
         </button>
         <button
           data-testid="open-paper-actions"
-          onClick={() => setMenuOpen(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} text-white bg-stone-900 border-stone-900 hover:bg-stone-700 border-l border-l-stone-700 rounded-r-xl rounded-l-none -ml-px`}
+          onClick={() => toggleMenu(!menuOpen)}
+          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${playColors} border-l ${playChevronBorder} rounded-r-xl rounded-l-none -ml-px`}
         >
           <ChevronIcon />
         </button>
@@ -128,7 +139,7 @@ export default function PaperActionButton({
             onRate={onRate}
             onAddToPlaylist={onAddToPlaylist}
             onRemoveFromPlaylist={onRemoveFromPlaylist}
-            onClose={() => setMenuOpen(false)}
+            onClose={() => toggleMenu(false)}
             containerRef={menuRef}
           />
         )}
@@ -145,14 +156,10 @@ export default function PaperActionButton({
           className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
         >
           <SparklesIcon />
-          {compact ? (
-            <span className="hidden md:inline">Narrate</span>
-          ) : (
-            <span>Narrate</span>
-          )}
+          {!compact && <span>Narrate</span>}
         </button>
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => toggleMenu(!menuOpen)}
           className={`${btnBase} ${compact ? "px-1" : "px-1.5"} text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
         >
           <ChevronIcon />
@@ -161,7 +168,7 @@ export default function PaperActionButton({
           <PaperActionsMenu
             paper={paper}
             showPlayItem={false}
-            onClose={() => setMenuOpen(false)}
+            onClose={() => toggleMenu(false)}
             containerRef={menuRef}
           />
         )}

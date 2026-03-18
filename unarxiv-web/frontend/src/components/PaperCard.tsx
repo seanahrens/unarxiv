@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, parseEtaSeconds } from "@/lib/api";
 
@@ -37,12 +37,13 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = isInProgress(paper.status);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <Link
       href={`/p?id=${paper.id}`}
       data-testid="paper-card"
-      className="block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400"
+      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
     >
       {/* Action button — upper right */}
       {(isReady || isNotRequested) && (
@@ -55,6 +56,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
             compact
             onRate={onRate ? () => onRate(paper.id) : undefined}
             onGenerate={onGenerate ? () => onGenerate(paper.id) : undefined}
+            onMenuToggle={setMenuOpen}
           />
         </div>
       )}
@@ -77,7 +79,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
         {/* Card content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-1">
-            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6">
+            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-16">
               {paper.title || "Untitled"}
             </h3>
             {isFailed && (
