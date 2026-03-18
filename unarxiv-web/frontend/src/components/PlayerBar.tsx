@@ -551,7 +551,7 @@ export default function PlayerBar() {
                     <rect x="17.5" y="5" width="2.5" height="14" rx="0.5" />
                   </svg>
                 </button>
-                <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-100 hover:bg-stone-200 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center self-center" title="Speed">
+                <button onClick={actions.cycleSpeed} className="text-3xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-1.5 py-1 transition-colors shrink-0 min-w-[46px] text-center self-center" title="Speed">
                   {playbackRate}x
                 </button>
                 <button onClick={() => setShowShortcuts((p) => !p)} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0 flex items-center" title="Keyboard shortcuts (?)">
