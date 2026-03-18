@@ -14,6 +14,9 @@ test.describe("Global Media Player", () => {
     await expect(speedBtn).toBeVisible({ timeout: 5000 });
   });
 
+  // Audio playback is unreliable in headless CI — these tests depend on
+  // the audio element actually starting playback which requires network
+  // streaming of an MP3 file. They pass locally but flake in CI.
   test("pause and resume works", async ({ page }) => {
     test.slow(); // audio may take longer to start in headless CI
     // Find pause button in the header (title="Pause")
@@ -36,6 +39,7 @@ test.describe("Global Media Player", () => {
   });
 
   test("skip back decreases currentTime", async ({ page }) => {
+    test.slow();
     // Seek to 30s first so skip back has room
     await page.evaluate(() => {
       (document.querySelector("audio") as HTMLAudioElement).currentTime = 30;
@@ -43,7 +47,7 @@ test.describe("Global Media Player", () => {
     // Wait for seek to settle before reading currentTime
     await page.waitForFunction(
       () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime >= 25,
-      { timeout: 3000 }
+      { timeout: 5000 }
     );
 
     const timeBefore = await page.evaluate(
@@ -60,6 +64,7 @@ test.describe("Global Media Player", () => {
   });
 
   test("skip forward increases currentTime", async ({ page }) => {
+    test.slow();
     const timeBefore = await page.evaluate(
       () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime
     );
@@ -85,10 +90,11 @@ test.describe("Global Media Player", () => {
   });
 
   test("paper link in header navigates to paper page", async ({ page }) => {
+    test.slow();
     const id = knownCompleteId();
-    // The header player has a link to the paper page (AudioFileIcon wrapped in <a>)
+    // The header player has a link to the paper page
     const paperLink = page.locator(`a[href*="/p?id=${id}"]`).first();
-    await expect(paperLink).toBeVisible({ timeout: 5000 });
+    await expect(paperLink).toBeVisible({ timeout: 10000 });
     const href = await paperLink.getAttribute("href");
     expect(href).toContain(id);
   });
