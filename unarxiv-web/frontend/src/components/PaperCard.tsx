@@ -1,14 +1,13 @@
 "use client";
 
-import { memo, useState, useRef } from "react";
+import { memo } from "react";
 import Link from "next/link";
-import { useClickOutside } from "@/hooks/useClickOutside";
 import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, parseEtaSeconds } from "@/lib/api";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 import ProcessingFileIcon from "@/components/ProcessingFileIcon";
-import PaperActionsMenu from "@/components/PaperActionsMenu";
+import PaperActionButton from "@/components/PaperActionButton";
 
 interface PaperCardProps {
   paper: Paper;
@@ -38,48 +37,27 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = isInProgress(paper.status);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
 
   return (
     <Link
       href={`/p?id=${paper.id}`}
       data-testid="paper-card"
-      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
+      className="block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400"
     >
-      {/* Actions dropdown — upper right */}
-      <div
-        ref={menuRef}
-        className="absolute top-2 right-2 z-30"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      >
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setMenuOpen(!menuOpen);
-          }}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
-          title="Actions"
+      {/* Action button — upper right */}
+      {(isReady || isNotRequested) && (
+        <div
+          className="absolute top-3 right-3 z-30"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-        {menuOpen && (
-          <PaperActionsMenu
+          <PaperActionButton
             paper={paper}
-            showPlayItem
-            showGenerateItem
+            compact
             onRate={onRate ? () => onRate(paper.id) : undefined}
             onGenerate={onGenerate ? () => onGenerate(paper.id) : undefined}
-            onClose={() => setMenuOpen(false)}
-            containerRef={menuRef}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex gap-3">
         {/* File-audio icon + duration */}

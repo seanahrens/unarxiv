@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import PaperCard from "@/components/PaperCard";
@@ -13,13 +13,18 @@ import {
   fetchPaper,
   previewPaper,
   submitPaper,
+  searchArxiv,
   extractArxivId,
+  formatAuthors,
+  formatPaperYear,
   type Paper,
+  type ArxivSearchResult,
 } from "@/lib/api";
 import { fetchRecentLists, type ListMeta } from "@/lib/lists";
 
 const PAGE_SIZE = 6;
 const MAX_PAGES = 10;
+const SEARCH_PAGE_SIZE = 10;
 
 export default function HomePage() {
   return (
@@ -62,26 +67,88 @@ function CollectionsSidebar({ collections }: { collections: ListMeta[] }) {
   );
 }
 
+/** A search result card for arXiv-only results (not yet in our DB). */
+function ArxivResultCard({
+  result,
+  loading,
+  onClick,
+}: {
+  result: ArxivSearchResult;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className="block w-full text-left relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all bg-white border-stone-300 hover:border-stone-400"
+    >
+      <div className="flex gap-3">
+        <div className="shrink-0 mt-0.5 flex flex-col items-center text-stone-300">
+          {loading ? (
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin text-stone-400">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            </svg>
+          ) : (
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6 mb-1">
+            {result.title || "Untitled"}
+          </h3>
+          <p className="text-xs text-stone-500 mb-2">
+            {result.authors.length > 0 && (
+              <span className="text-stone-600">
+                {formatAuthors(result.authors)}
+              </span>
+            )}
+            {result.authors.length > 0 && result.published_date && <span> &middot; </span>}
+            {result.published_date && <span>{formatPaperYear(result.published_date)}</span>}
+          </p>
+          {result.abstract && (
+            <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+              {result.abstract}
+            </p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/** Merged search result — either a DB paper or an arXiv-only result. */
+type SearchResult =
+  | { source: "db"; paper: Paper }
+  | { source: "arxiv"; result: ArxivSearchResult };
+
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const arxivParam = searchParams.get("arxiv") || "";
   const qParam = searchParams.get("q") || "";
-  const [searchPapers, setSearchPapers] = useState<Paper[]>([]);
+  const pageParam = parseInt(searchParams.get("page") || "1");
+
+  const [mergedResults, setMergedResults] = useState<SearchResult[]>([]);
+  const [totalArxivResults, setTotalArxivResults] = useState(0);
   const [newPapers, setNewPapers] = useState<Paper[]>([]);
   const [page, setPage] = useState(0);
   const [collections, setCollections] = useState<ListMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [creatingId, setCreatingId] = useState<string | null>(null);
 
-  // ArXiv state
+  // ArXiv import state
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
 
-  // React to search params: load papers or trigger arXiv flow
+  // React to search params
   useEffect(() => {
     if (arxivParam) {
-      // ArXiv ID detected — try lookup, but also run a text search in parallel
+      // ArXiv ID detected — try lookup then create
       setPreviewError("");
       const arxivId = extractArxivId(arxivParam);
       if (!arxivId) return;
@@ -91,7 +158,7 @@ function HomePageContent() {
       setLoading(true);
 
       fetchPapers({ q: arxivParam })
-        .then((data) => setSearchPapers(data.papers))
+        .then((data) => setMergedResults(data.papers.map((p) => ({ source: "db" as const, paper: p }))))
         .catch(console.error)
         .finally(() => setLoading(false));
 
@@ -111,16 +178,41 @@ function HomePageContent() {
         }
       })();
     } else if (qParam) {
+      // Text search — parallel DB + arXiv API search
       setSearchQuery(qParam);
       setPreviewError("");
       setLoading(true);
-      fetchPapers({ q: qParam })
-        .then((data) => setSearchPapers(data.papers))
+
+      const currentPage = Math.max(1, pageParam);
+
+      // DB search only on page 1 (our DB is small; arXiv drives pagination)
+      const dbPromise = currentPage === 1
+        ? fetchPapers({ q: qParam, per_page: SEARCH_PAGE_SIZE }).catch(() => ({ papers: [] as Paper[] }))
+        : Promise.resolve({ papers: [] as Paper[] });
+
+      Promise.all([
+        dbPromise,
+        searchArxiv(qParam, currentPage, SEARCH_PAGE_SIZE).catch(() => ({ papers: [] as ArxivSearchResult[], total: 0, page: 1, per_page: SEARCH_PAGE_SIZE })),
+      ])
+        .then(([dbData, arxivData]) => {
+          const dbPaperIds = new Set(dbData.papers.map((p) => p.id));
+
+          const dbResults: SearchResult[] = dbData.papers.map((p) => ({ source: "db" as const, paper: p }));
+
+          const arxivResults: SearchResult[] = arxivData.papers
+            .filter((r) => !dbPaperIds.has(r.id))
+            .map((r) => ({ source: "arxiv" as const, result: r }));
+
+          setMergedResults([...dbResults, ...arxivResults]);
+          setTotalArxivResults(arxivData.total);
+        })
         .catch(console.error)
         .finally(() => setLoading(false));
     } else {
+      // No params — load recent papers + collections
       setSearchQuery("");
       setPreviewError("");
+      setMergedResults([]);
       setLoading(true);
       setPage(0);
 
@@ -135,10 +227,35 @@ function HomePageContent() {
         .catch(console.error)
         .finally(() => setLoading(false));
     }
-  }, [qParam, arxivParam]);
+  }, [qParam, arxivParam, pageParam]);
+
+  const currentPage = Math.max(1, pageParam);
+  const searchTotalPages = Math.max(
+    Math.ceil(mergedResults.length / SEARCH_PAGE_SIZE),
+    Math.ceil(totalArxivResults / SEARCH_PAGE_SIZE)
+  );
+  const paginatedResults = mergedResults.slice(0, SEARCH_PAGE_SIZE);
 
   const totalPages = Math.min(MAX_PAGES, Math.ceil(newPapers.length / PAGE_SIZE));
   const visiblePapers = newPapers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    const params = new URLSearchParams();
+    params.set("q", qParam);
+    params.set("page", String(newPage + 1));
+    router.push(`/?${params}`);
+  }, [qParam, router]);
+
+  const handleArxivResultClick = useCallback(async (result: ArxivSearchResult) => {
+    setCreatingId(result.id);
+    try {
+      await submitPaper(result.arxiv_url);
+      router.push(`/p?id=${result.id}`);
+    } catch (e: any) {
+      console.error("Failed to create paper:", e);
+      setCreatingId(null);
+    }
+  }, [router]);
 
   return (
     <div>
@@ -174,19 +291,49 @@ function HomePageContent() {
         <>
           {searchQuery ? (
             <>
-              <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
-                {`Results for "${searchQuery}"`}
-              </h2>
+              <div className="flex items-center justify-between mt-4 mb-4">
+                <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
+                  {`Results for "${searchQuery}"`}
+                </h2>
+                {searchTotalPages > 1 && (
+                  <Paginator
+                    page={currentPage - 1}
+                    totalPages={searchTotalPages}
+                    onChange={handlePageChange}
+                  />
+                )}
+              </div>
               {loading ? (
                 <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+              ) : paginatedResults.length === 0 ? (
+                <ArxivCta query={searchQuery} />
               ) : (
                 <>
                   <div className="grid gap-3">
-                    {searchPapers.map((paper) => (
-                      <PaperCard key={paper.id} paper={paper} />
-                    ))}
+                    {paginatedResults.map((item) => {
+                      if (item.source === "db") {
+                        return <PaperCard key={item.paper.id} paper={item.paper} />;
+                      } else {
+                        return (
+                          <ArxivResultCard
+                            key={item.result.id}
+                            result={item.result}
+                            loading={creatingId === item.result.id}
+                            onClick={() => handleArxivResultClick(item.result)}
+                          />
+                        );
+                      }
+                    })}
                   </div>
-                  <ArxivCta query={searchQuery} />
+                  {searchTotalPages > 1 && (
+                    <div className="flex justify-center mt-6">
+                      <Paginator
+                        page={currentPage - 1}
+                        totalPages={searchTotalPages}
+                        onChange={handlePageChange}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </>
