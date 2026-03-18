@@ -9,6 +9,10 @@ from __future__ import annotations
 
 import re
 
+# Parser version identifier — appended to every script output.
+# Increment on any parser logic change.
+PARSER_VERSION = "v2.00"
+
 
 def build_script(
     body: str,
@@ -23,7 +27,8 @@ def build_script(
     """
     header = _build_header(title or "Untitled", date, authors)
     footer = _build_footer(title or "Untitled", date, authors)
-    return header + "\n" + body.strip() + footer
+    version_tag = f"\n\n[parser {PARSER_VERSION}]"
+    return header + "\n" + body.strip() + footer + version_tag
 
 
 def _build_header(title: str, date: str, authors: list[str]) -> str:

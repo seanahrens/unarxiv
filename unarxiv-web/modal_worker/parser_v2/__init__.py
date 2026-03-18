@@ -18,5 +18,6 @@ Usage:
 """
 
 from parser_v2.orchestrator import parse_paper
+from parser_v2.script_builder import PARSER_VERSION
 
-__all__ = ["parse_paper"]
+__all__ = ["parse_paper", "PARSER_VERSION"]
