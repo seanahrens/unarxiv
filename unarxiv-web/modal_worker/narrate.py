@@ -346,9 +346,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         # --- Generate audio (full + narration_only modes) ---
         # Strip the version tag before TTS — it's for the transcript only
         import re
-        tts_text = re.sub(r"\n\nSoftware Version [A-Z]\d+\s*$", "", speech)
-        # Also strip legacy format if still encountered
-        tts_text = re.sub(r"\n\n\[[^\]]+\]\s*$", "", tts_text)
+        tts_text = re.sub(r"\n\n%%%%%% .+ %%%%%%\s*$", "", speech)
         chunks = tex_to_audio._split_into_chunks(tts_text)
         total_chunks = len(chunks)
         print(f"Generating audio... ({total_chunks} chunks)")
