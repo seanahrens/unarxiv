@@ -1,19 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { knownCompleteId } from "../helpers/fixtures";
+import { startAudioPlayback } from "../helpers/page-actions";
 
 test.describe("Global Media Player", () => {
-  // All tests in this suite share the same paper and need audio playing
+  // All tests in this suite need audio playing; startAudioPlayback handles navigation + play
   test.beforeEach(async ({ page }) => {
-    const id = knownCompleteId();
-    await page.goto(`/p?id=${id}`);
-    const playBtn = page.locator('button:has-text("Play")').first();
-    await expect(playBtn).toBeVisible({ timeout: 10000 });
-    await playBtn.click();
-    // Wait for audio to start
-    await page.waitForFunction(
-      () => !(document.querySelector("audio") as HTMLAudioElement)?.paused,
-      { timeout: 5000 }
-    );
+    await startAudioPlayback(page, knownCompleteId());
   });
 
   test("header player appears after starting playback", async ({ page }) => {
