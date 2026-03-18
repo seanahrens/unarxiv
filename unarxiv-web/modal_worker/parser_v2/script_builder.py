@@ -33,7 +33,7 @@ def build_script(
     header = _build_header(title or "Untitled", date, authors)
     footer = _build_footer(title or "Untitled", date, authors)
     prefix = "L" if source_type == "LaTeX" else "P"
-    version_tag = f"\n\nSoftware Version {prefix}{PARSER_VERSION}"
+    version_tag = f"\n\n%%%%%% Software Version {prefix}{PARSER_VERSION} %%%%%%"
     return header + "\n" + body.strip() + footer + version_tag
 
 
