@@ -318,8 +318,11 @@ async function handleUpdateList(request: Request, env: Env, listId: string): Pro
 
 async function handleDeleteList(request: Request, env: Env, listId: string): Promise<Response> {
   const token = request.headers.get("X-List-Token");
+  const adminPw = request.headers.get("X-Admin-Password");
+  const isAdmin = adminPw && adminPw === env.ADMIN_PASSWORD;
   const list = await getList(env.DB, listId);
-  if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
+  if (!list) return json({ error: "Not found" }, 404);
+  if (!isAdmin && list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
   await deleteList(env.DB, list.id);
   return json({ ok: true });
 }

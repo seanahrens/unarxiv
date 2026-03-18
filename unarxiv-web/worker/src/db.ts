@@ -599,7 +599,7 @@ export async function getRecentPublicLists(
       `SELECT l.*, COALESCE(c.cnt, 0) as paper_count
        FROM lists l
        LEFT JOIN (SELECT list_id, COUNT(*) as cnt FROM list_items GROUP BY list_id) c ON c.list_id = l.id
-       WHERE COALESCE(c.cnt, 0) > 0
+       WHERE COALESCE(c.cnt, 0) >= 2
          AND l.name != '' AND l.name != 'Untitled Collection'
        ORDER BY l.updated_at DESC
        LIMIT ? OFFSET ?`
