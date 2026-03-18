@@ -47,8 +47,8 @@ input[type="range"]::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #1c1917;
-  border: 2px solid white;
+  background: #8b3a3a;
+  border: 2px solid #f5ede0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
@@ -57,8 +57,8 @@ input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #1c1917;
-  border: 2px solid white;
+  background: #8b3a3a;
+  border: 2px solid #f5ede0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
@@ -98,6 +98,34 @@ input[type="range"]::-moz-range-thumb {
 }
 .animate-fly-to-player {
   animation: fly-to-player 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* Foxed: grain texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 300px 300px;
+}
+
+/* Foxed: serif font utility */
+.font-serif-display {
+  font-family: var(--font-serif, Georgia, serif);
+}
+
+/* Foxed: warm card */
+.foxed-card {
+  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 1px 4px rgba(44, 24, 16, 0.1), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.foxed-card:hover {
+  box-shadow: 0 4px 16px rgba(44, 24, 16, 0.2), inset 0 1px 0 rgba(255,255,255,0.5);
+  transform: translateY(-1px);
 }
 
 /* Narration progress — infinite flowing bar */
