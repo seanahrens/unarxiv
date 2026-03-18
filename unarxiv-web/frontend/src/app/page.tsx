@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
@@ -12,11 +12,16 @@ import {
   fetchPaper,
   previewPaper,
   submitPaper,
+  searchArxiv,
   extractArxivId,
+  formatAuthors,
+  formatPaperYear,
   type Paper,
+  type ArxivSearchResult,
 } from "@/lib/api";
 
 const PAGE_SIZE = 3;
+const SEARCH_PAGE_SIZE = 10;
 
 export default function HomePage() {
   return (
@@ -50,26 +55,89 @@ function PaperSection({ title, papers }: { title: string; papers: Paper[] }) {
   );
 }
 
+/** A search result card for arXiv-only results (not yet in our DB). */
+function ArxivResultCard({
+  result,
+  loading,
+  onClick,
+}: {
+  result: ArxivSearchResult;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className="block w-full text-left relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all bg-white border-stone-300 hover:border-stone-400"
+    >
+      <div className="flex gap-3">
+        {/* File icon placeholder */}
+        <div className="shrink-0 mt-0.5 flex flex-col items-center text-stone-300">
+          {loading ? (
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin text-stone-400">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            </svg>
+          ) : (
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          )}
+        </div>
+        {/* Card content */}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6 mb-1">
+            {result.title || "Untitled"}
+          </h3>
+          <p className="text-xs text-stone-500 mb-2">
+            {result.authors.length > 0 && (
+              <span className="text-stone-600">
+                {formatAuthors(result.authors)}
+              </span>
+            )}
+            {result.authors.length > 0 && result.published_date && <span> &middot; </span>}
+            {result.published_date && <span>{formatPaperYear(result.published_date)}</span>}
+          </p>
+          {result.abstract && (
+            <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+              {result.abstract}
+            </p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/** Merged search result — either a DB paper or an arXiv-only result. */
+type SearchResult =
+  | { source: "db"; paper: Paper }
+  | { source: "arxiv"; result: ArxivSearchResult };
+
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const arxivParam = searchParams.get("arxiv") || "";
   const qParam = searchParams.get("q") || "";
-  const [searchPapers, setSearchPapers] = useState<Paper[]>([]);
+  const pageParam = parseInt(searchParams.get("page") || "1");
+
+  const [mergedResults, setMergedResults] = useState<SearchResult[]>([]);
+  const [totalArxivResults, setTotalArxivResults] = useState(0);
   const [popularPapers, setPopularPapers] = useState<Paper[]>([]);
   const [newPapers, setNewPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [creatingId, setCreatingId] = useState<string | null>(null);
 
-  // ArXiv state
+  // ArXiv import state
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
 
-  // React to search params: load popular papers, search results, or trigger arXiv flow
+  // React to search params
   useEffect(() => {
     if (arxivParam) {
-      // ArXiv ID detected — try lookup, but also run a text search in parallel
-      // so we have results to show if the arXiv lookup fails
+      // ArXiv ID detected — try lookup then create
       setPreviewError("");
       const arxivId = extractArxivId(arxivParam);
       if (!arxivId) return;
@@ -78,21 +146,19 @@ function HomePageContent() {
       setPreviewing(true);
       setLoading(true);
 
-      // Run text search in parallel
+      // Run text search in parallel for fallback
       fetchPapers({ q: arxivParam })
-        .then((data) => setSearchPapers(data.papers))
+        .then((data) => setMergedResults(data.papers.map((p) => ({ source: "db" as const, paper: p }))))
         .catch(console.error)
         .finally(() => setLoading(false));
 
-      // Try arXiv lookup — redirect on success, fall back to search results on failure
+      // Try arXiv lookup
       (async () => {
         try {
           const dbPaper = await fetchPaper(arxivId);
           router.push(`/p?id=${dbPaper.id}`);
           return;
-        } catch {
-          // Not in DB — fetch from arXiv and create
-        }
+        } catch {}
         try {
           const meta = await previewPaper(arxivParam);
           const paper = await submitPaper(meta.arxiv_url, meta);
@@ -103,18 +169,38 @@ function HomePageContent() {
         }
       })();
     } else if (qParam) {
-      // Text search
+      // Text search — parallel DB + arXiv API search
       setSearchQuery(qParam);
       setPreviewError("");
       setLoading(true);
-      fetchPapers({ q: qParam })
-        .then((data) => setSearchPapers(data.papers))
+
+      const currentPage = Math.max(1, pageParam);
+
+      Promise.all([
+        fetchPapers({ q: qParam, per_page: 50 }).catch(() => ({ papers: [] as Paper[] })),
+        searchArxiv(qParam, currentPage, SEARCH_PAGE_SIZE).catch(() => ({ papers: [] as ArxivSearchResult[], total: 0, page: 1, per_page: SEARCH_PAGE_SIZE })),
+      ])
+        .then(([dbData, arxivData]) => {
+          const dbPaperIds = new Set(dbData.papers.map((p) => p.id));
+
+          // DB results first
+          const dbResults: SearchResult[] = dbData.papers.map((p) => ({ source: "db" as const, paper: p }));
+
+          // arXiv results, filtered to remove duplicates already in DB
+          const arxivResults: SearchResult[] = arxivData.papers
+            .filter((r) => !dbPaperIds.has(r.id))
+            .map((r) => ({ source: "arxiv" as const, result: r }));
+
+          setMergedResults([...dbResults, ...arxivResults]);
+          setTotalArxivResults(arxivData.total);
+        })
         .catch(console.error)
         .finally(() => setLoading(false));
     } else {
       // No params — load popular + recent sections
       setSearchQuery("");
       setPreviewError("");
+      setMergedResults([]);
       setLoading(true);
 
       Promise.all([
@@ -125,7 +211,6 @@ function HomePageContent() {
           const popular = popularData.papers;
           setPopularPapers(popular);
 
-          // Deduplicate: remove popular papers from recent, take first 9
           const popularIds = new Set(popular.map((p) => p.id));
           const deduped = recentData.papers.filter((p) => !popularIds.has(p.id));
           setNewPapers(deduped.slice(0, 9));
@@ -133,7 +218,34 @@ function HomePageContent() {
         .catch(console.error)
         .finally(() => setLoading(false));
     }
-  }, [qParam, arxivParam]);
+  }, [qParam, arxivParam, pageParam]);
+
+  const currentPage = Math.max(1, pageParam);
+  // Paginate merged results client-side at SEARCH_PAGE_SIZE
+  const totalPages = Math.max(
+    Math.ceil(mergedResults.length / SEARCH_PAGE_SIZE),
+    Math.ceil(totalArxivResults / SEARCH_PAGE_SIZE)
+  );
+  const paginatedResults = mergedResults.slice(0, SEARCH_PAGE_SIZE);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    // newPage is 0-indexed from Paginator
+    const params = new URLSearchParams();
+    params.set("q", qParam);
+    params.set("page", String(newPage + 1));
+    router.push(`/?${params}`);
+  }, [qParam, router]);
+
+  const handleArxivResultClick = useCallback(async (result: ArxivSearchResult) => {
+    setCreatingId(result.id);
+    try {
+      await submitPaper(result.arxiv_url);
+      router.push(`/p?id=${result.id}`);
+    } catch (e: any) {
+      console.error("Failed to create paper:", e);
+      setCreatingId(null);
+    }
+  }, [router]);
 
   return (
     <div>
@@ -169,19 +281,49 @@ function HomePageContent() {
         <>
           {searchQuery ? (
             <>
-              <h2 className="flex items-center justify-center gap-2 text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-4">
-                {`Results for "${searchQuery}"`}
-              </h2>
+              <div className="flex items-center justify-between mt-4 mb-4">
+                <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
+                  {`Results for "${searchQuery}"`}
+                </h2>
+                {totalPages > 1 && (
+                  <Paginator
+                    page={currentPage - 1}
+                    totalPages={totalPages}
+                    onChange={handlePageChange}
+                  />
+                )}
+              </div>
               {loading ? (
                 <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+              ) : paginatedResults.length === 0 ? (
+                <ArxivCta query={searchQuery} />
               ) : (
                 <>
                   <div className="grid gap-3">
-                    {searchPapers.map((paper) => (
-                      <PaperCard key={paper.id} paper={paper} />
-                    ))}
+                    {paginatedResults.map((item) => {
+                      if (item.source === "db") {
+                        return <PaperCard key={item.paper.id} paper={item.paper} />;
+                      } else {
+                        return (
+                          <ArxivResultCard
+                            key={item.result.id}
+                            result={item.result}
+                            loading={creatingId === item.result.id}
+                            onClick={() => handleArxivResultClick(item.result)}
+                          />
+                        );
+                      }
+                    })}
                   </div>
-                  <ArxivCta query={searchQuery} />
+                  {totalPages > 1 && (
+                    <div className="flex justify-center mt-6">
+                      <Paginator
+                        page={currentPage - 1}
+                        totalPages={totalPages}
+                        onChange={handlePageChange}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </>
