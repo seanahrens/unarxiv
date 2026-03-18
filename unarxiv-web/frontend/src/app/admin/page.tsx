@@ -13,9 +13,12 @@ import {
   formatDurationShort,
   isInProgress,
   parseEtaSeconds,
+  fetchAdminLists,
+  deleteListAdmin,
   type Contributor,
   type PaperWithRating,
   type AdminRating,
+  type AdminList,
 } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -240,6 +243,11 @@ export default function AdminPage() {
   // Dashboard state
   const [contributors, setContributors] = useState<Contributor[]>([]);
 
+  // Collections state
+  const [collections, setCollections] = useState<AdminList[]>([]);
+  const [deletingLists, setDeletingLists] = useState<Set<string>>(new Set());
+  const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
+
   // Curate state
   const [papers, setPapers] = useState<PaperWithRating[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,6 +329,10 @@ export default function AdminPage() {
         setContributors(data.contributors);
         setYourPaperIds(new Set(data.your_paper_ids));
       })
+      .catch(console.error);
+
+    fetchAdminLists(pw)
+      .then(setCollections)
       .catch(console.error);
 
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -771,6 +783,103 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Collections table */}
+      {collections.length > 0 && (
+        <>
+          <div className="flex items-center justify-between mt-8 mb-3">
+            <h2 className="text-xs font-medium text-stone-400 uppercase tracking-wider">
+              Collections ({collections.length})
+            </h2>
+            {selectedLists.size > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-stone-600 font-medium">{selectedLists.size} selected</span>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Delete ${selectedLists.size} collection${selectedLists.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+                    const ids = [...selectedLists];
+                    setDeletingLists(new Set(ids));
+                    const failed: string[] = [];
+                    for (const id of ids) {
+                      try { await deleteListAdmin(id, password); setCollections((prev) => prev.filter((c) => c.id !== id)); }
+                      catch { failed.push(id); }
+                    }
+                    setSelectedLists(new Set(failed));
+                    setDeletingLists(new Set());
+                    if (failed.length > 0) alert(`Failed to delete ${failed.length} collection(s)`);
+                  }}
+                  disabled={deletingLists.size > 0}
+                  className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-40"
+                >
+                  {deletingLists.size > 0 ? "Deleting..." : "Delete"}
+                </button>
+                <button onClick={() => setSelectedLists(new Set())} className="px-2.5 py-1 text-xs text-stone-400 hover:text-stone-600 transition-colors">
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="bg-white border border-stone-200 rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-stone-100 text-left text-xs text-stone-400">
+                  <th className="px-3 py-2 w-8">
+                    <input
+                      type="checkbox"
+                      checked={collections.length > 0 && collections.every((c) => selectedLists.has(c.id))}
+                      onChange={() => setSelectedLists((prev) =>
+                        prev.size === collections.length ? new Set() : new Set(collections.map((c) => c.id))
+                      )}
+                      className="w-3.5 h-3.5 accent-stone-800"
+                    />
+                  </th>
+                  <th className="px-2 py-2">ID</th>
+                  <th className="px-2 py-2">Name</th>
+                  <th className="px-2 py-2">Description</th>
+                  <th className="px-2 py-2 text-right">Papers</th>
+                  <th className="px-2 py-2 text-right">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {collections.map((col) => (
+                  <tr
+                    key={col.id}
+                    className={`border-b border-stone-50 hover:bg-stone-50 transition-colors ${
+                      selectedLists.has(col.id) ? "bg-stone-50" : ""
+                    } ${deletingLists.has(col.id) ? "opacity-50" : ""}`}
+                  >
+                    <td className="px-3 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedLists.has(col.id)}
+                        onChange={() => setSelectedLists((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(col.id)) next.delete(col.id); else next.add(col.id);
+                          return next;
+                        })}
+                        className="w-3.5 h-3.5 accent-stone-800"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <a href={`/l?id=${col.id}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-blue-600 hover:text-blue-800 no-underline">
+                        {col.id}
+                      </a>
+                    </td>
+                    <td className="px-2 py-1.5 text-stone-800 max-w-[200px] truncate">{col.name || "Untitled"}</td>
+                    <td className="px-2 py-1.5 text-stone-500 max-w-[200px] truncate text-xs">{col.description || "—"}</td>
+                    <td className="px-2 py-1.5 text-right font-mono text-stone-700">{col.paper_count}</td>
+                    <td className="px-2 py-1.5 text-right">
+                      <span className="text-xs text-stone-400 font-mono" title={col.created_at ? new Date(col.created_at).toLocaleString() : ""}>
+                        {col.created_at ? timeAgo(col.created_at) : ""}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* External dashboards */}

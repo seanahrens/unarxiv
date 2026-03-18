@@ -312,6 +312,33 @@ export async function fetchPapersForCurate(password: string): Promise<PaperWithR
   return data.papers;
 }
 
+export interface AdminList {
+  id: string;
+  name: string;
+  description: string;
+  owner_token: string;
+  creator_ip: string | null;
+  created_at: string;
+  paper_count: number;
+}
+
+export async function fetchAdminLists(password: string): Promise<AdminList[]> {
+  const res = await fetch(`${API_BASE}/api/admin/lists`, {
+    headers: { "X-Admin-Password": password },
+  });
+  if (!res.ok) throw new Error("Failed to fetch lists");
+  const data = await res.json();
+  return data.lists;
+}
+
+export async function deleteListAdmin(listId: string, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/lists/${listId}`, {
+    method: "DELETE",
+    headers: { "X-Admin-Password": password },
+  });
+  if (!res.ok) throw new Error("Failed to delete list");
+}
+
 export function audioUrl(id: string): string {
   return `${API_BASE}/api/papers/${id}/audio`;
 }
