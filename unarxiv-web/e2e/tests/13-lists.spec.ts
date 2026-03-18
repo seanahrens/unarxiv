@@ -85,7 +85,7 @@ test.describe.serial("Lists API", () => {
     const papersRes = await fetch(`${API_BASE}/api/papers?sort=popular`);
     const papersData = await papersRes.json();
     const secondPaper = papersData.papers.find((p: any) => p.id !== paperId && p.status === "complete");
-    if (!secondPaper) return; // skip if only one paper
+    test.skip(!secondPaper, "only one complete paper in production — cannot test reorder");
 
     await fetch(`${API_BASE}/api/lists/${testListId}/items`, {
       method: "POST",
