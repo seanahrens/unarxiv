@@ -48,19 +48,13 @@ function durationLabel(paper: PaperWithRating): string | null {
 }
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${Math.max(1, mins)}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `${weeks}w`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo`;
-  const years = Math.floor(days / 365);
-  return `${years}y`;
+  const diff = Math.max(0, Date.now() - new Date(dateStr).getTime());
+  const days = Math.floor(diff / 86400000);
+  if (days >= 365) return `${Math.floor(days / 365)}y`;
+  if (days > 0) return `${days}d`;
+  const hrs = Math.floor(diff / 3600000);
+  if (hrs > 0) return `${hrs}h`;
+  return `${Math.max(1, Math.floor(diff / 60000))}m`;
 }
 
 function ratingPillClasses(avg: number | null): string {
