@@ -308,7 +308,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     setNarrationLoading(true);
     setNarrationError("");
     // Optimistically show progress bar immediately (before any network calls)
-    setPaper({ ...paper, status: "queued" as any });
+    setPaper({ ...paper, status: "queued" });
     try {
       const updated = await requestNarration(paper.id);
       setPaper(updated);
