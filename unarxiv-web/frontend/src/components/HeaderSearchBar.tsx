@@ -26,7 +26,7 @@ export default function HeaderSearchBar() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto px-0 md:px-6 py-3 mb-px">
+    <div className="w-full py-3 mb-px">
       <SearchBar onSearch={handleSearch} onArxivSubmit={handleArxivSubmit} hideHint />
     </div>
   );
