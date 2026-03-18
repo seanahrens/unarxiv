@@ -1,3 +1,37 @@
+# E2E Test Review — 2026-03-18
+
+**Reviewed:** `unarxiv-web/e2e/` (14 spec files, 50 tests)
+**Branch:** `test/e2e-review-2026-03-18`
+
+## Issues Found and Fixed
+
+### 1. Duplicated selector constants
+`PAPER_CARD` and `SEARCH_INPUT` selector fallback strings were duplicated in
+`04-homepage.spec.ts`, `06-text-search.spec.ts`, `03-arxiv-search-import.spec.ts`,
+and `11-narration-gen.spec.ts`. Moved to `helpers/fixtures.ts` as exported constants.
+
+### 2. Dead `startAudioPlayback` helper
+`helpers/page-actions.ts` exported `startAudioPlayback` but it was never imported.
+`05-audio-playback.spec.ts` and `07-media-player.spec.ts` each manually duplicated
+the identical navigate+click+waitForFunction startup sequence. Both files now call
+`startAudioPlayback`, removing three duplicated blocks.
+
+### 3. Silent `return` in reorder test
+`13-lists.spec.ts` "reorder list items" used `if (!secondPaper) return;` which passes
+silently with zero assertions. Replaced with `test.skip()` for proper Playwright
+reporting.
+
+### 4. `cleanupTestPaper` duplicated the DELETE endpoint URL
+`cleanupTestPaper` and `adminDeletePaper` both called the same endpoint separately.
+Refactored `cleanupTestPaper` to delegate to `adminDeletePaper`.
+
+## Verification
+
+- `npx playwright test --list` — 50 tests discovered, no compile errors
+- `npm run build` in `unarxiv-web/frontend` — clean build, all 9 routes generated
+
+---
+
 # E2E Test Review — 2026-03-17
 
 ## Coverage Map
