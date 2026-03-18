@@ -103,17 +103,18 @@ export default function PaperActionButton({
     : "relative inline-flex w-full md:w-auto shrink-0";
 
   // Color schemes
-  const playColors = compact
-    ? "text-white bg-stone-500 border-stone-500 hover:bg-stone-600"
-    : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
-  const playChevronBorder = compact ? "border-l-stone-400" : "border-l-stone-700";
+  const compactColors = "text-stone-700 bg-white border-stone-300 hover:bg-stone-100 hover:text-stone-900";
+  const compactChevronBorder = "border-l-stone-300";
 
   if (isComplete) {
+    const colors = compact ? compactColors : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
+    const chevronBorder = compact ? compactChevronBorder : "border-l-stone-700";
+
     return (
       <div className={wrapperClass} ref={menuRef}>
         <button
           onClick={handlePlay}
-          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${playColors} rounded-l-xl rounded-r-none`}
+          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
         >
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
           {!compact && (
@@ -128,7 +129,7 @@ export default function PaperActionButton({
         <button
           data-testid="open-paper-actions"
           onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${playColors} border-l ${playChevronBorder} rounded-r-xl rounded-l-none -ml-px`}
+          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
         >
           <ChevronIcon />
         </button>
@@ -153,14 +154,14 @@ export default function PaperActionButton({
         <button
           onClick={onGenerate}
           disabled={generateDisabled}
-          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
+          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${compact ? compactColors : "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700"} disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
         >
           <SparklesIcon />
           {!compact && <span>Narrate</span>}
         </button>
         <button
           onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700 border-l border-l-emerald-800 rounded-r-xl rounded-l-none -ml-px`}
+          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${compact ? compactColors : "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700"} border-l ${compact ? compactChevronBorder : "border-l-emerald-800"} rounded-r-xl rounded-l-none -ml-px`}
         >
           <ChevronIcon />
         </button>

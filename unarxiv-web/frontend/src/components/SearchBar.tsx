@@ -90,8 +90,7 @@ export default function SearchBar({
         />
         {showPlaceholder && (
           <div className="absolute inset-0 flex items-center pl-10 pr-11 pointer-events-none text-base text-stone-400">
-            <span className="hidden sm:inline">Paste arXiv URL or ID to Get Narration</span>
-            <span className="sm:hidden">Paste arXiv URL or ID</span>
+            <span className="truncate">Search by arXiv ID, URL, Title, Author, or Abstract</span>
           </div>
         )}
         {/* Help icon */}

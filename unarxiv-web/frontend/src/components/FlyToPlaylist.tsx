@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 
+/** Find the first visible element with the given ID (handles duplicate IDs across collapsed/expanded views). */
+function findVisibleElement(id: string): HTMLElement | null {
+  const els = document.querySelectorAll<HTMLElement>(`#${id}`);
+  for (const el of els) {
+    if (el.offsetParent !== null || el.getClientRects().length > 0) return el;
+  }
+  return els[0] || null;
+}
+
 export default function FlyToPlaylist() {
   const { animatingPaperId, animationSourceRect, removingPaperId, removeAnimationTargetRect } = usePlaylist();
   const [style, setStyle] = useState<React.CSSProperties>({ display: "none" });
@@ -15,7 +24,7 @@ export default function FlyToPlaylist() {
       return;
     }
 
-    const target = document.getElementById("player-playlist-button") || document.getElementById("playlist-nav-button");
+    const target = findVisibleElement("player-playlist-button") || document.getElementById("playlist-nav-button");
     if (!target) {
       setStyle({ display: "none" });
       return;
@@ -69,7 +78,7 @@ export default function FlyToPlaylist() {
       return;
     }
 
-    const source = document.getElementById("player-playlist-button") || document.getElementById("playlist-nav-button");
+    const source = findVisibleElement("player-playlist-button") || document.getElementById("playlist-nav-button");
     if (!source) {
       setRemoveStyle({ display: "none" });
       return;
