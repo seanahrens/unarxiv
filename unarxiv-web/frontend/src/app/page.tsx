@@ -176,14 +176,19 @@ function HomePageContent() {
 
       const currentPage = Math.max(1, pageParam);
 
+      // DB search only on page 1 (our DB is small; arXiv drives pagination)
+      const dbPromise = currentPage === 1
+        ? fetchPapers({ q: qParam, per_page: SEARCH_PAGE_SIZE }).catch(() => ({ papers: [] as Paper[] }))
+        : Promise.resolve({ papers: [] as Paper[] });
+
       Promise.all([
-        fetchPapers({ q: qParam, per_page: 50 }).catch(() => ({ papers: [] as Paper[] })),
+        dbPromise,
         searchArxiv(qParam, currentPage, SEARCH_PAGE_SIZE).catch(() => ({ papers: [] as ArxivSearchResult[], total: 0, page: 1, per_page: SEARCH_PAGE_SIZE })),
       ])
         .then(([dbData, arxivData]) => {
           const dbPaperIds = new Set(dbData.papers.map((p) => p.id));
 
-          // DB results first
+          // DB results first (only on page 1)
           const dbResults: SearchResult[] = dbData.papers.map((p) => ({ source: "db" as const, paper: p }));
 
           // arXiv results, filtered to remove duplicates already in DB
