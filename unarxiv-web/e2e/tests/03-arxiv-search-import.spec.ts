@@ -44,7 +44,7 @@ test.describe.serial("ArXiv Search Import", () => {
   });
 
   test("My Additions section is visible on playlist page", async ({ page }) => {
-    await page.goto("/playlist");
+    await page.goto("/my-papers");
 
     // "Papers I Added" section should always be visible
     await expect(page.locator("h2:has-text('Papers I Added')")).toBeVisible({

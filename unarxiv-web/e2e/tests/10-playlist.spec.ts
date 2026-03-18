@@ -23,7 +23,7 @@ test.describe("Playlist", () => {
     await addBtn.click();
 
     // Navigate to playlist page
-    await page.goto("/playlist");
+    await page.goto("/my-papers");
     await expect(page.locator("h1:has-text('My Playlist')")).toBeVisible({
       timeout: 5000,
     });
@@ -48,7 +48,7 @@ test.describe("Playlist", () => {
       id
     );
 
-    await page.goto("/playlist");
+    await page.goto("/my-papers");
 
     // Wait for the paper link to appear (data loads async)
     // Next.js adds trailing slash: /p/?id=...

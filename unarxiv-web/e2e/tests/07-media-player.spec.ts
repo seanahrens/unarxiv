@@ -15,9 +15,10 @@ test.describe("Global Media Player", () => {
   });
 
   test("pause and resume works", async ({ page }) => {
+    test.slow(); // audio may take longer to start in headless CI
     // Find pause button in the header (title="Pause")
     const pauseBtn = page.locator('button[title="Pause"]').first();
-    await expect(pauseBtn).toBeVisible();
+    await expect(pauseBtn).toBeVisible({ timeout: 10000 });
     await pauseBtn.click();
 
     const paused = await page.evaluate(
@@ -49,7 +50,7 @@ test.describe("Global Media Player", () => {
       () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime
     );
 
-    const skipBack = page.locator('button[title="Back 15s"]').first();
+    const skipBack = page.locator('button[title="Back 10s"]').first();
     await skipBack.click();
 
     const timeAfter = await page.evaluate(
@@ -63,7 +64,7 @@ test.describe("Global Media Player", () => {
       () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime
     );
 
-    const skipFwd = page.locator('button[title="Forward 15s"]').first();
+    const skipFwd = page.locator('button[title="Forward 10s"]').first();
     await skipFwd.click();
 
     const timeAfter = await page.evaluate(
@@ -85,8 +86,8 @@ test.describe("Global Media Player", () => {
 
   test("paper link in header navigates to paper page", async ({ page }) => {
     const id = knownCompleteId();
-    // The header player has a link to the paper with title "View paper"
-    const paperLink = page.locator('a[title="View paper"]').first();
+    // The header player has a link to the paper page (AudioFileIcon wrapped in <a>)
+    const paperLink = page.locator(`a[href*="/p?id=${id}"]`).first();
     await expect(paperLink).toBeVisible({ timeout: 5000 });
     const href = await paperLink.getAttribute("href");
     expect(href).toContain(id);

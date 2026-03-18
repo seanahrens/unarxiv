@@ -140,7 +140,7 @@ test.describe.serial("Lists API", () => {
 
 test.describe("Lists Frontend", () => {
   test("collections section visible on playlist page", async ({ page }) => {
-    await page.goto("/playlist");
+    await page.goto("/my-papers");
     await expect(page.locator("h2:has-text('My Collections')")).toBeVisible({ timeout: 5000 });
     await expect(page.locator('button[title="Create new collection"]')).toBeVisible();
   });
@@ -155,7 +155,7 @@ test.describe("Lists Frontend", () => {
     const { list, owner_token } = await res.json();
 
     // Store token in localStorage so the page recognizes ownership
-    await page.goto("/playlist");
+    await page.goto("/my-papers");
     await page.evaluate(
       ({ id, token, name }) => {
         const tokens = JSON.parse(localStorage.getItem("list_tokens") || "{}");
