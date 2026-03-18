@@ -12,7 +12,7 @@ test.describe("ArXiv URL Routes", () => {
     await page.goto(`/abs/${TEST_ARXIV_ID}`, {
       waitUntil: "domcontentloaded",
     });
-    await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`));
+    await expect(page).toHaveURL(new RegExp(`/p\\??id=${TEST_ARXIV_ID}`));
   });
 
   test("/html/ route redirects to paper page", async ({ page }) => {
@@ -20,14 +20,14 @@ test.describe("ArXiv URL Routes", () => {
       waitUntil: "domcontentloaded",
     });
     // Should redirect through /abs/ to /p?id=
-    await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`));
+    await expect(page).toHaveURL(new RegExp(`/p\\??id=${TEST_ARXIV_ID}`));
   });
 
   test("/pdf/ route redirects to paper page", async ({ page }) => {
     await page.goto(`/pdf/${TEST_ARXIV_ID}`, {
       waitUntil: "domcontentloaded",
     });
-    await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`));
+    await expect(page).toHaveURL(new RegExp(`/p\\??id=${TEST_ARXIV_ID}`));
   });
 
   test("paper page renders with title after redirect", async ({ page }) => {

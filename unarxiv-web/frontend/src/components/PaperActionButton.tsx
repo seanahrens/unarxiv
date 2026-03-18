@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useAudio } from "@/contexts/AudioContext";
 import { audioUrl, formatDuration, isInProgress, parseEtaSeconds, type Paper } from "@/lib/api";
@@ -38,7 +38,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function formatEtaShort(seconds: number): string {
-  if (seconds <= 0) return "";
+  if (seconds <= 0) return "~5s";
+  if (seconds < 10) return "~5s";
   if (seconds < 60) return `~${Math.round(seconds / 5) * 5}s`;
   const mins = Math.floor(seconds / 60);
   const secs = Math.round((seconds % 60) / 10) * 10;
@@ -86,6 +87,32 @@ export default function PaperActionButton({
   const isComplete = paper.status === "complete";
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = isInProgress(paper.status);
+
+  // Client-side ETA countdown for processing state
+  const [displayEta, setDisplayEta] = useState<number>(55);
+  const anchorRef = useRef<{ eta: number; time: number } | null>(null);
+
+  useEffect(() => {
+    if (!isProcessing) { anchorRef.current = null; return; }
+    const serverEta = etaSeconds ?? parseEtaSeconds(paper.progress_detail);
+    if (serverEta !== null && serverEta > 0) {
+      anchorRef.current = { eta: serverEta, time: Date.now() };
+      setDisplayEta(serverEta);
+    } else if (!anchorRef.current) {
+      anchorRef.current = { eta: 55, time: Date.now() };
+      setDisplayEta(55);
+    }
+  }, [isProcessing, paper.progress_detail, etaSeconds]);
+
+  useEffect(() => {
+    if (!isProcessing || !anchorRef.current) return;
+    const timer = setInterval(() => {
+      if (!anchorRef.current) return;
+      const elapsed = (Date.now() - anchorRef.current.time) / 1000;
+      setDisplayEta(Math.max(0, Math.round(anchorRef.current.eta - elapsed)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isProcessing]);
 
   const isGloballyActive = state.paperId === paper.id;
   const isPlaying = isGloballyActive && state.isPlaying;
@@ -159,8 +186,7 @@ export default function PaperActionButton({
   // --- PROCESSING: Spinning sparkles + status label + ETA ---
   if (isProcessing) {
     const statusLabel = STATUS_LABELS[paper.status] || "Processing";
-    const eta = etaSeconds ?? parseEtaSeconds(paper.progress_detail);
-    const etaText = (eta !== null && eta > 0) ? formatEtaShort(eta) : null;
+    const etaText = formatEtaShort(displayEta);
     const colors = compact ? compactColors : "text-stone-600 bg-stone-50 border-stone-300 hover:bg-stone-100";
     const chevronBorder = compact ? compactChevronBorder : "border-l-stone-300";
 
@@ -173,7 +199,7 @@ export default function PaperActionButton({
           {!compact && (
             <div className="flex flex-col items-start leading-tight">
               <span>{statusLabel}</span>
-              {etaText && <span className="text-2xs text-stone-400">{etaText}</span>}
+              <span className="text-2xs text-stone-400">{etaText}</span>
             </div>
           )}
         </div>

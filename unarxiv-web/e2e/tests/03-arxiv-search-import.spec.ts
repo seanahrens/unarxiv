@@ -18,7 +18,7 @@ test.describe.serial("ArXiv Search Import", () => {
     await searchInput.fill(TEST_ARXIV_ID);
 
     // Should detect arXiv ID and redirect to paper page
-    await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`), {
+    await expect(page).toHaveURL(new RegExp(`/p\\??id=${TEST_ARXIV_ID}`), {
       timeout: 15000,
     });
 

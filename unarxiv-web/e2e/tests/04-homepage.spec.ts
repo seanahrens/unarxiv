@@ -15,7 +15,7 @@ test.describe("Homepage", () => {
     const firstCard = page.locator(PAPER_CARD).first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
     await firstCard.click();
-    await expect(page).toHaveURL(/\/p\/\?id=/);
+    await expect(page).toHaveURL(/\/p\??id=/);
     // Paper page should show a title
     const heading = page.locator("h1");
     await expect(heading).toBeVisible({ timeout: 10000 });
