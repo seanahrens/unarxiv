@@ -84,7 +84,7 @@ SQLite CHECK constraints can't be altered — must recreate table to change them
 - `/` — homepage with search, popular, and newly-added paper sections
 - `/p?id=<arxiv_id>` — paper detail page with audio player and narration controls
 - `/s?id=<arxiv_id>` — narration script/transcript viewer
-- `/playlist` — user's local playlist, listen history, additions, and collections
+- `/my-papers` — user's local playlist, listen history, additions, and collections
 - `/l?id=<list_id>` — public/edit view for a user collection (also `/l/<list_id>` short URL)
 - `/abs/<arxiv_id>` — redirects to `/p?id=<arxiv_id>` (Cloudflare Pages Function)
 - `/admin` — admin dashboard (password-gated)
