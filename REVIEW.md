@@ -1,30 +1,27 @@
-# unarXiv Review
+# unarXiv Review — 2026-03-18
 
-## Completed
+## Changes Made
 
-- **Route dispatch table refactor**: Replaced the ~40-branch linear if-chain in `handleRequest` (`worker/src/index.ts`) with a declarative `RouteEntry[]` table. All inline handler logic extracted into named functions. `npx tsc --noEmit` passes cleanly.
-- **Re-scrape removal in `handleNarratePaper`**: Uses `arxivSrcUrl(id)` directly to compute `tex_source_url`; no arXiv scrape on narration request.
-- **Stale file cleanup**: Removed legacy `AudioPlayer.tsx` component and root-level `tex_to_audio.py` copy.
-- **`L1ST` page title artifact**: Removed; no matches remain in codebase.
-- **`confirm()` dialog removal**: Individual delete/action buttons in playlist and list pages no longer use `confirm()`; bulk operations retain confirmation.
-- **Hydration fix**: Resolved SSR/client hydration mismatches in playlist and list pages.
-- **Dead Turnstile code removed**: Removed commented-out `verifyTurnstile` call and function definition from `index.ts`.
-- **Type-safe `request.cf`**: Replaced `(request as any).cf` casts with properly typed `IncomingRequestCfProperties` import.
-- **`const values: any[]` → typed array** in `db.ts` `updatePaperStatus`.
-- **Rename `audioBaseUrl` → `apiOrigin`** in `types.ts` `paperToResponse`.
-- **`LIST_ID_PATTERN` constant**: Extracted and used across all 7 list route regex patterns.
-- **`addListItems` batch inserts**: Replaced per-item loop with `db.batch()` in `db.ts`.
-- **`ListSubmenu` membership cache**: Added `membershipCache` ref to avoid redundant re-fetches.
-- **`PaperListRow` component**: Extracted shared paper row pattern from three sites into a reusable component.
-- **Silent error in `handleSave`**: Changed `catch {}` to logged error in `l/page.tsx`.
-- **`text-2xs`/`text-3xs` Tailwind tokens**: Registered in `globals.css` `@theme` block; replaced raw pixel values across components.
-- **`getCombinedToken` renamed to `getFirstOwnerToken`** in `lists.ts`.
+### docs: fix `/playlist` route in CLAUDE.md
+- CLAUDE.md documented the personal library page as `/playlist`, but the Next.js page lives at `app/my-papers/page.tsx` and all in-app navigation links reference `/my-papers`.
 
-## Outstanding
+### refactor: extract `parseEtaSeconds` to `api.ts`
+- `PaperCard.tsx` and `NarrationProgress.tsx` both contained identical regex logic to parse `"eta:240"` from `progress_detail` strings. Extracted to a single `parseEtaSeconds()` utility in `api.ts`; both components now import and use it.
 
-No outstanding issues.
+### fix(types): remove unnecessary `as any` cast in `PaperPageContent.tsx`
+- `setPaper({ ...paper, status: "queued" as any })` — `Paper.status` is typed as `string`, so the literal `"queued"` needs no cast.
+
+## Left Unchanged (Identified, Needs Human Decision)
+
+- **Worker `index.ts` (1086 lines)**: Large refactor to split into route modules. Low risk but high scope for an automated run.
+- **`db.ts` (596 lines)**: Could be split by domain (papers, ratings, lists). Safe but large.
+- **Design system adoption**: Codebase has reached a point where shared Button/Modal/Badge components would reduce duplication. Recommend evaluating shadcn/ui — human decision.
+- **`STATUS_LABELS` in two components**: The labels are intentionally different ("In Progress" vs. "Scripting"/"Narrating") — not a duplicate, left as-is.
+- **Turnstile currently disabled**: No action taken; noted in CLAUDE.md.
 
 ## Deploy Status
 
-- **Worker** (`unarxiv-api`): Version `421aa5b4-63d0-4993-8ae2-9ea15f0882bd` — deployed 2026-03-17
-- **Frontend** (`texreader-frontend`): Deployment `7d12a46b` — deployed 2026-03-17
+| Target | Status |
+|--------|--------|
+| Cloudflare Worker (`unarxiv-api`) | ✅ Deployed (version `185aa416-80c5-44b9-9402-1ed0e8a2d0a4`) |
+| Cloudflare Pages (`texreader-frontend`) | ✅ Deployed (`2a6458ef`) |
