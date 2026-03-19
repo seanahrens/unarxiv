@@ -49,12 +49,12 @@
 
 ## 7. Global Media Player [07-media-player.spec.ts]
 
-- [ ] Header player appears after starting playback
-- [ ] Pause/resume toggle works (audio pauses and resumes)
-- [ ] Skip back 15s decreases currentTime
-- [ ] Skip forward increases currentTime
+- [ ] PlayerBar appears (speed button visible) after starting playback
+- [ ] Pause/resume toggle works (audio pauses and resumes) [FIXME: headless CI unreliable]
+- [ ] Skip back 10s decreases currentTime [FIXME: headless CI unreliable]
+- [ ] Skip forward 10s increases currentTime [FIXME: headless CI unreliable]
 - [ ] Speed button cycles from 1x to 1.25x
-- [ ] Paper link in header player points to paper page
+- [ ] Paper link in player bar points to paper page [FIXME: headless CI unreliable]
 
 ## 8. Downloads [08-downloads.spec.ts]
 
@@ -67,8 +67,8 @@
 
 ## 10. Playlist [10-playlist.spec.ts]
 
-- [ ] Add to playlist → paper appears on /playlist page
-- [ ] Remove from playlist → paper disappears from /playlist page
+- [ ] Add to playlist via actions dropdown → menu shows "In Playlist" after adding
+- [ ] Remove from playlist via actions dropdown → menu shows "Add to Playlist" after removing
 
 ## 11. Narration Generation [11-narration-gen.spec.ts] (SLOW — full suite only)
 

@@ -15,6 +15,26 @@ export const PAPER_CARD =
  */
 export const SEARCH_INPUT = '[data-testid="search-input"], input[type="text"]';
 
+/**
+ * Shared selector for the PlayerBar speed button.
+ */
+export const PLAYER_SPEED = '[data-testid="player-speed"], button[title="Speed"]';
+
+/**
+ * Shared selector for the PlayerBar play/pause button.
+ */
+export const PLAYER_PLAY_PAUSE = '[data-testid="player-play-pause"], button[title="Pause"], button[title="Play"]';
+
+/**
+ * Shared selector for "Add to Playlist" menu item.
+ */
+export const ADD_TO_PLAYLIST = '[data-testid="add-to-playlist"], button:has-text("Add to Playlist")';
+
+/**
+ * Shared selector for "Rate Narration" menu item.
+ */
+export const RATE_NARRATION = '[data-testid="rate-narration"], button:has-text("Rate Narration")';
+
 /** Discovered in global-setup.ts and written to env */
 export function knownCompleteId(): string {
   const id = process.env.KNOWN_COMPLETE_ID;

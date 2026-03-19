@@ -2,25 +2,31 @@ import { test, expect } from "@playwright/test";
 import { knownCompleteId } from "../helpers/fixtures";
 import { startAudioPlayback } from "../helpers/page-actions";
 
+/**
+ * Selectors — prefer data-testid (deployed), fall back to legacy attrs.
+ * PlayerBar is the primary media player; HeaderPlayer is legacy (only visible on /p page scroll-up).
+ */
+const SPEED_BTN = '[data-testid="player-speed"], button[title="Speed"]';
+const PLAY_PAUSE_BTN = '[data-testid="player-play-pause"], button[title="Pause"], button[title="Play"]';
+
 test.describe("Global Media Player", () => {
   // All tests in this suite need audio playing; startAudioPlayback handles navigation + play
   test.beforeEach(async ({ page }) => {
     await startAudioPlayback(page, knownCompleteId());
   });
 
-  test("header player appears after starting playback", async ({ page }) => {
-    // Header player should show speed button
-    const speedBtn = page.locator('button:has-text("1x")').first();
+  test("player bar appears after starting playback", async ({ page }) => {
+    // Speed button is the most reliable indicator the PlayerBar is rendered
+    const speedBtn = page.locator(SPEED_BTN).first();
     await expect(speedBtn).toBeVisible({ timeout: 5000 });
   });
 
   // Audio playback is unreliable in headless CI — these tests depend on
   // the audio element actually starting playback which requires network
   // streaming of an MP3 file. They pass locally but flake in CI.
-  // Audio playback often fails in headless CI (no audio device, network streaming)
   test.fixme("pause and resume works", async ({ page }) => {
     test.slow(); // audio may take longer to start in headless CI
-    // Find pause button in the header (title="Pause")
+    // Find pause button (title switches to "Pause" while playing)
     const pauseBtn = page.locator('button[title="Pause"]').first();
     await expect(pauseBtn).toBeVisible({ timeout: 10000 });
     await pauseBtn.click();
@@ -30,7 +36,7 @@ test.describe("Global Media Player", () => {
     );
     expect(paused).toBe(true);
 
-    // Resume — header play button has title="Play"
+    // Resume — button title switches back to "Play"
     const playBtn = page.locator('button[title="Play"]').first();
     await playBtn.click();
     const playing = await page.evaluate(
@@ -80,21 +86,24 @@ test.describe("Global Media Player", () => {
   });
 
   test("speed button cycles playback rate", async ({ page }) => {
-    const speedBtn = page.locator('button:has-text("1x")').first();
-    await expect(speedBtn).toBeVisible();
+    const speedBtn = page.locator(SPEED_BTN).first();
+    await expect(speedBtn).toBeVisible({ timeout: 5000 });
+
+    // Verify it shows 1x before clicking
+    const initialText = await speedBtn.textContent();
+    expect(initialText?.trim()).toBe("1x");
+
     await speedBtn.click();
 
     // After clicking, should show 1.25x
-    await expect(
-      page.locator('button:has-text("1.25x")').first()
-    ).toBeVisible({ timeout: 2000 });
+    await expect(speedBtn).toHaveText("1.25x", { timeout: 2000 });
   });
 
-  test.fixme("paper link in header navigates to paper page", async ({ page }) => {
+  test.fixme("paper link in player bar navigates to paper page", async ({ page }) => {
     test.slow();
     const id = knownCompleteId();
-    // The header player has a link to the paper page
-    const paperLink = page.locator(`a[href*="/p?id=${id}"]`).first();
+    // The PlayerBar has a link to the paper page
+    const paperLink = page.locator(`a[href="/p?id=${id}"], a[href*="${id}"]`).first();
     await expect(paperLink).toBeVisible({ timeout: 10000 });
     const href = await paperLink.getAttribute("href");
     expect(href).toContain(id);
