@@ -7,6 +7,7 @@ import { usePlaylist } from "@/contexts/PlaylistContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import PaperListRow from "@/components/PaperListRow";
 import DraggablePaperList from "@/components/DraggablePaperList";
+import { PaperListRowSkeleton } from "@/components/Skeleton";
 import { fetchPaper, fetchPapersBatch, audioUrl, type Paper } from "@/lib/api";
 import { getPlaylist } from "@/lib/playlist";
 
@@ -158,29 +159,59 @@ export default function PlayerBar() {
     return () => window.removeEventListener("playerbar-play", handler);
   }, []);
 
+  // Track which paper IDs we've already fetched to avoid re-fetching on reorder
+  const fetchedIdsRef = useRef<Set<string>>(new Set());
+
   // Fetch playlist papers when popup opens or playlist changes
-  // Don't show popup until data is ready to avoid layout shift
+  // Skip fetch entirely if all papers are already cached (e.g., just a reorder)
   useEffect(() => {
-    if (!showPlaylist) {
-      setPlaylistLoading(false);
-      return;
-    }
+    if (!showPlaylist) return;
     const ids = playlist.map((e) => e.paperId);
     if (ids.length === 0) {
       setPlaylistPapers({});
       setPlaylistLoading(false);
       return;
     }
-    setPlaylistLoading(true);
+    // If all papers are already cached, no fetch needed (reorder case)
+    const hasAllCached = ids.every((id) => playlistPapers[id]);
+    if (hasAllCached) {
+      setPlaylistLoading(false);
+      return;
+    }
+    // Only show skeleton if we have zero cached papers for this set
+    const hasSomeCached = ids.some((id) => playlistPapers[id]);
+    if (!hasSomeCached) setPlaylistLoading(true);
     fetchPapersBatch(ids)
       .then((fetched) => {
         const map: Record<string, Paper> = {};
-        fetched.forEach((p) => (map[p.id] = p));
+        fetched.forEach((p) => {
+          map[p.id] = p;
+          fetchedIdsRef.current.add(p.id);
+        });
         setPlaylistPapers(map);
       })
       .catch(() => {})
       .finally(() => setPlaylistLoading(false));
-  }, [showPlaylist, playlist]);
+  }, [showPlaylist, playlist]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pre-fetch playlist papers in background when playlist changes (even when popup is closed)
+  useEffect(() => {
+    const ids = playlist.map((e) => e.paperId);
+    const uncachedIds = ids.filter((id) => !fetchedIdsRef.current.has(id));
+    if (uncachedIds.length === 0) return;
+    fetchPapersBatch(ids)
+      .then((fetched) => {
+        setPlaylistPapers((prev) => {
+          const next = { ...prev };
+          fetched.forEach((p) => {
+            next[p.id] = p;
+            fetchedIdsRef.current.add(p.id);
+          });
+          return next;
+        });
+      })
+      .catch(() => {});
+  }, [playlist]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Toggle playlist popup — use e.currentTarget so we always get the clicked button's rect
   const togglePlaylist = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -336,8 +367,8 @@ export default function PlayerBar() {
 
   if (!mounted || !isActive) return null;
 
-  // Playlist popup overlay — wait for data before rendering to avoid layout shift
-  const playlistPopup = showPlaylist && !playlistLoading && (
+  // Playlist popup overlay — show immediately with skeletons if data is loading
+  const playlistPopup = showPlaylist && (
     <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
       <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] min-h-[200px] flex flex-col">
         <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
@@ -363,6 +394,12 @@ export default function PlayerBar() {
                   Add papers from the home page
                 </Link>
               </div>
+            </div>
+          ) : playlistLoading ? (
+            <div className="divide-y divide-stone-200">
+              {playlist.map((e) => (
+                <PaperListRowSkeleton key={e.paperId} />
+              ))}
             </div>
           ) : (
             <DraggablePaperList
