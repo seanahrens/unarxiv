@@ -299,7 +299,7 @@ function HomePageContent() {
                   <PaperCardSkeleton />
                 </div>
               ) : paginatedResults.length === 0 ? (
-                <ArxivCta query={searchQuery} />
+                <ArxivCta query={searchQuery} showHeading={false} showButton={false} />
               ) : (
                 <>
                   <div className="grid gap-3">
@@ -348,7 +348,7 @@ function HomePageContent() {
               </div>
             </div>
           ) : newPapers.length === 0 ? (
-            <ArxivCta />
+            <ArxivCta showHeading={false} showButton={false} />
           ) : (
             <BrowseLayout
               collections={collections}

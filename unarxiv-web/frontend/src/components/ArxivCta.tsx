@@ -6,11 +6,12 @@ interface ArxivCtaProps {
   query?: string;
   className?: string;
   showHeading?: boolean;
+  showButton?: boolean;
   inlineBrowse?: boolean;
   staticUrl?: boolean;
 }
 
-export default function ArxivCta({ query, className, showHeading = true, inlineBrowse = false, staticUrl = false }: ArxivCtaProps) {
+export default function ArxivCta({ query, className, showHeading = true, showButton = true, inlineBrowse = false, staticUrl = false }: ArxivCtaProps) {
   const searchUrl = query
     ? `https://arxiv.org/search/?query=${encodeURIComponent(query)}&searchtype=all`
     : "https://arxiv.org";
@@ -52,14 +53,14 @@ export default function ArxivCta({ query, className, showHeading = true, inlineB
       {inlineBrowse ? (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <UrlAnimation static={staticUrl} />
-          {browseButton}
+          {showButton && browseButton}
         </div>
       ) : (
         <>
-          <div className="flex justify-center mb-5">
+          <div className={`flex justify-center ${showButton ? "mb-5" : ""}`}>
             <UrlAnimation static={staticUrl} />
           </div>
-          {browseButton}
+          {showButton && browseButton}
         </>
       )}
     </div>
