@@ -398,6 +398,17 @@ export function parseEtaSeconds(detail: string | null): number | null {
   return m ? parseInt(m[1]) : null;
 }
 
+/**
+ * Format a progress_detail string as a short ETA label (e.g. "~2m" or "~30s").
+ * Returns null if detail contains no usable ETA or the ETA is <= 0.
+ */
+export function formatEtaShort(detail: string | null): string | null {
+  const secs = parseEtaSeconds(detail);
+  if (secs === null || secs <= 0) return null;
+  if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
+  return `~${Math.floor(secs / 60)}m`;
+}
+
 // Extract an arXiv ID — new format (YYMM.NNNNN) or old format (category/YYMMNNN) with optional vN.
 const ARXIV_NEW_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
 const ARXIV_OLD_RE = /([a-z-]+\/\d{7})(v\d+)?/i;

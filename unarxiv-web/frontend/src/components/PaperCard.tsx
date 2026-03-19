@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, parseEtaSeconds } from "@/lib/api";
+import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, formatEtaShort } from "@/lib/api";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -23,14 +23,6 @@ interface PaperCardProps {
   /** Called when the paper object changes (after import or narration request). */
   onPaperChange?: (paper: Paper) => void;
 }
-
-function formatEtaShort(detail: string | null): string | null {
-  const secs = parseEtaSeconds(detail);
-  if (secs === null || secs <= 0) return null;
-  if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
-  return `~${Math.floor(secs / 60)}m`;
-}
-
 
 const STATUS_LABELS: Record<string, string> = {
   not_requested: "",

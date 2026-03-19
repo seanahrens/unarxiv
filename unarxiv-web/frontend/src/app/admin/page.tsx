@@ -12,7 +12,7 @@ import {
   clearPaperRatings,
   formatDurationShort,
   isInProgress,
-  parseEtaSeconds,
+  formatEtaShort,
   fetchAdminLists,
   deleteListAdmin,
   type Contributor,
@@ -36,13 +36,6 @@ function statusColor(status: string) {
   if (status === "failed") return "bg-red-500";
   if (status === "not_requested") return "bg-stone-300";
   return "bg-purple-400";
-}
-
-function formatEtaShort(detail: string | null): string | null {
-  const secs = parseEtaSeconds(detail);
-  if (secs === null || secs <= 0) return null;
-  if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
-  return `~${Math.floor(secs / 60)}m`;
 }
 
 function durationLabel(paper: PaperWithRating): string | null {
