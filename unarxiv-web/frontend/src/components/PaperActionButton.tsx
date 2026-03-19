@@ -151,6 +151,7 @@ export default function PaperActionButton({
     return (
       <div className={wrapperClass} ref={menuRef}>
         <button
+          data-testid={compact ? undefined : "play-paper"}
           onClick={handlePlay}
           className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
         >
