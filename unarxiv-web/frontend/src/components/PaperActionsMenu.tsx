@@ -159,7 +159,7 @@ export default function PaperActionsMenu({
       )}
 
       {/* Playlist toggle */}
-      <button onClick={handlePlaylistToggle} className={MENU_ITEM}>
+      <button data-testid="add-to-playlist" onClick={handlePlaylistToggle} className={MENU_ITEM}>
         {inPlaylist ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <polyline points="20 6 9 17 4 12" />
