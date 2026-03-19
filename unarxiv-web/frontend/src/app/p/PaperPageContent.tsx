@@ -84,7 +84,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
         <button
           key={star}
           type="button"
-          data-testid={`star-${star}`}
+          data-testid={`rate-narration-star-${star}`}
           className={`transition-all ${
             star <= (hover || value) ? "text-amber-400" : "text-stone-300"
           } hover:scale-110`}

@@ -24,7 +24,8 @@ test.describe("Ratings", () => {
     await expect(page.locator("text=Rate Narration Quality")).toBeVisible();
 
     // Step 2: Click the 4th star — use data-testid, force click to avoid SVG interception
-    const star4 = page.locator('[data-testid="star-4"]');
+    // Fallback covers production before the rate-narration-star-* rename is deployed
+    const star4 = page.locator('[data-testid="rate-narration-star-4"], [data-testid="star-4"]');
     await expect(star4).toBeVisible({ timeout: 2000 });
     await star4.click({ force: true });
 
