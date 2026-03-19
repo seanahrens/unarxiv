@@ -39,12 +39,13 @@ import {
   cleanup,
   getRating,
   upsertRating,
-  deleteRatingForIp,
+  deleteRating,
   getAllPapersWithRatings,
   hasAnyLowRatings,
   getAllRatingsForPaper,
   clearRatingsForPaper,
   getPapersBySubmitterIp,
+  getPapersBySubmitterToken,
   generateListId,
   createList,
   getList,
@@ -73,7 +74,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password, X-List-Token",
+      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password, X-List-Token, X-User-Token",
     };
 
     if (method === "OPTIONS") {
@@ -132,8 +133,9 @@ async function handleBatchPapers(request: Request, env: Env, baseUrl: string): P
 async function handleRating(request: Request, env: Env, paperId: string): Promise<Response> {
   const method = request.method;
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const token = request.headers.get("X-User-Token") || null;
   if (method === "GET") {
-    const rating = await getRating(env.DB, paperId, ip);
+    const rating = await getRating(env.DB, paperId, ip, token);
     if (!rating) return json({ rating: null });
     return json({
       paper_id: rating.paper_id,
@@ -149,7 +151,7 @@ async function handleRating(request: Request, env: Env, paperId: string): Promis
     if (!stars || stars < 1 || stars > 5) {
       return json({ error: "stars must be 1-5" }, 400);
     }
-    const rating = await upsertRating(env.DB, paperId, ip, stars, body.comment || "");
+    const rating = await upsertRating(env.DB, paperId, ip, stars, body.comment || "", token);
     return json({
       paper_id: rating.paper_id,
       stars: rating.stars,
@@ -159,7 +161,7 @@ async function handleRating(request: Request, env: Env, paperId: string): Promis
     });
   }
   if (method === "DELETE") {
-    await deleteRatingForIp(env.DB, paperId, ip);
+    await deleteRating(env.DB, paperId, ip, token);
     return json({ ok: true });
   }
   return json({ error: "Method not allowed" }, 405);
@@ -167,15 +169,27 @@ async function handleRating(request: Request, env: Env, paperId: string): Promis
 
 async function handleMyAdditions(request: Request, env: Env, baseUrl: string): Promise<Response> {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const papers = await getPapersBySubmitterIp(env.DB, ip);
+  const token = request.headers.get("X-User-Token") || null;
+  let papers: Paper[];
+  if (token) {
+    const byToken = await getPapersBySubmitterToken(env.DB, token);
+    const byIp = await getPapersBySubmitterIp(env.DB, ip);
+    // Merge and deduplicate (token results first)
+    const seen = new Set(byToken.map((p) => p.id));
+    papers = [...byToken, ...byIp.filter((p) => !seen.has(p.id))];
+  } else {
+    papers = await getPapersBySubmitterIp(env.DB, ip);
+  }
   return json({ papers: papers.map((p) => paperToResponse(p, baseUrl)) });
 }
 
 async function handleDeleteMyAddition(request: Request, env: Env, id: string): Promise<Response> {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const token = request.headers.get("X-User-Token") || null;
   const paper = await getPaper(env.DB, id);
   if (!paper) return json({ error: "Paper not found" }, 404);
-  if (paper.submitted_by_ip !== ip) return json({ error: "Not your paper" }, 403);
+  const isOwner = (token && paper.submitted_by_token === token) || paper.submitted_by_ip === ip;
+  if (!isOwner) return json({ error: "Not your paper" }, 403);
   if (paper.audio_r2_key) {
     try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
   }
@@ -196,17 +210,21 @@ async function handleAdminStats(request: Request, env: Env): Promise<Response> {
   if (authErr) return authErr;
   const raw = await getTopContributors(env.DB, 10);
   const callerIp = request.headers.get("CF-Connecting-IP") || "";
+  const callerToken = request.headers.get("X-User-Token") || "";
   const names = ["Alice", "Bob", "Charlie", "Dana", "Eli", "Faye", "Gus", "Hana", "Ivan", "Jia",
                  "Kai", "Luna", "Max", "Nora", "Omar", "Pia", "Quinn", "Ravi", "Sara", "Teo"];
-  const contributors = raw.map((c, i) => ({
-    name: c.ip === callerIp ? "You" : names[i] || `User ${i + 1}`,
-    location: [c.city, c.country].filter(Boolean).join(", ") || "Unknown",
-    paper_count: c.paper_count,
-    is_you: c.ip === callerIp,
-  }));
-  const yourPaperIds = raw
-    .find((c) => c.ip === callerIp)
-    ? (await env.DB.prepare("SELECT id FROM papers WHERE submitted_by_ip = ?").bind(callerIp).all<{ id: string }>()).results.map((r) => r.id)
+  const contributors = raw.map((c, i) => {
+    const isYou = (callerToken && c.token === callerToken) || c.ip === callerIp;
+    return {
+      name: isYou ? "You" : names[i] || `User ${i + 1}`,
+      location: [c.city, c.country].filter(Boolean).join(", ") || "Unknown",
+      paper_count: c.paper_count,
+      is_you: isYou,
+    };
+  });
+  const youEntry = raw.find((c) => (callerToken && c.token === callerToken) || c.ip === callerIp);
+  const yourPaperIds = youEntry
+    ? (await env.DB.prepare("SELECT id FROM papers WHERE submitted_by_token = ? OR submitted_by_ip = ?").bind(callerToken || "", callerIp).all<{ id: string }>()).results.map((r) => r.id)
     : [];
   return json({ contributors, your_paper_ids: yourPaperIds });
 }
@@ -403,6 +421,7 @@ async function handleImportList(request: Request, env: Env, listId: string, base
   const missing = ids.filter((id) => !existingIds.has(id));
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const importToken = request.headers.get("X-User-Token") || undefined;
   const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
   const toAdd = missing.slice(0, 20);
   for (const arxivId of toAdd) {
@@ -416,6 +435,7 @@ async function handleImportList(request: Request, env: Env, listId: string, base
         abstract: meta.abstract,
         published_date: meta.published_date,
         submitted_by_ip: ip,
+        submitted_by_token: importToken,
         submitted_by_country: cf?.country || undefined,
         submitted_by_city: cf?.city || undefined,
       });
@@ -794,6 +814,7 @@ async function handleSubmitPaper(
 
   // --- Insert paper with status "not_requested" ---
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const userToken = request.headers.get("X-User-Token") || undefined;
   const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
   const inserted = await insertPaper(env.DB, {
     id: metadata.id,
@@ -803,6 +824,7 @@ async function handleSubmitPaper(
     abstract: metadata.abstract,
     published_date: metadata.published_date,
     submitted_by_ip: ip,
+    submitted_by_token: userToken,
     submitted_by_country: cf?.country || undefined,
     submitted_by_city: cf?.city || undefined,
   });
@@ -1087,7 +1109,8 @@ async function handleGetProgress(env: Env, id: string, baseUrl: string): Promise
 
 async function handleRecordVisit(request: Request, env: Env, id: string): Promise<Response> {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  await recordVisit(env.DB, id, ip);
+  const token = request.headers.get("X-User-Token") || null;
+  await recordVisit(env.DB, id, ip, token);
   return json({ ok: true });
 }
 

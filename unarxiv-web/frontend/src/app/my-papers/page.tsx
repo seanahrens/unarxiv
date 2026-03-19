@@ -147,7 +147,7 @@ export default function PlaylistPage() {
   };
 
   const handleCopySyncLink = () => {
-    const SYNC_KEYS = ["list_tokens", "playlist", "read_papers"];
+    const SYNC_KEYS = ["user_token", "list_tokens", "playlist", "read_papers"];
     const data: Record<string, unknown> = {};
     for (const key of SYNC_KEYS) {
       try {

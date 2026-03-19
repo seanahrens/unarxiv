@@ -25,6 +25,7 @@ export interface Paper {
   audio_size_bytes: number | null;
   duration_seconds: number | null;
   submitted_by_ip: string | null;
+  submitted_by_token: string | null;
   submitted_by_country: string | null;
   submitted_by_city: string | null;
   rating_count: number;

@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const SYNC_KEYS = ["list_tokens", "playlist", "read_papers"];
+const SYNC_KEYS = ["user_token", "list_tokens", "playlist", "read_papers"];
 
 export default function SyncPage() {
   const [status, setStatus] = useState<"loading" | "imported" | "empty">("loading");
-  const [counts, setCounts] = useState<{ lists: number; playlist: number; history: number }>({ lists: 0, playlist: 0, history: 0 });
+  const [counts, setCounts] = useState<{ lists: number; playlist: number; history: number; identity: boolean }>({ lists: 0, playlist: 0, history: 0, identity: false });
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -20,9 +20,19 @@ export default function SyncPage() {
       const json = decodeURIComponent(atob(hash));
       const data = JSON.parse(json) as Record<string, unknown>;
 
-      let lists = 0, playlist = 0, history = 0;
+      let lists = 0, playlist = 0, history = 0, identity = false;
+
+      // Import user_token first — only adopt if no local token exists
+      if (data.user_token && typeof data.user_token === "string") {
+        const existingToken = localStorage.getItem("user_token");
+        if (!existingToken) {
+          localStorage.setItem("user_token", JSON.stringify(data.user_token));
+          identity = true;
+        }
+      }
 
       for (const key of SYNC_KEYS) {
+        if (key === "user_token") continue; // handled above
         if (!(key in data)) continue;
         const incoming = data[key];
         if (!incoming) continue;
@@ -50,7 +60,7 @@ export default function SyncPage() {
         }
       }
 
-      setCounts({ lists, playlist, history });
+      setCounts({ lists, playlist, history, identity });
       setStatus("imported");
 
       // Strip the hash from URL so it's not bookmarkable with data
@@ -78,10 +88,11 @@ export default function SyncPage() {
             Your data from another device has been merged into this browser.
           </p>
           <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 text-left text-sm text-stone-600 space-y-1">
+            {counts.identity && <p>Account identity linked</p>}
             {counts.lists > 0 && <p>{counts.lists} collection{counts.lists > 1 ? "s" : ""} linked</p>}
             {counts.playlist > 0 && <p>{counts.playlist} paper{counts.playlist > 1 ? "s" : ""} added to playlist</p>}
             {counts.history > 0 && <p>{counts.history} listen history entr{counts.history > 1 ? "ies" : "y"} synced</p>}
-            {counts.lists === 0 && counts.playlist === 0 && counts.history === 0 && (
+            {!counts.identity && counts.lists === 0 && counts.playlist === 0 && counts.history === 0 && (
               <p>Everything was already in sync.</p>
             )}
           </div>

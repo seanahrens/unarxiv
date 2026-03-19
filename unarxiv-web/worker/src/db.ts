@@ -33,6 +33,7 @@ export async function insertPaper(
     abstract: string;
     published_date: string;
     submitted_by_ip?: string;
+    submitted_by_token?: string;
     submitted_by_country?: string;
     submitted_by_city?: string;
   }
@@ -41,8 +42,8 @@ export async function insertPaper(
     await db
       .prepare(
         `INSERT INTO papers (id, arxiv_url, title, authors, abstract, published_date, status,
-         submitted_by_ip, submitted_by_country, submitted_by_city)
-         VALUES (?, ?, ?, ?, ?, ?, 'not_requested', ?, ?, ?)`
+         submitted_by_ip, submitted_by_token, submitted_by_country, submitted_by_city)
+         VALUES (?, ?, ?, ?, ?, ?, 'not_requested', ?, ?, ?, ?)`
       )
       .bind(
         paper.id,
@@ -52,6 +53,7 @@ export async function insertPaper(
         paper.abstract,
         paper.published_date,
         paper.submitted_by_ip || null,
+        paper.submitted_by_token || null,
         paper.submitted_by_country || null,
         paper.submitted_by_city || null
       )
@@ -186,12 +188,19 @@ export async function getRecentPapers(
   return results.results;
 }
 
-/** Record a unique page visit (one per IP per paper). */
-export async function recordVisit(db: D1Database, paperId: string, ip: string): Promise<void> {
-  await db
-    .prepare("INSERT OR IGNORE INTO page_visits (paper_id, visitor_ip) VALUES (?, ?)")
-    .bind(paperId, ip)
-    .run();
+/** Record a unique page visit (one per token or IP per paper). */
+export async function recordVisit(db: D1Database, paperId: string, ip: string, token?: string | null): Promise<void> {
+  if (token) {
+    await db
+      .prepare("INSERT OR IGNORE INTO page_visits (paper_id, visitor_ip, visitor_token) VALUES (?, ?, ?)")
+      .bind(paperId, ip, token)
+      .run();
+  } else {
+    await db
+      .prepare("INSERT OR IGNORE INTO page_visits (paper_id, visitor_ip) VALUES (?, ?)")
+      .bind(paperId, ip)
+      .run();
+  }
 }
 
 /** Check IP rate limit. Returns number of submissions today. */
@@ -235,6 +244,15 @@ export async function getPapersBySubmitterIp(db: D1Database, ip: string): Promis
   const results = await db
     .prepare("SELECT * FROM papers WHERE submitted_by_ip = ? ORDER BY created_at DESC")
     .bind(ip)
+    .all<Paper>();
+  return results.results;
+}
+
+/** Get papers submitted by a specific user token. */
+export async function getPapersBySubmitterToken(db: D1Database, token: string): Promise<Paper[]> {
+  const results = await db
+    .prepare("SELECT * FROM papers WHERE submitted_by_token = ? ORDER BY created_at DESC")
+    .bind(token)
     .all<Paper>();
   return results.results;
 }
@@ -288,23 +306,24 @@ export async function deletePaper(db: D1Database, id: string): Promise<void> {
   ]);
 }
 
-/** Get top contributors by IP (for admin). */
+/** Get top contributors by token or IP (for admin). */
 export async function getTopContributors(
   db: D1Database,
   limit: number = 10
-): Promise<{ ip: string; country: string | null; city: string | null; paper_count: number }[]> {
+): Promise<{ ip: string; token: string | null; country: string | null; city: string | null; paper_count: number }[]> {
   const results = await db
     .prepare(
-      `SELECT submitted_by_ip as ip, submitted_by_country as country, submitted_by_city as city,
+      `SELECT submitted_by_ip as ip, submitted_by_token as token,
+       submitted_by_country as country, submitted_by_city as city,
        COUNT(*) as paper_count
        FROM papers
        WHERE submitted_by_ip IS NOT NULL
-       GROUP BY submitted_by_ip
+       GROUP BY COALESCE(submitted_by_token, submitted_by_ip)
        ORDER BY paper_count DESC
        LIMIT ?`
     )
     .bind(limit)
-    .all<{ ip: string; country: string | null; city: string | null; paper_count: number }>();
+    .all<{ ip: string; token: string | null; country: string | null; city: string | null; paper_count: number }>();
 
   return results.results;
 }
@@ -321,8 +340,15 @@ export interface RatingRow {
   updated_at: string;
 }
 
-/** Get a user's rating for a paper. */
-export async function getRating(db: D1Database, paperId: string, ip: string): Promise<RatingRow | null> {
+/** Get a user's rating for a paper (by token if available, fallback to IP). */
+export async function getRating(db: D1Database, paperId: string, ip: string, token?: string | null): Promise<RatingRow | null> {
+  if (token) {
+    const byToken = await db
+      .prepare("SELECT * FROM ratings WHERE paper_id = ? AND rater_token = ?")
+      .bind(paperId, token)
+      .first<RatingRow>();
+    if (byToken) return byToken;
+  }
   return db
     .prepare("SELECT * FROM ratings WHERE paper_id = ? AND rater_ip = ?")
     .bind(paperId, ip)
@@ -365,32 +391,60 @@ export async function upsertRating(
   paperId: string,
   ip: string,
   stars: number,
-  comment: string
+  comment: string,
+  token?: string | null
 ): Promise<RatingRow> {
-  // Upsert the rating
-  await db
-    .prepare(
-      `INSERT INTO ratings (paper_id, rater_ip, stars, comment)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(paper_id, rater_ip) DO UPDATE SET
-         stars = excluded.stars,
-         comment = excluded.comment,
-         updated_at = datetime('now')`
-    )
-    .bind(paperId, ip, stars, comment)
-    .run();
+  if (token) {
+    // Delete any existing IP-only rating from this user (migration: promote to token-based)
+    await db
+      .prepare("DELETE FROM ratings WHERE paper_id = ? AND rater_ip = ? AND rater_token IS NULL")
+      .bind(paperId, ip)
+      .run();
+    // Upsert by token
+    await db
+      .prepare(
+        `INSERT INTO ratings (paper_id, rater_ip, rater_token, stars, comment)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(paper_id, rater_token) DO UPDATE SET
+           stars = excluded.stars,
+           comment = excluded.comment,
+           updated_at = datetime('now')`
+      )
+      .bind(paperId, ip, token, stars, comment)
+      .run();
+  } else {
+    // Legacy: upsert by IP
+    await db
+      .prepare(
+        `INSERT INTO ratings (paper_id, rater_ip, stars, comment)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(paper_id, rater_ip) DO UPDATE SET
+           stars = excluded.stars,
+           comment = excluded.comment,
+           updated_at = datetime('now')`
+      )
+      .bind(paperId, ip, stars, comment)
+      .run();
+  }
 
   await recomputeBayesianAvg(db, paperId);
 
-  return (await getRating(db, paperId, ip))!;
+  return (await getRating(db, paperId, ip, token))!;
 }
 
 /** Delete a user's rating and recompute paper stats. */
-export async function deleteRatingForIp(db: D1Database, paperId: string, ip: string): Promise<void> {
-  await db
-    .prepare("DELETE FROM ratings WHERE paper_id = ? AND rater_ip = ?")
-    .bind(paperId, ip)
-    .run();
+export async function deleteRating(db: D1Database, paperId: string, ip: string, token?: string | null): Promise<void> {
+  if (token) {
+    await db
+      .prepare("DELETE FROM ratings WHERE paper_id = ? AND rater_token = ?")
+      .bind(paperId, token)
+      .run();
+  } else {
+    await db
+      .prepare("DELETE FROM ratings WHERE paper_id = ? AND rater_ip = ?")
+      .bind(paperId, ip)
+      .run();
+  }
 
   await recomputeBayesianAvg(db, paperId);
 }

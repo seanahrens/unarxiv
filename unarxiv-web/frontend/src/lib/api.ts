@@ -1,4 +1,14 @@
+import { getUserToken } from "./userToken";
+
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.unarxiv.org";
+
+/** Returns headers with X-User-Token for identity-dependent API calls. */
+function userHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  const token = getUserToken();
+  if (token) headers["X-User-Token"] = token;
+  return headers;
+}
 
 export interface Paper {
   id: string;
@@ -73,7 +83,7 @@ export async function fetchPapersBatch(ids: string[]): Promise<Paper[]> {
 
 export async function fetchMyAdditions(): Promise<Paper[]> {
   try {
-    const res = await fetch(`${API_BASE}/api/my-additions`);
+    const res = await fetch(`${API_BASE}/api/my-additions`, { headers: userHeaders() });
     if (!res.ok) return [];
     const data = await res.json();
     return data.papers;
@@ -84,7 +94,7 @@ export async function fetchMyAdditions(): Promise<Paper[]> {
 
 export async function deleteMyAddition(id: string): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/api/my-additions/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE}/api/my-additions/${id}`, { method: "DELETE", headers: userHeaders() });
     return res.ok;
   } catch {
     return false;
@@ -119,7 +129,7 @@ export async function submitPaper(
   arxivUrl: string,
   metadata?: ArxivMetadata
 ): Promise<Paper> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers = userHeaders({ "Content-Type": "application/json" });
   const adminPw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("admin_password") : null;
   if (adminPw) headers["X-Admin-Password"] = adminPw;
 
@@ -144,7 +154,7 @@ export async function requestNarration(
   turnstileToken?: string,
   sourcePriority?: "latex" | "pdf"
 ): Promise<Paper> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers = userHeaders({ "Content-Type": "application/json" });
   const adminPw = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("admin_password") : null;
   if (adminPw) headers["X-Admin-Password"] = adminPw;
 
@@ -180,7 +190,7 @@ export interface Contributor {
 
 export async function fetchAdminStats(password: string): Promise<{ contributors: Contributor[]; your_paper_ids: string[] }> {
   const res = await fetch(`${API_BASE}/api/admin/stats`, {
-    headers: { "X-Admin-Password": password },
+    headers: userHeaders({ "X-Admin-Password": password }),
   });
   if (!res.ok) throw new Error("Failed to fetch stats");
   return res.json();
@@ -230,7 +240,7 @@ export async function deletePaperApi(id: string, password: string): Promise<void
 }
 
 export async function recordVisit(id: string): Promise<void> {
-  fetch(`${API_BASE}/api/papers/${id}/visit`, { method: "POST" }).catch(() => {});
+  fetch(`${API_BASE}/api/papers/${id}/visit`, { method: "POST", headers: userHeaders() }).catch(() => {});
 }
 
 // --- Ratings ---
@@ -244,7 +254,7 @@ export interface Rating {
 }
 
 export async function fetchRating(paperId: string): Promise<Rating | null> {
-  const res = await fetch(`${API_BASE}/api/papers/${paperId}/rating`);
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/rating`, { headers: userHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const data = await res.json();
   return data.rating === null ? null : data;
@@ -253,7 +263,7 @@ export async function fetchRating(paperId: string): Promise<Rating | null> {
 export async function submitRating(paperId: string, stars: number, comment: string): Promise<Rating> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/rating`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: userHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ stars, comment }),
   });
   if (!res.ok) {
@@ -266,6 +276,7 @@ export async function submitRating(paperId: string, stars: number, comment: stri
 export async function deleteRating(paperId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/rating`, {
     method: "DELETE",
+    headers: userHeaders(),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));

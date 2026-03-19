@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS papers (
 
     -- Submitter info
     submitted_by_ip      TEXT,
+    submitted_by_token   TEXT,                    -- client-generated user identity token
     submitted_by_country TEXT,
     submitted_by_city    TEXT,
 
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS papers (
 
 CREATE INDEX IF NOT EXISTS idx_papers_status ON papers(status);
 CREATE INDEX IF NOT EXISTS idx_papers_created ON papers(created_at);
+CREATE INDEX IF NOT EXISTS idx_papers_submitted_by_token ON papers(submitted_by_token);
 
 -- Full-text search (D1 supports fts5)
 CREATE VIRTUAL TABLE IF NOT EXISTS papers_fts USING fts5(
@@ -70,22 +72,25 @@ CREATE TRIGGER IF NOT EXISTS papers_au AFTER UPDATE ON papers BEGIN
     VALUES (new.rowid, new.id, new.title, new.authors, new.abstract);
 END;
 
--- Page visits for popularity ranking (unique per IP per paper)
+-- Page visits for popularity ranking (unique per token or IP per paper)
 CREATE TABLE IF NOT EXISTS page_visits (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    paper_id    TEXT NOT NULL,
-    visitor_ip  TEXT NOT NULL DEFAULT '',
-    visited_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    paper_id        TEXT NOT NULL,
+    visitor_ip      TEXT NOT NULL DEFAULT '',
+    visitor_token   TEXT,                          -- client-generated user identity token
+    visited_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_visits_unique ON page_visits(paper_id, visitor_ip);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_visits_unique_token ON page_visits(paper_id, visitor_token) WHERE visitor_token IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_visits_paper_date ON page_visits(paper_id, visited_at);
 
--- Narration quality ratings (one per IP per paper)
+-- Narration quality ratings (one per token or IP per paper)
 CREATE TABLE IF NOT EXISTS ratings (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     paper_id    TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
     rater_ip    TEXT NOT NULL,
+    rater_token TEXT,                              -- client-generated user identity token
     stars       INTEGER NOT NULL CHECK(stars BETWEEN 1 AND 5),
     comment     TEXT NOT NULL DEFAULT '',
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -93,6 +98,7 @@ CREATE TABLE IF NOT EXISTS ratings (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings_unique ON ratings(paper_id, rater_ip);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings_unique_token ON ratings(paper_id, rater_token) WHERE rater_token IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_ratings_paper ON ratings(paper_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_low ON ratings(paper_id) WHERE stars <= 3;
 
