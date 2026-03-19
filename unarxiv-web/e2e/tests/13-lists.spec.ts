@@ -141,8 +141,8 @@ test.describe.serial("Lists API", () => {
 test.describe("Lists Frontend", () => {
   test("collections section visible on playlist page", async ({ page }) => {
     await page.goto("/my-papers");
-    await expect(page.locator("h2:has-text('My Collections')")).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('button[title="Create new collection"]')).toBeVisible();
+    await expect(page.locator("h1:has-text('My Collections')")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button:has-text("New Collection")')).toBeVisible();
   });
 
   test("create collection via API and view it", async ({ page }) => {
