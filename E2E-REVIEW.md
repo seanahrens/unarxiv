@@ -1,3 +1,67 @@
+# E2E Test Review — 2026-03-19
+
+**Reviewed:** `unarxiv-web/e2e/` (14 spec files, 48 tests)
+**Branch:** `test/e2e-review-2026-03-19`
+**Result:** 41 passed, 7 skipped (5 fixme, 1 turnstile, 1 admin-password), 0 failures
+
+## Issues Found and Fixed
+
+### 1. Playlist Tests Completely Broken (10-playlist.spec.ts)
+
+Both tests were `test.fixme()` with a comment "Playlist UI moved to PlayerBar sidebar." They navigated to `/playlist` (wrong — route is `/my-papers`) and verified paper links in the My Additions server-side list, not the localStorage-based playlist. The tests had been stale since the playlist moved from the my-papers page into the PlayerBar sidebar.
+
+**Fix:** Rewrote both tests to test the actual current UX — adding and removing papers via the actions dropdown on the paper page, and verifying the button state toggles ("Add to Playlist" ↔ "In Playlist"). Both tests now pass.
+
+### 2. Media Player Speed Button Selector Ambiguous
+
+`07-media-player.spec.ts` used `button:has-text("1x")` which could match either the legacy `HeaderPlayer` or the current `PlayerBar`. Test description still said "header player" even though `PlayerBar` is the current component.
+
+**Fix:** Added `data-testid="player-speed"` to the speed button in `PlayerBar.tsx` (both desktop and mobile layouts). Updated selector to `[data-testid="player-speed"], button[title="Speed"]` with fallback. Also added `data-testid="player-play-pause"` to the PlayerBar main play/pause button.
+
+### 3. Narration Generation URL Regex Bug (11-narration-gen.spec.ts)
+
+URL regex was `/p/\?id=TEST_ID` (included a literal `/` before `?`) but actual URL format is `/p?id=...`. The narration test was broken for the URL redirect assertion.
+
+**Fix:** Corrected regex to `/p\??id=TEST_ID`.
+
+### 4. Download and Rating Selectors Had No data-testid
+
+`08-downloads.spec.ts` and `09-ratings.spec.ts` relied on raw text selectors (`text=Download PDF`, `button:has-text("Rate Narration")`). No testids existed in `PaperActionsMenu.tsx`.
+
+**Fix:** Added testids `download-pdf`, `download-audio`, `rate-narration`, `add-to-playlist`, `remove-from-playlist` to `PaperActionsMenu.tsx`. Updated test selectors to testid-with-fallback pattern.
+
+### 5. Play Button Selector Could Be Ambiguous
+
+`startAudioPlayback` in `page-actions.ts` used `button:has-text("Play")` which could match the PlayerBar play button if it was visible on the page simultaneously.
+
+**Fix:** Added `data-testid="play-paper"` to the non-compact play button in `PaperActionButton.tsx`. Updated selector to `[data-testid="play-paper"], button:has-text("Play")`.
+
+## New data-testid Attributes Added
+
+| Component | testid | Purpose |
+|---|---|---|
+| `PaperActionButton` | `play-paper` | Full-size play button on paper detail page |
+| `PaperActionsMenu` | `add-to-playlist` | Add to playlist menu item |
+| `PaperActionsMenu` | `remove-from-playlist` | "In Playlist" state button |
+| `PaperActionsMenu` | `rate-narration` | Rate Narration menu item |
+| `PaperActionsMenu` | `download-audio` | Download Audio menu item |
+| `PaperActionsMenu` | `download-pdf` | Download PDF menu item |
+| `PlayerBar` | `player-speed` | Speed button (desktop + mobile) |
+| `PlayerBar` | `player-play-pause` | Play/pause button in expanded player |
+
+## Deployment
+
+Frontend deployed to: https://claude-recursing-goldstine.unarxiv-frontend.pages.dev
+
+## Items Still Needing Attention
+
+- **Fixme media controls** (pause, skip back/fwd, paper link): These require real audio streaming which is unreliable in headless CI. They are correctly marked fixme. No change recommended without a CI audio solution.
+- **Turnstile test**: Correctly skipped at suite level — Turnstile is disabled in production.
+- **Admin curate**: Only auth redirect covered, not bulk operations.
+- **Error states**: Failed narration, invalid paper ID — still no coverage.
+
+---
+
 # E2E Test Review — 2026-03-18
 
 **Reviewed:** `unarxiv-web/e2e/` (14 spec files, 50 tests)
