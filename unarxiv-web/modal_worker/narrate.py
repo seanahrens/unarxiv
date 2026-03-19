@@ -16,6 +16,20 @@ import tempfile
 import tarfile
 import time
 
+
+def _safe_extractall(tf: tarfile.TarFile, path: str) -> None:
+    """Extract tar archive with path traversal protection (zip slip fix).
+
+    Validates every member path stays within the target directory before
+    extraction, guarding against maliciously crafted arXiv source archives.
+    """
+    real_path = os.path.realpath(path)
+    for member in tf.getmembers():
+        member_path = os.path.realpath(os.path.join(real_path, member.name))
+        if not member_path.startswith(real_path + os.sep) and member_path != real_path:
+            raise RuntimeError(f"Blocked path traversal attempt in archive: {member.name!r}")
+    tf.extractall(path)
+
 app = modal.App("unarxiv-worker")
 
 image = (
@@ -203,7 +217,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 if "gzip" in content_type or "tar" in content_type or src_path.endswith(".gz"):
                     try:
                         with tarfile.open(src_path, "r:*") as tf:
-                            tf.extractall(source_dir)
+                            _safe_extractall(tf, source_dir)
                     except tarfile.TarError:
                         import gzip
                         try:

@@ -122,8 +122,8 @@ export default {
   },
 };
 
-/** Pattern for a 4-character list ID (lowercase alphanumeric). */
-const LIST_ID_PATTERN = "[a-z0-9]{4}";
+/** Pattern for a 6-character list ID (lowercase alphanumeric). */
+const LIST_ID_PATTERN = "[a-z0-9]{6}";
 
 // ─── Inline handlers extracted for the route table ───────────────────────────
 
@@ -297,6 +297,12 @@ async function handleCreateList(request: Request, env: Env): Promise<Response> {
   if (!body.name || !body.name.trim()) {
     return json({ error: "name is required" }, 400);
   }
+  if (body.name.trim().length > 200) {
+    return json({ error: "name must be 200 characters or fewer" }, 400);
+  }
+  if ((body.description || "").trim().length > 1000) {
+    return json({ error: "description must be 1000 characters or fewer" }, 400);
+  }
   const id = await generateListId(env.DB);
   const ownerToken = crypto.randomUUID().replace(/-/g, "");
   const ip = request.headers.get("CF-Connecting-IP") || null;
@@ -354,6 +360,12 @@ async function handleUpdateList(request: Request, env: Env, listId: string): Pro
   const list = await getList(env.DB, listId);
   if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
   const body = await request.json<{ name?: string; description?: string; publicly_listed?: boolean }>();
+  if (body.name !== undefined && body.name.trim().length > 200) {
+    return json({ error: "name must be 200 characters or fewer" }, 400);
+  }
+  if (body.description !== undefined && body.description.trim().length > 1000) {
+    return json({ error: "description must be 1000 characters or fewer" }, 400);
+  }
   const publiclyListed = body.publicly_listed !== undefined ? (body.publicly_listed ? 1 : 0) : undefined;
   await updateList(env.DB, list.id, (body.name ?? list.name).trim(), (body.description ?? list.description).trim(), publiclyListed);
   return json({ ok: true });
@@ -1014,10 +1026,16 @@ async function handleNarratePaper(
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-  // IP-based rate limiting is intentionally disabled. Narration requests only write a DB row
-  // (status = 'queued'); the actual Modal job is dispatched by the scheduled cron. There is no
-  // meaningful per-user cost to queuing, so restricting it adds friction without protection.
-  // The submissions table and PER_IP_DAILY_LIMIT var are retained in case we re-enable later.
+  // Per-IP daily rate limit on narration requests (not paper submissions).
+  // Admin callers bypass this check.
+  const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
+  if (!isAdmin) {
+    const limit = parseInt(env.PER_IP_DAILY_LIMIT || "24");
+    const count = await getSubmissionCount(env.DB, ip);
+    if (count >= limit) {
+      return json({ error: "Daily narration limit reached. Try again tomorrow." }, 429);
+    }
+  }
 
   // Enqueue: mark as queued in DB. The queue is drained immediately via waitUntil
   // after this response, with the scheduled cron as a backup.
@@ -1278,9 +1296,9 @@ async function handleRecordVisit(request: Request, env: Env, id: string): Promis
 
 // "Modal" here refers to Modal.com (the serverless Python platform), not a UI dialog.
 async function handleModalWebhook(request: Request, env: Env): Promise<Response> {
-  // Verify webhook secret
+  // Verify webhook secret — reject if secret not configured or header doesn't match
   const authHeader = request.headers.get("Authorization");
-  if (env.MODAL_WEBHOOK_SECRET && authHeader !== `Bearer ${env.MODAL_WEBHOOK_SECRET}`) {
+  if (!env.MODAL_WEBHOOK_SECRET || authHeader !== `Bearer ${env.MODAL_WEBHOOK_SECRET}`) {
     return json({ error: "Unauthorized" }, 401);
   }
 
@@ -1296,6 +1314,11 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
 
   if (!body.arxiv_id || !body.status) {
     return json({ error: "arxiv_id and status required" }, 400);
+  }
+
+  // Validate audio_r2_key format to prevent path confusion in R2 lookups
+  if (body.audio_r2_key !== undefined && !/^audio\/[\w.-]+\.mp3$/.test(body.audio_r2_key)) {
+    return json({ error: "Invalid audio_r2_key format" }, 400);
   }
 
   await updatePaperStatus(env.DB, body.arxiv_id, body.status as any, {
