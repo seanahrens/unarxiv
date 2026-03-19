@@ -23,22 +23,18 @@ test.describe("Ratings", () => {
     await expect(ratingModal.first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator("text=Rate Narration Quality")).toBeVisible();
 
-    // Step 2: Click the 4th star — use data-testid if deployed, else nth-child
+    // Step 2: Click the 4th star — use data-testid, force click to avoid SVG interception
     const star4 = page.locator('[data-testid="star-4"]');
-    if (await star4.isVisible({ timeout: 500 }).catch(() => false)) {
-      await star4.click();
-    } else {
-      const starContainer = ratingModal.first().locator("div.flex.gap-1");
-      await starContainer.locator("button").nth(3).click();
-    }
+    await expect(star4).toBeVisible({ timeout: 2000 });
+    await star4.click({ force: true });
 
-    // Step 3: Submit
+    // Step 3: Submit — wait for button to be enabled (stars > 0) before clicking
     const submitBtn = page.locator('button:has-text("Submit Rating")');
-    await expect(submitBtn).toBeVisible({ timeout: 2000 });
+    await expect(submitBtn).toBeEnabled({ timeout: 2000 });
     await submitBtn.click();
 
-    // Modal should close
-    await expect(ratingModal.first()).not.toBeVisible({ timeout: 5000 });
+    // Modal should close (allow extra time for API round-trip from CI)
+    await expect(ratingModal.first()).not.toBeVisible({ timeout: 10000 });
 
     // Step 4: Verify rating persists after reload
     await page.reload();
