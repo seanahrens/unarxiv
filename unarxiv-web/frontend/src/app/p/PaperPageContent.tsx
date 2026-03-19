@@ -257,7 +257,6 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const handleAddToPlaylist = (rect?: DOMRect) => {
     if (paperRead) {
-      if (!confirm("You've already listened to this. Are you sure you want to add it to your playlist? We will unmark it as read.")) return;
       markAsUnread(id);
       setPaperRead(false);
     }

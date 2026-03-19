@@ -271,6 +271,7 @@ export default function AdminPage() {
   const [ratingsModal, setRatingsModal] = useState<{ paperId: string; title: string } | null>(null);
   const [reprocessMenuOpen, setReprocessMenuOpen] = useState(false);
   const reprocessMenuRef = useRef<HTMLDivElement>(null);
+  const [actionError, setActionError] = useState("");
 
   // Filter & sort state
   const [sortKey, setSortKey] = useState<SortKey>("status");
@@ -445,6 +446,7 @@ export default function AdminPage() {
   const handleBulkDelete = useCallback(async () => {
     if (!password || selected.size === 0) return;
     if (!confirm(`Delete ${selected.size} paper${selected.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    setActionError("");
     const ids = [...selected];
     setDeleting(new Set(ids));
     const failed: string[] = [];
@@ -456,11 +458,12 @@ export default function AdminPage() {
     }
     setSelected(new Set(failed));
     setDeleting(new Set());
-    if (failed.length > 0) alert(`Failed to delete ${failed.length} paper(s)`);
+    if (failed.length > 0) setActionError(`Failed to delete ${failed.length} paper(s)`);
   }, [password, selected]);
 
   const handleBulkReprocess = useCallback(async (mode: "full" | "script_only" | "narration_only" = "full") => {
     if (!password || selected.size === 0) return;
+    setActionError("");
     const ids = [...selected];
     setProcessing(new Set(ids));
     setReprocessMenuOpen(false);
@@ -473,19 +476,20 @@ export default function AdminPage() {
     }
     setSelected(new Set());
     setProcessing(new Set());
-    if (failed.length > 0) alert(`Failed to reprocess ${failed.length} paper(s)`);
+    if (failed.length > 0) setActionError(`Failed to reprocess ${failed.length} paper(s)`);
   }, [password, selected]);
 
   const handleBulkClearReviews = useCallback(async () => {
     if (!password || selected.size === 0) return;
     if (!confirm(`Clear all reviews for ${selected.size} paper${selected.size > 1 ? "s" : ""}?`)) return;
+    setActionError("");
     const ids = [...selected];
     try {
       await clearPaperRatings(ids, password);
       setPapers((prev) => prev.map((p) =>
         ids.includes(p.id) ? { ...p, rating_count: 0, avg_rating: null, has_low_rating: false } : p
       ));
-    } catch { alert("Failed to clear reviews"); }
+    } catch { setActionError("Failed to clear reviews"); }
   }, [password, selected]);
 
   // --- Login screen ---
@@ -652,6 +656,7 @@ export default function AdminPage() {
           <button onClick={() => setSelected(new Set())} className="px-2.5 py-1 text-xs text-stone-400 hover:text-stone-600 transition-colors">
             Clear
           </button>
+          {actionError && <span className="ml-2 text-xs text-red-600">{actionError}</span>}
         </div>
       )}
 
@@ -825,6 +830,7 @@ export default function AdminPage() {
                 <button
                   onClick={async () => {
                     if (!confirm(`Delete ${selectedLists.size} collection${selectedLists.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+                    setActionError("");
                     const ids = [...selectedLists];
                     setDeletingLists(new Set(ids));
                     const failed: string[] = [];
@@ -834,7 +840,7 @@ export default function AdminPage() {
                     }
                     setSelectedLists(new Set(failed));
                     setDeletingLists(new Set());
-                    if (failed.length > 0) alert(`Failed to delete ${failed.length} collection(s)`);
+                    if (failed.length > 0) setActionError(`Failed to delete ${failed.length} collection(s)`);
                   }}
                   disabled={deletingLists.size > 0}
                   className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-40"

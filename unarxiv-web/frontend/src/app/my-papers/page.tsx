@@ -35,6 +35,7 @@ export default function PlaylistPage() {
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [additionsPage, setAdditionsPage] = useState(0);
   const ADDITIONS_PER_PAGE = 5;
+  const [listError, setListError] = useState("");
 
   // Fetch my additions
   useEffect(() => {
@@ -92,24 +93,26 @@ export default function PlaylistPage() {
   useEffect(() => { loadLists(); }, [loadLists]);
 
   const handleCreateList = async () => {
+    setListError("");
     try {
       const { list, owner_token } = await createListApi(DEFAULT_COLLECTION_NAME, "");
       saveListToken(list.id, owner_token, list.name);
       router.push(`/l?id=${list.id}&edit=1`);
     } catch (e: any) {
-      alert(e.message || "Failed to create collection");
+      setListError(e.message || "Failed to create collection");
     }
   };
 
   const handleDeleteList = async (listId: string) => {
     const token = getTokenForList(listId);
     if (!token) return;
+    setListError("");
     try {
       await deleteListApi(listId, token);
       removeListToken(listId);
       setMyLists((prev) => prev.filter((l) => l.id !== listId));
     } catch {
-      alert("Failed to delete list");
+      setListError("Failed to delete collection");
     }
   };
 
@@ -171,6 +174,9 @@ export default function PlaylistPage() {
           </button>
         </div>
 
+        {listError && (
+          <p className="px-4 py-2 text-xs text-red-600 border-b border-stone-100">{listError}</p>
+        )}
         {listsLoading ? (
           <MyPapersSectionSkeleton rows={2} />
         ) : myLists.length === 0 ? (
