@@ -17,7 +17,7 @@
  */
 
 import type { IncomingRequestCfProperties } from "@cloudflare/workers-types";
-import type { Env, Paper } from "./types";
+import type { Env, Paper, PaperStatus } from "./types";
 import { paperToResponse } from "./types";
 import { parseArxivId, scrapeArxivMetadata, searchArxiv, arxivSrcUrl, arxivPdfUrl } from "./arxiv";
 import {
@@ -161,7 +161,8 @@ async function handleRating(request: Request, env: Env, paperId: string): Promis
     if (!stars || stars < 1 || stars > 5) {
       return json({ error: "stars must be 1-5" }, 400);
     }
-    const rating = await upsertRating(env.DB, paperId, ip, stars, body.comment || "", token);
+    const comment = (body.comment || "").slice(0, 2000);
+    const rating = await upsertRating(env.DB, paperId, ip, stars, comment, token);
     return json({
       paper_id: rating.paper_id,
       stars: rating.stars,
@@ -525,6 +526,9 @@ async function handleUpdatePlaylist(request: Request, env: Env): Promise<Respons
   const body = await request.json<{ paperIds?: string[] }>();
   if (!body.paperIds || !Array.isArray(body.paperIds)) {
     return json({ error: "paperIds array required" }, 400);
+  }
+  if (body.paperIds.length > 500) {
+    return json({ error: "Playlist cannot exceed 500 items" }, 400);
   }
   await setUserPlaylist(env.DB, token, body.paperIds);
   return json({ ok: true });
@@ -997,9 +1001,32 @@ async function handleSubmitPaper(
     return json(paperToResponse(existing, baseUrl));
   }
 
+  // Rate limit: 240 paper submissions per IP per day (admin bypasses).
+  // Uses IP (not token) — consistent with narration limits; tokens are
+  // client-generated and trivially regenerated to evade limits.
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
+  if (!isAdmin) {
+    const limit = parseInt(env.PAPER_SUBMISSION_DAILY_LIMIT || "240");
+    const submissionsToday = await env.DB
+      .prepare("SELECT COUNT(*) as cnt FROM papers WHERE submitted_by_ip = ? AND created_at > datetime('now', '-1 day')")
+      .bind(ip)
+      .first<{ cnt: number }>();
+    if ((submissionsToday?.cnt ?? 0) >= limit) {
+      return json({ error: "Daily paper submission limit reached. Try again tomorrow." }, 429);
+    }
+  }
+
   // --- Use pre-scraped metadata if provided, otherwise scrape ---
   let metadata;
   if (body.metadata && body.metadata.id === arxivId) {
+    // Validate length limits on user-supplied metadata to prevent content injection.
+    const t = body.metadata.title || "";
+    const ab = body.metadata.abstract || "";
+    const authors = body.metadata.authors;
+    if (t.length > 500 || ab.length > 5000 || !Array.isArray(authors) || authors.length > 200) {
+      return json({ error: "Metadata fields exceed allowed length" }, 400);
+    }
     metadata = body.metadata;
   } else {
     try {
@@ -1010,7 +1037,6 @@ async function handleSubmitPaper(
   }
 
   // --- Insert paper with status "not_requested" ---
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const userToken = request.headers.get("X-User-Token") || undefined;
   const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
   const inserted = await insertPaper(env.DB, {
@@ -1350,12 +1376,17 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     return json({ error: "arxiv_id and status required" }, 400);
   }
 
+  const VALID_STATUSES: PaperStatus[] = ["not_requested", "queued", "preparing", "generating_audio", "complete", "failed"];
+  if (!VALID_STATUSES.includes(body.status as PaperStatus)) {
+    return json({ error: "Invalid status" }, 400);
+  }
+
   // Validate audio_r2_key format to prevent path confusion in R2 lookups
   if (body.audio_r2_key !== undefined && !/^audio\/[\w.-]+\.mp3$/.test(body.audio_r2_key)) {
     return json({ error: "Invalid audio_r2_key format" }, 400);
   }
 
-  await updatePaperStatus(env.DB, body.arxiv_id, body.status as any, {
+  await updatePaperStatus(env.DB, body.arxiv_id, body.status as PaperStatus, {
     progress_detail: body.progress_detail,
     error_message: body.error_message,
     audio_r2_key: body.audio_r2_key,
