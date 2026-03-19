@@ -1146,6 +1146,7 @@ async function drainNarrationQueue(env: Env): Promise<void> {
           paper_title: paper.title,
           paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
           source_priority: "latex",
+          _secret: env.MODAL_WEBHOOK_SECRET,
         }),
       });
     } catch (e: any) {
@@ -1254,6 +1255,7 @@ async function handleReprocessPaper(
           paper_author: (metadata?.authors || []).join(", "),
           mode,
           source_priority: sourcePriority,
+          _secret: env.MODAL_WEBHOOK_SECRET,
         }),
       });
     } catch (e: any) {

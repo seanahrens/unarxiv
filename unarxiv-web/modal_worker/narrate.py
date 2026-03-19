@@ -461,23 +461,21 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
 
 # Web endpoint for the Cloudflare Worker to call
-# fastapi is a transitive dependency of modal — safe to import at module level.
-from fastapi import Header, HTTPException
-
-
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=60,
 )
 @modal.fastapi_endpoint(method="POST")
-def trigger_narration(request: dict, authorization: str = Header(None)):
+def trigger_narration(request: dict):
     """HTTP endpoint called by the Cloudflare Worker to start narration."""
-    # Verify shared secret — same CALLBACK_SECRET used for webhook replies.
-    # The CF Worker sends: Authorization: Bearer {MODAL_WEBHOOK_SECRET}
-    # which equals CALLBACK_SECRET on the Modal side.
+    # fastapi is available on the Modal container (not locally), so import here.
+    from fastapi import HTTPException
+
+    # Verify shared secret passed in the request body.
+    # The CF Worker sends _secret = MODAL_WEBHOOK_SECRET, which equals CALLBACK_SECRET here.
     callback_secret = os.environ.get("CALLBACK_SECRET", "")
-    if not callback_secret or authorization != f"Bearer {callback_secret}":
+    if not callback_secret or request.get("_secret") != callback_secret:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     arxiv_id = request.get("arxiv_id")
