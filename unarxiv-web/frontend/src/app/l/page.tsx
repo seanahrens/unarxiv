@@ -87,6 +87,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showEditMenu, setShowEditMenu] = useState(false);
   const [page, setPage] = useState(0);
@@ -250,12 +251,13 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
 
   const handleDelete = async () => {
     if (!ownerToken) return;
+    setDeleteError("");
     try {
       await deleteListApi(listId, ownerToken);
       removeListToken(listId);
       router.push("/my-papers");
     } catch {
-      alert("Failed to delete collection");
+      setDeleteError("Failed to delete collection");
     }
   };
 
