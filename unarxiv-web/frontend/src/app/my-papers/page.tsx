@@ -37,6 +37,8 @@ export default function PlaylistPage() {
   const [listsLoading, setListsLoading] = useState(true);
   const [copiedListId, setCopiedListId] = useState<string | null>(null);
   const [syncCopied, setSyncCopied] = useState(false);
+  const [additionsPage, setAdditionsPage] = useState(0);
+  const ADDITIONS_PER_PAGE = 5;
 
   // Fetch history papers
   useEffect(() => {
@@ -160,76 +162,14 @@ export default function PlaylistPage() {
     setTimeout(() => setSyncCopied(false), 3000);
   };
 
+  const additionsTotalPages = Math.ceil(myAdditions.length / ADDITIONS_PER_PAGE);
+  const paginatedAdditions = myAdditions.slice(
+    additionsPage * ADDITIONS_PER_PAGE,
+    (additionsPage + 1) * ADDITIONS_PER_PAGE
+  );
+
   return (
     <div className="space-y-2 md:space-y-8 -mx-6 md:mx-0">
-      {/* ─── My Additions ────────────────────────────────────────── */}
-      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
-          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Papers I Added
-          </h2>
-        </div>
-
-        {additionsLoading ? (
-          <MyPapersSectionSkeleton rows={2} />
-        ) : myAdditions.length === 0 ? (
-          <div className="text-stone-500 text-sm py-3 text-center">
-            Papers you add to unarXiv will appear here.
-          </div>
-        ) : (
-          <div className="divide-y divide-stone-200">
-            {myAdditions.map((paper) => {
-              const paperInProgress = isInProgress(paper.status);
-              return (
-                <PaperListRow
-                  key={paper.id}
-                  paper={paper}
-                  paperId={paper.id}
-                  isActive={state.paperId === paper.id}
-                  extra={
-                    <>
-                      {paperInProgress && (
-                        <div className="mt-1">
-                          <NarrationProgress paper={paper} />
-                        </div>
-                      )}
-                      {paper.status === "failed" && (
-                        <span className="text-2xs text-red-500 block mt-1">
-                          Failed{paper.error_message ? `: ${paper.error_message}` : ""}
-                        </span>
-                      )}
-                    </>
-                  }
-                  actions={
-                    <button
-                      onClick={async () => {
-                        const ok = await deleteMyAddition(paper.id);
-                        if (ok) {
-                          if (state.paperId === paper.id) actions.stop();
-                          setMyAdditions((prev) => prev.filter((p) => p.id !== paper.id));
-                        }
-                      }}
-                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
-                      title="Remove from site"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
-      </section>
-
       {/* ─── My Collections ──────────────────────────────────────── */}
       <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
         <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200 flex items-center justify-between">
@@ -321,6 +261,103 @@ export default function PlaylistPage() {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      {/* ─── My Additions ────────────────────────────────────────── */}
+      <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
+          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Papers I Added
+            {!additionsLoading && myAdditions.length > 0 && (
+              <span className="text-stone-400 font-normal text-sm">({myAdditions.length})</span>
+            )}
+          </h2>
+        </div>
+
+        {additionsLoading ? (
+          <MyPapersSectionSkeleton rows={2} />
+        ) : myAdditions.length === 0 ? (
+          <div className="text-stone-500 text-sm py-3 text-center">
+            Papers you add to unarXiv will appear here.
+          </div>
+        ) : (
+          <>
+            <div className="divide-y divide-stone-200">
+              {paginatedAdditions.map((paper) => {
+                const paperInProgress = isInProgress(paper.status);
+                return (
+                  <PaperListRow
+                    key={paper.id}
+                    paper={paper}
+                    paperId={paper.id}
+                    isActive={state.paperId === paper.id}
+                    extra={
+                      <>
+                        {paperInProgress && (
+                          <div className="mt-1">
+                            <NarrationProgress paper={paper} />
+                          </div>
+                        )}
+                        {paper.status === "failed" && (
+                          <span className="text-2xs text-red-500 block mt-1">
+                            Failed{paper.error_message ? `: ${paper.error_message}` : ""}
+                          </span>
+                        )}
+                      </>
+                    }
+                    actions={
+                      <button
+                        onClick={async () => {
+                          const ok = await deleteMyAddition(paper.id);
+                          if (ok) {
+                            if (state.paperId === paper.id) actions.stop();
+                            setMyAdditions((prev) => prev.filter((p) => p.id !== paper.id));
+                            if (paginatedAdditions.length === 1 && additionsPage > 0) {
+                              setAdditionsPage((p) => p - 1);
+                            }
+                          }
+                        }}
+                        className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                        title="Remove from site"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    }
+                  />
+                );
+              })}
+            </div>
+            {additionsTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-stone-200">
+                <button
+                  onClick={() => setAdditionsPage((p) => Math.max(0, p - 1))}
+                  disabled={additionsPage === 0}
+                  className="text-sm text-stone-500 hover:text-stone-700 disabled:text-stone-300 disabled:cursor-not-allowed transition-colors px-2 py-1"
+                >
+                  &larr; Prev
+                </button>
+                <span className="text-xs text-stone-400 tabular-nums">
+                  {additionsPage + 1} / {additionsTotalPages}
+                </span>
+                <button
+                  onClick={() => setAdditionsPage((p) => Math.min(additionsTotalPages - 1, p + 1))}
+                  disabled={additionsPage >= additionsTotalPages - 1}
+                  className="text-sm text-stone-500 hover:text-stone-700 disabled:text-stone-300 disabled:cursor-not-allowed transition-colors px-2 py-1"
+                >
+                  Next &rarr;
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
