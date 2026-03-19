@@ -37,15 +37,22 @@ export default function BrowseLayout({
   const [loadingCollection, setLoadingCollection] = useState(false);
   const fetchedCollections = useRef<Map<string, { papers: Paper[]; meta: { name: string; description: string } }>>(new Map());
 
-  // Cache initial collection data if provided
+  // Sync initial collection data when it arrives (handles async parent loading where
+  // initialCollectionPapers may be empty on first render then populated later)
+  const initialPapersLen = initialCollectionPapers?.length ?? 0;
   useEffect(() => {
-    if (initialSelectedId && initialCollectionPapers && initialCollectionMeta) {
+    if (initialSelectedId && initialCollectionPapers && initialCollectionPapers.length > 0 && initialCollectionMeta) {
       fetchedCollections.current.set(initialSelectedId, {
         papers: initialCollectionPapers,
         meta: initialCollectionMeta,
       });
+      // Only sync state if we're still viewing the initial collection
+      if (selectedId === initialSelectedId) {
+        setCollectionPapers(initialCollectionPapers);
+        setCollectionMeta(initialCollectionMeta);
+      }
     }
-  }, [initialSelectedId, initialCollectionPapers, initialCollectionMeta]);
+  }, [initialSelectedId, initialPapersLen, initialCollectionMeta]);
 
   const handleSelect = useCallback(async (id: string | null) => {
     setSelectedId(id);

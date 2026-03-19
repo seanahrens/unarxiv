@@ -90,10 +90,15 @@ export function useBatchPaperPolling(
     .join(",");
 
   // Sync when parent changes (new papers loaded, etc.)
-  useEffect(() => {
+  // Use render-time state update to avoid one-frame delay that causes downstream
+  // components to receive stale empty arrays via initialCollectionPapers props.
+  const syncKey = `${papers.length}|${inProgressKey}`;
+  const prevSyncKeyRef = useRef(syncKey);
+  if (syncKey !== prevSyncKeyRef.current) {
+    prevSyncKeyRef.current = syncKey;
     papersRef.current = papers;
     setLatestPapers(papers);
-  }, [papers.length, inProgressKey]);
+  }
 
   useEffect(() => {
     const inProgressIds = papers
