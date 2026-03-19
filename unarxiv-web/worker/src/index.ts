@@ -61,6 +61,13 @@ import {
   mergeTokens,
   savePlaybackPosition,
   getPlaybackPositions,
+  getUserPlaylist,
+  setUserPlaylist,
+  addToUserPlaylist,
+  removeFromUserPlaylist,
+  getUserListenHistory,
+  markPaperListened,
+  unmarkPaperListened,
 } from "./db";
 
 export default {
@@ -462,6 +469,65 @@ async function handleImportList(request: Request, env: Env, listId: string, base
   });
 }
 
+// --- Playlist endpoints ---
+
+async function handleGetPlaylist(request: Request, env: Env): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  const items = await getUserPlaylist(env.DB, token);
+  return json({ playlist: items.map((i) => ({ paperId: i.paper_id, addedAt: i.added_at })) });
+}
+
+async function handleUpdatePlaylist(request: Request, env: Env): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  const body = await request.json<{ paperIds?: string[] }>();
+  if (!body.paperIds || !Array.isArray(body.paperIds)) {
+    return json({ error: "paperIds array required" }, 400);
+  }
+  await setUserPlaylist(env.DB, token, body.paperIds);
+  return json({ ok: true });
+}
+
+async function handleAddToPlaylist(request: Request, env: Env): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  const body = await request.json<{ paperId?: string }>();
+  if (!body.paperId) return json({ error: "paperId required" }, 400);
+  const added = await addToUserPlaylist(env.DB, token, body.paperId);
+  return json({ ok: true, added });
+}
+
+async function handleRemoveFromPlaylist(request: Request, env: Env, paperId: string): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  await removeFromUserPlaylist(env.DB, token, paperId);
+  return json({ ok: true });
+}
+
+// --- Listen history endpoints ---
+
+async function handleGetListenHistory(request: Request, env: Env): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  const items = await getUserListenHistory(env.DB, token);
+  return json({ history: items.map((i) => ({ paperId: i.paper_id, readAt: i.read_at })) });
+}
+
+async function handleMarkListened(request: Request, env: Env, paperId: string): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  await markPaperListened(env.DB, token, paperId);
+  return json({ ok: true });
+}
+
+async function handleUnmarkListened(request: Request, env: Env, paperId: string): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token required" }, 401);
+  await unmarkPaperListened(env.DB, token, paperId);
+  return json({ ok: true });
+}
+
 async function handleMergeTokens(request: Request, env: Env): Promise<Response> {
   const body = await request.json<{ oldToken?: string; newToken?: string }>();
   if (!body.oldToken || !body.newToken || body.oldToken === body.newToken) {
@@ -604,6 +670,26 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       handler: (req, env) => handleMyLists(req, env),
     },
     {
+      method: "GET",
+      pattern: /^\/api\/playlist$/,
+      handler: (req, env) => handleGetPlaylist(req, env),
+    },
+    {
+      method: "PUT",
+      pattern: /^\/api\/playlist$/,
+      handler: (req, env) => handleUpdatePlaylist(req, env),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/playlist$/,
+      handler: (req, env) => handleAddToPlaylist(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/listen-history$/,
+      handler: (req, env) => handleGetListenHistory(req, env),
+    },
+    {
       method: "POST",
       pattern: /^\/api\/merge-tokens$/,
       handler: (req, env) => handleMergeTokens(req, env),
@@ -643,6 +729,21 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "PUT",
       pattern: /^\/api\/papers\/([^/]+)\/position$/,
       handler: (req, env, _url, m) => handleSavePosition(req, env, m[1]),
+    },
+    {
+      method: "DELETE",
+      pattern: /^\/api\/playlist\/([^/]+)$/,
+      handler: (req, env, _url, m) => handleRemoveFromPlaylist(req, env, m[1]),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/([^/]+)\/listened$/,
+      handler: (req, env, _url, m) => handleMarkListened(req, env, m[1]),
+    },
+    {
+      method: "DELETE",
+      pattern: /^\/api\/papers\/([^/]+)\/listened$/,
+      handler: (req, env, _url, m) => handleUnmarkListened(req, env, m[1]),
     },
     {
       method: "POST",

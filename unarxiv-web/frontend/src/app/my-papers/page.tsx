@@ -122,14 +122,17 @@ export default function PlaylistPage() {
   };
 
   const handleCopySyncLink = () => {
-    const SYNC_KEYS = ["user_token", "list_tokens", "playlist", "read_papers"];
+    // Sync URL only needs the user token + list tokens — playlist, history,
+    // and playback positions are all on the backend now
     const data: Record<string, unknown> = {};
-    for (const key of SYNC_KEYS) {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) data[key] = JSON.parse(raw);
-      } catch {}
-    }
+    try {
+      const token = localStorage.getItem("user_token");
+      if (token) data.user_token = JSON.parse(token);
+    } catch {}
+    try {
+      const lt = localStorage.getItem("list_tokens");
+      if (lt) data.list_tokens = JSON.parse(lt);
+    } catch {}
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
     const url = `${window.location.origin}/sync#${encoded}`;
     navigator.clipboard.writeText(url);

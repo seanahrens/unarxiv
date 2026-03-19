@@ -7,8 +7,11 @@ import {
   removeFromPlaylist as removeFromStorage,
   isInPlaylist as checkInPlaylist,
   reorderPlaylist as reorderStorage,
+  mergeBackendPlaylist,
   type PlaylistEntry,
 } from "@/lib/playlist";
+import { mergeBackendHistory } from "@/lib/readStatus";
+import { getPlaylistApi, getListenHistoryApi } from "@/lib/api";
 
 interface PlaylistContextValue {
   playlist: PlaylistEntry[];
@@ -40,6 +43,19 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [removingPaperId, setRemovingPaperId] = useState<string | null>(null);
   const [removeAnimationTargetRect, setRemoveAnimationTargetRect] = useState<DOMRect | null>(null);
   const [badgePulse, setBadgePulse] = useState(false);
+
+  // Merge backend data on mount
+  useEffect(() => {
+    Promise.all([getPlaylistApi(), getListenHistoryApi()]).then(([backendPlaylist, backendHistory]) => {
+      if (backendPlaylist.length > 0) {
+        mergeBackendPlaylist(backendPlaylist);
+        setPlaylist(loadPlaylist());
+      }
+      if (backendHistory.length > 0) {
+        mergeBackendHistory(backendHistory);
+      }
+    }).catch(() => {});
+  }, []);
 
   const addToPlaylist = useCallback((paperId: string, sourceRect?: DOMRect) => {
     addToStorage(paperId);

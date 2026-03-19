@@ -135,6 +135,23 @@ CREATE TABLE IF NOT EXISTS list_items (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_list_items_unique ON list_items(list_id, paper_id);
 CREATE INDEX IF NOT EXISTS idx_list_items_list ON list_items(list_id, position);
 
+-- User playlist (synced across devices)
+CREATE TABLE IF NOT EXISTS user_playlist (
+    user_token  TEXT NOT NULL,
+    paper_id    TEXT NOT NULL,
+    position    INTEGER NOT NULL DEFAULT 0,
+    added_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_token, paper_id)
+);
+
+-- User listen history (synced across devices)
+CREATE TABLE IF NOT EXISTS user_listen_history (
+    user_token  TEXT NOT NULL,
+    paper_id    TEXT NOT NULL,
+    read_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_token, paper_id)
+);
+
 -- Playback positions (synced across devices)
 CREATE TABLE IF NOT EXISTS playback_positions (
     user_token  TEXT NOT NULL,
