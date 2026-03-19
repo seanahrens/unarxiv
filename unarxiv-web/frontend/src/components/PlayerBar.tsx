@@ -365,10 +365,6 @@ export default function PlayerBar() {
     } catch {}
   }, [isActive, mounted]);
 
-  // no-op placeholder to preserve hook order
-  const [barHeight] = useState(0);
-  useEffect(() => {}, []);
-
   const fmtTime = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
