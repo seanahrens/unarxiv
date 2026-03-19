@@ -463,6 +463,11 @@
   --radius-full: 0;
 }
 
+/* Force rectangular on rounded-full (Tailwind v4 hardcodes 9999px, ignores CSS vars) */
+[data-theme="retro-terminal"] .rounded-full {
+  border-radius: 0 !important;
+}
+
 /* CRT scanline overlay for retro-terminal */
 [data-theme="retro-terminal"] body::after {
   content: "";
