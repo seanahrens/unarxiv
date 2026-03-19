@@ -58,7 +58,7 @@ export default function PlaylistPage() {
         setMyAdditions(polledAdditions);
       }
     }
-  }, [polledAdditions]);
+  }, [polledAdditions, myAdditions]);
 
   // Fetch my lists
   const loadLists = useCallback(async () => {
