@@ -309,6 +309,16 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
     // Check read status from localStorage
     setPaperRead(checkIsRead(id));
+
+    // Listen for status changes triggered by the PlayerBar's default play button
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { paperId: string };
+      if (detail?.paperId === id) {
+        fetchPaper(id).then((p) => setPaper(p)).catch(() => {});
+      }
+    };
+    window.addEventListener("paper-status-changed", handler);
+    return () => window.removeEventListener("paper-status-changed", handler);
   }, [id]);
 
   // Lazy-fetch transcript when switching to script view
@@ -331,12 +341,16 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     setPaper(updatedPaper);
   }, []);
 
-  const handleRequestNarration = useCallback(async () => {
+  const handleRequestNarration = useCallback(async (rect?: DOMRect) => {
     if (!paper) return;
     setNarrationLoading(true);
     setNarrationError("");
     // Optimistically show progress bar immediately (before any network calls)
     setPaper({ ...paper, status: "queued" });
+    // Add to playlist with fly animation
+    if (!isInPlaylist(paper.id)) {
+      addToPlaylist(paper.id, rect);
+    }
     try {
       const updated = await requestNarration(paper.id);
       setPaper(updated);
@@ -353,7 +367,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     } finally {
       setNarrationLoading(false);
     }
-  }, [paper]);
+  }, [paper, isInPlaylist, addToPlaylist]);
 
   const handleCaptchaVerify = useCallback(async (token: string) => {
     if (!paper) return;

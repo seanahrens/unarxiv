@@ -34,6 +34,16 @@ export function addToPlaylist(paperId: string): void {
   addToPlaylistApi(paperId);
 }
 
+/** Add paper to top of playlist, or move it there if already present. */
+export function addOrMoveToTop(paperId: string): void {
+  const entries = load();
+  const existing = entries.find((e) => e.paperId === paperId);
+  const filtered = entries.filter((e) => e.paperId !== paperId);
+  const entry = existing || { paperId, addedAt: new Date().toISOString() };
+  save([entry, ...filtered]);
+  setPlaylistApi([entry, ...filtered].map((e) => e.paperId));
+}
+
 export function removeFromPlaylist(paperId: string): void {
   const entries = load().filter((e) => e.paperId !== paperId);
   save(entries);

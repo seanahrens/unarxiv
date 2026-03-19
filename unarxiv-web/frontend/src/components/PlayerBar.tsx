@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
@@ -8,7 +9,7 @@ import AudioFileIcon from "@/components/AudioFileIcon";
 import PaperListRow from "@/components/PaperListRow";
 import DraggablePaperList from "@/components/DraggablePaperList";
 import { PaperListRowSkeleton } from "@/components/Skeleton";
-import { fetchPaper, fetchPapersBatch, audioUrl, type Paper } from "@/lib/api";
+import { fetchPaper, fetchPapersBatch, requestNarration, audioUrl, type Paper } from "@/lib/api";
 import { getPlaylist } from "@/lib/playlist";
 
 const COLLAPSE_KEY = "player-collapsed";
@@ -88,7 +89,9 @@ function SkipPrevNext({
 
 export default function PlayerBar() {
   const { state, actions } = useAudio();
-  const { playlist, removeFromPlaylist, reorderPlaylist } = usePlaylist();
+  const { playlist, addToPlaylist, addOrMoveToTop, removeFromPlaylist, reorderPlaylist, isInPlaylist } = usePlaylist();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [showCollapsedRow, setShowCollapsedRow] = useState(false);
@@ -373,6 +376,30 @@ export default function PlayerBar() {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
+  // Detect if we're on a paper detail page — enables the default play button
+  const viewingPaperId = pathname === "/p" ? searchParams.get("id") : null;
+
+  /** When no track is loaded but user is on a paper page, act on that paper. */
+  const handleDefaultPlay = useCallback(async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!viewingPaperId) return;
+    try {
+      const paper = await fetchPaper(viewingPaperId);
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (paper.status === "complete") {
+        window.dispatchEvent(new CustomEvent("playerbar-play", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }));
+        actions.loadPaper(paper.id, paper.title, audioUrl(paper.id));
+        addOrMoveToTop(paper.id, rect);
+      } else if (paper.status === "not_requested") {
+        // Trigger narration + add to playlist
+        if (!isInPlaylist(paper.id)) addToPlaylist(paper.id, rect);
+        await requestNarration(paper.id);
+        // Notify the paper page to refresh its state
+        window.dispatchEvent(new CustomEvent("paper-status-changed", { detail: { paperId: paper.id } }));
+      }
+      // If already processing, do nothing — user can see the progress on the page
+    } catch {}
+  }, [viewingPaperId, actions, addOrMoveToTop, addToPlaylist, isInPlaylist]);
+
   if (!mounted) return null;
 
   // Playlist popup for default state (inline, since playlistPopup var is defined later)
@@ -427,7 +454,11 @@ export default function PlayerBar() {
             <span className="text-xs font-mono text-stone-300 tabular-nums shrink-0 flex items-center">0:00 / --</span>
             <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="2.5" height="14" rx="0.5" /><polygon points="19,5 9,12 19,19" /></svg></button>
             <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="33" height="33" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg></button>
-            <button disabled className="w-12 h-12 flex items-center justify-center bg-stone-400 text-white rounded-full shrink-0 self-center cursor-not-allowed">
+            <button
+              disabled={!viewingPaperId}
+              onClick={handleDefaultPlay}
+              className={`w-12 h-12 flex items-center justify-center text-white rounded-full shrink-0 self-center ${viewingPaperId ? "bg-stone-700 hover:bg-stone-600 transition-colors cursor-pointer" : "bg-stone-400 cursor-not-allowed"}`}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
             </button>
             <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="33" height="33" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" /></svg></button>
@@ -449,7 +480,11 @@ export default function PlayerBar() {
                 <span className="text-sm text-stone-400 truncate italic">Press play on a paper to begin listening</span>
               </div>
             </div>
-            <button disabled className="w-10 h-10 flex items-center justify-center bg-stone-400 text-white rounded-full shrink-0 cursor-not-allowed">
+            <button
+              disabled={!viewingPaperId}
+              onClick={handleDefaultPlay}
+              className={`w-10 h-10 flex items-center justify-center text-white rounded-full shrink-0 ${viewingPaperId ? "bg-stone-700 hover:bg-stone-600 transition-colors cursor-pointer" : "bg-stone-400 cursor-not-allowed"}`}
+            >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
             </button>
             <button onClick={togglePlaylist} className="text-stone-600 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Toggle playlist">

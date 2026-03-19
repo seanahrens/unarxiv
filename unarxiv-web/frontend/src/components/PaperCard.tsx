@@ -4,6 +4,7 @@ import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear } from "@/lib/api";
+import { usePlaylist } from "@/contexts/PlaylistContext";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -36,6 +37,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collectionId }: PaperCardProps) {
   const router = useRouter();
+  const { addToPlaylist, isInPlaylist } = usePlaylist();
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
@@ -59,7 +61,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
   };
 
   /** Import + request narration in one flow. */
-  const handleNarrate = async () => {
+  const handleNarrate = async (rect?: DOMRect) => {
     if (importing) return;
     setImporting(true);
     try {
@@ -67,6 +69,10 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
       if (!imported) { setImporting(false); return; }
       const narrated = await requestNarration(imported.id);
       onPaperChange?.(narrated);
+      // Add to playlist with fly animation
+      if (!isInPlaylist(imported.id)) {
+        addToPlaylist(imported.id, rect);
+      }
     } catch {
       setImporting(false);
     }

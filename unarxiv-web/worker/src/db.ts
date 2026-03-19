@@ -79,7 +79,7 @@ export async function updatePaperStatus(
     duration_seconds?: number;
   }
 ): Promise<void> {
-  const sets = ["status = ?"];
+  const sets = ["status = ?", "updated_at = datetime('now')"];
   const values: (string | number | null)[] = [status];
 
   if (details?.progress_detail !== undefined) {
@@ -670,6 +670,18 @@ export async function getRecentPublicLists(
     .bind(limit, offset)
     .all<List & { paper_count: number }>();
   return results.results;
+}
+
+/**
+ * Atomically claim a paper for narration: only transitions not_requested → preparing.
+ * Returns true if this caller won the race, false if someone else already claimed it.
+ */
+export async function claimPaperForNarration(db: D1Database, id: string): Promise<boolean> {
+  const result = await db
+    .prepare("UPDATE papers SET status = 'preparing', updated_at = datetime('now') WHERE id = ? AND status = 'not_requested'")
+    .bind(id)
+    .run();
+  return (result.meta?.changes ?? 0) > 0;
 }
 
 /** Get papers in queued status, ordered by created_at ascending (oldest first). */

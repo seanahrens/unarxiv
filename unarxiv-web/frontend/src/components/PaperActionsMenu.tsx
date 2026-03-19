@@ -67,7 +67,7 @@ export default function PaperActionsMenu({
 }: PaperActionsMenuProps) {
   const router = useRouter();
   const { state, actions } = useAudio();
-  const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
+  const { addToPlaylist, addOrMoveToTop, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const { downloading, download } = useDownload();
 
   const isComplete = paper.status === "complete";
@@ -110,6 +110,7 @@ export default function PaperActionsMenu({
         window.dispatchEvent(new CustomEvent("playerbar-play", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }));
       }
       actions.loadPaper(paper.id, paper.title, audioUrl(paper.id));
+      addOrMoveToTop(paper.id, rect || undefined);
     }
     onClose();
   };

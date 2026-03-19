@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import {
   getPlaylist as loadPlaylist,
   addToPlaylist as addToStorage,
+  addOrMoveToTop as moveToTopStorage,
   removeFromPlaylist as removeFromStorage,
   isInPlaylist as checkInPlaylist,
   reorderPlaylist as reorderStorage,
@@ -17,6 +18,7 @@ interface PlaylistContextValue {
   playlist: PlaylistEntry[];
   playlistCount: number;
   addToPlaylist: (paperId: string, sourceRect?: DOMRect) => void;
+  addOrMoveToTop: (paperId: string, sourceRect?: DOMRect) => void;
   removeFromPlaylist: (paperId: string, targetRect?: DOMRect) => void;
   isInPlaylist: (paperId: string) => boolean;
   reorderPlaylist: (orderedIds: string[]) => void;
@@ -57,15 +59,11 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     }).catch(() => {});
   }, []);
 
-  const addToPlaylist = useCallback((paperId: string, sourceRect?: DOMRect) => {
-    addToStorage(paperId);
-    setPlaylist(loadPlaylist());
-    // Trigger fly-to animation
+  const triggerAddAnimation = useCallback((sourceRect?: DOMRect) => {
     if (sourceRect) {
-      setAnimatingPaperId(paperId);
+      setAnimatingPaperId("_anim");
       setAnimationSourceRect(sourceRect);
     }
-    // Trigger badge pulse after animation completes (or immediately if no animation)
     setTimeout(() => {
       setBadgePulse(true);
       setTimeout(() => setBadgePulse(false), 600);
@@ -73,6 +71,22 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       setAnimationSourceRect(null);
     }, sourceRect ? 500 : 0);
   }, []);
+
+  const addToPlaylist = useCallback((paperId: string, sourceRect?: DOMRect) => {
+    addToStorage(paperId);
+    setPlaylist(loadPlaylist());
+    triggerAddAnimation(sourceRect);
+  }, [triggerAddAnimation]);
+
+  const addOrMoveToTop = useCallback((paperId: string, sourceRect?: DOMRect) => {
+    const wasInPlaylist = checkInPlaylist(paperId);
+    moveToTopStorage(paperId);
+    setPlaylist(loadPlaylist());
+    // Only animate if it wasn't already in the playlist
+    if (!wasInPlaylist) {
+      triggerAddAnimation(sourceRect);
+    }
+  }, [triggerAddAnimation]);
 
   const removeFromPlaylist = useCallback((paperId: string, targetRect?: DOMRect) => {
     if (targetRect) {
@@ -105,6 +119,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         playlist,
         playlistCount: playlist.length,
         addToPlaylist,
+        addOrMoveToTop,
         removeFromPlaylist,
         isInPlaylist: isInPlaylistCheck,
         reorderPlaylist: reorderPlaylistAction,

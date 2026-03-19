@@ -17,7 +17,7 @@ PAPER_SUBMISSION_DAILY_LIMIT = "240"
 QUEUE_BATCH_SIZE = "3"
 
 [triggers]
-crons = ["0 0 * * *"]
+crons = ["*/15 * * * *"]
 
 [[d1_databases]]
 binding = "DB"

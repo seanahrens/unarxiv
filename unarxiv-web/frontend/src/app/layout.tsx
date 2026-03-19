@@ -83,7 +83,7 @@ export default function RootLayout({
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
-        <footer className="w-full py-6">
+        <footer className="hidden md:block w-full py-6">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center text-center gap-3">
             <div className="flex flex-col items-center gap-1.5">
               <p className="text-xs text-stone-500">

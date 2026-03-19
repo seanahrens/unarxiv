@@ -36,6 +36,7 @@ import {
   getSubmissionCount,
   recordSubmission,
   getQueuedPapers,
+  claimPaperForNarration,
   cleanup,
   getRating,
   upsertRating,
@@ -98,14 +99,22 @@ export default {
         response.headers.set(key, value);
       }
 
-      // Immediately drain the queue after narrate/reprocess requests succeed
+      // Dispatch to Modal immediately after narrate/reprocess — no queue indirection
       if (
         method === "POST" &&
         response.ok &&
-        (/\/api\/papers\/.+\/narrate$/.test(path) ||
-          /\/api\/papers\/.+\/reprocess$/.test(path))
+        (/\/api\/papers\/(.+?)\/(narrate|reprocess)$/.test(path))
       ) {
-        ctx.waitUntil(drainNarrationQueue(env));
+        const paperId = path.match(/\/api\/papers\/(.+?)\/(narrate|reprocess)$/)?.[1];
+        if (paperId) {
+          ctx.waitUntil(
+            getPaper(env.DB, paperId).then((paper) => {
+              if (paper && paper.status === "preparing") {
+                return dispatchToModal(env, paper, "https://api.unarxiv.org");
+              }
+            })
+          );
+        }
       }
 
       return response;
@@ -1073,87 +1082,103 @@ async function handleNarratePaper(
     return json({ error: "Paper not found" }, 404);
   }
 
-  if (paper.status !== "not_requested") {
-    return json({ error: "Narration already requested" }, 400);
-  }
+  // Atomic claim: only one caller wins the race from not_requested → preparing.
+  // Everyone else gets a success response with the current paper state (already in progress).
+  const claimed = await claimPaperForNarration(env.DB, id);
 
-  // Parse optional source_priority from body
-  let sourcePriority = "latex";
-  try {
-    const body = await request.clone().json<{ source_priority?: string; turnstile_token?: string }>();
-    if (body?.source_priority === "pdf") sourcePriority = "pdf";
-  } catch {}
-
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-
-  // Per-IP daily rate limit on narration requests (not paper submissions).
-  // Admin callers bypass this check.
-  const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
-  if (!isAdmin) {
-    const limit = parseInt(env.PER_IP_DAILY_LIMIT || "24");
-    const count = await getSubmissionCount(env.DB, ip);
-    if (count >= limit) {
-      return json({ error: "Daily narration limit reached. Try again tomorrow." }, 429);
+  if (claimed) {
+    // We won the race — do rate limit check and record submission
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
+    if (!isAdmin) {
+      const limit = parseInt(env.PER_IP_DAILY_LIMIT || "24");
+      const count = await getSubmissionCount(env.DB, ip);
+      if (count >= limit) {
+        // Revert the claim — they're over limit
+        await updatePaperStatus(env.DB, id, "not_requested");
+        return json({ error: "Daily narration limit reached. Try again tomorrow." }, 429);
+      }
     }
+    await recordSubmission(env.DB, ip);
   }
 
-  // Enqueue: mark as queued in DB. The queue is drained immediately via waitUntil
-  // after this response, with the scheduled cron as a backup.
-  await updatePaperStatus(env.DB, id, "queued");
-  await recordSubmission(env.DB, ip);
-
+  // Return current state — whether we claimed it or someone else already did
   const updated = await getPaper(env.DB, id);
   return json(paperToResponse(updated!, baseUrl));
 }
 
 /**
- * Drain the narration queue: pick up to QUEUE_BATCH_SIZE queued papers and dispatch
- * each to Modal. Called immediately via waitUntil after narrate/reprocess requests,
- * and by the scheduled cron as a backup to catch anything missed.
+ * Dispatch a single paper to Modal for narration. Paper should already be in "preparing" status.
+ * On failure, reverts to "queued" so the cron safety net can retry.
+ */
+async function dispatchToModal(
+  env: Env,
+  paper: Paper,
+  baseUrl: string,
+  sourcePriority: string = "latex"
+): Promise<void> {
+  // Local dev: skip dispatch, log curl command to simulate completion
+  if (!env.MODAL_WEBHOOK_SECRET) {
+    console.log(`[local-dev] Skipping Modal dispatch for ${paper.id} (no MODAL_WEBHOOK_SECRET). ` +
+      `Simulate completion: curl -X POST http://localhost:8787/api/webhooks/modal ` +
+      `-H 'Content-Type: application/json' ` +
+      `-d '{"arxiv_id":"${paper.id}","status":"complete","duration_seconds":600}'`);
+    return;
+  }
+  if (!env.MODAL_FUNCTION_URL) return;
+
+  try {
+    const resp = await fetch(env.MODAL_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
+      },
+      body: JSON.stringify({
+        arxiv_id: paper.id,
+        tex_source_url: arxivSrcUrl(paper.id),
+        callback_url: `${baseUrl}/api/webhooks/modal`,
+        paper_title: paper.title,
+        paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
+        source_priority: sourcePriority,
+        _secret: env.MODAL_WEBHOOK_SECRET,
+      }),
+    });
+    if (!resp.ok) {
+      console.error(`Modal returned ${resp.status} for ${paper.id}: ${await resp.text().catch(() => "")}`);
+      await updatePaperStatus(env.DB, paper.id, "queued");
+    }
+  } catch (e: any) {
+    console.error(`Failed to dispatch ${paper.id} to Modal:`, e);
+    await updatePaperStatus(env.DB, paper.id, "queued");
+  }
+}
+
+/**
+ * Cron safety net: recover stale papers and dispatch any that are still queued.
+ * This handles edge cases where the direct dispatch in the narrate handler failed.
  */
 async function drainNarrationQueue(env: Env): Promise<void> {
   if (!env.MODAL_FUNCTION_URL) return;
 
   const batchSize = parseInt(env.QUEUE_BATCH_SIZE || "3");
   const baseUrl = "https://api.unarxiv.org";
+
+  // Recover stale papers stuck in "preparing" for over 15 minutes (Modal never called back)
+  try {
+    await env.DB.prepare(
+      `UPDATE papers SET status = 'queued' WHERE status = 'preparing'
+       AND updated_at < datetime('now', '-15 minutes')`
+    ).run();
+  } catch (e: any) {
+    console.error("Failed to recover stale preparing papers:", e);
+  }
+
   const papers = await getQueuedPapers(env.DB, batchSize);
 
   for (const paper of papers) {
-    // Mark as preparing immediately so a concurrent cron run won't double-dispatch
     await updatePaperStatus(env.DB, paper.id, "preparing");
-
-    // Skip Modal dispatch when secret is missing (local dev) — leave paper in "preparing"
-    // so the UI shows an in-progress state. Use the webhook endpoint to simulate completion.
-    if (!env.MODAL_WEBHOOK_SECRET) {
-      console.log(`[local-dev] Skipping Modal dispatch for ${paper.id} (no MODAL_WEBHOOK_SECRET). ` +
-        `Simulate completion: curl -X POST http://localhost:8787/api/webhooks/modal ` +
-        `-H 'Content-Type: application/json' ` +
-        `-d '{"arxiv_id":"${paper.id}","status":"complete","duration_seconds":600}'`);
-      continue;
-    }
-
-    try {
-      await fetch(env.MODAL_FUNCTION_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
-        },
-        body: JSON.stringify({
-          arxiv_id: paper.id,
-          tex_source_url: arxivSrcUrl(paper.id),
-          callback_url: `${baseUrl}/api/webhooks/modal`,
-          paper_title: paper.title,
-          paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
-          source_priority: "latex",
-          _secret: env.MODAL_WEBHOOK_SECRET,
-        }),
-      });
-    } catch (e: any) {
-      console.error(`Failed to dispatch ${paper.id} to Modal:`, e);
-      // Revert to queued so the next cron run retries
-      await updatePaperStatus(env.DB, paper.id, "queued");
-    }
+    await dispatchToModal(env, paper, baseUrl);
   }
 }
 

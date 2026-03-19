@@ -53,7 +53,18 @@ cd unarxiv-web/modal_worker && modal deploy narrate.py
 
 ## Database
 
-Schema in `unarxiv-web/schema.sql`. Paper statuses: `queued → preparing → generating_audio → complete | failed`.
+Schema in `unarxiv-web/schema.sql`. Paper statuses: `not_requested → preparing → generating_audio → complete | failed`.
+
+### Narration dispatch flow
+
+When a user clicks "Narrate", the worker dispatches to Modal **immediately** (no queue):
+
+1. `handleNarratePaper` atomically claims the paper via `claimPaperForNarration()` — a single `UPDATE ... WHERE status = 'not_requested'` so only one concurrent caller wins the race.
+2. The winner's response triggers `dispatchToModal()` via `ctx.waitUntil()` (runs after HTTP response is sent).
+3. All callers (winner + losers) get a 200 with the paper in `preparing` status.
+4. Modal calls back to `/api/webhooks/modal` with status updates (`generating_audio`, `complete`, or `failed`).
+
+**Safety net**: A cron job (every 15 min) recovers papers stuck in `preparing` for >15 min (reverts to `queued`) and dispatches any `queued` papers. The `queued` status only exists as a fallback for failed dispatches — normal flow skips it entirely.
 
 D1 migrations must be run with:
 ```bash

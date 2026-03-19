@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useAudio } from "@/contexts/AudioContext";
+import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, isInProgress, parseEtaSeconds, type Paper } from "@/lib/api";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
 
@@ -66,7 +67,7 @@ export default function PaperActionButton({
   paper: Paper;
   compact?: boolean;
   onRate?: () => void;
-  onGenerate?: () => void;
+  onGenerate?: (rect?: DOMRect) => void;
   generateDisabled?: boolean;
   onAddToPlaylist?: (rect?: DOMRect) => void;
   onRemoveFromPlaylist?: (rect?: DOMRect) => void;
@@ -77,6 +78,7 @@ export default function PaperActionButton({
   onEnsureImported?: () => Promise<Paper | null>;
 }) {
   const { state, actions } = useAudio();
+  const { addOrMoveToTop } = usePlaylist();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -127,6 +129,7 @@ export default function PaperActionButton({
       const rect = e.currentTarget.getBoundingClientRect();
       window.dispatchEvent(new CustomEvent("playerbar-play", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }));
       actions.loadPaper(paper.id, paper.title, audioUrl(paper.id));
+      addOrMoveToTop(paper.id, rect);
     }
   };
 
@@ -232,9 +235,12 @@ export default function PaperActionButton({
     return (
       <div className={wrapperClass} ref={menuRef}>
         <button
-          onClick={onGenerate}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            onGenerate?.(rect);
+          }}
           disabled={generateDisabled}
-          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${compact ? compactColors : "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700"} disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
+          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${compactColors} disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
         >
           <SparklesIcon />
           {compact ? (
@@ -245,7 +251,7 @@ export default function PaperActionButton({
         </button>
         <button
           onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${compact ? compactColors : "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700"} border-l ${compact ? compactChevronBorder : "border-l-emerald-800"} rounded-r-xl rounded-l-none -ml-px`}
+          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${compactColors} border-l ${compactChevronBorder} rounded-r-xl rounded-l-none -ml-px`}
         >
           <ChevronIcon />
         </button>
