@@ -23,6 +23,7 @@ import {
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 import ProcessingFileIcon from "@/components/ProcessingFileIcon";
+import { Skeleton } from "@/components/Skeleton";
 
 const PAGE_SIZE = 30;
 
@@ -109,7 +110,17 @@ function RatingsModal({
         <p className="text-sm text-stone-500 mb-4 truncate">{paperTitle}</p>
 
         {loading ? (
-          <div className="text-center py-8 text-stone-400 text-sm">Loading...</div>
+          <div className="space-y-3 py-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton width="80px" height="14px" />
+                <div className="flex-1">
+                  <Skeleton className="mb-1" width="100%" height="14px" />
+                  <Skeleton width="60px" height="10px" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : ratings.length === 0 ? (
           <div className="text-center py-8 text-stone-400 text-sm">No ratings yet</div>
         ) : (
@@ -479,7 +490,13 @@ export default function AdminPage() {
 
   // --- Login screen ---
   if (checkingSession) {
-    return <div className="text-center py-20 text-stone-400 text-sm">Loading...</div>;
+    return (
+      <div className="max-w-sm mx-auto mt-20 space-y-4">
+        <Skeleton width="120px" height="24px" />
+        <Skeleton className="rounded-lg" width="100%" height="42px" />
+        <Skeleton className="rounded-lg" width="100%" height="42px" />
+      </div>
+    );
   }
 
   if (!authenticated) {
@@ -640,7 +657,16 @@ export default function AdminPage() {
 
       {/* Papers table */}
       {loading ? (
-        <div className="text-center py-16 text-stone-400 text-sm">Loading...</div>
+        <div className="bg-white border border-stone-200 rounded-lg overflow-hidden p-4 space-y-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="rounded" width="14px" height="14px" />
+              <Skeleton className="rounded-full" width="10px" height="10px" />
+              <Skeleton className="flex-1" height="14px" />
+              <Skeleton width="40px" height="14px" />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="bg-white border border-stone-200 rounded-lg overflow-hidden">
           <table className="w-full text-sm">

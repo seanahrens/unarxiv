@@ -23,16 +23,18 @@ import {
   type ImportResult,
   DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
-import { type Paper } from "@/lib/api";
+import { type Paper, isInProgress } from "@/lib/api";
+import { useBatchPaperPolling } from "@/hooks/usePaperPolling";
 import PaperCard from "@/components/PaperCard";
 import DraggablePaperList from "@/components/DraggablePaperList";
 import Paginator from "@/components/Paginator";
 import BrowseLayout from "@/components/BrowseLayout";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
+import { CollectionPageSkeleton } from "@/components/Skeleton";
 
 export default function ListsPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-stone-500">Loading...</div>}>
+    <Suspense fallback={<CollectionPageSkeleton />}>
       <ListsPageContent />
     </Suspense>
   );
@@ -148,26 +150,33 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   useClickOutside(shareMenuRef, () => setShowShareMenu(false), showShareMenu);
   useClickOutside(editMenuRef, () => setShowEditMenu(false), showEditMenu);
 
-  const paperMap: Record<string, Paper> = {};
+  // Build paper map from loaded data
+  const rawPapers: Paper[] = [];
   const paperIds: string[] = [];
   const notFoundIds = new Set<string>();
   if (data) {
     for (const p of data.papers) {
       if ("not_found" in p) {
         notFoundIds.add(p.id);
-        paperMap[p.id] = {
+        rawPapers.push({
           id: p.id, arxiv_url: "", title: `${p.id} [Deleted Paper - Click to Restore]`,
           authors: [], abstract: "", published_date: "", status: "not_found",
           error_message: null, progress_detail: null, audio_url: null,
           audio_size_bytes: null, duration_seconds: null, created_at: "", completed_at: null,
-        };
+        });
       } else {
-        paperMap[p.id] = p as Paper;
+        rawPapers.push(p as Paper);
       }
-    }
-    for (const p of data.papers) {
       paperIds.push(p.id);
     }
+  }
+
+  // Poll processing papers in the collection for live status updates
+  const polledPapers = useBatchPaperPolling(rawPapers);
+
+  const paperMap: Record<string, Paper> = {};
+  for (const p of polledPapers) {
+    paperMap[p.id] = p;
   }
 
   const handleSave = async () => {
@@ -256,7 +265,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
   };
 
   if (loading) {
-    return <div className="text-stone-500 text-sm py-20 text-center">Loading...</div>;
+    return <CollectionPageSkeleton />;
   }
 
   if (error || !data) {
@@ -271,7 +280,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
     );
   }
 
-  const visiblePapers = data.papers.filter((p) => !("not_found" in p));
+  const visiblePapers = polledPapers.filter((p) => p.status !== "not_found");
 
   // ─── Edit View (owner + edit mode) ──────────────────────────────────────────
 

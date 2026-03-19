@@ -9,6 +9,7 @@ import ArxivCta from "@/components/ArxivCta";
 import SiteName from "@/components/SiteName";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
 import BrowseLayout from "@/components/BrowseLayout";
+import { PaperCardSkeleton, CollectionSidebarSkeleton } from "@/components/Skeleton";
 import {
   fetchPapers,
   fetchPaper,
@@ -30,9 +31,38 @@ const PAGE_SIZE = 6;
 const MAX_PAGES = 10;
 const SEARCH_PAGE_SIZE = 10;
 
+function HomePageSkeleton() {
+  return (
+    <div>
+      <div className="h-6 mb-6" />
+      {/* Search bar placeholder */}
+      <div className="bg-stone-200 animate-pulse rounded-xl h-12 mb-6" />
+      <div className="h-6" />
+      {/* Paper cards skeleton */}
+      <div className="flex gap-8">
+        <div className="flex-1 min-w-0">
+          <div className="bg-stone-200 animate-pulse rounded h-4 w-32 mb-3" />
+          <div className="grid gap-3">
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+          </div>
+        </div>
+        <div className="hidden lg:block w-64 flex-shrink-0 space-y-2">
+          <div className="bg-stone-200 animate-pulse rounded h-4 w-20 mb-3" />
+          <CollectionSidebarSkeleton />
+          <CollectionSidebarSkeleton />
+          <CollectionSidebarSkeleton />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-stone-500">Loading...</div>}>
+    <Suspense fallback={<HomePageSkeleton />}>
       <HomePageContent />
     </Suspense>
   );
@@ -272,6 +302,28 @@ function HomePageContent() {
     }
   }, [qParam, arxivParam, pageParam]);
 
+  // Background refresh: re-fetch homepage data every 60s when on the default view
+  useEffect(() => {
+    const isDefaultView = !qParam && !arxivParam;
+    if (!isDefaultView || loading) return;
+
+    const refresh = async () => {
+      try {
+        const [recentData, recentLists] = await Promise.all([
+          fetchPapers({ sort: "recent", per_page: PAGE_SIZE * MAX_PAGES, status: "complete" }),
+          fetchRecentLists(20),
+        ]);
+        setNewPapers(recentData.papers.filter((p) => p.status === "complete"));
+        setCollections(recentLists);
+      } catch {
+        // Silently ignore background refresh errors
+      }
+    };
+
+    const timer = setInterval(refresh, 60_000);
+    return () => clearInterval(timer);
+  }, [qParam, arxivParam, loading]);
+
   const currentPage = Math.max(1, pageParam);
   const searchTotalPages = Math.max(
     Math.ceil(mergedResults.length / SEARCH_PAGE_SIZE),
@@ -327,7 +379,11 @@ function HomePageContent() {
                 )}
               </div>
               {loading ? (
-                <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+                <div className="grid gap-3">
+                  <PaperCardSkeleton />
+                  <PaperCardSkeleton />
+                  <PaperCardSkeleton />
+                </div>
               ) : paginatedResults.length === 0 ? (
                 <ArxivCta query={searchQuery} />
               ) : (
@@ -359,7 +415,23 @@ function HomePageContent() {
               )}
             </>
           ) : loading ? (
-            <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+            <div className="flex gap-8">
+              <div className="flex-1 min-w-0">
+                <div className="bg-stone-200 animate-pulse rounded h-4 w-32 mb-3" />
+                <div className="grid gap-3">
+                  <PaperCardSkeleton />
+                  <PaperCardSkeleton />
+                  <PaperCardSkeleton />
+                  <PaperCardSkeleton />
+                </div>
+              </div>
+              <div className="hidden lg:block w-64 flex-shrink-0 space-y-2">
+                <div className="bg-stone-200 animate-pulse rounded h-4 w-20 mb-3" />
+                <CollectionSidebarSkeleton />
+                <CollectionSidebarSkeleton />
+                <CollectionSidebarSkeleton />
+              </div>
+            </div>
           ) : newPapers.length === 0 ? (
             <ArxivCta />
           ) : (

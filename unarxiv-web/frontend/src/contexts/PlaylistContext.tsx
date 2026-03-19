@@ -33,17 +33,13 @@ export function usePlaylist() {
 }
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
-  const [playlist, setPlaylist] = useState<PlaylistEntry[]>([]);
+  // Initialize synchronously from localStorage to avoid flash of empty playlist count
+  const [playlist, setPlaylist] = useState<PlaylistEntry[]>(() => loadPlaylist());
   const [animatingPaperId, setAnimatingPaperId] = useState<string | null>(null);
   const [animationSourceRect, setAnimationSourceRect] = useState<DOMRect | null>(null);
   const [removingPaperId, setRemovingPaperId] = useState<string | null>(null);
   const [removeAnimationTargetRect, setRemoveAnimationTargetRect] = useState<DOMRect | null>(null);
   const [badgePulse, setBadgePulse] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    setPlaylist(loadPlaylist());
-  }, []);
 
   const addToPlaylist = useCallback((paperId: string, sourceRect?: DOMRect) => {
     addToStorage(paperId);

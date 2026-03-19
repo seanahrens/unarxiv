@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAudio } from "@/contexts/AudioContext";
 import { getReadHistory, markAsUnread } from "@/lib/readStatus";
-import { fetchPapersBatch, fetchMyAdditions, fetchPaper, deleteMyAddition, isInProgress, type Paper } from "@/lib/api";
+import { fetchPapersBatch, fetchMyAdditions, deleteMyAddition, isInProgress, type Paper } from "@/lib/api";
+import { useBatchPaperPolling } from "@/hooks/usePaperPolling";
 import {
   getMyListTokens,
   getTokenForList,
@@ -18,7 +19,8 @@ import {
   DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
 import PaperListRow from "@/components/PaperListRow";
-import NarrationProgress, { POLL_INTERVAL_MS } from "@/components/NarrationProgress";
+import NarrationProgress from "@/components/NarrationProgress";
+import { MyPapersSectionSkeleton } from "@/components/Skeleton";
 
 export default function PlaylistPage() {
   const router = useRouter();
@@ -66,25 +68,20 @@ export default function PlaylistPage() {
       .finally(() => setAdditionsLoading(false));
   }, []);
 
-  // Poll for in-progress additions
+  // Poll for in-progress additions using batch API
+  const polledAdditions = useBatchPaperPolling(myAdditions);
+
+  // Sync polled data back to state when it changes
   useEffect(() => {
-    const inProgress = myAdditions.filter((p) => isInProgress(p.status));
-    if (inProgress.length === 0) return;
-
-    const interval = setInterval(async () => {
-      const updates = await Promise.all(
-        inProgress.map((p) => fetchPaper(p.id).catch(() => p))
+    if (polledAdditions.length > 0 && polledAdditions !== myAdditions) {
+      const hasChanges = polledAdditions.some((p, i) =>
+        myAdditions[i] && p.status !== myAdditions[i].status
       );
-      setMyAdditions((prev) =>
-        prev.map((p) => {
-          const updated = updates.find((u) => u.id === p.id);
-          return updated || p;
-        })
-      );
-    }, POLL_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [myAdditions]);
+      if (hasChanges) {
+        setMyAdditions(polledAdditions);
+      }
+    }
+  }, [polledAdditions]);
 
   // Fetch my lists
   const loadLists = useCallback(async () => {
@@ -179,7 +176,7 @@ export default function PlaylistPage() {
         </div>
 
         {additionsLoading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">Loading...</div>
+          <MyPapersSectionSkeleton rows={2} />
         ) : myAdditions.length === 0 ? (
           <div className="text-stone-500 text-sm py-3 text-center">
             Papers you add to unarXiv will appear here.
@@ -257,7 +254,7 @@ export default function PlaylistPage() {
         </div>
 
         {listsLoading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">Loading...</div>
+          <MyPapersSectionSkeleton rows={2} />
         ) : myLists.length === 0 ? (
           <div className="text-stone-500 text-sm py-3 text-center">
             No collections yet. Create one with the + button above.
@@ -360,7 +357,7 @@ export default function PlaylistPage() {
         </div>
 
         {historyLoading ? (
-          <div className="text-stone-500 text-sm py-3 text-center">Loading...</div>
+          <MyPapersSectionSkeleton rows={3} />
         ) : readHistory.length === 0 ? (
           <div className="text-stone-500 text-sm py-3 text-center">No completed listens yet.</div>
         ) : (
