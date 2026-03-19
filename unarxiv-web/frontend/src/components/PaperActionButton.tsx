@@ -213,7 +213,7 @@ export default function PaperActionButton({
         </div>
         <button
           onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
+          className={`${btnBase} ${compact ? "px-1" : "px-1.5 h-auto self-stretch"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
         >
           <ChevronIcon />
         </button>
