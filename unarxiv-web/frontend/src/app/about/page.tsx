@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import SiteName from "@/components/SiteName";
+import UrlAnimation from "@/components/UrlAnimation";
 
 export const metadata: Metadata = {
   title: "About — unarXiv",
@@ -46,6 +47,14 @@ export default function AboutPage() {
               <p>Stream or download the MP3 — add it to your playlist and listen on the go.</p>
             </div>
           </div>
+        </section>
+
+        {/* Quick tip */}
+        <section className="bg-surface rounded-2xl border border-stone-200 p-6 flex flex-col items-center text-center gap-3">
+          <p className="text-sm text-stone-600">
+            You can go to the narration of any arXiv paper by just adding &lsquo;<span className="font-semibold text-stone-900 underline">un</span>&rsquo; to the domain.
+          </p>
+          <UrlAnimation static />
         </section>
 
         {/* Recommended apps */}
@@ -125,6 +134,9 @@ export default function AboutPage() {
 
       </div>
 
+      <p className="text-2xs text-stone-400 text-center mt-8 max-w-md mx-auto">
+        arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
+      </p>
     </div>
   );
 }

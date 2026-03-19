@@ -18,7 +18,6 @@ const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-mono-brand",
 });
 
-import UrlAnimation from "@/components/UrlAnimation";
 import PlayerBar from "@/components/PlayerBar";
 import PlaylistNavButton from "@/components/PlaylistNavButton";
 import FlyToPlaylist from "@/components/FlyToPlaylist";
@@ -85,21 +84,12 @@ export default function RootLayout({
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         <footer className="hidden md:block w-full py-6">
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center text-center gap-3">
-            <div className="flex flex-col items-center gap-1.5">
-              <p className="text-xs text-stone-500">
-                Did you know? You can go to our narration of your arXiv paper by just adding &lsquo;<span className="underline">un</span>&rsquo; to the domain.
-              </p>
-              <UrlAnimation static />
-            </div>
             <Link
               href="/about"
               className="text-sm text-stone-500 hover:text-stone-700 transition-colors no-underline"
             >
               About
             </Link>
-            <p className="text-2xs text-stone-500 max-w-md">
-              arXiv is a registered trademark of Cornell University. unarXiv is not affiliated with, endorsed by, or sponsored by Cornell University or arXiv.
-            </p>
           </div>
         </footer>
         {/* Spacer so fixed player bar doesn't obscure content */}
