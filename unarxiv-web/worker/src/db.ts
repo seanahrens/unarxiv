@@ -682,6 +682,85 @@ export async function getQueuedPapers(db: D1Database, limit: number = 5): Promis
   return results.results;
 }
 
+// --- User Playlist ---
+
+/** Get a user's playlist (ordered). */
+export async function getUserPlaylist(db: D1Database, token: string): Promise<{ paper_id: string; position: number; added_at: string }[]> {
+  const results = await db
+    .prepare("SELECT paper_id, position, added_at FROM user_playlist WHERE user_token = ? ORDER BY position ASC")
+    .bind(token)
+    .all<{ paper_id: string; position: number; added_at: string }>();
+  return results.results;
+}
+
+/** Set the full playlist (replaces existing). */
+export async function setUserPlaylist(db: D1Database, token: string, paperIds: string[]): Promise<void> {
+  const stmts = [
+    db.prepare("DELETE FROM user_playlist WHERE user_token = ?").bind(token),
+    ...paperIds.map((id, i) =>
+      db.prepare("INSERT INTO user_playlist (user_token, paper_id, position) VALUES (?, ?, ?)").bind(token, id, i)
+    ),
+  ];
+  await db.batch(stmts);
+}
+
+/** Add a paper to the end of a user's playlist. Returns true if added, false if duplicate. */
+export async function addToUserPlaylist(db: D1Database, token: string, paperId: string): Promise<boolean> {
+  const maxPos = await db
+    .prepare("SELECT COALESCE(MAX(position), -1) as mp FROM user_playlist WHERE user_token = ?")
+    .bind(token)
+    .first<{ mp: number }>();
+  try {
+    await db
+      .prepare("INSERT INTO user_playlist (user_token, paper_id, position) VALUES (?, ?, ?)")
+      .bind(token, paperId, (maxPos?.mp ?? -1) + 1)
+      .run();
+    return true;
+  } catch (e: any) {
+    if (e.message?.includes("UNIQUE")) return false;
+    throw e;
+  }
+}
+
+/** Remove a paper from a user's playlist. */
+export async function removeFromUserPlaylist(db: D1Database, token: string, paperId: string): Promise<void> {
+  await db
+    .prepare("DELETE FROM user_playlist WHERE user_token = ? AND paper_id = ?")
+    .bind(token, paperId)
+    .run();
+}
+
+// --- User Listen History ---
+
+/** Get a user's listen history (most recent first). */
+export async function getUserListenHistory(db: D1Database, token: string): Promise<{ paper_id: string; read_at: string }[]> {
+  const results = await db
+    .prepare("SELECT paper_id, read_at FROM user_listen_history WHERE user_token = ? ORDER BY read_at DESC")
+    .bind(token)
+    .all<{ paper_id: string; read_at: string }>();
+  return results.results;
+}
+
+/** Mark a paper as listened. */
+export async function markPaperListened(db: D1Database, token: string, paperId: string): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO user_listen_history (user_token, paper_id, read_at)
+       VALUES (?, ?, datetime('now'))
+       ON CONFLICT(user_token, paper_id) DO UPDATE SET read_at = datetime('now')`
+    )
+    .bind(token, paperId)
+    .run();
+}
+
+/** Unmark a paper as listened. */
+export async function unmarkPaperListened(db: D1Database, token: string, paperId: string): Promise<void> {
+  await db
+    .prepare("DELETE FROM user_listen_history WHERE user_token = ? AND paper_id = ?")
+    .bind(token, paperId)
+    .run();
+}
+
 /** Cleanup old visits and submissions (call periodically). */
 export async function cleanup(db: D1Database): Promise<void> {
   await db.batch([
@@ -707,6 +786,12 @@ export async function mergeTokens(db: D1Database, oldToken: string, newToken: st
     db.prepare("DELETE FROM ratings WHERE rater_token = ?").bind(oldToken),
     // Reassign list ownership
     db.prepare("UPDATE lists SET owner_token = ? WHERE owner_token = ?").bind(newToken, oldToken),
+    // Merge playlist (ignore duplicates)
+    db.prepare("UPDATE OR IGNORE user_playlist SET user_token = ? WHERE user_token = ?").bind(newToken, oldToken),
+    db.prepare("DELETE FROM user_playlist WHERE user_token = ?").bind(oldToken),
+    // Merge listen history (ignore duplicates, keep newer read_at)
+    db.prepare("UPDATE OR IGNORE user_listen_history SET user_token = ? WHERE user_token = ?").bind(newToken, oldToken),
+    db.prepare("DELETE FROM user_listen_history WHERE user_token = ?").bind(oldToken),
     // Merge playback positions (keep the one updated most recently)
     db.prepare(
       `UPDATE playback_positions SET user_token = ?, updated_at = datetime('now')

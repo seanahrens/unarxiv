@@ -436,6 +436,65 @@ export async function searchArxiv(query: string, page: number = 1, perPage: numb
   return res.json();
 }
 
+// --- Playlist (backend) ---
+
+export async function getPlaylistApi(): Promise<{ paperId: string; addedAt: string }[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/playlist`, { headers: userHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.playlist || [];
+  } catch { return []; }
+}
+
+export async function setPlaylistApi(paperIds: string[]): Promise<void> {
+  await fetch(`${API_BASE}/api/playlist`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...userHeaders() },
+    body: JSON.stringify({ paperIds }),
+  }).catch(() => {});
+}
+
+export async function addToPlaylistApi(paperId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/playlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...userHeaders() },
+    body: JSON.stringify({ paperId }),
+  }).catch(() => {});
+}
+
+export async function removeFromPlaylistApi(paperId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/playlist/${paperId}`, {
+    method: "DELETE",
+    headers: userHeaders(),
+  }).catch(() => {});
+}
+
+// --- Listen History (backend) ---
+
+export async function getListenHistoryApi(): Promise<{ paperId: string; readAt: string }[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/listen-history`, { headers: userHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.history || [];
+  } catch { return []; }
+}
+
+export async function markListenedApi(paperId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/papers/${paperId}/listened`, {
+    method: "POST",
+    headers: userHeaders(),
+  }).catch(() => {});
+}
+
+export async function unmarkListenedApi(paperId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/papers/${paperId}/listened`, {
+    method: "DELETE",
+    headers: userHeaders(),
+  }).catch(() => {});
+}
+
 // --- Token Merge ---
 
 export async function mergeTokensApi(oldToken: string, newToken: string): Promise<void> {
