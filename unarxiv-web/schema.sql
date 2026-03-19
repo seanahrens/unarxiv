@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS lists (
     name         TEXT NOT NULL,
     description  TEXT NOT NULL DEFAULT '',
     creator_ip   TEXT,                          -- abuse tracking only
+    publicly_listed INTEGER NOT NULL DEFAULT 1, -- 1 = visible in public directory
     created_at   TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
