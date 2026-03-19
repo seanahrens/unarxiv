@@ -2,14 +2,11 @@
 
 import { Suspense } from "react";
 import ScriptPageContent from "./ScriptPageContent";
+import { ScriptPageSkeleton } from "@/components/Skeleton";
 
 export default function ScriptPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="text-center py-12 text-stone-500">Loading...</div>
-      }
-    >
+    <Suspense fallback={<ScriptPageSkeleton />}>
       <ScriptPageContent />
     </Suspense>
   );

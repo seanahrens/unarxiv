@@ -6,6 +6,7 @@ import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, isInProgress, formatPaperDate, type Paper, type Rating } from "@/lib/api";
+import { PaperDetailSkeleton } from "@/components/Skeleton";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import PaperActionButton from "@/components/PaperActionButton";
@@ -343,7 +344,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   }, [paper]);
 
   if (loading) {
-    return <div className="text-center py-20 text-stone-500">Loading...</div>;
+    return <PaperDetailSkeleton />;
   }
 
   if (error || !paper) {

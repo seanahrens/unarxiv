@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { fetchPaper, transcriptUrl, type Paper } from "@/lib/api";
+import { ScriptPageSkeleton } from "@/components/Skeleton";
 
 export default function ScriptPageContent() {
   const searchParams = useSearchParams();
@@ -44,7 +45,7 @@ export default function ScriptPageContent() {
   }, [id]);
 
   if (loading) {
-    return <div className="text-center py-20 text-stone-500">Loading...</div>;
+    return <ScriptPageSkeleton />;
   }
 
   if (error || !paper) {

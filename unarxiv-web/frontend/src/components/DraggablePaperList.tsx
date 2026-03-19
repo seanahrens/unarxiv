@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useAudio } from "@/contexts/AudioContext";
 import { type Paper } from "@/lib/api";
 import PaperListRow from "@/components/PaperListRow";
+import { PaperListRowSkeleton } from "@/components/Skeleton";
 
 interface DraggablePaperListProps {
   items: string[]; // paper IDs in order
@@ -94,7 +95,13 @@ export default function DraggablePaperList({
   };
 
   if (loading) {
-    return <div className="text-stone-500 text-sm py-12 text-center">Loading...</div>;
+    return (
+      <div className="divide-y divide-stone-200">
+        <PaperListRowSkeleton />
+        <PaperListRowSkeleton />
+        <PaperListRowSkeleton />
+      </div>
+    );
   }
 
   if (items.length === 0) {
