@@ -8,7 +8,7 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
  * Works on current production (no data-testid) AND after deployment (with testid).
  */
 export const PAPER_CARD =
-  '[data-testid="paper-card"], a[href*="/p/"][href*="id="]';
+  '[data-testid="paper-card"], a[href*="/p?id="]';
 
 /**
  * Shared selector for the main search input.
