@@ -13,15 +13,20 @@ compatibility_date = "2024-12-01"
 TURNSTILE_SITE_KEY = "0x4AAAAAACq7Empy5Tza8tKi"
 DAILY_GLOBAL_LIMIT = "50"
 PER_IP_DAILY_LIMIT = "24"
+PAPER_SUBMISSION_DAILY_LIMIT = "240"
 QUEUE_BATCH_SIZE = "3"
 
 [triggers]
-crons = ["* * * * *"]
+crons = ["0 0 * * *"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "unarxiv-db"
-database_id = "f87529b5-2f6c-43a9-988c-92f41e0a790e"
+# database_id is NOT committed — it lives in wrangler.production.toml (gitignored).
+# For local dev, wrangler creates a local SQLite and doesn't use the real ID.
+# For production deploy, CI writes wrangler.production.toml from the D1_DATABASE_ID secret.
+# See SECURITY-TODO.md for instructions on rolling the ID when needed.
+database_id = "00000000-0000-0000-0000-000000000000"
 
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"

@@ -30,9 +30,18 @@ jobs:
         working-directory: unarxiv-web/worker
         run: npm ci
 
+      - name: Write production wrangler config
+        working-directory: unarxiv-web/worker
+        # Injects the real D1 database ID (stored as a GitHub secret) into the
+        # production config. The placeholder "00000000-..." in wrangler.toml
+        # keeps the real ID out of the public repo.
+        run: python3 -c "import re,os; t=open('wrangler.toml').read(); t=re.sub(r'database_id = \"[^\"]*\"','database_id = \"'+os.environ['D1_DATABASE_ID']+'\"',t); open('wrangler.production.toml','w').write(t)"
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+
       - name: Deploy Worker API
         working-directory: unarxiv-web/worker
-        run: npx wrangler deploy
+        run: npx wrangler deploy --config wrangler.production.toml
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -112,9 +121,15 @@ jobs:
         working-directory: unarxiv-web/worker
         run: npm ci
 
+      - name: Write production wrangler config
+        working-directory: unarxiv-web/worker
+        run: python3 -c "import re,os; t=open('wrangler.toml').read(); t=re.sub(r'database_id = \"[^\"]*\"','database_id = \"'+os.environ['D1_DATABASE_ID']+'\"',t); open('wrangler.production.toml','w').write(t)"
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+
       - name: Rollback Worker API
         working-directory: unarxiv-web/worker
-        run: npx wrangler deploy
+        run: npx wrangler deploy --config wrangler.production.toml
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

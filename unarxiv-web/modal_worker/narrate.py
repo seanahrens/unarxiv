@@ -461,14 +461,25 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
 
 # Web endpoint for the Cloudflare Worker to call
+# fastapi is a transitive dependency of modal — safe to import at module level.
+from fastapi import Header, HTTPException
+
+
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=60,
 )
 @modal.fastapi_endpoint(method="POST")
-def trigger_narration(request: dict):
+def trigger_narration(request: dict, authorization: str = Header(None)):
     """HTTP endpoint called by the Cloudflare Worker to start narration."""
+    # Verify shared secret — same CALLBACK_SECRET used for webhook replies.
+    # The CF Worker sends: Authorization: Bearer {MODAL_WEBHOOK_SECRET}
+    # which equals CALLBACK_SECRET on the Modal side.
+    callback_secret = os.environ.get("CALLBACK_SECRET", "")
+    if not callback_secret or authorization != f"Bearer {callback_secret}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     arxiv_id = request.get("arxiv_id")
     tex_source_url = request.get("tex_source_url")
     callback_url = request.get("callback_url")
@@ -483,6 +494,12 @@ def trigger_narration(request: dict):
         return {"error": "arxiv_id and callback_url required"}
     if mode != "narration_only" and not tex_source_url:
         return {"error": "tex_source_url required for this mode"}
+
+    # Allowlist callback_url to prevent SSRF / credential exfiltration.
+    # The CF Worker always sends the production API URL; localhost is invalid
+    # here since Modal runs remotely and can never reach localhost.
+    if not callback_url.startswith("https://api.unarxiv.org/"):
+        raise HTTPException(status_code=400, detail="Invalid callback_url")
 
     # Spawn the narration as an async job
     narrate_paper.spawn(arxiv_id, tex_source_url or "", callback_url, paper_title, paper_author, mode, source_priority)

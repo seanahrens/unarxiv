@@ -1440,7 +1440,8 @@ def _tts_chunk(text: str, output_path: str, voice: str) -> None:
         aiff_path = output_path.replace(".mp3", ".aiff")
         engine.save_to_file(text, aiff_path)
         engine.runAndWait()
-        os.system(f'ffmpeg -y -i "{aiff_path}" "{output_path}" 2>/dev/null')
+        import subprocess as _subprocess
+        _subprocess.run(["ffmpeg", "-y", "-i", aiff_path, output_path], capture_output=True)
         if os.path.exists(aiff_path):
             os.remove(aiff_path)
         return
@@ -1510,10 +1511,12 @@ def generate_audio(
             fh.writelines(f"file '{p}'\n" for p in chunk_paths)
 
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-        ret = os.system(
-            f'ffmpeg -y -f concat -safe 0 -i "{list_file}" '
-            f'-acodec copy "{output_path}" 2>/dev/null'
+        import subprocess as _subprocess
+        _result = _subprocess.run(
+            ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-acodec", "copy", output_path],
+            capture_output=True,
         )
+        ret = _result.returncode
     finally:
         for p in chunk_paths:
             if os.path.exists(p):
