@@ -395,20 +395,17 @@ export async function upsertRating(
   token?: string | null
 ): Promise<RatingRow> {
   if (token) {
-    // Delete any existing IP-only rating from this user (migration: promote to token-based)
+    // Delete any existing rating from this user (by token or same IP) to avoid
+    // unique constraint conflicts. The partial unique index on (paper_id, rater_token)
+    // WHERE rater_token IS NOT NULL doesn't support ON CONFLICT, so we use DELETE+INSERT.
     await db
-      .prepare("DELETE FROM ratings WHERE paper_id = ? AND rater_ip = ? AND rater_token IS NULL")
-      .bind(paperId, ip)
+      .prepare("DELETE FROM ratings WHERE paper_id = ? AND (rater_token = ? OR rater_ip = ?)")
+      .bind(paperId, token, ip)
       .run();
-    // Upsert by token
     await db
       .prepare(
         `INSERT INTO ratings (paper_id, rater_ip, rater_token, stars, comment)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT(paper_id, rater_token) DO UPDATE SET
-           stars = excluded.stars,
-           comment = excluded.comment,
-           updated_at = datetime('now')`
+         VALUES (?, ?, ?, ?, ?)`
       )
       .bind(paperId, ip, token, stars, comment)
       .run();

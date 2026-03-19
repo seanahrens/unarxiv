@@ -31,17 +31,7 @@ test.describe("Ratings", () => {
     // Step 3: Submit — wait for button to be enabled (stars > 0) before clicking
     const submitBtn = page.locator('button:has-text("Submit Rating")');
     await expect(submitBtn).toBeEnabled({ timeout: 2000 });
-
-    // Listen for the rating API response to diagnose failures
-    const [ratingResponse] = await Promise.all([
-      page.waitForResponse((r) => r.url().includes("/rating") && r.request().method() === "POST", { timeout: 15000 }),
-      submitBtn.click(),
-    ]);
-    const ratingStatus = ratingResponse.status();
-    if (ratingStatus !== 200) {
-      const body = await ratingResponse.text().catch(() => "no body");
-      throw new Error(`Rating API returned ${ratingStatus}: ${body}`);
-    }
+    await submitBtn.click();
 
     // Modal should close (allow extra time for API round-trip from CI)
     await expect(ratingModal.first()).not.toBeVisible({ timeout: 10000 });
