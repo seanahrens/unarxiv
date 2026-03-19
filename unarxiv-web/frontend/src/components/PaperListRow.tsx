@@ -5,7 +5,6 @@ import { audioUrl, isInProgress, formatAuthors, type Paper } from "@/lib/api";
 import { useAudio } from "@/contexts/AudioContext";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
-import ProcessingFileIcon from "@/components/ProcessingFileIcon";
 
 interface PaperListRowProps {
   paper: Paper;
@@ -48,15 +47,16 @@ export default function PaperListRow({
   const iconColorClass =
     paper.status === "complete"
       ? "text-stone-500 hover:text-stone-700"
-      : inProgress
-      ? "text-purple-300"
       : "text-stone-400";
 
   const icon =
     paper.status === "complete" ? (
       <AudioFileIcon size={28} />
     ) : inProgress ? (
-      <ProcessingFileIcon size={28} />
+      <div className="relative">
+        <AudioFileIcon size={28} />
+        <div className="scan-line" />
+      </div>
     ) : (
       <FileIcon size={28} />
     );

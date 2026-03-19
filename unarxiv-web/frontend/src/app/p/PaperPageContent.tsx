@@ -434,26 +434,12 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
         {/* View toggle — only when transcript is available */}
         {(paper.status === "generating_audio" || paper.status === "complete") && (
-          <div className="flex gap-1.5 mt-1">
+          <div className="mt-1">
             <button
-              onClick={() => setView("abstract")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                view === "abstract"
-                  ? "bg-stone-900 text-white"
-                  : "text-stone-600 border border-stone-300 hover:bg-stone-100"
-              }`}
+              onClick={() => setView(view === "abstract" ? "script" : "abstract")}
+              className="px-3 py-1 text-xs font-medium rounded-full transition-colors text-stone-600 border border-stone-300 hover:bg-stone-100"
             >
-              Abstract + PDF
-            </button>
-            <button
-              onClick={() => setView("script")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                view === "script"
-                  ? "bg-stone-900 text-white"
-                  : "text-stone-600 border border-stone-300 hover:bg-stone-100"
-              }`}
-            >
-              Script
+              {view === "abstract" ? "View Script" : "View Abstract + PDF"}
             </button>
           </div>
         )}

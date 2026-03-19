@@ -22,7 +22,7 @@ import {
 } from "@/lib/api";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
-import ProcessingFileIcon from "@/components/ProcessingFileIcon";
+
 import { Skeleton } from "@/components/Skeleton";
 
 const PAGE_SIZE = 30;
@@ -740,13 +740,13 @@ export default function AdminPage() {
                     <span className={`inline-block w-2.5 h-2.5 rounded-full ${statusColor(paper.status)}`} title={paper.status} />
                   </td>
                   <td className="px-1 py-1.5 text-center">
-                    <span className={isInProgress(paper.status) ? "text-purple-300" : "text-stone-400"}>
-                      {paper.status === "complete" ? <AudioFileIcon size={18} /> : isInProgress(paper.status) ? <ProcessingFileIcon size={18} /> : <FileIcon size={18} />}
+                    <span className="text-stone-400">
+                      {paper.status === "complete" ? <AudioFileIcon size={18} /> : isInProgress(paper.status) ? <span className="relative inline-block"><AudioFileIcon size={18} /><span className="scan-line" /></span> : <FileIcon size={18} />}
                     </span>
                   </td>
                   <td className="px-1 py-1.5 text-right">
                     {durationLabel(paper) && (
-                      <span className={`text-2xs font-mono ${isInProgress(paper.status) ? "text-purple-400" : "text-stone-400"}`}>
+                      <span className="text-2xs font-mono text-stone-400">
                         {durationLabel(paper)}
                       </span>
                     )}

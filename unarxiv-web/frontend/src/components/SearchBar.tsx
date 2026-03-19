@@ -125,13 +125,12 @@ export default function SearchBar({
         <div className="bg-white border border-stone-300 rounded-xl p-6 shadow-sm">
           <p className="font-bold text-stone-900 mb-3 text-lg text-center">How does <SiteName /> work?</p>
           <p className="mb-4 text-sm text-stone-600 leading-relaxed">
-            We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.
-            For us to have a paper, it first needs to be added.
+            We are an audio arXiv — a sync&rsquo;d repository of papers on arXiv in audiobook format.
           </p>
           <p className="text-sm text-stone-700 font-medium leading-relaxed mb-4 border-l-2 border-stone-300 pl-3">
-            To add a paper, drop the arXiv URL in the search above — or browse to an arxiv.org paper &amp; add &lsquo;un&rsquo; to the URL &amp; hit enter.
+            Either search for your paper above, or on arxiv.org, change the domain to <span className="underline">un</span>arxiv and hit enter.
           </p>
-          <ArxivCta showHeading={false} inlineBrowse staticUrl className="py-0" />
+          <ArxivCta showHeading={false} showButton={false} staticUrl className="py-0" />
         </div>
         </div>
       </div>
