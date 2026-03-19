@@ -11,6 +11,7 @@ import { PaperCardSkeleton, CollectionSidebarSkeleton } from "@/components/Skele
 import {
   fetchPapers,
   fetchPaper,
+  fetchPapersBatch,
   previewPaper,
   submitPaper,
   searchArxiv,
@@ -159,14 +160,22 @@ function HomePageContent() {
         dbPromise,
         searchArxiv(qParam, currentPage, SEARCH_PAGE_SIZE).catch(() => ({ papers: [] as ArxivSearchResult[], total: 0, page: 1, per_page: SEARCH_PAGE_SIZE })),
       ])
-        .then(([dbData, arxivData]) => {
+        .then(async ([dbData, arxivData]) => {
           const dbPaperIds = new Set(dbData.papers.map((p) => p.id));
 
           const dbResults: SearchResult[] = dbData.papers.map((p) => ({ source: "db" as const, paper: p }));
 
-          const arxivResults: SearchResult[] = arxivData.papers
-            .filter((r) => !dbPaperIds.has(r.id))
-            .map((r) => ({ source: "arxiv" as const, result: r }));
+          // arXiv results not found by DB text search — batch-check if they exist in our DB
+          const arxivOnly = arxivData.papers.filter((r) => !dbPaperIds.has(r.id));
+          const knownPapers = await fetchPapersBatch(arxivOnly.map((r) => r.id));
+          const knownMap = new Map(knownPapers.map((p) => [p.id, p]));
+
+          const arxivResults: SearchResult[] = arxivOnly.map((r) => {
+            const dbPaper = knownMap.get(r.id);
+            return dbPaper
+              ? { source: "db" as const, paper: dbPaper }
+              : { source: "arxiv" as const, result: r };
+          });
 
           setMergedResults([...dbResults, ...arxivResults]);
           setTotalArxivResults(arxivData.total);
