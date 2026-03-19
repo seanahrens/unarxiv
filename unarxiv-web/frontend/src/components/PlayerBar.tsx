@@ -378,7 +378,7 @@ export default function PlayerBar() {
   // Playlist popup for default state (inline, since playlistPopup var is defined later)
   const defaultPlaylistPopup = !isActive && showPlaylist && (
     <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
-      <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] flex flex-col">
+      <div className="bg-surface border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] flex flex-col">
         <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
           <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -464,7 +464,7 @@ export default function PlayerBar() {
   // Playlist popup overlay — show immediately with skeletons if data is loading
   const playlistPopup = showPlaylist && (
     <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
-      <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] flex flex-col">
+      <div className="bg-surface border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] flex flex-col">
         <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
           <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">

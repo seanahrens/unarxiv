@@ -24,7 +24,7 @@ export function Skeleton({
 /** Skeleton that mimics a PaperCard layout. */
 export function PaperCardSkeleton() {
   return (
-    <div className="rounded-xl border border-stone-300 p-5 bg-white">
+    <div className="rounded-xl border border-stone-300 p-5 bg-surface">
       <div className="flex gap-3">
         {/* Icon placeholder */}
         <div className="shrink-0">
@@ -60,7 +60,7 @@ export function PaperListRowSkeleton() {
 /** Skeleton for a collection sidebar item. */
 export function CollectionSidebarSkeleton() {
   return (
-    <div className="block p-3 bg-white border border-stone-200 rounded-lg">
+    <div className="block p-3 bg-surface border border-stone-200 rounded-lg">
       <Skeleton className="mb-1" width="70%" height="12px" />
       <Skeleton width="40%" height="10px" />
     </div>

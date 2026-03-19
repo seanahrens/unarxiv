@@ -75,7 +75,7 @@ export default function CreateCollectionModal({ paperId, onClose, sourceRect, on
       style={{ zIndex: 9999 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="bg-surface rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
         <h2 className="text-lg font-semibold text-stone-900 mb-4">New Collection</h2>
 
         <input

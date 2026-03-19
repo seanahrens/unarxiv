@@ -118,7 +118,7 @@ export default function SyncPage() {
           </p>
           <Link
             href="/my-papers"
-            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-stone-700 bg-white border border-stone-300 hover:bg-stone-50 rounded-full transition-colors no-underline"
+            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-stone-700 bg-surface border border-stone-300 hover:bg-stone-50 rounded-full transition-colors no-underline"
           >
             Go to My Papers
           </Link>

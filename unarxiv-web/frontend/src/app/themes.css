@@ -1,0 +1,22 @@
+/*
+ * Theme definitions.
+ *
+ * Each theme overrides Tailwind v4 CSS custom properties via [data-theme].
+ * The "default" theme uses Tailwind's built-in values (no overrides needed).
+ *
+ * To add a new theme:
+ * 1. Add a [data-theme="your-theme"] block below
+ * 2. Override --color-stone-*, --color-surface, accent colors, etc.
+ * 3. Set NEXT_PUBLIC_THEME=your-theme to activate
+ */
+
+/* ============================================================
+   Shared theme variables — defaults set on :root, overridden per theme
+   ============================================================ */
+:root {
+  --logo-fill: currentColor;
+  --slider-thumb-bg: #1c1917;
+  --slider-thumb-border: white;
+  --pulse-rgb: 120, 113, 108;
+  --player-flash-rgb: 120, 113, 108;
+}

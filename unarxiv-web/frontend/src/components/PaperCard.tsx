@@ -89,7 +89,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
           setImporting(false);
         }
       } : undefined}
-      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
+      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-surface border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
     >
       {/* Action button — upper right */}
       {(isReady || isNotRequested || isProcessing) && (

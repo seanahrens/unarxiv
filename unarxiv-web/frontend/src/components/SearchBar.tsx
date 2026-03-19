@@ -91,7 +91,7 @@ export default function SearchBar({
           onBlur={() => setFocused(false)}
           className="w-full pl-10 pr-11 py-3 text-base border border-stone-300 rounded-xl
                      focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent
-                     bg-white shadow-sm"
+                     bg-surface shadow-sm"
         />
         {showPlaceholder && (
           <div className="absolute inset-0 flex items-center pl-10 pr-11 pointer-events-none text-base text-stone-400">
@@ -122,7 +122,7 @@ export default function SearchBar({
         }}
       >
         <div className="pt-3">
-        <div className="bg-white border border-stone-300 rounded-xl p-6 shadow-sm">
+        <div className="bg-surface border border-stone-300 rounded-xl p-6 shadow-sm">
           <p className="font-bold text-stone-900 mb-3 text-lg text-center">How does <SiteName /> work?</p>
           <p className="mb-4 text-sm text-stone-600 leading-relaxed">
             We are an audio arXiv — a mirrored repository of papers on arXiv in audiobook format.

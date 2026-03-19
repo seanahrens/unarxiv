@@ -140,7 +140,7 @@ export default function PaperActionButton({
     : "relative inline-flex w-full md:w-auto shrink-0";
 
   // Color schemes
-  const compactColors = "text-stone-700 bg-white border-stone-300 hover:bg-stone-100 hover:text-stone-900";
+  const compactColors = "text-stone-700 bg-surface border-stone-300 hover:bg-stone-100 hover:text-stone-900";
   const compactChevronBorder = "border-l-stone-300";
 
   // --- COMPLETE: Play button ---

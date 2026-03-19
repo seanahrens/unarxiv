@@ -124,7 +124,7 @@ export default function BrowseLayout({
           className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             isNewlyAdded
               ? "bg-stone-900 text-white border-stone-900"
-              : "bg-white text-stone-600 border-stone-300 hover:border-stone-400"
+              : "bg-surface text-stone-600 border-stone-300 hover:border-stone-400"
           }`}
         >
           Newly Added
@@ -136,7 +136,7 @@ export default function BrowseLayout({
             className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               selectedId === c.id
                 ? "bg-stone-900 text-white border-stone-900"
-                : "bg-white text-stone-600 border-stone-300 hover:border-stone-400"
+                : "bg-surface text-stone-600 border-stone-300 hover:border-stone-400"
             }`}
           >
             {c.name}

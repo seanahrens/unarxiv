@@ -20,7 +20,7 @@ export default function AboutPage() {
       {/* Cards */}
       <div className="space-y-6">
         {/* What */}
-        <section className="bg-white rounded-2xl border border-stone-200 p-6">
+        <section className="bg-surface rounded-2xl border border-stone-200 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">What is this?</h2>
           <p className="text-stone-700 leading-relaxed">
             <SiteName /> is an audio mirror of arXiv. Paste any arXiv URL or paper ID and
@@ -30,7 +30,7 @@ export default function AboutPage() {
         </section>
 
         {/* How */}
-        <section className="bg-white rounded-2xl border border-stone-200 p-6">
+        <section className="bg-surface rounded-2xl border border-stone-200 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">How it works</h2>
           <div className="flex flex-col sm:flex-row gap-4 text-sm text-stone-600">
             <div className="flex-1 flex gap-3">
@@ -49,7 +49,7 @@ export default function AboutPage() {
         </section>
 
         {/* Recommended apps */}
-        <section className="bg-white rounded-2xl border border-stone-200 p-6">
+        <section className="bg-surface rounded-2xl border border-stone-200 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Listen on the go</h2>
           <div className="flex flex-col gap-4 text-sm text-stone-600">
             <div>
@@ -103,7 +103,7 @@ export default function AboutPage() {
 
         {/* Who + Contact side by side on desktop */}
         <div className="grid sm:grid-cols-2 gap-6">
-          <section className="bg-white rounded-2xl border border-stone-200 p-6">
+          <section className="bg-surface rounded-2xl border border-stone-200 p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Built by</h2>
             <p className="text-stone-700">
               <a
@@ -117,7 +117,7 @@ export default function AboutPage() {
             </p>
           </section>
 
-          <section className="bg-white rounded-2xl border border-stone-200 p-6">
+          <section className="bg-surface rounded-2xl border border-stone-200 p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Get in touch</h2>
             <p className="text-sm text-stone-600">hello at this domain</p>
           </section>

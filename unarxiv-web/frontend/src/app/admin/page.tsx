@@ -96,7 +96,7 @@ function RatingsModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col"
+        className="bg-surface rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-bold text-stone-900 mb-1">Ratings</h3>
@@ -565,7 +565,7 @@ export default function AdminPage() {
               className={`px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center gap-1.5 ${
                 statusFilter === f.key
                   ? "bg-stone-800 text-white"
-                  : "bg-white text-stone-500 hover:bg-stone-50"
+                  : "bg-surface text-stone-500 hover:bg-stone-50"
               } ${f.key !== "all" ? "border-l border-stone-200" : ""}`}
             >
               {f.dotColor && <span className={`inline-block w-2 h-2 rounded-full ${f.dotColor} ${statusFilter === f.key ? "opacity-80" : ""}`} />}
@@ -578,13 +578,13 @@ export default function AdminPage() {
           placeholder="Search title or ID..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="px-3 py-1.5 text-xs border border-stone-200 rounded-lg bg-white
+          className="px-3 py-1.5 text-xs border border-stone-200 rounded-lg bg-surface
                      focus:outline-none focus:ring-1 focus:ring-stone-400 w-48"
         />
         <button
           onClick={() => setShowLowRated((v) => !v)}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors inline-flex items-center gap-1.5 ${
-            showLowRated ? "bg-orange-50 border-orange-300 text-orange-700" : "bg-white border-stone-200 text-stone-500 hover:bg-stone-50"
+            showLowRated ? "bg-orange-50 border-orange-300 text-orange-700" : "bg-surface border-stone-200 text-stone-500 hover:bg-stone-50"
           }`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -595,7 +595,7 @@ export default function AdminPage() {
         <button
           onClick={() => setShowYours((v) => !v)}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors inline-flex items-center gap-1.5 ${
-            showYours ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-stone-200 text-stone-500 hover:bg-stone-50"
+            showYours ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-surface border-stone-200 text-stone-500 hover:bg-stone-50"
           }`}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -630,7 +630,7 @@ export default function AdminPage() {
               </button>
             </div>
             {reprocessMenuOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-10 min-w-[160px]">
+              <div className="absolute top-full left-0 mt-1 bg-surface border border-stone-200 rounded-lg shadow-lg z-10 min-w-[160px]">
                 <button onClick={() => handleBulkReprocess("script_only")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 rounded-t-lg">
                   Script only
                 </button>
@@ -655,7 +655,7 @@ export default function AdminPage() {
 
       {/* Papers table */}
       {loading ? (
-        <div className="bg-white border border-stone-200 rounded-lg overflow-hidden p-4 space-y-3">
+        <div className="bg-surface border border-stone-200 rounded-lg overflow-hidden p-4 space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
               <Skeleton className="rounded" width="14px" height="14px" />
@@ -666,7 +666,7 @@ export default function AdminPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-stone-200 rounded-lg overflow-hidden">
+        <div className="bg-surface border border-stone-200 rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-stone-100 text-left">
@@ -798,11 +798,11 @@ export default function AdminPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-stone-100 bg-stone-50">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0} className="px-2.5 py-1 text-xs font-medium text-stone-600 bg-white border border-stone-200 rounded-md hover:bg-stone-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0} className="px-2.5 py-1 text-xs font-medium text-stone-600 bg-surface border border-stone-200 rounded-md hover:bg-stone-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                 Prev
               </button>
               <span className="text-xs text-stone-500">Page {safePage + 1} of {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1} className="px-2.5 py-1 text-xs font-medium text-stone-600 bg-white border border-stone-200 rounded-md hover:bg-stone-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1} className="px-2.5 py-1 text-xs font-medium text-stone-600 bg-surface border border-stone-200 rounded-md hover:bg-stone-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                 Next
               </button>
             </div>
@@ -846,7 +846,7 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-          <div className="bg-white border border-stone-200 rounded-lg overflow-hidden">
+          <div className="bg-surface border border-stone-200 rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 text-left text-xs text-stone-400">
@@ -943,7 +943,7 @@ export default function AdminPage() {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center text-center bg-white rounded-xl border border-stone-200
+            className="flex flex-col items-center text-center bg-surface rounded-xl border border-stone-200
                        p-5 hover:border-stone-300 hover:shadow-md transition-all no-underline"
           >
             <div className="text-stone-400 mb-3">{link.icon}</div>
@@ -959,7 +959,7 @@ export default function AdminPage() {
           <h2 className="text-xs font-medium text-stone-400 uppercase tracking-wider mt-8 mb-4">
             Top Contributors
           </h2>
-          <div className="bg-white border border-stone-200 rounded-lg overflow-hidden mb-8">
+          <div className="bg-surface border border-stone-200 rounded-lg overflow-hidden mb-8">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 text-left text-xs text-stone-400 uppercase tracking-wider">

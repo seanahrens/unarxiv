@@ -131,7 +131,7 @@ export default function HeaderPlayer({ inline }: { inline?: boolean }) {
   }
 
   return (
-    <div className="border-b border-stone-200 bg-white/80 backdrop-blur-sm">
+    <div className="border-b border-stone-200 bg-surface/80 backdrop-blur-sm">
       <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3 min-w-0">
         {controls}
       </div>

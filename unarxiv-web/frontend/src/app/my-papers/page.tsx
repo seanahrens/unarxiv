@@ -209,7 +209,7 @@ export default function MyCollectionsPage() {
       <div className="flex justify-center mt-8">
         <button
           onClick={() => setShowSyncModal(true)}
-          className="group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors text-stone-400 border-stone-200 bg-white hover:text-stone-600 hover:border-stone-300"
+          className="group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors text-stone-400 border-stone-200 bg-surface hover:text-stone-600 hover:border-stone-300"
         >
           {/* Laptop icon on mobile */}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:hidden">
@@ -228,7 +228,7 @@ export default function MyCollectionsPage() {
       {/* Sync Modal */}
       {showSyncModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowSyncModal(false); setSyncCopied(false); }}>
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-surface rounded-xl shadow-xl max-w-sm w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
                 {/* Laptop icon on mobile */}

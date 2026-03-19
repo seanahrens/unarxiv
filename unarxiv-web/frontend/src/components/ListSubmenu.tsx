@@ -122,7 +122,7 @@ export default function ListSubmenu({ paperId, onClose, onEnsureImported }: List
         </button>
 
         {subOpen && (
-          <div className="absolute right-full top-0 bg-white border border-stone-300 rounded-xl shadow-lg z-50 min-w-[160px] py-1">
+          <div className="absolute right-full top-0 bg-surface border border-stone-300 rounded-xl shadow-lg z-50 min-w-[160px] py-1">
             {entries.map(([listId, entry]) => {
               const isAdded = addedTo.has(listId);
               return (

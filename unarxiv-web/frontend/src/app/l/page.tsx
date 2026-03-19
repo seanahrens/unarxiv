@@ -336,7 +336,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
                 </svg>
               </button>
               {showShareMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-stone-300 rounded-xl shadow-lg z-50 py-1 min-w-[160px]">
+                <div className="absolute right-0 top-full mt-1 bg-surface border border-stone-300 rounded-xl shadow-lg z-50 py-1 min-w-[160px]">
                   <a
                     href={`/l?id=${listId}`}
                     onClick={(e) => { e.preventDefault(); handleDoneEditing(); }}
@@ -423,7 +423,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
         </div>
 
         {/* Papers */}
-        <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
+        <section className="bg-surface border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
           <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
             <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
               <svg width="20" height="20" viewBox="0 0 384 512" fill="currentColor">

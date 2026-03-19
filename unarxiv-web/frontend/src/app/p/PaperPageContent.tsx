@@ -160,7 +160,7 @@ function RatingModal({
   return (
     <div data-testid="rating-modal" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+        className="bg-surface rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-bold text-stone-900 mb-4">Rate Narration Quality</h3>
@@ -482,7 +482,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           <div className="hidden md:block mt-10 border border-stone-300 rounded-xl overflow-hidden">
             <iframe
               src={`https://arxiv.org/pdf/${paper.id}#zoom=page-width`}
-              className="w-full bg-white"
+              className="w-full bg-surface"
               style={{ height: "1245px" }}
               title={`PDF: ${paper.title}`}
             />
@@ -515,7 +515,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       {showCaptchaModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowCaptchaModal(false)}>
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+            className="bg-surface rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-stone-900 mb-2">Verification Required</h3>
