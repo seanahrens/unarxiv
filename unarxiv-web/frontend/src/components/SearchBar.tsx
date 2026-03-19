@@ -28,6 +28,11 @@ export default function SearchBar({
   const [shouldPulse, setShouldPulse] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // Sync value when initialQuery changes (e.g. navigating back to search results)
+  useEffect(() => {
+    setValue(initialQuery);
+  }, [initialQuery]);
+
   useEffect(() => {
     setIsArxiv(isArxivUrl(value));
   }, [value]);

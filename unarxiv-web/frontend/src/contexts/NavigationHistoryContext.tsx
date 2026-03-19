@@ -19,13 +19,16 @@ const NavigationHistoryContext = createContext<NavigationHistory>({
 });
 
 function labelForPath(path: string): string {
-  if (path === "/" || path === "") return "Papers";
-  if (path.startsWith("/my-papers")) return "My Papers";
-  if (path.startsWith("/p")) return "Paper";
-  if (path.startsWith("/s")) return "Script";
-  if (path.startsWith("/l")) return "Collection";
-  if (path.startsWith("/about")) return "About";
-  if (path.startsWith("/admin")) return "Admin";
+  // Strip query string for route matching
+  const route = path.split("?")[0];
+  const query = path.includes("?q=") ? true : false;
+  if (route === "/" || route === "") return query ? "Search Results" : "Papers";
+  if (route.startsWith("/my-papers")) return "My Papers";
+  if (route.startsWith("/p")) return "Paper";
+  if (route.startsWith("/s")) return "Script";
+  if (route.startsWith("/l")) return "Collection";
+  if (route.startsWith("/about")) return "About";
+  if (route.startsWith("/admin")) return "Admin";
   return "Back";
 }
 

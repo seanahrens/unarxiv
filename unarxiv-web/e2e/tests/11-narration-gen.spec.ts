@@ -21,7 +21,7 @@ test.describe("Narration Generation", () => {
     await page.goto("/");
     const searchInput = page.locator(SEARCH_INPUT).first();
     await searchInput.fill(TEST_ARXIV_ID);
-    await expect(page).toHaveURL(new RegExp(`/p/\\?id=${TEST_ARXIV_ID}`), {
+    await expect(page).toHaveURL(new RegExp(`/p\\??id=${TEST_ARXIV_ID}`), {
       timeout: 15000,
     });
 

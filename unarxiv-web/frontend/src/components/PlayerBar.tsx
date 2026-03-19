@@ -567,6 +567,7 @@ export default function PlayerBar() {
                   <svg width="33" height="33" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg>
                 </button>
                 <button
+                  data-testid="player-play-pause"
                   onClick={actions.togglePlay}
                   className="w-12 h-12 flex items-center justify-center bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors shrink-0 self-center"
                   title={isPlaying ? "Pause" : "Play"}
@@ -586,7 +587,7 @@ export default function PlayerBar() {
                     <rect x="17.5" y="5" width="2.5" height="14" rx="0.5" />
                   </svg>
                 </button>
-                <button onClick={actions.cycleSpeed} className="text-xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-2 py-1.5 transition-colors shrink-0 min-w-[64px] text-center self-center" title="Speed">
+                <button data-testid="player-speed" onClick={actions.cycleSpeed} className="text-xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-2 py-1.5 transition-colors shrink-0 min-w-[64px] text-center self-center" title="Speed">
                   {playbackRate}x
                 </button>
                 <button onClick={() => setShowShortcuts((p) => !p)} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0 flex items-center" title="Keyboard shortcuts (?)">
@@ -631,7 +632,7 @@ export default function PlayerBar() {
                 {/* Bottom row: speed left + transport center + time right */}
                 <div className="relative flex items-center px-4 py-3">
                   {/* Left: speed button */}
-                  <button onClick={actions.cycleSpeed} className="text-xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-2 py-1.5 transition-colors shrink-0 min-w-[64px] text-center" title="Speed">
+                  <button data-testid="player-speed" onClick={actions.cycleSpeed} className="text-xs font-mono text-stone-600 hover:text-stone-800 bg-stone-200 hover:bg-stone-300 rounded px-2 py-1.5 transition-colors shrink-0 min-w-[64px] text-center" title="Speed">
                     {playbackRate}x
                   </button>
                   {/* Center: transport controls with prev/next */}

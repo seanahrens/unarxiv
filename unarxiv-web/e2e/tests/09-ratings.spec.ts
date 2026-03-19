@@ -2,6 +2,12 @@ import { test, expect } from "@playwright/test";
 import { knownCompleteId } from "../helpers/fixtures";
 import { openDropdown } from "../helpers/page-actions";
 
+/**
+ * Selectors — prefer data-testid (deployed), fall back to text for pre-deploy runs.
+ */
+const RATE_NARRATION_BTN = '[data-testid="rate-narration"], button:has-text("Rate Narration")';
+const RATING_MODAL = '[data-testid="rating-modal"], .fixed.inset-0';
+
 test.describe("Ratings", () => {
   test("full rating lifecycle: create, verify, update, clear", async ({
     page,
@@ -14,12 +20,12 @@ test.describe("Ratings", () => {
     await openDropdown(page);
 
     // Click "Rate Narration" in the dropdown
-    const rateMenuItem = page.locator('button:has-text("Rate Narration")');
+    const rateMenuItem = page.locator(RATE_NARRATION_BTN).first();
     await expect(rateMenuItem).toBeVisible({ timeout: 3000 });
     await rateMenuItem.click();
 
     // Rating modal should appear — use data-testid if deployed, else text
-    const ratingModal = page.locator('[data-testid="rating-modal"], .fixed.inset-0');
+    const ratingModal = page.locator(RATING_MODAL);
     await expect(ratingModal.first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator("text=Rate Narration Quality")).toBeVisible();
 
@@ -44,7 +50,7 @@ test.describe("Ratings", () => {
     // Step 5: Clear the rating — re-open dropdown and click Rate Narration
     await openDropdown(page);
 
-    const rateMenuItem2 = page.locator('button:has-text("Rate Narration")');
+    const rateMenuItem2 = page.locator(RATE_NARRATION_BTN).first();
     await expect(rateMenuItem2).toBeVisible({ timeout: 3000 });
     await rateMenuItem2.click();
 

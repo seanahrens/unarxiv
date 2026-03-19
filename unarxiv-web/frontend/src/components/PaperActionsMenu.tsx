@@ -159,7 +159,7 @@ export default function PaperActionsMenu({
       )}
 
       {/* Playlist toggle */}
-      <button data-testid="add-to-playlist" onClick={handlePlaylistToggle} className={MENU_ITEM}>
+      <button data-testid={inPlaylist ? "remove-from-playlist" : "add-to-playlist"} onClick={handlePlaylistToggle} className={MENU_ITEM}>
         {inPlaylist ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <polyline points="20 6 9 17 4 12" />
@@ -177,7 +177,7 @@ export default function PaperActionsMenu({
       {isComplete && onRate && (
         <>
           <div className={DIVIDER} />
-          <button onClick={() => { onRate(); onClose(); }} className={MENU_ITEM}>
+          <button data-testid="rate-narration" onClick={() => { onRate(); onClose(); }} className={MENU_ITEM}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
@@ -191,6 +191,7 @@ export default function PaperActionsMenu({
         <>
           <div className={DIVIDER} />
           <button
+            data-testid="download-audio"
             onClick={() => { download(audioUrl(paper.id), mp3Filename); onClose(); }}
             disabled={downloading}
             className={`${MENU_ITEM} disabled:opacity-50`}
@@ -207,6 +208,7 @@ export default function PaperActionsMenu({
       {/* Download PDF — always */}
       <div className={DIVIDER} />
       <button
+        data-testid="download-pdf"
         onClick={() => { download(`https://arxiv.org/pdf/${paper.id}`, pdfFilename); onClose(); }}
         disabled={downloading}
         className={`${MENU_ITEM} disabled:opacity-50`}

@@ -14,10 +14,14 @@ export async function openDropdown(page: Page): Promise<void> {
   await chevron.click();
 }
 
-/** Navigate to a complete paper and start audio playback. */
+/**
+ * Navigate to a complete paper and start audio playback.
+ * Uses data-testid="play-paper" if available (deployed frontend),
+ * falls back to text-based selector for pre-deploy runs.
+ */
 export async function startAudioPlayback(page: Page, id: string): Promise<void> {
   await page.goto(`/p?id=${id}`);
-  const playBtn = page.locator('button:has-text("Play")').first();
+  const playBtn = page.locator('[data-testid="play-paper"], button:has-text("Play")').first();
   await expect(playBtn).toBeVisible({ timeout: 10000 });
   await playBtn.click();
   await page.waitForFunction(
