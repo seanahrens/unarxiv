@@ -2,8 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { isArxivUrl } from "@/lib/api";
-import SiteName from "@/components/SiteName";
-import ArxivCta from "@/components/ArxivCta";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -11,8 +9,6 @@ interface SearchBarProps {
   initialQuery?: string;
   hideHint?: boolean;
 }
-
-const VISITED_KEY = "unarxiv_visited";
 
 
 export default function SearchBar({
@@ -24,8 +20,6 @@ export default function SearchBar({
   const [value, setValue] = useState(initialQuery);
   const [isArxiv, setIsArxiv] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [shouldPulse, setShouldPulse] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync value when initialQuery changes (e.g. navigating back to search results)
@@ -36,26 +30,6 @@ export default function SearchBar({
   useEffect(() => {
     setIsArxiv(isArxivUrl(value));
   }, [value]);
-
-  // Check first-time visitor
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(VISITED_KEY)) {
-        setShouldPulse(true);
-      }
-    } catch {}
-  }, []);
-
-  const toggleDrawer = useCallback(() => {
-    setDrawerOpen((prev) => !prev);
-    // Mark as visited on first tap
-    if (shouldPulse) {
-      setShouldPulse(false);
-      try {
-        localStorage.setItem(VISITED_KEY, "1");
-      } catch {}
-    }
-  }, [shouldPulse]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,40 +73,19 @@ export default function SearchBar({
             <span className="truncate md:hidden">arXiv ID, URL, Title, Author, or Abstract</span>
           </div>
         )}
-        {/* Help icon */}
-        <button
-          type="button"
-          onClick={toggleDrawer}
-          aria-label="How does unarXiv work?"
-          className={`absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center
-                      rounded-full bg-stone-500 text-white text-sm font-bold leading-none
-                      hover:bg-stone-600 transition-colors focus:outline-none
-                      ${shouldPulse ? "animate-help-pulse" : ""}`}
-        >
-          ?
-        </button>
-      </div>
-
-      {/* Info drawer */}
-      <div
-        className="overflow-hidden"
-        style={{
-          maxHeight: drawerOpen ? "24rem" : "0",
-          transition: "max-height 0.5s ease-in-out",
-        }}
-      >
-        <div className="pt-3">
-        <div className="bg-surface border border-stone-300 rounded-xl p-6 shadow-sm">
-          <p className="font-bold text-stone-900 mb-3 text-lg text-center">How does <SiteName /> work?</p>
-          <p className="mb-4 text-sm text-stone-600 leading-relaxed">
-            We are an audio arXiv — a sync&rsquo;d repository of papers on arXiv in audiobook format.
-          </p>
-          <p className="text-sm text-stone-700 font-medium leading-relaxed mb-4 border-l-2 border-stone-300 pl-3">
-            Either search for your paper above, or on arxiv.org, change the domain to <span className="underline">un</span>arxiv and hit enter.
-          </p>
-          <ArxivCta showHeading={false} showButton={false} staticUrl className="py-0" />
-        </div>
-        </div>
+        {/* Clear button */}
+        {value && (
+          <button
+            type="button"
+            onClick={() => { setValue(""); onSearch(""); }}
+            aria-label="Clear search"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center
+                        rounded-full bg-stone-500 text-white text-sm font-bold leading-none
+                        hover:bg-stone-600 transition-colors focus:outline-none"
+          >
+            &times;
+          </button>
+        )}
       </div>
 
       {!hideHint && (

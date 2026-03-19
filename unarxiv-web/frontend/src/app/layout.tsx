@@ -79,14 +79,10 @@ export default function RootLayout({
             <div className="flex items-center gap-3 shrink-0">
               <Link
                 href="/about"
-                className="text-stone-400 hover:text-stone-600 transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-stone-500 text-white text-sm font-bold leading-none hover:bg-stone-600 transition-colors no-underline"
                 title="About"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
+                i
               </Link>
               <PlaylistNavButton />
             </div>
