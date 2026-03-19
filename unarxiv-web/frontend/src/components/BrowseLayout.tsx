@@ -6,6 +6,7 @@ import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
 import { type Paper } from "@/lib/api";
 import { fetchList, getTokenForList, type ListMeta } from "@/lib/lists";
+import { PaperCardSkeleton } from "@/components/Skeleton";
 
 const PAGE_SIZE = 6;
 
@@ -215,7 +216,11 @@ export default function BrowseLayout({
 
           {/* Papers grid */}
           {loading ? (
-            <div className="text-center py-16 text-stone-500 text-sm">Loading...</div>
+            <div className="grid gap-3">
+              <PaperCardSkeleton />
+              <PaperCardSkeleton />
+              <PaperCardSkeleton />
+            </div>
           ) : paginatedPapers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-stone-400 text-sm">
