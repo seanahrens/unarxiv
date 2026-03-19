@@ -24,9 +24,10 @@ export default function AboutPage() {
         <section className="bg-surface rounded-2xl border border-stone-200 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">What is this?</h2>
           <p className="text-stone-700 leading-relaxed">
-            <SiteName /> is an audio mirror of arXiv. Paste any arXiv URL or paper ID and
-            we&apos;ll generate a free narrated audiobook from the paper.
-            Listen while you commute, exercise, or do chores.
+            <SiteName /> turns arXiv papers into audio you can listen to anywhere.
+            Search for any paper by ID, URL, title, author, or abstract. If it&apos;s already been
+            narrated, you can play it instantly. If it&apos;s new, narration takes about a minute.
+            Unlimited and free.
           </p>
         </section>
 
@@ -36,23 +37,24 @@ export default function AboutPage() {
           <div className="flex flex-col sm:flex-row gap-4 text-sm text-stone-600">
             <div className="flex-1 flex gap-3">
               <span className="text-lg font-bold text-stone-300">1</span>
-              <p>Paste an arXiv URL or paper ID — or browse to any arxiv.org paper and add <span className="font-semibold text-stone-800">un</span> to the URL.</p>
+              <p>Search for a paper — by arXiv ID, URL, title, author, or keywords from the abstract.</p>
             </div>
             <div className="flex-1 flex gap-3">
               <span className="text-lg font-bold text-stone-300">2</span>
-              <p>We extract the paper&apos;s text and convert it to natural-sounding speech.</p>
+              <p>Hit play if it&apos;s ready, or tap Narrate and it&apos;ll be generated in about a minute.</p>
             </div>
             <div className="flex-1 flex gap-3">
               <span className="text-lg font-bold text-stone-300">3</span>
-              <p>Stream or download the MP3 — add it to your playlist and listen on the go.</p>
+              <p>Papers go straight to your playlist. Listen on the go, adjust speed, pick up where you left off.</p>
             </div>
           </div>
         </section>
 
         {/* Quick tip */}
         <section className="bg-surface rounded-2xl border border-stone-200 p-6 flex flex-col items-center text-center gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Pro tip</h2>
           <p className="text-sm text-stone-600">
-            You can go to the narration of any arXiv paper by just adding &lsquo;<span className="font-semibold text-stone-900 underline">un</span>&rsquo; to the domain.
+            Browsing arxiv.org? Just add &lsquo;<span className="font-semibold text-stone-900 underline">un</span>&rsquo; to the domain and you&apos;ll land directly on the narration.
           </p>
           <UrlAnimation static />
         </section>
