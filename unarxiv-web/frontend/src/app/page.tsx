@@ -283,7 +283,7 @@ function HomePageContent() {
                   <PaperCardSkeleton />
                 </div>
               ) : paginatedResults.length === 0 ? (
-                <ArxivCta query={searchQuery} showHeading={false} showButton={false} />
+                <div className="text-center py-10 text-sm text-stone-500">No results found.</div>
               ) : (
                 <>
                   <div className="grid gap-3">
@@ -316,7 +316,7 @@ function HomePageContent() {
           ) : loading ? (
             <BrowseLayoutSkeleton />
           ) : newPapers.length === 0 ? (
-            <ArxivCta showHeading={false} showButton={false} />
+            <div className="text-center py-10 text-sm text-stone-500">No papers yet.</div>
           ) : (
             <BrowseLayout
               collections={collections}

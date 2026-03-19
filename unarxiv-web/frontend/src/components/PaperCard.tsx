@@ -3,11 +3,10 @@
 import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, formatEtaShort } from "@/lib/api";
+import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear } from "@/lib/api";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
-import ProcessingFileIcon from "@/components/ProcessingFileIcon";
 import PaperActionButton from "@/components/PaperActionButton";
 
 interface PaperCardProps {
@@ -111,26 +110,22 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
 
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
-        <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-stone-400"}`}>
+        <div className="shrink-0 mt-0.5 flex flex-col items-center text-stone-400">
           {showImportSpinner ? (
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin text-stone-400">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
             </svg>
+          ) : isProcessing ? (
+            <div className="relative">
+              <AudioFileIcon size={34} />
+              <div className="scan-line" />
+            </div>
           ) : isReady ? (
             <AudioFileIcon size={34} />
-          ) : isProcessing ? (
-            <ProcessingFileIcon size={34} />
           ) : (
             <FileIcon size={34} />
           )}
-          {isProcessing ? (
-            <>
-              <div className="w-5 h-1 rounded-full bg-purple-100 overflow-hidden mt-1">
-                <div className="h-full rounded-full progress-flow-purple w-full" />
-              </div>
-              <span className="text-3xs text-purple-300 font-medium mt-0.5">{formatEtaShort(paper.progress_detail) || "~55s"}</span>
-            </>
-          ) : paper.duration_seconds ? (
+          {paper.duration_seconds && !isProcessing ? (
             <span className="text-3xs text-stone-400 mt-0.5">{formatDurationShort(paper.duration_seconds)}</span>
           ) : null}
         </div>

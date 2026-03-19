@@ -122,16 +122,17 @@ input[type="range"]::-moz-range-thumb {
   background-size: 200% 100%;
   animation: progress-flow 1.8s linear infinite;
 }
-/* Purple variant: used in PaperCard processing indicator (subtle in-list state) */
-.progress-flow-purple {
-  background: repeating-linear-gradient(
-    90deg,
-    rgb(192 132 252 / 0.2) 0%,
-    rgb(192 132 252 / 0.6) 15%,
-    rgb(168 85 247 / 0.7) 30%,
-    rgb(192 132 252 / 0.6) 45%,
-    rgb(192 132 252 / 0.2) 50%
-  );
-  background-size: 200% 100%;
-  animation: progress-flow 1.8s linear infinite;
+/* Scan line animation for processing paper icons */
+@keyframes scan-line {
+  0% { top: 0%; }
+  50% { top: 85%; }
+  100% { top: 0%; }
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgb(168 162 158 / 0.8) 30%, rgb(120 113 108) 50%, rgb(168 162 158 / 0.8) 70%, transparent 100%);
+  animation: scan-line 2s ease-in-out infinite;
 }
