@@ -75,23 +75,24 @@ export default function RootLayout({
             </div>
             {/* Mobile spacer */}
             <div className="flex-1 md:hidden" />
-            {/* Right: playlist button */}
+            {/* Right: about + playlist */}
             <div className="flex items-center gap-3 shrink-0">
+              <Link
+                href="/about"
+                className="text-stone-400 hover:text-stone-600 transition-colors"
+                title="About"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+              </Link>
               <PlaylistNavButton />
             </div>
           </div>
         </header>
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
-        <footer className="hidden md:block w-full py-6">
-          <div className="max-w-5xl mx-auto px-6 flex flex-col items-center text-center gap-3">
-            <Link
-              href="/about"
-              className="text-sm text-stone-500 hover:text-stone-700 transition-colors no-underline"
-            >
-              About
-            </Link>
-          </div>
-        </footer>
         {/* Spacer so fixed player bar doesn't obscure content */}
         <div className="h-28 md:h-16" aria-hidden />
         <a
