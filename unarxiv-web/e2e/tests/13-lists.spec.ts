@@ -13,7 +13,7 @@ test.describe.serial("Lists API", () => {
     });
     expect(res.status).toBe(201);
     const data = await res.json();
-    expect(data.list.id).toMatch(/^[a-z0-9]{4}$/);
+    expect(data.list.id).toMatch(/^[a-z0-9]{6}$/);
     expect(data.owner_token).toBeTruthy();
     expect(data.list.name).toBe("E2E Test List");
     testListId = data.list.id;

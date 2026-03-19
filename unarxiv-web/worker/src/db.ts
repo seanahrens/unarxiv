@@ -494,12 +494,14 @@ export async function hasAnyLowRatings(db: D1Database): Promise<boolean> {
 
 const LIST_ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-/** Generate a unique 4-char list ID with collision retry. */
+/** Generate a unique 6-char list ID with collision retry. Uses crypto.getRandomValues() for security. */
 export async function generateListId(db: D1Database): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
     let id = "";
-    for (let i = 0; i < 4; i++) {
-      id += LIST_ID_CHARS[Math.floor(Math.random() * LIST_ID_CHARS.length)];
+    for (let i = 0; i < 6; i++) {
+      id += LIST_ID_CHARS[bytes[i] % LIST_ID_CHARS.length];
     }
     const existing = await db
       .prepare("SELECT 1 FROM lists WHERE id = ?")
