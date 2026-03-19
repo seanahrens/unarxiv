@@ -468,6 +468,16 @@
   border-radius: 0 !important;
 }
 
+/* Green phosphor text selection (replaces default browser blue) */
+[data-theme="retro-terminal"] ::selection {
+  background: #00cc00;
+  color: #000a00;
+}
+[data-theme="retro-terminal"] ::-moz-selection {
+  background: #00cc00;
+  color: #000a00;
+}
+
 /* CRT scanline overlay for retro-terminal */
 [data-theme="retro-terminal"] body::after {
   content: "";
