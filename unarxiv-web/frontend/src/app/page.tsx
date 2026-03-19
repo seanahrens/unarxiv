@@ -121,7 +121,6 @@ function ArxivResultCard({
       if (!imported) { setImporting(false); return; }
       const narrated = await requestNarration(imported.id);
       setPaper(narrated);
-      router.push(`/p?id=${imported.id}`);
     } catch {
       setImporting(false);
     }
