@@ -90,7 +90,8 @@ export default function SearchBar({
         />
         {showPlaceholder && (
           <div className="absolute inset-0 flex items-center pl-10 pr-11 pointer-events-none text-base text-stone-400">
-            <span className="truncate">Search by arXiv ID, URL, Title, Author, or Abstract</span>
+            <span className="truncate hidden md:inline">Search by arXiv ID, URL, Title, Author, or Abstract</span>
+            <span className="truncate md:hidden">arXiv ID, URL, Title, Author, or Abstract</span>
           </div>
         )}
         {/* Help icon */}

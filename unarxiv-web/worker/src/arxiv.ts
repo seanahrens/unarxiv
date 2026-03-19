@@ -2,10 +2,17 @@
  * ArXiv URL parsing and metadata scraping.
  */
 
-/** Extract an arXiv ID (YYMM.NNNNN), stripping any version suffix (e.g. v1, v12). */
+/** Extract an arXiv ID, supporting both new format (YYMM.NNNNN) and old format (category/YYMMNNN).
+ *  Strips any version suffix (e.g. v1, v12). */
 export function parseArxivId(input: string): string | null {
-  const m = input.trim().match(/(\d{4}\.\d{4,5})(v\d+)?/);
-  return m ? m[1] : null; // m[1] is the base ID without version suffix
+  const trimmed = input.trim();
+  // New format: 2103.12345 or 2103.12345v2
+  const newFmt = trimmed.match(/(\d{4}\.\d{4,5})(v\d+)?/);
+  if (newFmt) return newFmt[1];
+  // Old format: astro-ph/9903245 or hep-th/0601234v1
+  const oldFmt = trimmed.match(/([a-z-]+\/\d{7})(v\d+)?/i);
+  if (oldFmt) return oldFmt[1];
+  return null;
 }
 
 /** Build the canonical arXiv abstract page URL. */
@@ -34,78 +41,60 @@ export interface ArxivMetadata {
 }
 
 /**
- * Scrape metadata from an arXiv abstract page.
- * Throws if the page can't be fetched or TeX source isn't available.
+ * Fetch metadata for a single paper from the arXiv Atom API.
+ * Throws if the paper is not found.
  */
 export async function scrapeArxivMetadata(arxivId: string): Promise<ArxivMetadata> {
-  const absUrl = arxivAbsUrl(arxivId);
+  const apiUrl = `https://export.arxiv.org/api/query?id_list=${arxivId}&max_results=1`;
 
-  const response = await fetch(absUrl, {
+  const response = await fetch(apiUrl, {
     headers: { "User-Agent": "unarXiv/1.0 (research paper narration tool)" },
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Paper not found on arXiv: ${arxivId}`);
-    }
-    throw new Error(`Failed to fetch arXiv page (${response.status})`);
+    throw new Error(`arXiv API error (${response.status})`);
   }
 
-  const html = await response.text();
+  const xml = await response.text();
 
-  // Parse title
-  const titleMatch = html.match(/<h1 class="title mathjax">(?:<span[^>]*>Title:<\/span>\s*)?([\s\S]*?)<\/h1>/i);
+  // Check if the API returned an entry
+  if (!xml.includes("<entry>")) {
+    throw new Error(`Paper not found on arXiv: ${arxivId}`);
+  }
+
+  const entry = xml.split("<entry>")[1] || "";
+
+  // Title
+  const titleMatch = entry.match(/<title>([\s\S]*?)<\/title>/);
   const title = titleMatch
-    ? stripHtml(titleMatch[1]).trim()
+    ? decodeXmlEntities(titleMatch[1]).replace(/\s+/g, " ").trim()
     : "Untitled";
 
-  // Parse authors
-  const authorsBlockMatch = html.match(/<div class="authors">([\s\S]*?)<\/div>/i);
-  let authors: string[] = [];
-  if (authorsBlockMatch) {
-    const authorLinks = authorsBlockMatch[1].matchAll(/<a[^>]*>([\s\S]*?)<\/a>/gi);
-    for (const m of authorLinks) {
-      const name = stripHtml(m[1]).trim();
-      if (name) authors.push(name);
-    }
+  // Check for "not found" placeholder entries
+  if (title.toLowerCase().startsWith("error")) {
+    throw new Error(`Paper not found on arXiv: ${arxivId}`);
   }
 
-  // Parse abstract
-  const abstractMatch = html.match(
-    /<blockquote class="abstract mathjax">\s*(?:<span[^>]*>Abstract:<\/span>\s*)?([\s\S]*?)<\/blockquote>/i
-  );
-  const abstract = abstractMatch
-    ? stripHtml(abstractMatch[1]).trim()
+  // Authors
+  const authors: string[] = [];
+  const authorMatches = entry.matchAll(/<author>\s*<name>([^<]+)<\/name>/g);
+  for (const m of authorMatches) {
+    authors.push(decodeXmlEntities(m[1]).trim());
+  }
+
+  // Abstract (called <summary> in Atom)
+  const summaryMatch = entry.match(/<summary>([\s\S]*?)<\/summary>/);
+  const abstract = summaryMatch
+    ? decodeXmlEntities(summaryMatch[1]).replace(/\s+/g, " ").trim()
     : "";
 
-  // Parse date — extract first submission date as ISO (YYYY-MM-DD)
-  const dateMatch = html.match(/<div class="dateline">([\s\S]*?)<\/div>/i);
-  const rawDate = dateMatch ? stripHtml(dateMatch[1]).replace(/[\[\]]/g, "").trim() : "";
-  const published_date = parseSubmissionDate(rawDate);
-
-  // Check for TeX source availability
-  // Look for the "Other formats" / source link
-  const hasTexSource =
-    html.includes(`/src/${arxivId}`) ||
-    html.includes("/format/") ||
-    html.includes("Download source");
-
-  if (!hasTexSource) {
-    // Double-check with a HEAD request to the src URL
-    const srcCheck = await fetch(arxivSrcUrl(arxivId), {
-      method: "HEAD",
-      headers: { "User-Agent": "unarXiv/1.0" },
-    });
-    if (!srcCheck.ok) {
-      throw new Error(
-        "This paper doesn't have LaTeX source available. Only papers with TeX source can be narrated."
-      );
-    }
-  }
+  // Published date → YYYY-MM-DD
+  const pubMatch = entry.match(/<published>(\d{4}-\d{2}-\d{2})/);
+  const published_date = pubMatch ? pubMatch[1] : "";
 
   return {
     id: arxivId,
-    arxiv_url: absUrl,
+    arxiv_url: arxivAbsUrl(arxivId),
     title,
     authors,
     abstract,

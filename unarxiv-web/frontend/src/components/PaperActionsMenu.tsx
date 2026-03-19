@@ -49,6 +49,8 @@ interface PaperActionsMenuProps {
   onClose: () => void;
   /** Ref to the container for animation rect calculations */
   containerRef?: React.RefObject<HTMLElement | null>;
+  /** Called before playlist add/narration for arXiv-only papers that need importing first. Returns the imported paper. */
+  onEnsureImported?: () => Promise<Paper | null>;
 }
 
 export default function PaperActionsMenu({
@@ -61,6 +63,7 @@ export default function PaperActionsMenu({
   onRemoveFromPlaylist,
   onClose,
   containerRef,
+  onEnsureImported,
 }: PaperActionsMenuProps) {
   const router = useRouter();
   const { state, actions } = useAudio();
@@ -77,14 +80,23 @@ export default function PaperActionsMenu({
   const pdfFilename = `${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org - ${paper.id}.pdf`;
   const mp3Filename = `${paper.published_date?.slice(0, 4) || ""} - ${paper.title} - ${paper.authors?.[0] || "Unknown"} - unarXiv.org - ${paper.id}.mp3`;
 
-  const handlePlaylistToggle = () => {
+  const handlePlaylistToggle = async () => {
     const rect = containerRef?.current?.getBoundingClientRect();
     if (inPlaylist) {
       if (onRemoveFromPlaylist) onRemoveFromPlaylist(rect);
       else removeFromPlaylist(paper.id, rect);
     } else {
+      // If paper needs importing (arXiv-only), import first
+      if (onEnsureImported) {
+        const imported = await onEnsureImported();
+        if (!imported) { onClose(); return; }
+      }
       if (onAddToPlaylist) onAddToPlaylist(rect);
       else addToPlaylist(paper.id, rect || undefined);
+      // Auto-trigger narration for un-narrated papers
+      if (isNotRequested) {
+        requestNarration(paper.id).catch(() => {});
+      }
     }
     onClose();
   };
@@ -223,7 +235,7 @@ export default function PaperActionsMenu({
 
       {/* Collection submenu */}
       <div className={DIVIDER} />
-      <ListSubmenu paperId={paper.id} onClose={onClose} />
+      <ListSubmenu paperId={paper.id} onClose={onClose} onEnsureImported={onEnsureImported} />
     </div>
   );
 }

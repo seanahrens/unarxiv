@@ -61,6 +61,7 @@ export default function PaperActionButton({
   onRemoveFromPlaylist,
   onMenuToggle,
   etaSeconds,
+  onEnsureImported,
 }: {
   paper: Paper;
   compact?: boolean;
@@ -72,6 +73,8 @@ export default function PaperActionButton({
   onMenuToggle?: (open: boolean) => void;
   /** Override ETA seconds (e.g. from polling countdown). Falls back to paper.progress_detail. */
   etaSeconds?: number | null;
+  /** Called before playlist add/narration for arXiv-only papers that need importing first. */
+  onEnsureImported?: () => Promise<Paper | null>;
 }) {
   const { state, actions } = useAudio();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -177,6 +180,7 @@ export default function PaperActionButton({
             onRemoveFromPlaylist={onRemoveFromPlaylist}
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
+            onEnsureImported={onEnsureImported}
           />
         )}
       </div>
@@ -215,6 +219,7 @@ export default function PaperActionButton({
             showPlayItem={false}
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
+            onEnsureImported={onEnsureImported}
           />
         )}
       </div>
@@ -231,7 +236,11 @@ export default function PaperActionButton({
           className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${compact ? compactColors : "text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-700"} disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
         >
           <SparklesIcon />
-          {!compact && <span>Narrate</span>}
+          {compact ? (
+            <span className="hidden md:inline">Narrate</span>
+          ) : (
+            <span>Narrate</span>
+          )}
         </button>
         <button
           onClick={() => toggleMenu(!menuOpen)}
@@ -245,6 +254,7 @@ export default function PaperActionButton({
             showPlayItem={false}
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
+            onEnsureImported={onEnsureImported}
           />
         )}
       </div>

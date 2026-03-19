@@ -8,12 +8,14 @@ import Paginator from "@/components/Paginator";
 import ArxivCta from "@/components/ArxivCta";
 import SiteName from "@/components/SiteName";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
+import BrowseLayout from "@/components/BrowseLayout";
 import {
   fetchPapers,
   fetchPaper,
   previewPaper,
   submitPaper,
   searchArxiv,
+  requestNarration,
   extractArxivId,
   formatAuthors,
   formatPaperYear,
@@ -21,6 +23,8 @@ import {
   type ArxivSearchResult,
 } from "@/lib/api";
 import { fetchRecentLists, type ListMeta } from "@/lib/lists";
+import FileIcon from "@/components/FileIcon";
+import PaperActionButton from "@/components/PaperActionButton";
 
 const PAGE_SIZE = 6;
 const MAX_PAGES = 10;
@@ -34,70 +38,110 @@ export default function HomePage() {
   );
 }
 
-function CollectionsSidebar({ collections }: { collections: ListMeta[] }) {
-  if (collections.length === 0) return null;
-
-  return (
-    <aside>
-      <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider mb-3">
-        Collections
-      </h2>
-      <div className="flex flex-col gap-2">
-        {collections.map((list) => (
-          <Link
-            key={list.id}
-            href={`/l?id=${list.id}`}
-            className="block p-3 bg-white border border-stone-200 rounded-lg hover:border-stone-300 hover:shadow-sm transition-all"
-          >
-            <div className="text-sm font-medium text-stone-800 truncate">
-              {list.name}
-            </div>
-            {list.description && (
-              <div className="text-xs text-stone-500 mt-0.5 line-clamp-2">
-                {list.description}
-              </div>
-            )}
-            <div className="text-xs text-stone-400 mt-1">
-              {list.paper_count} {list.paper_count === 1 ? "paper" : "papers"}
-            </div>
-          </Link>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-/** A search result card for arXiv-only results (not yet in our DB). */
+/** A search result card for arXiv-only results (not yet in our DB).
+ *  Has the same visual layout as PaperCard with a Narrate action button. */
 function ArxivResultCard({
   result,
-  loading,
-  onClick,
+  onImported,
 }: {
   result: ArxivSearchResult;
-  loading: boolean;
-  onClick: () => void;
+  onImported?: (paper: Paper) => void;
 }) {
+  const router = useRouter();
+  const [importing, setImporting] = useState(false);
+  const [paper, setPaper] = useState<Paper | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Once imported, render as a Paper with full actions
+  const fakePaper: Paper = paper || {
+    id: result.id,
+    arxiv_url: result.arxiv_url,
+    title: result.title,
+    authors: result.authors,
+    abstract: result.abstract,
+    published_date: result.published_date,
+    status: "not_requested" as const,
+    error_message: null,
+    progress_detail: null,
+    audio_url: null,
+    audio_size_bytes: null,
+    duration_seconds: null,
+    created_at: "",
+    completed_at: null,
+  };
+
+  /** Ensure the arXiv paper exists in our DB. Returns the Paper or null on failure. */
+  const ensureImported = async (): Promise<Paper | null> => {
+    if (paper) return paper;
+    try {
+      const imported = await submitPaper(result.arxiv_url);
+      setPaper(imported);
+      onImported?.(imported);
+      return imported;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleNarrate = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const imported = await ensureImported();
+      if (!imported) { setImporting(false); return; }
+      const narrated = await requestNarration(imported.id);
+      setPaper(narrated);
+      router.push(`/p?id=${imported.id}`);
+    } catch {
+      setImporting(false);
+    }
+  };
+
   return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className="block w-full text-left relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all bg-white border-stone-300 hover:border-stone-400"
+    <Link
+      href={`/p?id=${result.id}`}
+      onClick={async (e) => {
+        // If not yet imported, import first then navigate
+        if (!paper) {
+          e.preventDefault();
+          setImporting(true);
+          try {
+            await submitPaper(result.arxiv_url);
+            router.push(`/p?id=${result.id}`);
+          } catch {
+            setImporting(false);
+          }
+        }
+      }}
+      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
     >
+      {/* Action button — upper right */}
+      <div
+        className="absolute top-3 right-3 z-30"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      >
+        <PaperActionButton
+          paper={fakePaper}
+          compact
+          onGenerate={handleNarrate}
+          generateDisabled={importing}
+          onMenuToggle={setMenuOpen}
+          onEnsureImported={ensureImported}
+        />
+      </div>
+
       <div className="flex gap-3">
-        <div className="shrink-0 mt-0.5 flex flex-col items-center text-stone-300">
-          {loading ? (
+        <div className="shrink-0 mt-0.5 flex flex-col items-center text-stone-400">
+          {importing ? (
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin text-stone-400">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
             </svg>
           ) : (
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
+            <FileIcon size={34} />
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-6 mb-1">
+          <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-16 mb-1">
             {result.title || "Untitled"}
           </h3>
           <p className="text-xs text-stone-500 mb-2">
@@ -116,7 +160,7 @@ function ArxivResultCard({
           )}
         </div>
       </div>
-    </button>
+    </Link>
   );
 }
 
@@ -139,7 +183,6 @@ function HomePageContent() {
   const [collections, setCollections] = useState<ListMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [creatingId, setCreatingId] = useState<string | null>(null);
 
   // ArXiv import state
   const [previewing, setPreviewing] = useState(false);
@@ -246,28 +289,8 @@ function HomePageContent() {
     router.push(`/?${params}`);
   }, [qParam, router]);
 
-  const handleArxivResultClick = useCallback(async (result: ArxivSearchResult) => {
-    setCreatingId(result.id);
-    try {
-      await submitPaper(result.arxiv_url);
-      router.push(`/p?id=${result.id}`);
-    } catch (e: any) {
-      console.error("Failed to create paper:", e);
-      setCreatingId(null);
-    }
-  }, [router]);
-
   return (
     <div>
-      {!searchQuery && (
-        <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider mt-4 mb-6 text-center">
-          <svg width="20" height="20" viewBox="0 0 640 640" fill="currentColor" className="inline-block align-middle mr-2">
-            <path d="M144 288C144 190.8 222.8 112 320 112C417.2 112 496 190.8 496 288L496 332.8C481.9 324.6 465.5 320 448 320L432 320C405.5 320 384 341.5 384 368L384 496C384 522.5 405.5 544 432 544L448 544C501 544 544 501 544 448L544 288C544 164.3 443.7 64 320 64C196.3 64 96 164.3 96 288L96 448C96 501 139 544 192 544L208 544C234.5 544 256 522.5 256 496L256 368C256 341.5 234.5 320 208 320L192 320C174.5 320 158.1 324.7 144 332.8L144 288zM144 416C144 389.5 165.5 368 192 368L208 368L208 496L192 496C165.5 496 144 474.5 144 448L144 416zM496 416L496 448C496 474.5 474.5 496 448 496L432 496L432 368L448 368C474.5 368 496 389.5 496 416z" />
-          </svg>
-          Listen to <a href="https://arxiv.org" target="_blank" rel="noopener noreferrer" className="font-bold no-underline text-stone-600 hover:text-stone-800 transition-colors">arXiv</a> Papers. Unlimited.<span className="hidden md:inline"> Free.</span>
-        </h2>
-      )}
-
       <HeaderSearchBar />
 
       {!searchQuery && <div className="h-6" />}
@@ -318,8 +341,6 @@ function HomePageContent() {
                           <ArxivResultCard
                             key={item.result.id}
                             result={item.result}
-                            loading={creatingId === item.result.id}
-                            onClick={() => handleArxivResultClick(item.result)}
                           />
                         );
                       }
@@ -342,31 +363,11 @@ function HomePageContent() {
           ) : newPapers.length === 0 ? (
             <ArxivCta />
           ) : (
-            <div className="flex gap-8">
-              {/* Main content — newly added papers */}
-              <div className="flex-1 min-w-0">
-                <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
-                      Newly Added
-                    </h2>
-                    <Paginator page={page} totalPages={totalPages} onChange={setPage} />
-                  </div>
-                  <div className="grid gap-3">
-                    {visiblePapers.map((paper) => (
-                      <PaperCard key={paper.id} paper={paper} />
-                    ))}
-                  </div>
-                </section>
-              </div>
-
-              {/* Sidebar — collections */}
-              {collections.length > 0 && (
-                <div className="hidden lg:block w-64 flex-shrink-0">
-                  <CollectionsSidebar collections={collections} />
-                </div>
-              )}
-            </div>
+            <BrowseLayout
+              collections={collections}
+              initialSelectedId={null}
+              newlyAddedPapers={newPapers}
+            />
           )}
         </>
       )}

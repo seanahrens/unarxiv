@@ -387,11 +387,13 @@ export function parseEtaSeconds(detail: string | null): number | null {
   return m ? parseInt(m[1]) : null;
 }
 
-// Extract an arXiv ID (YYMM.NNNNN with optional vN) from anywhere in a string.
-const ARXIV_ID_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
+// Extract an arXiv ID — new format (YYMM.NNNNN) or old format (category/YYMMNNN) with optional vN.
+const ARXIV_NEW_RE = /(\d{4}\.\d{4,5})(v\d+)?/;
+const ARXIV_OLD_RE = /([a-z-]+\/\d{7})(v\d+)?/i;
 
 export function isArxivUrl(input: string): boolean {
-  return ARXIV_ID_RE.test(input.trim());
+  const t = input.trim();
+  return ARXIV_NEW_RE.test(t) || ARXIV_OLD_RE.test(t);
 }
 
 // --- ArXiv API Search ---
@@ -424,6 +426,10 @@ export async function searchArxiv(query: string, page: number = 1, perPage: numb
 }
 
 export function extractArxivId(input: string): string | null {
-  const m = input.trim().match(ARXIV_ID_RE);
-  return m ? m[1] : null; // m[1] is the base ID without version suffix
+  const t = input.trim();
+  const newFmt = t.match(ARXIV_NEW_RE);
+  if (newFmt) return newFmt[1];
+  const oldFmt = t.match(ARXIV_OLD_RE);
+  if (oldFmt) return oldFmt[1];
+  return null;
 }

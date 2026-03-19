@@ -67,6 +67,7 @@ export interface List {
   owner_token: string;
   name: string;
   description: string;
+  publicly_listed: number; // 0 or 1
   creator_ip: string | null;
   created_at: string;
   updated_at: string;
@@ -84,6 +85,7 @@ export interface ListResponse {
   id: string;
   name: string;
   description: string;
+  publicly_listed: boolean;
   created_at: string;
   updated_at: string;
   paper_count: number;

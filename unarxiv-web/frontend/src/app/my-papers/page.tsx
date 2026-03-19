@@ -106,6 +106,7 @@ export default function PlaylistPage() {
         id,
         name: e.name || "Untitled",
         description: "",
+        publicly_listed: true,
         created_at: "",
         updated_at: "",
         paper_count: 0,

@@ -92,35 +92,57 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const onDurationChange = () => setDuration(audio.duration || 0);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const onEnded = () => {
-      const finishedId = paperIdRef.current;
+    const playNextInPlaylist = (afterId: string | null, skipCount: number = 0) => {
+      if (skipCount > 20) { setIsPlaying(false); return; } // safety limit
+
       const playlist = getPlaylist();
       let nextPaperId: string | null = null;
 
-      if (finishedId) {
-        const idx = playlist.findIndex((e) => e.paperId === finishedId);
+      if (afterId) {
+        const idx = playlist.findIndex((e) => e.paperId === afterId);
         if (idx !== -1 && idx < playlist.length - 1) {
           nextPaperId = playlist[idx + 1].paperId;
         } else if (idx === -1 && playlist.length > 0) {
           nextPaperId = playlist[0].paperId;
         }
-        markAsRead(finishedId);
-        removeFromPlaylist(finishedId);
       }
 
       if (nextPaperId) {
         const nextId = nextPaperId;
         fetchPaper(nextId)
           .then((paper) => {
-            if (loadPaperRef.current) {
+            if (paper.status === "complete" && loadPaperRef.current) {
               loadPaperRef.current(nextId, paper.title, audioUrl(nextId));
+            } else {
+              // Skip non-complete papers
+              playNextInPlaylist(nextId, skipCount + 1);
             }
           })
           .catch(() => {
-            setIsPlaying(false);
+            // Skip papers that fail to fetch
+            playNextInPlaylist(nextId, skipCount + 1);
           });
       } else {
         setIsPlaying(false);
+      }
+    };
+
+    const onEnded = () => {
+      const finishedId = paperIdRef.current;
+
+      if (finishedId) {
+        markAsRead(finishedId);
+        removeFromPlaylist(finishedId);
+      }
+
+      playNextInPlaylist(finishedId);
+    };
+
+    const onError = () => {
+      // If audio fails to load (e.g. paper not narrated), skip to next
+      const currentId = paperIdRef.current;
+      if (currentId) {
+        playNextInPlaylist(currentId);
       }
     };
 
@@ -129,6 +151,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
@@ -136,6 +159,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
     };
   }, []);
 

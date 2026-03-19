@@ -60,7 +60,7 @@ import {
 } from "./db";
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -86,6 +86,17 @@ export default {
       for (const [key, value] of Object.entries(corsHeaders)) {
         response.headers.set(key, value);
       }
+
+      // Immediately drain the queue after narrate/reprocess requests succeed
+      if (
+        method === "POST" &&
+        response.ok &&
+        (/\/api\/papers\/[^/]+\/narrate$/.test(path) ||
+          /\/api\/papers\/[^/]+\/reprocess$/.test(path))
+      ) {
+        ctx.waitUntil(drainNarrationQueue(env));
+      }
+
       return response;
     } catch (e: any) {
       console.error("Unhandled error:", e);
@@ -254,16 +265,17 @@ async function handleAdminLists(request: Request, env: Env): Promise<Response> {
 }
 
 async function handleCreateList(request: Request, env: Env): Promise<Response> {
-  const body = await request.json<{ name?: string; description?: string }>();
+  const body = await request.json<{ name?: string; description?: string; publicly_listed?: boolean }>();
   if (!body.name || !body.name.trim()) {
     return json({ error: "name is required" }, 400);
   }
   const id = await generateListId(env.DB);
   const ownerToken = crypto.randomUUID().replace(/-/g, "");
   const ip = request.headers.get("CF-Connecting-IP") || null;
-  const list = await createList(env.DB, id, ownerToken, body.name.trim(), (body.description || "").trim(), ip);
+  const publiclyListed = body.publicly_listed === false ? 0 : 1;
+  const list = await createList(env.DB, id, ownerToken, body.name.trim(), (body.description || "").trim(), ip, publiclyListed);
   return json({
-    list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: 0 },
+    list: { id: list.id, name: list.name, description: list.description, publicly_listed: !!list.publicly_listed, created_at: list.created_at, updated_at: list.updated_at, paper_count: 0 },
     owner_token: ownerToken,
   }, 201);
 }
@@ -274,7 +286,7 @@ async function handleMyLists(request: Request, env: Env): Promise<Response> {
   const lists = await getListsByToken(env.DB, token);
   return json({
     lists: lists.map((l) => ({
-      id: l.id, name: l.name, description: l.description,
+      id: l.id, name: l.name, description: l.description, publicly_listed: !!l.publicly_listed,
       created_at: l.created_at, updated_at: l.updated_at, paper_count: l.paper_count,
     })),
   });
@@ -286,7 +298,7 @@ async function handleRecentLists(env: Env, url: URL): Promise<Response> {
   const lists = await getRecentPublicLists(env.DB, limit, offset);
   return json({
     lists: lists.map((l) => ({
-      id: l.id, name: l.name, description: l.description,
+      id: l.id, name: l.name, description: l.description, publicly_listed: !!l.publicly_listed,
       created_at: l.created_at, updated_at: l.updated_at, paper_count: l.paper_count,
     })),
   });
@@ -304,7 +316,7 @@ async function handleGetList(request: Request, env: Env, listId: string, baseUrl
     return p ? paperToResponse(p, baseUrl) : { id, not_found: true };
   });
   return json({
-    list: { id: list.id, name: list.name, description: list.description, created_at: list.created_at, updated_at: list.updated_at, paper_count: items.length },
+    list: { id: list.id, name: list.name, description: list.description, publicly_listed: !!list.publicly_listed, created_at: list.created_at, updated_at: list.updated_at, paper_count: items.length },
     papers: orderedPapers,
   });
 }
@@ -313,8 +325,9 @@ async function handleUpdateList(request: Request, env: Env, listId: string): Pro
   const token = request.headers.get("X-List-Token");
   const list = await getList(env.DB, listId);
   if (!list || list.owner_token !== token) return json({ error: "Unauthorized" }, 403);
-  const body = await request.json<{ name?: string; description?: string }>();
-  await updateList(env.DB, list.id, (body.name ?? list.name).trim(), (body.description ?? list.description).trim());
+  const body = await request.json<{ name?: string; description?: string; publicly_listed?: boolean }>();
+  const publiclyListed = body.publicly_listed !== undefined ? (body.publicly_listed ? 1 : 0) : undefined;
+  await updateList(env.DB, list.id, (body.name ?? list.name).trim(), (body.description ?? list.description).trim(), publiclyListed);
   return json({ ok: true });
 }
 
@@ -833,7 +846,8 @@ async function handleNarratePaper(
   // meaningful per-user cost to queuing, so restricting it adds friction without protection.
   // The submissions table and PER_IP_DAILY_LIMIT var are retained in case we re-enable later.
 
-  // Enqueue: mark as queued in DB. The scheduled cron drains the queue and dispatches to Modal.
+  // Enqueue: mark as queued in DB. The queue is drained immediately via waitUntil
+  // after this response, with the scheduled cron as a backup.
   await updatePaperStatus(env.DB, id, "queued");
   await recordSubmission(env.DB, ip);
 
@@ -843,7 +857,8 @@ async function handleNarratePaper(
 
 /**
  * Drain the narration queue: pick up to QUEUE_BATCH_SIZE queued papers and dispatch
- * each to Modal. Called by the scheduled cron — this is the only place Modal is invoked.
+ * each to Modal. Called immediately via waitUntil after narrate/reprocess requests,
+ * and by the scheduled cron as a backup to catch anything missed.
  */
 async function drainNarrationQueue(env: Env): Promise<void> {
   if (!env.MODAL_FUNCTION_URL) return;

@@ -466,14 +466,15 @@ export async function createList(
   ownerToken: string,
   name: string,
   description: string,
-  creatorIp: string | null
+  creatorIp: string | null,
+  publiclyListed: number = 1
 ): Promise<List> {
   await db
     .prepare(
-      `INSERT INTO lists (id, owner_token, name, description, creator_ip)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO lists (id, owner_token, name, description, creator_ip, publicly_listed)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .bind(id, ownerToken, name, description, creatorIp)
+    .bind(id, ownerToken, name, description, creatorIp, publiclyListed)
     .run();
   return (await getList(db, id))!;
 }
@@ -511,17 +512,25 @@ export async function getAllLists(db: D1Database): Promise<(List & { paper_count
   return results.results;
 }
 
-/** Update list name/description. */
+/** Update list name/description and optionally publicly_listed. */
 export async function updateList(
   db: D1Database,
   id: string,
   name: string,
-  description: string
+  description: string,
+  publiclyListed?: number
 ): Promise<void> {
-  await db
-    .prepare("UPDATE lists SET name = ?, description = ?, updated_at = datetime('now') WHERE id = ?")
-    .bind(name, description, id)
-    .run();
+  if (publiclyListed !== undefined) {
+    await db
+      .prepare("UPDATE lists SET name = ?, description = ?, publicly_listed = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(name, description, publiclyListed, id)
+      .run();
+  } else {
+    await db
+      .prepare("UPDATE lists SET name = ?, description = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(name, description, id)
+      .run();
+  }
 }
 
 /** Delete a list and all its items. */
@@ -599,9 +608,10 @@ export async function getRecentPublicLists(
       `SELECT l.*, COALESCE(c.cnt, 0) as paper_count
        FROM lists l
        LEFT JOIN (SELECT list_id, COUNT(*) as cnt FROM list_items GROUP BY list_id) c ON c.list_id = l.id
-       WHERE COALESCE(c.cnt, 0) >= 2
+       WHERE COALESCE(c.cnt, 0) >= 1
          AND l.name != '' AND l.name != 'Untitled Collection'
-       ORDER BY l.updated_at DESC
+         AND l.publicly_listed = 1
+       ORDER BY l.name COLLATE NOCASE ASC
        LIMIT ? OFFSET ?`
     )
     .bind(limit, offset)

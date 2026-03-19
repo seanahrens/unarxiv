@@ -73,6 +73,7 @@ export interface ListMeta {
   id: string;
   name: string;
   description: string;
+  publicly_listed: boolean;
   created_at: string;
   updated_at: string;
   paper_count: number;
@@ -93,17 +94,26 @@ function tokenHeaders(token: string): Record<string, string> {
   return { "Content-Type": "application/json", "X-List-Token": token };
 }
 
-export async function createListApi(name: string, description: string = ""): Promise<{ list: ListMeta; owner_token: string }> {
+export async function createListApi(name: string, description: string = "", publiclyListed: boolean = true): Promise<{ list: ListMeta; owner_token: string }> {
   const res = await fetch(`${API_BASE}/api/lists`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, description }),
+    body: JSON.stringify({ name, description, publicly_listed: publiclyListed }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));
     throw new Error(data.error || `API error: ${res.status}`);
   }
   return res.json();
+}
+
+export async function updateListPubliclyListed(id: string, token: string, publiclyListed: boolean): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/lists/${id}`, {
+    method: "PUT",
+    headers: tokenHeaders(token),
+    body: JSON.stringify({ publicly_listed: publiclyListed }),
+  });
+  if (!res.ok) throw new Error("Failed to update list");
 }
 
 export async function fetchList(id: string): Promise<ListWithPapers> {
