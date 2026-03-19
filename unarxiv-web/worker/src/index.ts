@@ -1043,6 +1043,17 @@ async function drainNarrationQueue(env: Env): Promise<void> {
   for (const paper of papers) {
     // Mark as preparing immediately so a concurrent cron run won't double-dispatch
     await updatePaperStatus(env.DB, paper.id, "preparing");
+
+    // Skip Modal dispatch when secret is missing (local dev) — leave paper in "preparing"
+    // so the UI shows an in-progress state. Use the webhook endpoint to simulate completion.
+    if (!env.MODAL_WEBHOOK_SECRET) {
+      console.log(`[local-dev] Skipping Modal dispatch for ${paper.id} (no MODAL_WEBHOOK_SECRET). ` +
+        `Simulate completion: curl -X POST http://localhost:8787/api/webhooks/modal ` +
+        `-H 'Content-Type: application/json' ` +
+        `-d '{"arxiv_id":"${paper.id}","status":"complete","duration_seconds":600}'`);
+      continue;
+    }
+
     try {
       await fetch(env.MODAL_FUNCTION_URL, {
         method: "POST",
