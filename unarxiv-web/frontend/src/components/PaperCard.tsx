@@ -1,8 +1,9 @@
 "use client";
 
 import { memo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Paper, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, parseEtaSeconds } from "@/lib/api";
+import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear, parseEtaSeconds } from "@/lib/api";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -13,6 +14,14 @@ interface PaperCardProps {
   paper: Paper;
   onGenerate?: (paperId: string) => void;
   onRate?: (paperId: string) => void;
+  /**
+   * When set, the paper is not yet in our DB (arXiv-only search result).
+   * Card click will call this to import before navigating, and the narrate
+   * button will import + request narration in one flow.
+   */
+  arxivUrl?: string;
+  /** Called when the paper object changes (after import or narration request). */
+  onPaperChange?: (paper: Paper) => void;
 }
 
 function formatEtaShort(detail: string | null): string | null {
@@ -32,17 +41,60 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
+function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange }: PaperCardProps) {
+  const router = useRouter();
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
   const isNotRequested = paper.status === "not_requested";
   const isProcessing = isInProgress(paper.status);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  // Whether this is an arXiv-only result that needs importing before DB actions
+  const needsImport = !!arxivUrl && isNotRequested && !paper.created_at;
+
+  /** Ensure the arXiv paper exists in our DB. */
+  const ensureImported = async (): Promise<Paper | null> => {
+    if (!needsImport) return paper;
+    try {
+      const imported = await submitPaper(arxivUrl!);
+      onPaperChange?.(imported);
+      return imported;
+    } catch {
+      return null;
+    }
+  };
+
+  /** Import + request narration in one flow. */
+  const handleNarrate = async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const imported = await ensureImported();
+      if (!imported) { setImporting(false); return; }
+      const narrated = await requestNarration(imported.id);
+      onPaperChange?.(narrated);
+    } catch {
+      setImporting(false);
+    }
+  };
+
+  const showImportSpinner = importing && needsImport;
 
   return (
     <Link
       href={`/p?id=${paper.id}`}
       data-testid="paper-card"
+      onClick={needsImport ? async (e) => {
+        e.preventDefault();
+        setImporting(true);
+        try {
+          await submitPaper(arxivUrl!);
+          router.push(`/p?id=${paper.id}`);
+        } catch {
+          setImporting(false);
+        }
+      } : undefined}
       className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
     >
       {/* Action button — upper right */}
@@ -55,8 +107,10 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
             paper={paper}
             compact
             onRate={onRate ? () => onRate(paper.id) : undefined}
-            onGenerate={onGenerate ? () => onGenerate(paper.id) : undefined}
+            onGenerate={needsImport ? handleNarrate : onGenerate ? () => onGenerate(paper.id) : undefined}
+            generateDisabled={importing}
             onMenuToggle={setMenuOpen}
+            onEnsureImported={needsImport ? ensureImported : undefined}
           />
         </div>
       )}
@@ -64,7 +118,17 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
       <div className="flex gap-3">
         {/* File-audio icon + duration */}
         <div className={`shrink-0 mt-0.5 flex flex-col items-center ${isProcessing ? "text-purple-300" : "text-stone-400"}`}>
-          {isReady ? <AudioFileIcon size={34} /> : isProcessing ? <ProcessingFileIcon size={34} /> : <FileIcon size={34} />}
+          {showImportSpinner ? (
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin text-stone-400">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            </svg>
+          ) : isReady ? (
+            <AudioFileIcon size={34} />
+          ) : isProcessing ? (
+            <ProcessingFileIcon size={34} />
+          ) : (
+            <FileIcon size={34} />
+          )}
           {isProcessing ? (
             <>
               <div className="w-5 h-1 rounded-full bg-purple-100 overflow-hidden mt-1">
@@ -111,5 +175,8 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
 }
 
 export default memo(PaperCard, (prev, next) =>
-  prev.paper.id === next.paper.id && prev.paper.status === next.paper.status
+  prev.paper.id === next.paper.id
+  && prev.paper.status === next.paper.status
+  && prev.paper.progress_detail === next.paper.progress_detail
+  && prev.arxivUrl === next.arxivUrl
 );

@@ -2,11 +2,9 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
 import ArxivCta from "@/components/ArxivCta";
-import SiteName from "@/components/SiteName";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
 import BrowseLayout from "@/components/BrowseLayout";
 import { PaperCardSkeleton, CollectionSidebarSkeleton } from "@/components/Skeleton";
@@ -16,16 +14,12 @@ import {
   previewPaper,
   submitPaper,
   searchArxiv,
-  requestNarration,
   extractArxivId,
-  formatAuthors,
-  formatPaperYear,
   type Paper,
   type ArxivSearchResult,
 } from "@/lib/api";
 import { fetchRecentLists, type ListMeta } from "@/lib/lists";
-import FileIcon from "@/components/FileIcon";
-import PaperActionButton from "@/components/PaperActionButton";
+import { useBatchPaperPolling } from "@/hooks/usePaperPolling";
 
 const PAGE_SIZE = 6;
 const MAX_PAGES = 10;
@@ -68,22 +62,9 @@ export default function HomePage() {
   );
 }
 
-/** A search result card for arXiv-only results (not yet in our DB).
- *  Has the same visual layout as PaperCard with a Narrate action button. */
-function ArxivResultCard({
-  result,
-  onImported,
-}: {
-  result: ArxivSearchResult;
-  onImported?: (paper: Paper) => void;
-}) {
-  const router = useRouter();
-  const [importing, setImporting] = useState(false);
-  const [paper, setPaper] = useState<Paper | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Once imported, render as a Paper with full actions
-  const fakePaper: Paper = paper || {
+/** Convert an arXiv search result to a placeholder Paper object. */
+function arxivResultToPaper(result: ArxivSearchResult): Paper {
+  return {
     id: result.id,
     arxiv_url: result.arxiv_url,
     title: result.title,
@@ -99,98 +80,6 @@ function ArxivResultCard({
     created_at: "",
     completed_at: null,
   };
-
-  /** Ensure the arXiv paper exists in our DB. Returns the Paper or null on failure. */
-  const ensureImported = async (): Promise<Paper | null> => {
-    if (paper) return paper;
-    try {
-      const imported = await submitPaper(result.arxiv_url);
-      setPaper(imported);
-      onImported?.(imported);
-      return imported;
-    } catch {
-      return null;
-    }
-  };
-
-  const handleNarrate = async () => {
-    if (importing) return;
-    setImporting(true);
-    try {
-      const imported = await ensureImported();
-      if (!imported) { setImporting(false); return; }
-      const narrated = await requestNarration(imported.id);
-      setPaper(narrated);
-    } catch {
-      setImporting(false);
-    }
-  };
-
-  return (
-    <Link
-      href={`/p?id=${result.id}`}
-      onClick={async (e) => {
-        // If not yet imported, import first then navigate
-        if (!paper) {
-          e.preventDefault();
-          setImporting(true);
-          try {
-            await submitPaper(result.arxiv_url);
-            router.push(`/p?id=${result.id}`);
-          } catch {
-            setImporting(false);
-          }
-        }
-      }}
-      className={`block relative rounded-xl border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all no-underline bg-white border-stone-300 hover:border-stone-400 ${menuOpen ? "z-40" : ""}`}
-    >
-      {/* Action button — upper right */}
-      <div
-        className="absolute top-3 right-3 z-30"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      >
-        <PaperActionButton
-          paper={fakePaper}
-          compact
-          onGenerate={handleNarrate}
-          generateDisabled={importing}
-          onMenuToggle={setMenuOpen}
-          onEnsureImported={ensureImported}
-        />
-      </div>
-
-      <div className="flex gap-3">
-        <div className="shrink-0 mt-0.5 flex flex-col items-center text-stone-400">
-          {importing ? (
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin text-stone-400">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
-          ) : (
-            <FileIcon size={34} />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-16 mb-1">
-            {result.title || "Untitled"}
-          </h3>
-          <p className="text-xs text-stone-500 mb-2">
-            {result.authors.length > 0 && (
-              <span className="text-stone-600">
-                {formatAuthors(result.authors)}
-              </span>
-            )}
-            {result.authors.length > 0 && result.published_date && <span> &middot; </span>}
-            {result.published_date && <span>{formatPaperYear(result.published_date)}</span>}
-          </p>
-          {result.abstract && (
-            <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
-              {result.abstract}
-            </p>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
 }
 
 /** Merged search result — either a DB paper or an arXiv-only result. */
@@ -217,8 +106,12 @@ function HomePageContent() {
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
 
+  // Track papers that were imported/narrated from arXiv results (keyed by paper ID)
+  const [importedPapers, setImportedPapers] = useState<Record<string, Paper>>({});
+
   // React to search params
   useEffect(() => {
+    setImportedPapers({});
     if (arxivParam) {
       // ArXiv ID detected — try lookup then create
       setPreviewError("");
@@ -323,12 +216,25 @@ function HomePageContent() {
     return () => clearInterval(timer);
   }, [qParam, arxivParam, loading]);
 
+  // Build the list of all known papers for search results (DB papers + imported arxiv papers)
+  // and poll any that are in-progress
+  const searchPapers: Paper[] = mergedResults.map((item) => {
+    if (item.source === "db") return importedPapers[item.paper.id] || item.paper;
+    return importedPapers[item.result.id] || arxivResultToPaper(item.result);
+  });
+  const polledSearchPapers = useBatchPaperPolling(searchPapers);
+
+  // When an arxiv result gets imported or narrated, track it
+  const handlePaperChange = useCallback((paper: Paper) => {
+    setImportedPapers((prev) => ({ ...prev, [paper.id]: paper }));
+  }, []);
+
   const currentPage = Math.max(1, pageParam);
   const searchTotalPages = Math.max(
     Math.ceil(mergedResults.length / SEARCH_PAGE_SIZE),
     Math.ceil(totalArxivResults / SEARCH_PAGE_SIZE)
   );
-  const paginatedResults = mergedResults.slice(0, SEARCH_PAGE_SIZE);
+  const paginatedResults = polledSearchPapers.slice(0, SEARCH_PAGE_SIZE);
 
   const totalPages = Math.min(MAX_PAGES, Math.ceil(newPapers.length / PAGE_SIZE));
   const visiblePapers = newPapers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
@@ -388,17 +294,18 @@ function HomePageContent() {
               ) : (
                 <>
                   <div className="grid gap-3">
-                    {paginatedResults.map((item) => {
-                      if (item.source === "db") {
-                        return <PaperCard key={item.paper.id} paper={item.paper} />;
-                      } else {
-                        return (
-                          <ArxivResultCard
-                            key={item.result.id}
-                            result={item.result}
-                          />
-                        );
-                      }
+                    {paginatedResults.map((paper, i) => {
+                      const item = mergedResults[i];
+                      // Only pass arxivUrl if the paper hasn't been imported yet
+                      const isUnimported = item?.source === "arxiv" && !importedPapers[item.result.id];
+                      return (
+                        <PaperCard
+                          key={paper.id}
+                          paper={paper}
+                          arxivUrl={isUnimported ? item.result.arxiv_url : undefined}
+                          onPaperChange={handlePaperChange}
+                        />
+                      );
                     })}
                   </div>
                   {searchTotalPages > 1 && (
