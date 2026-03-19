@@ -79,7 +79,7 @@ function PaperCard({ paper, onGenerate, onRate }: PaperCardProps) {
         {/* Card content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 mb-1">
-            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-16">
+            <h3 className="text-sm font-semibold text-stone-900 line-clamp-2 leading-snug pr-20">
               {paper.title || "Untitled"}
             </h3>
             {isFailed && (

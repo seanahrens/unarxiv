@@ -247,6 +247,7 @@ export default function AdminPage() {
   const [collections, setCollections] = useState<AdminList[]>([]);
   const [deletingLists, setDeletingLists] = useState<Set<string>>(new Set());
   const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   // Curate state
   const [papers, setPapers] = useState<PaperWithRating[]>([]);
@@ -838,6 +839,7 @@ export default function AdminPage() {
                   <th className="px-2 py-2">Name</th>
                   <th className="px-2 py-2">Description</th>
                   <th className="px-2 py-2 text-right">Papers</th>
+                  <th className="px-2 py-2 w-8 text-center">Token</th>
                   <th className="px-2 py-2 text-right">Created</th>
                 </tr>
               </thead>
@@ -869,6 +871,29 @@ export default function AdminPage() {
                     <td className="px-2 py-1.5 text-stone-800 max-w-[200px] truncate">{col.name || "Untitled"}</td>
                     <td className="px-2 py-1.5 text-stone-500 max-w-[200px] truncate text-xs">{col.description || "—"}</td>
                     <td className="px-2 py-1.5 text-right font-mono text-stone-700">{col.paper_count}</td>
+                    <td className="px-2 py-1.5 text-center">
+                      <button
+                        onClick={() => {
+                          const shareUrl = `${window.location.origin}/l?id=${col.id}&token=${col.owner_token}`;
+                          navigator.clipboard.writeText(shareUrl);
+                          setCopiedToken(col.id);
+                          setTimeout(() => setCopiedToken((v) => v === col.id ? null : v), 1500);
+                        }}
+                        className="text-stone-300 hover:text-stone-600 transition-colors"
+                        title="Copy ownership share link"
+                      >
+                        {copiedToken === col.id ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-500">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                          </svg>
+                        )}
+                      </button>
+                    </td>
                     <td className="px-2 py-1.5 text-right">
                       <span className="text-xs text-stone-400 font-mono" title={col.created_at ? new Date(col.created_at).toLocaleString() : ""}>
                         {col.created_at ? timeAgo(col.created_at) : ""}
