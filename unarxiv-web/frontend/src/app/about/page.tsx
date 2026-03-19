@@ -125,6 +125,15 @@ export default function AboutPage() {
               >
                 Sean Ahrens
               </a>
+              {" and "}
+              <a
+                href="https://claude.ai"
+                className="text-stone-900 font-semibold underline hover:text-stone-600"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Claude
+              </a>
             </p>
           </section>
 
