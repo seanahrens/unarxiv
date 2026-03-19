@@ -6,7 +6,7 @@ import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
 import { type Paper } from "@/lib/api";
 import { fetchList, getTokenForList, type ListMeta } from "@/lib/lists";
-import { PaperCardSkeleton } from "@/components/Skeleton";
+import { Skeleton, PaperCardSkeleton } from "@/components/Skeleton";
 
 const PAGE_SIZE = 6;
 
@@ -216,11 +216,7 @@ export default function BrowseLayout({
 
           {/* Papers grid */}
           {loading ? (
-            <div className="grid gap-3">
-              <PaperCardSkeleton />
-              <PaperCardSkeleton />
-              <PaperCardSkeleton />
-            </div>
+            <BrowseLayoutPapersSkeleton />
           ) : paginatedPapers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-stone-400 text-sm">
@@ -234,6 +230,64 @@ export default function BrowseLayout({
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Skeleton pieces (co-located so they stay in sync with the layout above) ─
+
+/** Skeleton for the papers grid only (used when switching collections). */
+function BrowseLayoutPapersSkeleton() {
+  return (
+    <div className="grid gap-3">
+      <PaperCardSkeleton />
+      <PaperCardSkeleton />
+      <PaperCardSkeleton />
+    </div>
+  );
+}
+
+/**
+ * Full-page skeleton for BrowseLayout — mirrors the two-column desktop layout
+ * and horizontal-pill mobile layout. Import this wherever BrowseLayout is used
+ * as a loading placeholder so the skeleton stays in sync with the component.
+ */
+export function BrowseLayoutSkeleton() {
+  return (
+    <div>
+      {/* Mobile: horizontal scrollable pills (mirrors the pill row above) */}
+      <div className="flex lg:hidden gap-2 mb-4 overflow-hidden">
+        <Skeleton className="rounded-full shrink-0" width="90px" height="28px" />
+        <Skeleton className="rounded-full shrink-0" width="80px" height="28px" />
+        <Skeleton className="rounded-full shrink-0" width="100px" height="28px" />
+      </div>
+
+      {/* Desktop: two-column layout (mirrors the flex gap-8 layout above) */}
+      <div className="flex gap-8">
+        {/* Left: collections nav (w-56, matches the <nav> above) */}
+        <div className="hidden lg:flex w-56 flex-shrink-0 flex-col">
+          <Skeleton className="mb-3" width="70px" height="10px" />
+          <div className="flex flex-col gap-0.5">
+            {[55, 75, 65, 80, 60].map((pct, i) => (
+              <div key={i} className="flex items-center gap-2 px-3 py-2">
+                <Skeleton className="rounded shrink-0" width="14px" height="14px" />
+                <Skeleton width={`${pct}%`} height="12px" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: papers (flex-1, matches the content div above) */}
+        <div className="flex-1 min-w-0">
+          <Skeleton className="mb-3" width="100px" height="12px" />
+          <div className="grid gap-3">
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+          </div>
         </div>
       </div>
     </div>

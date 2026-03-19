@@ -6,8 +6,8 @@ import PaperCard from "@/components/PaperCard";
 import Paginator from "@/components/Paginator";
 import ArxivCta from "@/components/ArxivCta";
 import HeaderSearchBar from "@/components/HeaderSearchBar";
-import BrowseLayout from "@/components/BrowseLayout";
-import { PaperCardSkeleton, CollectionSidebarSkeleton } from "@/components/Skeleton";
+import BrowseLayout, { BrowseLayoutSkeleton } from "@/components/BrowseLayout";
+import { PaperCardSkeleton } from "@/components/Skeleton";
 import {
   fetchPapers,
   fetchPaper,
@@ -33,24 +33,7 @@ function HomePageSkeleton() {
       {/* Search bar placeholder */}
       <div className="bg-stone-200 animate-pulse rounded-xl h-12 mb-6" />
       <div className="h-6" />
-      {/* Paper cards skeleton */}
-      <div className="flex gap-8">
-        <div className="flex-1 min-w-0">
-          <div className="bg-stone-200 animate-pulse rounded h-4 w-32 mb-3" />
-          <div className="grid gap-3">
-            <PaperCardSkeleton />
-            <PaperCardSkeleton />
-            <PaperCardSkeleton />
-            <PaperCardSkeleton />
-          </div>
-        </div>
-        <div className="hidden lg:block w-64 flex-shrink-0 space-y-2">
-          <div className="bg-stone-200 animate-pulse rounded h-4 w-20 mb-3" />
-          <CollectionSidebarSkeleton />
-          <CollectionSidebarSkeleton />
-          <CollectionSidebarSkeleton />
-        </div>
-      </div>
+      <BrowseLayoutSkeleton />
     </div>
   );
 }
@@ -330,23 +313,7 @@ function HomePageContent() {
               )}
             </>
           ) : loading ? (
-            <div className="flex gap-8">
-              <div className="flex-1 min-w-0">
-                <div className="bg-stone-200 animate-pulse rounded h-4 w-32 mb-3" />
-                <div className="grid gap-3">
-                  <PaperCardSkeleton />
-                  <PaperCardSkeleton />
-                  <PaperCardSkeleton />
-                  <PaperCardSkeleton />
-                </div>
-              </div>
-              <div className="hidden lg:block w-64 flex-shrink-0 space-y-2">
-                <div className="bg-stone-200 animate-pulse rounded h-4 w-20 mb-3" />
-                <CollectionSidebarSkeleton />
-                <CollectionSidebarSkeleton />
-                <CollectionSidebarSkeleton />
-              </div>
-            </div>
+            <BrowseLayoutSkeleton />
           ) : newPapers.length === 0 ? (
             <ArxivCta showHeading={false} showButton={false} />
           ) : (
