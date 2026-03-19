@@ -71,6 +71,22 @@ SQLite CHECK constraints can't be altered — must recreate table to change them
 
 ## Local Development
 
+**For preview/verification (agents using `preview_start`):**
+1. Start `worker-dev` first, then `frontend-dev` (both defined in `.claude/launch.json`)
+2. If the worker returns 500s, the local DB likely needs initialization:
+   ```bash
+   cd unarxiv-web/worker && npm run db:init && npm run db:seed
+   ```
+3. If `frontend/.env.local` or `worker/.dev.vars` don't exist, copy from `.example` files:
+   ```bash
+   cp unarxiv-web/frontend/.env.local.example unarxiv-web/frontend/.env.local
+   cp unarxiv-web/worker/.dev.vars.example unarxiv-web/worker/.dev.vars
+   ```
+4. The frontend's `NEXT_PUBLIC_API_URL` must match the worker's port. If the worker gets
+   a different port (e.g. 8789 due to port conflict), update `launch.json`'s frontend
+   `runtimeArgs` to match.
+
+**Full setup (interactive/terminal):**
 ```bash
 cd unarxiv-web
 ./dev.sh setup   # First time: install deps, init DB, seed data, copy env files
@@ -79,7 +95,7 @@ cd unarxiv-web
 
 - Admin password: `localdev`
 - Frontend `.env.local` points API to `http://localhost:8787`
-- Worker `.dev.vars` provides local secrets
+- Worker `.dev.vars` provides local secrets (`ADMIN_PASSWORD`, `MODAL_WEBHOOK_SECRET`)
 - DB is seeded with sample papers in all statuses (complete, queued, failed, etc.)
 - Modal narration is skipped locally — simulate completion via webhook:
   ```bash
