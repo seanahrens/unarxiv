@@ -113,7 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_submissions_ip_date ON submissions(ip_address, su
 
 -- User-curated lists of papers
 CREATE TABLE IF NOT EXISTS lists (
-    id           TEXT PRIMARY KEY,              -- 4-char alphanumeric
+    id           TEXT PRIMARY KEY,              -- 6-char alphanumeric
     owner_token  TEXT NOT NULL,                 -- 32-char hex secret for ownership
     name         TEXT NOT NULL,
     description  TEXT NOT NULL DEFAULT '',
