@@ -158,9 +158,11 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
     for (const p of data.papers) {
       if ("not_found" in p) {
         notFoundIds.add(p.id);
+        // Synthetic placeholder for deleted papers: status "not_found" is intentionally
+        // outside the PaperStatus union and is filtered out before display.
         rawPapers.push({
           id: p.id, arxiv_url: "", title: `${p.id} [Deleted Paper - Click to Restore]`,
-          authors: [], abstract: "", published_date: "", status: "not_found",
+          authors: [], abstract: "", published_date: "", status: "not_found" as Paper["status"],
           error_message: null, progress_detail: null, audio_url: null,
           audio_size_bytes: null, duration_seconds: null, created_at: "", completed_at: null,
         });
