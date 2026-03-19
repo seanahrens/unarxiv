@@ -92,8 +92,8 @@ export default {
       if (
         method === "POST" &&
         response.ok &&
-        (/\/api\/papers\/[^/]+\/narrate$/.test(path) ||
-          /\/api\/papers\/[^/]+\/reprocess$/.test(path))
+        (/\/api\/papers\/.+\/narrate$/.test(path) ||
+          /\/api\/papers\/.+\/reprocess$/.test(path))
       ) {
         ctx.waitUntil(drainNarrationQueue(env));
       }
@@ -575,59 +575,60 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       handler: (req, env) => handleModalWebhook(req, env),
     },
     // Regex patterns with capture groups
+    // Paper IDs use (.+?) to support old-style arXiv IDs with slashes (e.g. astro-ph/9905136)
     {
       method: "GET",
-      pattern: /^\/api\/papers\/([^/]+)\/audio$/,
+      pattern: /^\/api\/papers\/(.+?)\/audio$/,
       handler: (_req, env, _url, m) => handleGetAudio(env, m[1]),
     },
     {
       method: "GET",
-      pattern: /^\/api\/papers\/([^/]+)\/transcript$/,
+      pattern: /^\/api\/papers\/(.+?)\/transcript$/,
       handler: (_req, env, _url, m) => handleGetTranscript(env, m[1]),
     },
     {
       method: "GET",
-      pattern: /^\/api\/papers\/([^/]+)\/progress$/,
+      pattern: /^\/api\/papers\/(.+?)\/progress$/,
       handler: (_req, env, _url, m) => handleGetProgress(env, m[1], baseUrl),
     },
     {
       method: null, // GET, POST, DELETE
-      pattern: /^\/api\/papers\/([^/]+)\/rating$/,
+      pattern: /^\/api\/papers\/(.+?)\/rating$/,
       handler: (req, env, _url, m) => handleRating(req, env, m[1]),
     },
     {
       method: "POST",
-      pattern: /^\/api\/papers\/([^/]+)\/visit$/,
+      pattern: /^\/api\/papers\/(.+?)\/visit$/,
       handler: (req, env, _url, m) => handleRecordVisit(req, env, m[1]),
     },
     {
       method: "POST",
-      pattern: /^\/api\/papers\/([^/]+)\/narrate$/,
+      pattern: /^\/api\/papers\/(.+?)\/narrate$/,
       handler: (req, env, _url, m) => handleNarratePaper(req, env, m[1], baseUrl),
     },
     {
       method: "POST",
-      pattern: /^\/api\/papers\/([^/]+)\/reprocess$/,
+      pattern: /^\/api\/papers\/(.+?)\/reprocess$/,
       handler: (req, env, _url, m) => handleReprocessPaper(req, env, m[1], baseUrl),
     },
     {
       method: "DELETE",
-      pattern: /^\/api\/my-additions\/([^/]+)$/,
+      pattern: /^\/api\/my-additions\/(.+)$/,
       handler: (req, env, _url, m) => handleDeleteMyAddition(req, env, m[1]),
     },
     {
       method: "DELETE",
-      pattern: /^\/api\/papers\/([^/]+)$/,
+      pattern: /^\/api\/papers\/(.+)$/,
       handler: (req, env, _url, m) => handleDeletePaper(req, env, m[1]),
     },
     {
       method: "GET",
-      pattern: /^\/api\/papers\/([^/]+)$/,
+      pattern: /^\/api\/papers\/(.+)$/,
       handler: (_req, env, _url, m) => handleGetPaper(env, m[1], baseUrl),
     },
     {
       method: "GET",
-      pattern: /^\/api\/admin\/papers\/([^/]+)\/ratings$/,
+      pattern: /^\/api\/admin\/papers\/(.+?)\/ratings$/,
       handler: (req, env, _url, m) => handleAdminPaperRatings(req, env, m[1]),
     },
     {
