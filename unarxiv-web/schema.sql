@@ -134,3 +134,12 @@ CREATE TABLE IF NOT EXISTS list_items (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_list_items_unique ON list_items(list_id, paper_id);
 CREATE INDEX IF NOT EXISTS idx_list_items_list ON list_items(list_id, position);
+
+-- Playback positions (synced across devices)
+CREATE TABLE IF NOT EXISTS playback_positions (
+    user_token  TEXT NOT NULL,
+    paper_id    TEXT NOT NULL,
+    position    REAL NOT NULL DEFAULT 0,
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_token, paper_id)
+);

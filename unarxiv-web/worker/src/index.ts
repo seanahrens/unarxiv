@@ -58,6 +58,9 @@ import {
   removeListItem,
   reorderListItems,
   getRecentPublicLists,
+  mergeTokens,
+  savePlaybackPosition,
+  getPlaybackPositions,
 } from "./db";
 
 export default {
@@ -459,6 +462,37 @@ async function handleImportList(request: Request, env: Env, listId: string, base
   });
 }
 
+async function handleMergeTokens(request: Request, env: Env): Promise<Response> {
+  const body = await request.json<{ oldToken?: string; newToken?: string }>();
+  if (!body.oldToken || !body.newToken || body.oldToken === body.newToken) {
+    return json({ error: "oldToken and newToken are required and must differ" }, 400);
+  }
+  await mergeTokens(env.DB, body.oldToken, body.newToken);
+  return json({ ok: true });
+}
+
+async function handleSavePosition(request: Request, env: Env, paperId: string): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token header required" }, 401);
+  const body = await request.json<{ position?: number }>();
+  if (typeof body.position !== "number" || body.position < 0) {
+    return json({ error: "position must be a non-negative number" }, 400);
+  }
+  await savePlaybackPosition(env.DB, token, paperId, body.position);
+  return json({ ok: true });
+}
+
+async function handleGetPositions(request: Request, env: Env): Promise<Response> {
+  const token = request.headers.get("X-User-Token");
+  if (!token) return json({ error: "X-User-Token header required" }, 401);
+  const positions = await getPlaybackPositions(env.DB, token);
+  const map: Record<string, { position: number; updated_at: string }> = {};
+  for (const p of positions) {
+    map[p.paper_id] = { position: p.position, updated_at: p.updated_at };
+  }
+  return json({ positions: map });
+}
+
 async function handleArxivSearch(url: URL): Promise<Response> {
   const query = url.searchParams.get("q") || "";
   if (!query.trim()) {
@@ -571,6 +605,16 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     },
     {
       method: "POST",
+      pattern: /^\/api\/merge-tokens$/,
+      handler: (req, env) => handleMergeTokens(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/playback-positions$/,
+      handler: (req, env) => handleGetPositions(req, env),
+    },
+    {
+      method: "POST",
       pattern: /^\/api\/webhooks\/modal$/,
       handler: (req, env) => handleModalWebhook(req, env),
     },
@@ -594,6 +638,11 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: null, // GET, POST, DELETE
       pattern: /^\/api\/papers\/([^/]+)\/rating$/,
       handler: (req, env, _url, m) => handleRating(req, env, m[1]),
+    },
+    {
+      method: "PUT",
+      pattern: /^\/api\/papers\/([^/]+)\/position$/,
+      handler: (req, env, _url, m) => handleSavePosition(req, env, m[1]),
     },
     {
       method: "POST",

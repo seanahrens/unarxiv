@@ -689,3 +689,59 @@ export async function cleanup(db: D1Database): Promise<void> {
     db.prepare("DELETE FROM submissions WHERE submitted_at < datetime('now', '-2 days')"),
   ]);
 }
+
+// --- Token Merge ---
+
+/** Merge all backend data from oldToken into newToken (for device sync). */
+export async function mergeTokens(db: D1Database, oldToken: string, newToken: string): Promise<void> {
+  await db.batch([
+    // Reassign submitted papers
+    db.prepare("UPDATE papers SET submitted_by_token = ? WHERE submitted_by_token = ?").bind(newToken, oldToken),
+    // Reassign visits (ignore duplicates)
+    db.prepare("UPDATE OR IGNORE page_visits SET visitor_token = ? WHERE visitor_token = ?").bind(newToken, oldToken),
+    // Clean up any duplicate visits that couldn't be updated
+    db.prepare("DELETE FROM page_visits WHERE visitor_token = ?").bind(oldToken),
+    // Reassign ratings (ignore duplicates — keep existing newToken rating)
+    db.prepare("UPDATE OR IGNORE ratings SET rater_token = ? WHERE rater_token = ?").bind(newToken, oldToken),
+    // Clean up any duplicate ratings that couldn't be updated
+    db.prepare("DELETE FROM ratings WHERE rater_token = ?").bind(oldToken),
+    // Reassign list ownership
+    db.prepare("UPDATE lists SET owner_token = ? WHERE owner_token = ?").bind(newToken, oldToken),
+    // Merge playback positions (keep the one updated most recently)
+    db.prepare(
+      `UPDATE playback_positions SET user_token = ?, updated_at = datetime('now')
+       WHERE user_token = ? AND paper_id NOT IN (
+         SELECT paper_id FROM playback_positions WHERE user_token = ? AND updated_at >= (
+           SELECT updated_at FROM playback_positions p2 WHERE p2.user_token = ? AND p2.paper_id = playback_positions.paper_id
+         )
+       )`
+    ).bind(newToken, oldToken, newToken, oldToken),
+    // Clean up remaining old token positions
+    db.prepare("DELETE FROM playback_positions WHERE user_token = ?").bind(oldToken),
+  ]);
+}
+
+// --- Playback Positions ---
+
+/** Save or update a playback position for a user/paper. */
+export async function savePlaybackPosition(db: D1Database, token: string, paperId: string, position: number): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO playback_positions (user_token, paper_id, position, updated_at)
+       VALUES (?, ?, ?, datetime('now'))
+       ON CONFLICT(user_token, paper_id) DO UPDATE SET
+         position = excluded.position,
+         updated_at = datetime('now')`
+    )
+    .bind(token, paperId, position)
+    .run();
+}
+
+/** Get all playback positions for a user. */
+export async function getPlaybackPositions(db: D1Database, token: string): Promise<{ paper_id: string; position: number; updated_at: string }[]> {
+  const results = await db
+    .prepare("SELECT paper_id, position, updated_at FROM playback_positions WHERE user_token = ? ORDER BY updated_at DESC")
+    .bind(token)
+    .all<{ paper_id: string; position: number; updated_at: string }>();
+  return results.results;
+}
