@@ -189,6 +189,12 @@ export default function PlayerBar() {
           fetchedIdsRef.current.add(p.id);
         });
         setPlaylistPapers(map);
+        // Auto-remove papers that couldn't be fetched (deleted/invalid)
+        const fetchedIds = new Set(fetched.map((p) => p.id));
+        const missing = ids.filter((id) => !fetchedIds.has(id));
+        if (missing.length > 0) {
+          missing.forEach((id) => removeFromPlaylist(id));
+        }
       })
       .catch(() => {})
       .finally(() => setPlaylistLoading(false));
@@ -209,6 +215,12 @@ export default function PlayerBar() {
           });
           return next;
         });
+        // Auto-remove papers that couldn't be fetched (deleted/invalid)
+        const fetchedIds = new Set(fetched.map((p) => p.id));
+        const missing = ids.filter((id) => !fetchedIds.has(id));
+        if (missing.length > 0) {
+          missing.forEach((id) => removeFromPlaylist(id));
+        }
       })
       .catch(() => {});
   }, [playlist]); // eslint-disable-line react-hooks/exhaustive-deps

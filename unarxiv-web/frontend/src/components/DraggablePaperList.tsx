@@ -170,11 +170,23 @@ export default function DraggablePaperList({
               />
             ) : (
               <div className={`flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 transition-colors hover:bg-stone-100 ${dragClass}`}>
-                <span className="w-7 h-7 shrink-0 bg-stone-100 rounded animate-pulse" />
-                <div className="flex-1 min-w-0">
-                  <span className="block h-3 w-48 bg-stone-100 rounded animate-pulse" />
-                  <span className="block h-3 w-32 bg-stone-100 rounded animate-pulse mt-1" />
-                </div>
+                <span className="w-7 h-7 shrink-0 text-stone-300 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </span>
+                <span className="flex-1 min-w-0 text-sm text-stone-400 truncate">{paperId}</span>
+                <button
+                  onClick={() => onRemove(paperId)}
+                  className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                  title="Remove"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               </div>
             )}
           </div>
