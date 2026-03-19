@@ -14,18 +14,18 @@ type Phase = "typing_u" | "typing_n" | "pause_typed" | "deleting_n" | "deleting_
 function UrlBar({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`select-none pointer-events-none ${className || ""}`}>
-      <div className="inline-flex items-center gap-2 bg-stone-50 border border-stone-300 rounded-full px-3 py-1.5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60 text-stone-500">
+      <div className="url-bar-container inline-flex items-center gap-2 bg-stone-100 border border-stone-300 rounded-full px-3 py-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-stone-500">
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
-        <span className="text-[13px] text-stone-600 whitespace-nowrap font-sans mx-1">
-          <span className="text-stone-400">https://</span>
+        <span className="text-[13px] text-stone-700 whitespace-nowrap font-sans mx-1">
+          <span className="text-stone-500">https://</span>
           {children}
           <span>arxiv.org/abs/2411.09222</span>
         </span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60 text-stone-400">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-stone-500">
           <polyline points="23 4 23 10 17 10" />
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
         </svg>
@@ -37,7 +37,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
 function StaticUrlAnimation({ className }: { className?: string }) {
   return (
     <UrlBar className={className}>
-      <span className="text-stone-900 bg-stone-300">un</span>
+      <span className="text-stone-900 bg-stone-400/30 font-bold">un</span>
     </UrlBar>
   );
 }
@@ -94,14 +94,14 @@ function AnimatedUrlAnimation({ className }: { className?: string }) {
 
   const cursor = (
     <span
-      className="inline-block w-[1.5px] h-[13px] bg-stone-800 align-middle"
+      className="inline-block w-[1.5px] h-[13px] bg-stone-700 align-middle"
       style={{ opacity: cursorVisible ? 1 : 0 }}
     />
   );
 
   return (
     <UrlBar className={className}>
-      {typed && <span className="font-bold text-stone-900">{typed}</span>}
+      {typed && <span className="font-bold text-stone-800">{typed}</span>}
       {spacer}
       {cursor}
     </UrlBar>
