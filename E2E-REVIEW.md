@@ -1,85 +1,101 @@
-# E2E Test Review — 2026-03-18
+# E2E Test Review — 2026-03-19
 
-**Reviewed:** `unarxiv-web/e2e/` (14 spec files, 50 tests)
-**Branch:** `test/e2e-review-2026-03-18`
-
-## Issues Found and Fixed
-
-### 1. Duplicated selector constants
-`PAPER_CARD` and `SEARCH_INPUT` selector fallback strings were duplicated in
-`04-homepage.spec.ts`, `06-text-search.spec.ts`, `03-arxiv-search-import.spec.ts`,
-and `11-narration-gen.spec.ts`. Moved to `helpers/fixtures.ts` as exported constants.
-
-### 2. Dead `startAudioPlayback` helper
-`helpers/page-actions.ts` exported `startAudioPlayback` but it was never imported.
-`05-audio-playback.spec.ts` and `07-media-player.spec.ts` each manually duplicated
-the identical navigate+click+waitForFunction startup sequence. Both files now call
-`startAudioPlayback`, removing three duplicated blocks.
-
-### 3. Silent `return` in reorder test
-`13-lists.spec.ts` "reorder list items" used `if (!secondPaper) return;` which passes
-silently with zero assertions. Replaced with `test.skip()` for proper Playwright
-reporting.
-
-### 4. `cleanupTestPaper` duplicated the DELETE endpoint URL
-`cleanupTestPaper` and `adminDeletePaper` both called the same endpoint separately.
-Refactored `cleanupTestPaper` to delegate to `adminDeletePaper`.
-
-## Verification
-
-- `npx playwright test --list` — 50 tests discovered, no compile errors
-- `npm run build` in `unarxiv-web/frontend` — clean build, all 9 routes generated
+**Reviewed:** `unarxiv-web/e2e/` (14 spec files, 49 tests)
+**Branch:** `test/e2e-review-2026-03-19`
+**Test run:** 40 passed, 9 skipped (all expected fixmes/admin-gated)
 
 ---
 
-# E2E Test Review — 2026-03-17
-
 ## Coverage Map
 
-| Critical Path | Status | Test File |
+| Critical Path | Covered | Notes |
 |---|---|---|
-| Paper discovery — homepage, search | ✅ Covered | 04, 06 |
-| Paper discovery — arXiv URL formats (/abs, /html, /pdf) | ✅ Covered | 02 |
-| Paper import via search | ✅ Covered | 03 |
-| Paper narration generation | ✅ Covered (slow suite) | 11 |
-| Audio playback (play, pause, seek, speed) | ✅ Covered | 05, 07 |
-| Global header player | ✅ Covered | 07 |
-| Downloads (PDF, MP3) | ✅ Covered | 08 |
-| Ratings lifecycle | ✅ Covered | 09 |
-| Playlist (add, remove, persist) | ✅ Covered | 10 |
-| Collections/Lists (CRUD, auth, reorder) | ✅ Covered | 13 |
-| Admin auth (pages + API) | ✅ Covered | 01 |
-| Admin curate page functionality | ⚠️ Only auth redirect tested | 01 |
-| Transcript viewer (/s) | ✅ Covered (new) | 14 |
-| Error states (invalid ID, 404, failed narration) | ❌ Missing | — |
-| Listen history on /playlist | ❌ Missing | — |
+| Paper discovery — homepage, search | ✅ | 04, 06 |
+| ArXiv URL format imports | ✅ | 02 |
+| Paper import via search bar | ✅ | 03 |
+| Audio playback (play, src) | ✅ | 05 |
+| Media player controls (speed) | ✅ | 07 (pause/skip fixme — audio unreliable in headless) |
+| Downloads (PDF, MP3) | ✅ | 08 |
+| Ratings full lifecycle | ✅ | 09 |
+| Playlist — dropdown option | ✅ | 10 (new active test added) |
+| Playlist — PlayerBar popup | ⚠️ fixme | Audio-dependent; marked fixme with explanation |
+| Collections/Lists (API + frontend) | ✅ | 13 |
+| Admin auth | ✅ | 01 |
+| Admin curate / bulk actions | ❌ | Not covered |
+| Transcript viewer | ✅ | 14 |
+| Narration generation | ✅ | 11 (slow, narration project only) |
+| Error states (invalid ID, failed) | ❌ | Not covered |
+
+---
+
+## What Changed
+
+### 1. `rate-narration-star-*` testid rename (frontend + test)
+**File:** `unarxiv-web/frontend/src/app/p/PaperPageContent.tsx`
+**File:** `unarxiv-web/e2e/tests/09-ratings.spec.ts`
+
+`data-testid="star-4"` violated the intent-based naming convention — a star
+widget appearing elsewhere on the page could collide. Renamed to
+`rate-narration-star-{n}` which includes the modal context. Test updated with
+legacy fallback selector `[data-testid="rate-narration-star-4"], [data-testid="star-4"]`
+so it passes on production before this deploy propagates.
+
+### 2. `PAPER_CARD` fallback selector fix
+**File:** `unarxiv-web/e2e/helpers/fixtures.ts`
+
+The legacy fallback `a[href*="/p/"][href*="id="]` never matched actual paper
+URLs because the route is `/p?id=` (no slash between `/p` and `?`). Fixed to
+`a[href*="/p?id="]`. This is used in homepage and text-search tests.
+
+### 3. Playlist tests rewritten for current PlayerBar UI
+**File:** `unarxiv-web/e2e/tests/10-playlist.spec.ts`
+**File:** `unarxiv-web/frontend/src/components/PaperActionsMenu.tsx`
+
+Both old playlist tests were `.fixme()` because the playlist moved from
+`/my-papers` to the PlayerBar sidebar. The old tests tried to navigate to
+`/my-papers` and find paper links there — but the page no longer shows
+playlist items. Replaced with:
+- **1 active test**: "Add to Playlist option appears in paper actions dropdown"
+  — verifies the dropdown item exists, no audio needed, always runs in CI.
+- **2 fixme tests**: Full playlist flow (localStorage update, PlayerBar popup)
+  — properly documented as audio-dependent and headless-unreliable.
+
+Added `data-testid="add-to-playlist"` to `PaperActionsMenu.tsx` with a
+legacy text-content fallback in the test selector.
+
+---
 
 ## Performance
 
-- Test run time: **8.9s** for 46 tests (fast suite)
-- No regression from this PR (was ~9–10s before)
-- Removed `waitForTimeout(200)` in skip-back test — replaced with `waitForFunction`
-- Removed `waitForLoadState("networkidle")` in gibberish search — replaced with `.waitFor({state:"detached"})`
+No change to test runtime. Fast suite: 40 tests in ~8s (was same before).
 
-## What Changed and Why
+---
 
-### New Coverage
-- `14-transcript.spec.ts`: The `/s?id=` transcript viewer was completely untested. Added UI and API tests.
+## Deploy Status
 
-### Selector Stability
-- Added `data-testid` attributes to `PaperCard`, `SearchBar`, `PaperPageContent` (chevron, rating modal, star buttons). These provide stable selector targets for future test maintenance.
-- Extracted `helpers/page-actions.ts` with `openDropdown()` to eliminate the duplicated SVG-path chevron selector (`button:has(svg polyline[points="6 9 12 15 18 9"])`) that appeared in 3 test files.
-- All new selectors use fallback CSS selector lists (e.g., `[data-testid="paper-card"], a[href*="/p/"]`) so tests continue to pass against production before the next frontend deployment.
+- **Push:** ✅ `main` pushed to `origin`
+- **Frontend deploy:** ✅ `unarxiv-frontend` deployed to Cloudflare Pages
+  (`https://0a36ed9f.unarxiv-frontend.pages.dev`)
+- **Worker deploy:** Not required (no worker changes)
 
-### Docs
-- `TEST_SPEC.md` updated to include tests 12–14 and fix copy mismatches.
-
-## PR
-
-https://github.com/seanahrens/unarxiv/pull/3
+---
 
 ## Items Needing Human Decision
 
-- **Error state coverage**: Testing invalid arXiv IDs, 404 pages, and failed narrations is currently absent. These could be added but would need production test data in a failed state (or mocking, which goes against the production-testing philosophy).
-- **Admin curate page**: Bulk delete/reprocess functionality is not E2E tested — only the auth redirect is. Full coverage would require ADMIN_PASSWORD in CI and careful cleanup to avoid deleting real papers.
-- **After deployment**: Once this PR is merged and the frontend is deployed, the fallback selectors in `page-actions.ts` and test files can be simplified to use `data-testid` only.
+1. **Admin curate/bulk actions** — no E2E coverage. Adding tests here would
+   require a stable test paper and careful cleanup to avoid deleting real data.
+   Suggest adding if/when admin flows become a maintenance pain point.
+
+2. **Error state coverage** — invalid arXiv IDs, failed narration states,
+   and network error handling are not tested. These are lower-risk paths for
+   a read-heavy site but worth adding before the admin curate UI is modified.
+
+3. **`10-playlist.spec.ts` fixme tests** — the two fixme playlist tests
+   (localStorage update, PlayerBar popup) are correct in structure but will
+   remain fixme until audio streaming in headless CI is resolved. No action
+   needed unless the playlist feature becomes a frequent regression source.
+
+4. **Scheduled task skill uses wrong deploy project name** — the skill
+   template references `texreader-frontend` (old name) in Step 5. Updated
+   deploy above used `unarxiv-frontend` (correct per CLAUDE.md). The skill
+   template should be updated to avoid confusion on future runs.
