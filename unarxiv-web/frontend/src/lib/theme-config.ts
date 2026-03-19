@@ -10,4 +10,4 @@
 export type ThemeName = string;
 
 export const ACTIVE_THEME: ThemeName =
-  process.env.NEXT_PUBLIC_THEME || "default";
+  process.env.NEXT_PUBLIC_THEME || "retro-terminal";
