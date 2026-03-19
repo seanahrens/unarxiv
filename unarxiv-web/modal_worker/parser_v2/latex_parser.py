@@ -80,6 +80,7 @@ def _process_latex(latex: str, source_stem: str = "") -> tuple[str, dict]:
     body = _extract_body(latex)
     body = _strip_non_prose(body)
     body = _convert_structure_to_speech(body)
+    body = _normalize_paragraphs(body)
     body = _strip_citations(body)
     body = _convert_greek_letters(body)  # before math handling so Greek in math gets spoken
     body = _handle_math(body)
@@ -507,6 +508,30 @@ def _convert_lists(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Paragraph normalization
+# ---------------------------------------------------------------------------
+
+def _normalize_paragraphs(text: str) -> str:
+    """Join within-paragraph lines while preserving paragraph breaks.
+
+    In LaTeX, a single newline is just whitespace (line wrapping), while
+    a blank line (double newline) is a paragraph break.  After structural
+    conversion, we have \n\n for paragraph/section breaks and \n for
+    in-paragraph line breaks.  This collapses each paragraph into a single
+    line so that downstream steps don't accidentally merge paragraphs.
+    """
+    paragraphs = re.split(r"\n{2,}", text)
+    joined = []
+    for para in paragraphs:
+        # Replace single newlines within the paragraph with spaces
+        para = re.sub(r"\n", " ", para)
+        # Collapse any resulting multiple spaces
+        para = re.sub(r" {2,}", " ", para)
+        joined.append(para.strip())
+    return "\n\n".join(p for p in joined if p)
+
+
+# ---------------------------------------------------------------------------
 # Citation stripping
 # ---------------------------------------------------------------------------
 
@@ -547,8 +572,8 @@ def _strip_citations(text: str) -> str:
     # Clean up spaces before punctuation left by removals
     text = re.sub(r"\s+([.,;:!?])", r"\1", text)
 
-    # Clean up "text ," or "text  " double spaces
-    text = re.sub(r"\s{2,}", " ", text)
+    # Clean up "text ," or "text  " double spaces (preserve newlines)
+    text = re.sub(r"[^\S\n]+", " ", text)
 
     # Clean up trailing space before period/comma from stripped citations
     # "text ." → "text."

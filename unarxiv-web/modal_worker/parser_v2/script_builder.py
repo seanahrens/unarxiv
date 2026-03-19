@@ -12,7 +12,7 @@ import re
 # Parser version identifier — appended to every script output.
 # Increment on any parser logic change.
 # Format: L = LaTeX source, P = PDF source, number = version.
-PARSER_VERSION = 3
+PARSER_VERSION = 4
 
 
 def build_script(

@@ -56,6 +56,7 @@ def parse_pdf(
     text = _strip_figures_and_tables(text)
     text = _strip_citation_markers(text)
     text = _rejoin_lines(text)
+    text = _normalize_paragraphs(text)
     text = _normalize_for_tts(text)
     text = finalize_body(text)
 
@@ -296,6 +297,22 @@ def _rejoin_lines(text: str) -> str:
     text = "\n".join(merged)
 
     return text
+
+
+def _normalize_paragraphs(text: str) -> str:
+    """Join within-paragraph lines while preserving paragraph breaks.
+
+    After line-rejoining, paragraphs are separated by blank lines (\n\n)
+    but may still have single newlines within them from PDF column breaks.
+    This collapses each paragraph into a single line.
+    """
+    paragraphs = re.split(r"\n{2,}", text)
+    joined = []
+    for para in paragraphs:
+        para = re.sub(r"\n", " ", para)
+        para = re.sub(r" {2,}", " ", para)
+        joined.append(para.strip())
+    return "\n\n".join(p for p in joined if p)
 
 
 # ---------------------------------------------------------------------------
