@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAudio } from "@/contexts/AudioContext";
-import { getReadHistory, markAsUnread } from "@/lib/readStatus";
-import { fetchPapersBatch, fetchMyAdditions, deleteMyAddition, isInProgress, type Paper } from "@/lib/api";
+import { fetchMyAdditions, deleteMyAddition, isInProgress, type Paper } from "@/lib/api";
 import { useBatchPaperPolling } from "@/hooks/usePaperPolling";
 import {
   getMyListTokens,
@@ -25,10 +24,6 @@ import { MyPapersSectionSkeleton } from "@/components/Skeleton";
 export default function PlaylistPage() {
   const router = useRouter();
   const { state, actions } = useAudio();
-  const [historyPapers, setHistoryPapers] = useState<Record<string, Paper>>({});
-  const [historyLoading, setHistoryLoading] = useState(true);
-
-  const [readHistory, setReadHistory] = useState<{ paperId: string; readAt: string }[]>([]);
   const [myAdditions, setMyAdditions] = useState<Paper[]>([]);
   const [additionsLoading, setAdditionsLoading] = useState(true);
 
@@ -37,29 +32,9 @@ export default function PlaylistPage() {
   const [listsLoading, setListsLoading] = useState(true);
   const [copiedListId, setCopiedListId] = useState<string | null>(null);
   const [syncCopied, setSyncCopied] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [additionsPage, setAdditionsPage] = useState(0);
   const ADDITIONS_PER_PAGE = 5;
-
-  // Fetch history papers
-  useEffect(() => {
-    const history = getReadHistory();
-    setReadHistory(history);
-    const ids = history.map((e) => e.paperId);
-    if (ids.length === 0) {
-      setHistoryPapers({});
-      setHistoryLoading(false);
-      return;
-    }
-    setHistoryLoading(true);
-    fetchPapersBatch(ids)
-      .then((fetched) => {
-        const map: Record<string, Paper> = {};
-        fetched.forEach((p) => (map[p.id] = p));
-        setHistoryPapers(map);
-      })
-      .catch(() => {})
-      .finally(() => setHistoryLoading(false));
-  }, []);
 
   // Fetch my additions
   useEffect(() => {
@@ -364,71 +339,54 @@ export default function PlaylistPage() {
       {/* ─── Device Sync ────────────────────────────────────────── */}
       <section className="flex justify-center px-4 md:px-0">
         <button
-          onClick={handleCopySyncLink}
-          className={`group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors ${
-            syncCopied
-              ? "text-emerald-600 border-emerald-300 bg-emerald-50"
-              : "text-stone-400 border-stone-200 bg-white hover:text-stone-600 hover:border-stone-300"
-          }`}
-          title="Copy a link that syncs your playlist, listen history, and collections to another device. Open the link on your other device to merge the data."
+          onClick={() => setShowSyncModal(true)}
+          className="group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors text-stone-400 border-stone-200 bg-white hover:text-stone-600 hover:border-stone-300"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
             <polyline points="16 6 12 2 8 6" />
             <line x1="12" y1="2" x2="12" y2="15" />
           </svg>
-          {syncCopied ? "Sync link copied! Open it on your other device." : "Sync to another device"}
+          Sync to another device
         </button>
       </section>
 
-      {/* ─── Listen History (last section) ───────────────────────── */}
-      {(historyLoading || readHistory.length > 0) && (
-        <section className="bg-white border-y md:border border-stone-300 md:rounded-xl overflow-hidden">
-        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-stone-200">
-          <h2 className="text-base md:text-lg font-bold text-stone-900 flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
-            </svg>
-            Listen History
-          </h2>
-        </div>
-
-        {historyLoading ? (
-          <MyPapersSectionSkeleton rows={3} />
-        ) : readHistory.length === 0 ? (
-          <div className="text-stone-500 text-sm py-3 text-center">No completed listens yet.</div>
-        ) : (
-          <div className="divide-y divide-stone-200">
-            {readHistory.map((entry) => {
-              const paper = historyPapers[entry.paperId];
-              if (!paper) return null;
-              return (
-                <PaperListRow
-                  key={entry.paperId}
-                  paper={paper}
-                  paperId={entry.paperId}
-                  isActive={state.paperId === entry.paperId}
-                  actions={
-                    <button
-                      onClick={() => {
-                        markAsUnread(entry.paperId);
-                        setReadHistory((prev) => prev.filter((h) => h.paperId !== entry.paperId));
-                      }}
-                      className="text-stone-400 hover:text-stone-700 transition-colors shrink-0"
-                      title="Mark as unread"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                  }
-                />
-              );
-            })}
+      {/* ─── Sync Modal ───────────────────────────────────────────── */}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowSyncModal(false); setSyncCopied(false); }}>
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                Sync to Another Device
+              </h3>
+              <button onClick={() => { setShowSyncModal(false); setSyncCopied(false); }} className="text-stone-400 hover:text-stone-600 transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="text-sm text-stone-600 space-y-2 mb-4">
+              <p>This copies a link that permanently connects your other device to this account. Open it on your phone, tablet, or another computer.</p>
+              <p>Your playlist, collections, ratings, and playback progress will stay in sync across both devices going forward.</p>
+            </div>
+            <button
+              onClick={() => { handleCopySyncLink(); }}
+              className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-colors ${
+                syncCopied
+                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                  : "bg-stone-900 text-white hover:bg-stone-800"
+              }`}
+            >
+              {syncCopied ? "Link copied! Open it on your other device." : "Copy Sync Link"}
+            </button>
           </div>
-        )}
-      </section>
+        </div>
       )}
 
     </div>

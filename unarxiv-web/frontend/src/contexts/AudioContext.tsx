@@ -3,10 +3,39 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { markAsRead } from "@/lib/readStatus";
 import { removeFromPlaylist, getPlaylist } from "@/lib/playlist";
-import { fetchPaper, audioUrl } from "@/lib/api";
+import { fetchPaper, audioUrl, savePlaybackPositionApi, getPlaybackPositionsApi } from "@/lib/api";
 
 function getStorageKey(paperId: string) {
   return `pos-${paperId}`;
+}
+
+/** Read local position (handles both legacy number-only and new {position, updatedAt} format). */
+function readLocalPosition(paperId: string): { position: number; updatedAt: string } | null {
+  try {
+    const raw = localStorage.getItem(getStorageKey(paperId));
+    if (!raw) return null;
+    // Try new format first
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.position === "number") {
+        return { position: parsed.position, updatedAt: parsed.updatedAt || "" };
+      }
+    } catch {}
+    // Legacy: plain number
+    const t = parseFloat(raw);
+    if (t > 0) return { position: t, updatedAt: "" };
+  } catch {}
+  return null;
+}
+
+/** Write local position with timestamp. */
+function writeLocalPosition(paperId: string, position: number) {
+  try {
+    localStorage.setItem(getStorageKey(paperId), JSON.stringify({
+      position,
+      updatedAt: new Date().toISOString(),
+    }));
+  } catch {}
 }
 
 const RATE_KEY = "playback-rate";
@@ -68,12 +97,22 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   playbackRateRef.current = playbackRate;
   const loadPaperRef = useRef<((id: string, title: string, src: string) => void) | null>(null);
 
-  // Save position for current paper
+  // Save position for current paper (localStorage only)
   const savePosition = useCallback(() => {
     const id = paperIdRef.current;
     const time = currentTimeRef.current;
     if (id && time > 0) {
-      try { localStorage.setItem(getStorageKey(id), String(time)); } catch {}
+      writeLocalPosition(id, time);
+    }
+  }, []);
+
+  // Save position to both localStorage and backend
+  const savePositionToBackend = useCallback(() => {
+    const id = paperIdRef.current;
+    const time = currentTimeRef.current;
+    if (id && time > 0) {
+      writeLocalPosition(id, time);
+      savePlaybackPositionApi(id, time).catch(() => {}); // fire-and-forget, graceful offline
     }
   }, []);
 
@@ -84,14 +123,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
-      // Throttle localStorage writes
+      // Throttle localStorage writes (~every 3s)
       if (paperIdRef.current && audio.currentTime > 0 && Math.floor(audio.currentTime) % 3 === 0) {
-        try { localStorage.setItem(getStorageKey(paperIdRef.current), String(audio.currentTime)); } catch {}
+        writeLocalPosition(paperIdRef.current, audio.currentTime);
       }
     };
     const onDurationChange = () => setDuration(audio.duration || 0);
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPlay = () => {
+      setIsPlaying(true);
+      savePositionToBackend();
+    };
+    const onPause = () => {
+      setIsPlaying(false);
+      savePositionToBackend();
+    };
     const playNextInPlaylist = (afterId: string | null, skipCount: number = 0) => {
       if (skipCount > 20) { setIsPlaying(false); return; } // safety limit
 
@@ -163,6 +208,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Fetch backend positions on mount and merge with localStorage
+  const backendPositionsRef = useRef<Record<string, { position: number; updated_at: string }>>({});
+  useEffect(() => {
+    getPlaybackPositionsApi().then((positions) => {
+      backendPositionsRef.current = positions;
+      // Merge: for each backend position, update localStorage if backend is more recent
+      for (const [pid, backend] of Object.entries(positions)) {
+        const local = readLocalPosition(pid);
+        if (!local || (backend.updated_at && (!local.updatedAt || backend.updated_at > local.updatedAt))) {
+          writeLocalPosition(pid, backend.position);
+        }
+      }
+    }).catch(() => {});
+  }, []);
+
   // Restore persisted paper + playback rate on mount
   useEffect(() => {
     if (restoredRef.current) return;
@@ -197,16 +257,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         // Apply playback rate after load (load() resets it)
         const rate = parseFloat(localStorage.getItem(RATE_KEY) || "1") || 1;
         audio.playbackRate = rate;
-        try {
-          const posStr = localStorage.getItem(getStorageKey(saved.paperId));
-          if (posStr) {
-            const t = parseFloat(posStr);
-            if (t > 0 && (!isFinite(audio.duration) || t < audio.duration)) {
-              audio.currentTime = t;
-              setCurrentTime(t);
-            }
-          }
-        } catch {}
+        const local = readLocalPosition(saved.paperId);
+        if (local && local.position > 0 && (!isFinite(audio.duration) || local.position < audio.duration)) {
+          audio.currentTime = local.position;
+          setCurrentTime(local.position);
+        }
         setDuration(audio.duration || 0);
         audio.removeEventListener("loadedmetadata", onReady);
       };
@@ -231,8 +286,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Save position for current paper before switching
-    savePosition();
+    // Save position for current paper before switching (including backend)
+    savePositionToBackend();
 
     // Update state
     setPaperId(newPaperId);
@@ -251,15 +306,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const onReady = () => {
       // Apply playback rate after load (load() resets it)
       audio.playbackRate = playbackRateRef.current;
-      try {
-        const saved = localStorage.getItem(getStorageKey(newPaperId));
-        if (saved) {
-          const t = parseFloat(saved);
-          if (t > 0 && (!isFinite(audio.duration) || t < audio.duration)) {
-            audio.currentTime = t;
-          }
-        }
-      } catch {}
+      const local = readLocalPosition(newPaperId);
+      if (local && local.position > 0 && (!isFinite(audio.duration) || local.position < audio.duration)) {
+        audio.currentTime = local.position;
+      }
       audio.play();
       audio.removeEventListener("loadedmetadata", onReady);
       audio.removeEventListener("canplay", onReady);
@@ -275,7 +325,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("loadedmetadata", onReadyOnce);
     audio.addEventListener("canplay", onReadyOnce);
     audio.load();
-  }, [savePosition]);
+  }, [savePositionToBackend]);
   loadPaperRef.current = loadPaper;
 
   const togglePlay = useCallback(() => {
@@ -319,7 +369,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const stop = useCallback(() => {
     const audio = audioRef.current;
-    savePosition();
+    savePositionToBackend();
     if (audio) {
       audio.pause();
       audio.removeAttribute("src");
@@ -332,7 +382,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setDuration(0);
     setIsPlaying(false);
     try { localStorage.removeItem(CURRENT_PAPER_KEY); } catch {}
-  }, [savePosition]);
+  }, [savePositionToBackend]);
 
   const state: AudioState = { paperId, paperTitle, src, isPlaying, currentTime, duration, playbackRate };
   const actions: AudioActions = { loadPaper, togglePlay, pause, seek, skipBack, skipForward, cycleSpeed, stop };

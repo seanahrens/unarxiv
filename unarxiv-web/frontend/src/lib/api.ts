@@ -436,6 +436,41 @@ export async function searchArxiv(query: string, page: number = 1, perPage: numb
   return res.json();
 }
 
+// --- Token Merge ---
+
+export async function mergeTokensApi(oldToken: string, newToken: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/merge-tokens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ oldToken, newToken }),
+  });
+  if (!res.ok) throw new Error("Failed to merge tokens");
+}
+
+// --- Playback Positions ---
+
+export async function savePlaybackPositionApi(paperId: string, position: number): Promise<void> {
+  await fetch(`${API_BASE}/api/papers/${paperId}/position`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...userHeaders() },
+    body: JSON.stringify({ position }),
+  });
+  // Fire-and-forget: don't throw on failure (offline graceful degradation)
+}
+
+export async function getPlaybackPositionsApi(): Promise<Record<string, { position: number; updated_at: string }>> {
+  try {
+    const res = await fetch(`${API_BASE}/api/playback-positions`, {
+      headers: userHeaders(),
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.positions || {};
+  } catch {
+    return {}; // Graceful offline degradation
+  }
+}
+
 export function extractArxivId(input: string): string | null {
   const t = input.trim();
   const newFmt = t.match(ARXIV_NEW_RE);

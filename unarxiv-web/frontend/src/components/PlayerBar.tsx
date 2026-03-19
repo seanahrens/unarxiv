@@ -659,7 +659,7 @@ export default function PlayerBar() {
                     </button>
                   </div>
                   {/* Right: stacked elapsed / total */}
-                  <div className="flex flex-col items-end shrink-0">
+                  <div className="flex flex-col items-end shrink-0" style={{ minWidth: duration && duration >= 3600 ? '5ch' : '3.5ch' }}>
                     <span className="text-3xs font-mono text-stone-500 tabular-nums leading-tight">{fmtTime(currentTime)}</span>
                     <span className="text-3xs font-mono text-stone-400 tabular-nums leading-tight">{duration ? fmtTime(duration) : "--"}</span>
                   </div>
