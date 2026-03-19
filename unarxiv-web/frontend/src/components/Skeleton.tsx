@@ -24,7 +24,7 @@ export function Skeleton({
 /** Skeleton that mimics a PaperCard layout. */
 export function PaperCardSkeleton() {
   return (
-    <div className="rounded-xl border border-stone-200 p-5 bg-white">
+    <div className="rounded-xl border border-stone-300 p-5 bg-white">
       <div className="flex gap-3">
         {/* Icon placeholder */}
         <div className="shrink-0">
