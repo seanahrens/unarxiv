@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { mergeTokensApi } from "@/lib/api";
 
 const SYNC_KEYS = ["user_token", "list_tokens", "playlist", "read_papers"];
 
@@ -16,19 +17,47 @@ export default function SyncPage() {
       return;
     }
 
+    (async () => {
     try {
       const json = decodeURIComponent(atob(hash));
       const data = JSON.parse(json) as Record<string, unknown>;
 
       let lists = 0, playlist = 0, history = 0, identity = false;
 
-      // Import user_token first — only adopt if no local token exists
+      // Always adopt the sender's token and merge backend data
       if (data.user_token && typeof data.user_token === "string") {
-        const existingToken = localStorage.getItem("user_token");
-        if (!existingToken) {
-          localStorage.setItem("user_token", JSON.stringify(data.user_token));
-          identity = true;
+        let existingToken: string | null = null;
+        try {
+          const raw = localStorage.getItem("user_token");
+          if (raw) existingToken = JSON.parse(raw);
+        } catch {}
+
+        const incomingToken = data.user_token;
+        if (existingToken && existingToken !== incomingToken) {
+          // Merge backend data from old token into new token
+          try {
+            await mergeTokensApi(existingToken, incomingToken);
+          } catch {
+            // Continue anyway — local merge is still valuable
+          }
+
+          // Update ownerToken in local list_tokens to match new identity
+          try {
+            const raw = localStorage.getItem("list_tokens");
+            if (raw) {
+              const tokens = JSON.parse(raw) as Record<string, { ownerToken: string; name?: string }>;
+              for (const key of Object.keys(tokens)) {
+                if (tokens[key].ownerToken === existingToken) {
+                  tokens[key].ownerToken = incomingToken;
+                }
+              }
+              localStorage.setItem("list_tokens", JSON.stringify(tokens));
+            }
+          } catch {}
         }
+
+        localStorage.setItem("user_token", JSON.stringify(incomingToken));
+        identity = !existingToken || existingToken !== incomingToken;
       }
 
       for (const key of SYNC_KEYS) {
@@ -68,6 +97,7 @@ export default function SyncPage() {
     } catch {
       setStatus("empty");
     }
+    })();
   }, []);
 
   return (
