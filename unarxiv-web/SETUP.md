@@ -83,10 +83,54 @@ In Cloudflare dashboard:
 
 ## Local Development
 
-```bash
-# Terminal 1: Worker API
-cd worker && npm run dev
+### Quick Start
 
-# Terminal 2: Frontend
-cd frontend && npm run dev
+```bash
+# First time — installs deps, creates env files, initializes + seeds DB:
+./dev.sh setup
+
+# Start both worker API and frontend:
+./dev.sh
 ```
+
+Worker API runs on `http://localhost:8787`, frontend on `http://localhost:3000`.
+
+### What You Get Locally
+
+- **D1 database** — local SQLite via wrangler, seeded with sample papers in various statuses
+- **R2 bucket** — local emulation via wrangler (empty, but UI renders correctly without audio files)
+- **Admin access** — password is `localdev` (set in `worker/.dev.vars`)
+- **No Modal dependency** — narration dispatch is skipped when `MODAL_WEBHOOK_SECRET` is not set to a real secret; papers stay in "preparing" status
+
+### Simulating Narration Completion
+
+Since Modal isn't running locally, simulate a webhook callback to complete a paper:
+
+```bash
+curl -X POST http://localhost:8787/api/webhooks/modal \
+  -H 'Content-Type: application/json' \
+  -d '{"arxiv_id":"2005.14165","status":"complete","duration_seconds":600}'
+```
+
+### Database Management
+
+```bash
+./dev.sh reset   # Wipe local DB and re-seed from scratch
+./dev.sh seed    # Re-seed without wiping
+
+# Or directly:
+cd worker
+npm run db:init       # Create tables (local)
+npm run db:seed       # Insert seed data (local)
+npm run db:reset      # Wipe + init + seed (local)
+npm run db:init:remote  # Create tables on production D1
+```
+
+### Environment Files
+
+| File | Purpose | Template |
+|------|---------|----------|
+| `frontend/.env.local` | Points API to localhost | `frontend/.env.local.example` |
+| `worker/.dev.vars` | Local secrets (admin pw, webhook secret) | `worker/.dev.vars.example` |
+
+Both are gitignored. `./dev.sh setup` copies the examples automatically.

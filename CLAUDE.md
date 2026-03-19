@@ -69,6 +69,27 @@ SQLite CHECK constraints can't be altered — must recreate table to change them
 - Admin bypasses rate limits via `X-Admin-Password` header
 - Contributors tracked by IP with pseudonymized display
 
+## Local Development
+
+```bash
+cd unarxiv-web
+./dev.sh setup   # First time: install deps, init DB, seed data, copy env files
+./dev.sh         # Start worker (localhost:8787) + frontend (localhost:3000)
+```
+
+- Admin password: `localdev`
+- Frontend `.env.local` points API to `http://localhost:8787`
+- Worker `.dev.vars` provides local secrets
+- DB is seeded with sample papers in all statuses (complete, queued, failed, etc.)
+- Modal narration is skipped locally — simulate completion via webhook:
+  ```bash
+  curl -X POST http://localhost:8787/api/webhooks/modal \
+    -H 'Content-Type: application/json' \
+    -d '{"arxiv_id":"PAPER_ID","status":"complete","duration_seconds":600}'
+  ```
+- R2 is emulated locally by wrangler (audio files won't exist but UI renders)
+- `./dev.sh reset` wipes and re-seeds the local database
+
 ## Conventions
 
 - Tailwind CSS with stone color palette
