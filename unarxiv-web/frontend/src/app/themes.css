@@ -354,20 +354,25 @@
    amber accents, hard square edges, scan-line aesthetic
    ============================================================ */
 [data-theme="retro-terminal"] {
-  /* Stone → Green phosphor scale */
+  /* Stone → Green phosphor scale
+     Bumped mid-range values for better contrast on dark bg.
+     300 = borders (must be clearly visible), 400-500 = secondary UI text. */
   --color-stone-50:  #000a00;
   --color-stone-100: #001200;
-  --color-stone-200: #001e00;
-  --color-stone-300: #003800;
-  --color-stone-400: #005800;
-  --color-stone-500: #008800;
-  --color-stone-600: #00aa00;
-  --color-stone-700: #00cc00;
-  --color-stone-800: #00e000;
+  --color-stone-200: #002200;
+  --color-stone-300: #005500;
+  --color-stone-400: #007a00;
+  --color-stone-500: #00a800;
+  --color-stone-600: #00cc00;
+  --color-stone-700: #00e000;
+  --color-stone-800: #00f000;
   --color-stone-900: #00ff00;
 
-  /* Surface */
-  --color-surface: #001000;
+  /* Surface — slightly lighter than body bg for card separation */
+  --color-surface: #001a00;
+
+  /* White → near-black so text-white on bright-green buttons becomes dark */
+  --color-white: #000a00;
 
   /* Emerald → Amber (CTA) */
   --color-emerald-50:  #181200;
@@ -443,11 +448,11 @@
 
   /* Theme vars */
   --slider-thumb-bg: #00ff00;
-  --slider-thumb-border: #001000;
+  --slider-thumb-border: #001a00;
   --pulse-rgb: 0, 255, 0;
   --player-flash-rgb: 0, 255, 0;
 
-  /* Shapes — hard square edges (CRT pixel aesthetic) */
+  /* Shapes — hard square edges, fully rectangular (CRT pixel aesthetic) */
   --radius-xs: 0;
   --radius-sm: 0;
   --radius-md: 0;
@@ -455,7 +460,7 @@
   --radius-xl: 0;
   --radius-2xl: 0;
   --radius-3xl: 0;
-  --radius-full: 2px;
+  --radius-full: 0;
 }
 
 /* CRT scanline overlay for retro-terminal */
