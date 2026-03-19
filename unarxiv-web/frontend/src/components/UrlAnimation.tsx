@@ -15,7 +15,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
   return (
     <div className={`select-none pointer-events-none ${className || ""}`}>
       <div className="inline-flex items-center gap-2 bg-stone-50 border border-stone-300 rounded-full px-3 py-1.5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60 text-stone-500">
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -25,7 +25,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
           {children}
           <span>arxiv.org/abs/2411.09222</span>
         </span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60 text-stone-400">
           <polyline points="23 4 23 10 17 10" />
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
         </svg>
@@ -37,7 +37,7 @@ function UrlBar({ children, className }: { children: React.ReactNode; className?
 function StaticUrlAnimation({ className }: { className?: string }) {
   return (
     <UrlBar className={className}>
-      <span className="text-stone-900 bg-blue-200">un</span>
+      <span className="text-stone-900 bg-stone-300">un</span>
     </UrlBar>
   );
 }
