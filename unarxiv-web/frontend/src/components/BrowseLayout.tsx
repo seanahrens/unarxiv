@@ -233,7 +233,7 @@ export default function BrowseLayout({
           ) : (
             <div className="grid gap-3">
               {paginatedPapers.map((paper) => (
-                <PaperCard key={paper.id} paper={paper} />
+                <PaperCard key={paper.id} paper={paper} collectionId={selectedId ?? "home"} />
               ))}
             </div>
           )}

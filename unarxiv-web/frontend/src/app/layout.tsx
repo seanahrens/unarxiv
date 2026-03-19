@@ -64,16 +64,17 @@ export default function RootLayout({
                 <SiteName className="text-lg tracking-tight" />
               </Link>
             </div>
-            {/* Center: tagline */}
-            <div className="flex-1 flex justify-center">
+            {/* Center: tagline (desktop only) */}
+            <div className="flex-1 hidden md:flex justify-center">
               <h2 className="text-xs font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1.5 m-0">
                 <svg width="16" height="16" viewBox="0 0 640 640" fill="currentColor" className="flex-shrink-0 opacity-60">
                   <path d="M144 288C144 190.8 222.8 112 320 112C417.2 112 496 190.8 496 288L496 332.8C481.9 324.6 465.5 320 448 320L432 320C405.5 320 384 341.5 384 368L384 496C384 522.5 405.5 544 432 544L448 544C501 544 544 501 544 448L544 288C544 164.3 443.7 64 320 64C196.3 64 96 164.3 96 288L96 448C96 501 139 544 192 544L208 544C234.5 544 256 522.5 256 496L256 368C256 341.5 234.5 320 208 320L192 320C174.5 320 158.1 324.7 144 332.8L144 288zM144 416C144 389.5 165.5 368 192 368L208 368L208 496L192 496C165.5 496 144 474.5 144 448L144 416zM496 416L496 448C496 474.5 474.5 496 448 496L432 496L432 368L448 368C474.5 368 496 389.5 496 416z" />
                 </svg>
-                <span className="hidden md:inline">Listen to arXiv Papers. Unlimited. Free.</span>
-                <span className="md:hidden">Listen to arXiv</span>
+                Listen to arXiv Papers. Unlimited. Free.
               </h2>
             </div>
+            {/* Mobile spacer */}
+            <div className="flex-1 md:hidden" />
             {/* Right: playlist button */}
             <div className="flex items-center gap-3 shrink-0">
               <PlaylistNavButton />

@@ -373,12 +373,98 @@ export default function PlayerBar() {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  if (!mounted || !isActive) return null;
+  if (!mounted) return null;
+
+  // Playlist popup for default state (inline, since playlistPopup var is defined later)
+  const defaultPlaylistPopup = !isActive && showPlaylist && (
+    <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
+      <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] flex flex-col">
+        <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
+          <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="10" width="11" height="2" />
+              <rect x="3" y="6" width="11" height="2" />
+              <rect x="3" y="14" width="7" height="2" />
+              <polygon points="16,13 16,21 22,17" />
+            </svg>
+            My Playlist
+          </h3>
+          <button onClick={() => setShowPlaylist(false)} className="text-stone-400 hover:text-stone-600 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="overflow-y-auto overscroll-contain flex-1">
+          <div className="text-stone-500 text-sm py-4 px-4 text-center">
+            Your playlist is empty.
+            <div className="mt-1">
+              <Link href="/" className="text-stone-600 hover:text-stone-800 underline text-sm" onClick={() => setShowPlaylist(false)}>
+                Add papers.
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Default state: no paper loaded ──
+  if (!isActive) {
+    return (
+      <div ref={barRef} className="fixed bottom-0 left-0 right-0 z-[100] pb-[env(safe-area-inset-bottom)]">
+        <div className="bg-stone-100 border-t border-stone-300 shadow-[0_-2px_12px_rgba(0,0,0,0.1)] relative">
+          {defaultPlaylistPopup}
+          {/* Desktop default */}
+          <div className="hidden md:flex max-w-5xl mx-auto px-4 items-center gap-4 h-16">
+            <div className="invisible shrink-0 flex items-center">
+              <AudioFileIcon size={36} />
+            </div>
+            <div className="relative flex-1 min-w-0 h-10 self-center rounded-md border border-stone-200 overflow-hidden select-none">
+              <div className="absolute inset-0 bg-stone-50 rounded-md" />
+              <div className="relative z-10 flex items-center gap-2 h-full px-3.5">
+                <span className="text-sm text-stone-400 truncate italic">Press play on a paper to begin listening</span>
+              </div>
+            </div>
+            <span className="text-xs font-mono text-stone-300 tabular-nums shrink-0 flex items-center">0:00 / --</span>
+            <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="2.5" height="14" rx="0.5" /><polygon points="19,5 9,12 19,19" /></svg></button>
+            <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="33" height="33" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" /></svg></button>
+            <button disabled className="w-12 h-12 flex items-center justify-center bg-stone-400 text-white rounded-full shrink-0 self-center cursor-not-allowed">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
+            </button>
+            <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="33" height="33" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" /></svg></button>
+            <button disabled className="text-stone-300 shrink-0 flex items-center cursor-not-allowed"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,5 15,12 5,19" /><rect x="17.5" y="5" width="2.5" height="14" rx="0.5" /></svg></button>
+            <button disabled className="text-xs font-mono text-stone-400 bg-stone-200 rounded px-2 py-1.5 shrink-0 min-w-[64px] text-center self-center cursor-not-allowed">1x</button>
+            <div className="w-6 shrink-0" />
+            <button onClick={togglePlaylist} className="text-stone-600 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Toggle playlist">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10" width="11" height="2" /><rect x="3" y="6" width="11" height="2" /><rect x="3" y="14" width="7" height="2" /><polygon points="16,13 16,21 22,17" /></svg>
+            </button>
+          </div>
+          {/* Mobile default */}
+          <div className="md:hidden flex items-center h-14 px-4 gap-3">
+            <div className="invisible shrink-0 flex items-center">
+              <AudioFileIcon size={32} />
+            </div>
+            <div className="relative flex-1 min-w-0 h-10 self-center rounded-md border border-stone-200 overflow-hidden select-none">
+              <div className="absolute inset-0 bg-stone-50 rounded-md" />
+              <div className="relative z-10 flex items-center gap-2 h-full px-3.5">
+                <span className="text-sm text-stone-400 truncate italic">Press play on a paper to begin listening</span>
+              </div>
+            </div>
+            <button disabled className="w-10 h-10 flex items-center justify-center bg-stone-400 text-white rounded-full shrink-0 cursor-not-allowed">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,3 21,12 7,21" /></svg>
+            </button>
+            <button onClick={togglePlaylist} className="text-stone-600 hover:text-stone-800 transition-colors shrink-0 flex items-center" title="Toggle playlist">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="10" width="11" height="2" /><rect x="3" y="6" width="11" height="2" /><rect x="3" y="14" width="7" height="2" /><polygon points="16,13 16,21 22,17" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Playlist popup overlay — show immediately with skeletons if data is loading
   const playlistPopup = showPlaylist && (
     <div className="fixed z-[101] animate-panel-fade-in" style={popupStyle}>
-      <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] min-h-[200px] flex flex-col">
+      <div className="bg-white border border-stone-300 md:rounded-xl shadow-xl overflow-hidden max-h-[60vh] flex flex-col">
         <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between shrink-0">
           <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -395,11 +481,11 @@ export default function PlayerBar() {
         </div>
         <div className="overflow-y-auto overscroll-contain flex-1">
           {playlist.length === 0 ? (
-            <div className="text-stone-500 text-sm py-8 text-center">
+            <div className="text-stone-500 text-sm py-4 px-4 text-center">
               Your playlist is empty.
-              <div className="mt-2">
+              <div className="mt-1">
                 <Link href="/" className="text-stone-600 hover:text-stone-800 underline text-sm" onClick={() => setShowPlaylist(false)}>
-                  Add papers from the home page
+                  Add papers.
                 </Link>
               </div>
             </div>
@@ -419,7 +505,7 @@ export default function PlayerBar() {
               emptyMessage="Your playlist is empty."
               emptyAction={
                 <Link href="/" className="text-stone-600 hover:text-stone-800 underline text-sm" onClick={() => setShowPlaylist(false)}>
-                  Add papers from the home page
+                  Add papers.
                 </Link>
               }
             />

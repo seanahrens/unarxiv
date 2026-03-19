@@ -23,7 +23,7 @@ function labelForPath(path: string): string {
   const route = path.split("?")[0];
   const query = path.includes("?q=") ? true : false;
   if (route === "/" || route === "") return query ? "Search Results" : "Papers";
-  if (route.startsWith("/my-papers")) return "My Papers";
+  if (route.startsWith("/my-papers")) return "My Collections";
   if (route.startsWith("/p")) return "Paper";
   if (route.startsWith("/s")) return "Script";
   if (route.startsWith("/l")) return "Collection";

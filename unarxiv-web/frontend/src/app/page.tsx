@@ -29,9 +29,10 @@ const SEARCH_PAGE_SIZE = 10;
 function HomePageSkeleton() {
   return (
     <div>
-      <div className="h-6 mb-6" />
-      {/* Search bar placeholder */}
-      <div className="bg-stone-200 animate-pulse rounded-xl h-12 mb-6" />
+      {/* Search bar — mirrors HeaderSearchBar: max-w-2xl mx-auto, py-3 mb-px wrapper */}
+      <div className="max-w-2xl mx-auto px-0 md:px-6 py-3 mb-px">
+        <div className="bg-stone-200 animate-pulse rounded-xl h-12" />
+      </div>
       <div className="h-6" />
       <BrowseLayoutSkeleton />
     </div>

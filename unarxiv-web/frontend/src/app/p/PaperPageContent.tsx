@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, isInProgress, formatPaperDate, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, isInProgress, formatPaperDate, transcriptUrl, type Paper, type Rating } from "@/lib/api";
 import { PaperDetailSkeleton } from "@/components/Skeleton";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
@@ -221,15 +221,24 @@ function RatingModal({
 
 function BackButton() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { previousLabel, hasHistory } = useNavigationHistory();
+  const from = searchParams.get("from");
 
   const handleBack = () => {
     if (hasHistory) {
       router.back();
+    } else if (from && from !== "home") {
+      router.push(`/l?id=${from}`);
     } else {
       router.push("/");
     }
   };
+
+  let label = previousLabel;
+  if (!hasHistory && from) {
+    label = from === "home" ? "Papers" : "Collection";
+  }
 
   return (
     <button
@@ -237,7 +246,7 @@ function BackButton() {
       className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-700 transition-colors mb-4 border border-stone-300 rounded-full px-3 py-1"
     >
       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="2,12 22,2 22,22" /></svg>
-      Back to {previousLabel}
+      Back to {label}
     </button>
   );
 }
@@ -253,6 +262,9 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [paperRead, setPaperRead] = useState(false);
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
+  const [view, setView] = useState<"abstract" | "script">("abstract");
+  const [script, setScript] = useState<string | null>(null);
+  const [scriptLoading, setScriptLoading] = useState(false);
   const [showCaptchaModal, setShowCaptchaModal] = useState(false);
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const handleAddToPlaylist = (rect?: DOMRect) => {
@@ -298,6 +310,22 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     // Check read status from localStorage
     setPaperRead(checkIsRead(id));
   }, [id]);
+
+  // Lazy-fetch transcript when switching to script view
+  useEffect(() => {
+    if (view !== "script" || script !== null || !paper) return;
+    const canShow = ["generating_audio", "complete"].includes(paper.status);
+    if (!canShow) return;
+    setScriptLoading(true);
+    fetch(transcriptUrl(paper.id))
+      .then((res) => {
+        if (!res.ok) throw new Error("not found");
+        return res.text();
+      })
+      .then(setScript)
+      .catch(() => setScript("Script not available."))
+      .finally(() => setScriptLoading(false));
+  }, [view, script, paper]);
 
   const handleComplete = useCallback((updatedPaper: Paper) => {
     setPaper(updatedPaper);
@@ -404,11 +432,30 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           </div>
         )}
 
-        {paper.abstract && (
-          <p className="text-base text-stone-600 leading-relaxed">
-            <span className="font-black text-stone-900 uppercase tracking-wide text-sm">Abstract</span>{" "}
-            {paper.abstract}
-          </p>
+        {/* View toggle — only when transcript is available */}
+        {(paper.status === "generating_audio" || paper.status === "complete") && (
+          <div className="flex gap-1.5 mt-1">
+            <button
+              onClick={() => setView("abstract")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                view === "abstract"
+                  ? "bg-stone-900 text-white"
+                  : "text-stone-600 border border-stone-300 hover:bg-stone-100"
+              }`}
+            >
+              Abstract + PDF
+            </button>
+            <button
+              onClick={() => setView("script")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                view === "script"
+                  ? "bg-stone-900 text-white"
+                  : "text-stone-600 border border-stone-300 hover:bg-stone-100"
+              }`}
+            >
+              Script
+            </button>
+          </div>
         )}
       </article>
 
@@ -421,15 +468,39 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         </div>
       )}
 
-      {/* PDF viewer — hidden on mobile */}
-      <div className="hidden md:block mt-10 border border-stone-300 rounded-xl overflow-hidden">
-        <iframe
-          src={`https://arxiv.org/pdf/${paper.id}#zoom=page-width`}
-          className="w-full bg-white"
-          style={{ height: "1245px" }}
-          title={`PDF: ${paper.title}`}
-        />
-      </div>
+      {/* Content area — switches between abstract+PDF and script */}
+      {view === "abstract" ? (
+        <>
+          {paper.abstract && (
+            <p className="text-base text-stone-600 leading-relaxed mt-4">
+              <span className="font-black text-stone-900 uppercase tracking-wide text-sm">Abstract</span>{" "}
+              {paper.abstract}
+            </p>
+          )}
+
+          {/* PDF viewer — hidden on mobile */}
+          <div className="hidden md:block mt-10 border border-stone-300 rounded-xl overflow-hidden">
+            <iframe
+              src={`https://arxiv.org/pdf/${paper.id}#zoom=page-width`}
+              className="w-full bg-white"
+              style={{ height: "1245px" }}
+              title={`PDF: ${paper.title}`}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="mt-4">
+          {scriptLoading ? (
+            <div className="text-center py-10 text-stone-400 text-sm">Loading script...</div>
+          ) : (
+            <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
+              <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
+                {script}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
 
       {showRatingModal && (
         <RatingModal

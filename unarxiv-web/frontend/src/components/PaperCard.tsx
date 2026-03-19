@@ -22,6 +22,8 @@ interface PaperCardProps {
   arxivUrl?: string;
   /** Called when the paper object changes (after import or narration request). */
   onPaperChange?: (paper: Paper) => void;
+  /** Collection ID for back-navigation context. "home" for Newly Added. */
+  collectionId?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,7 +35,7 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange }: PaperCardProps) {
+function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collectionId }: PaperCardProps) {
   const router = useRouter();
   const isReady = paper.status === "complete";
   const isFailed = paper.status === "failed";
@@ -75,7 +77,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange }: Paper
 
   return (
     <Link
-      href={`/p?id=${paper.id}`}
+      href={`/p?id=${paper.id}${collectionId != null ? `&from=${collectionId}` : ""}`}
       data-testid="paper-card"
       onClick={needsImport ? async (e) => {
         e.preventDefault();
@@ -171,4 +173,5 @@ export default memo(PaperCard, (prev, next) =>
   && prev.paper.status === next.paper.status
   && prev.paper.progress_detail === next.paper.progress_detail
   && prev.arxivUrl === next.arxivUrl
+  && prev.collectionId === next.collectionId
 );
