@@ -5,6 +5,7 @@ __pycache__/
 
 # Build output
 .next/
+.next-*/
 out/
 
 # Environment / secrets

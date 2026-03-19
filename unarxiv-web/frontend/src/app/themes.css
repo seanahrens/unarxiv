@@ -20,3 +20,565 @@
   --pulse-rgb: 120, 113, 108;
   --player-flash-rgb: 120, 113, 108;
 }
+
+/* ============================================================
+   Theme 1: NEON NOIR
+   Cyberpunk dark mode — black canvas, neon cyan + hot pink accents,
+   sharp geometric edges, glowing borders
+   ============================================================ */
+[data-theme="neon-noir"] {
+  /* Stone → Dark neutrals (inverted) */
+  --color-stone-50:  #08080e;
+  --color-stone-100: #0d0d16;
+  --color-stone-200: #16162a;
+  --color-stone-300: #252545;
+  --color-stone-400: #4a4a70;
+  --color-stone-500: #7878a0;
+  --color-stone-600: #9e9ec0;
+  --color-stone-700: #c0c0d8;
+  --color-stone-800: #d8d8ea;
+  --color-stone-900: #ececf4;
+
+  /* Surface (cards, panels) */
+  --color-surface: #111128;
+
+  /* Emerald → Neon cyan (CTA / success) */
+  --color-emerald-50:  #041a20;
+  --color-emerald-100: #062a35;
+  --color-emerald-200: #0a4050;
+  --color-emerald-300: #0d6080;
+  --color-emerald-400: #10a0d0;
+  --color-emerald-500: #00d4ff;
+  --color-emerald-600: #00c8f0;
+  --color-emerald-700: #00b0d8;
+  --color-emerald-800: #0090b0;
+  --color-emerald-900: #007090;
+
+  /* Red → Neon magenta / hot pink (errors) */
+  --color-red-50:  #200812;
+  --color-red-100: #350d1e;
+  --color-red-200: #601030;
+  --color-red-300: #901548;
+  --color-red-400: #d01a68;
+  --color-red-500: #ff1a80;
+  --color-red-600: #ff0070;
+  --color-red-700: #e00065;
+  --color-red-800: #c0005a;
+  --color-red-900: #a00050;
+
+  /* Purple → Electric violet */
+  --color-purple-50:  #100820;
+  --color-purple-100: #1a0d35;
+  --color-purple-200: #301060;
+  --color-purple-300: #6020c0;
+  --color-purple-400: #8030ff;
+  --color-purple-500: #9040ff;
+  --color-purple-600: #7828e8;
+  --color-purple-700: #6020c0;
+  --color-purple-800: #4818a0;
+  --color-purple-900: #301080;
+
+  /* Blue → Electric blue */
+  --color-blue-50:  #040820;
+  --color-blue-100: #080d38;
+  --color-blue-200: #101860;
+  --color-blue-300: #1828a0;
+  --color-blue-400: #2040e0;
+  --color-blue-500: #3060ff;
+  --color-blue-600: #2850e0;
+  --color-blue-700: #2040c0;
+  --color-blue-800: #1830a0;
+  --color-blue-900: #102080;
+
+  /* Amber → Neon yellow */
+  --color-amber-50:  #181800;
+  --color-amber-100: #282800;
+  --color-amber-200: #484800;
+  --color-amber-300: #888800;
+  --color-amber-400: #cccc00;
+  --color-amber-500: #ffff00;
+  --color-amber-600: #e0e000;
+  --color-amber-700: #c0c000;
+  --color-amber-800: #a0a000;
+  --color-amber-900: #808000;
+
+  /* Orange → Neon orange */
+  --color-orange-50:  #1a0c00;
+  --color-orange-100: #2a1400;
+  --color-orange-200: #4a2400;
+  --color-orange-300: #884000;
+  --color-orange-400: #cc6000;
+  --color-orange-500: #ff8000;
+  --color-orange-600: #e07000;
+  --color-orange-700: #c06000;
+  --color-orange-800: #a05000;
+  --color-orange-900: #804000;
+
+  /* Theme vars */
+  --slider-thumb-bg: #00d4ff;
+  --slider-thumb-border: #111128;
+  --pulse-rgb: 0, 212, 255;
+  --player-flash-rgb: 0, 212, 255;
+
+  /* Shapes — sharp, geometric */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+}
+
+/* ============================================================
+   Theme 2: SOLAR FLARE
+   Warm desert energy — cream/sand backgrounds, burnt orange
+   and deep red accents, soft rounded shapes
+   ============================================================ */
+[data-theme="solar-flare"] {
+  /* Stone → Warm sand tones */
+  --color-stone-50:  #fffcf5;
+  --color-stone-100: #fff5e0;
+  --color-stone-200: #ffe8c0;
+  --color-stone-300: #e0c898;
+  --color-stone-400: #b89868;
+  --color-stone-500: #8a6d3e;
+  --color-stone-600: #6b4e28;
+  --color-stone-700: #4d3518;
+  --color-stone-800: #3a2510;
+  --color-stone-900: #2a1808;
+
+  /* Surface */
+  --color-surface: #fffdf5;
+
+  /* Emerald → Burnt orange / fire (CTA) */
+  --color-emerald-50:  #fff5f0;
+  --color-emerald-100: #ffe8dc;
+  --color-emerald-200: #ffc8a8;
+  --color-emerald-300: #ff9060;
+  --color-emerald-400: #ff7040;
+  --color-emerald-500: #ff5520;
+  --color-emerald-600: #e63915;
+  --color-emerald-700: #c52e0e;
+  --color-emerald-800: #a02508;
+  --color-emerald-900: #801c05;
+
+  /* Red → Deep crimson */
+  --color-red-50:  #fff0f0;
+  --color-red-100: #ffdcdc;
+  --color-red-200: #ffb0b0;
+  --color-red-300: #ff7070;
+  --color-red-400: #e84040;
+  --color-red-500: #d02020;
+  --color-red-600: #b01818;
+  --color-red-700: #901010;
+  --color-red-800: #700808;
+  --color-red-900: #500505;
+
+  /* Purple → Warm mauve */
+  --color-purple-50:  #fef5ff;
+  --color-purple-100: #f8e0f8;
+  --color-purple-200: #e8c0e8;
+  --color-purple-300: #c080c0;
+  --color-purple-400: #a050a0;
+  --color-purple-500: #803080;
+  --color-purple-600: #602060;
+  --color-purple-700: #501850;
+  --color-purple-800: #401040;
+  --color-purple-900: #300830;
+
+  /* Blue → Warm gold/bronze */
+  --color-blue-50:  #fef8f0;
+  --color-blue-100: #f8e8d0;
+  --color-blue-200: #e8c8a0;
+  --color-blue-300: #d0a060;
+  --color-blue-400: #b88030;
+  --color-blue-500: #a06810;
+  --color-blue-600: #885508;
+  --color-blue-700: #704505;
+  --color-blue-800: #583505;
+  --color-blue-900: #402805;
+
+  /* Amber → Molten gold */
+  --color-amber-50:  #fffde0;
+  --color-amber-100: #fff5a0;
+  --color-amber-200: #ffe860;
+  --color-amber-300: #ffd020;
+  --color-amber-400: #f0b800;
+  --color-amber-500: #d8a000;
+  --color-amber-600: #b88000;
+  --color-amber-700: #986000;
+  --color-amber-800: #784800;
+  --color-amber-900: #583000;
+
+  /* Orange → Deep fire */
+  --color-orange-50:  #fff8f0;
+  --color-orange-100: #ffe8d0;
+  --color-orange-200: #ffc890;
+  --color-orange-300: #ffa050;
+  --color-orange-400: #ff8020;
+  --color-orange-500: #e86010;
+  --color-orange-600: #c84808;
+  --color-orange-700: #a83808;
+  --color-orange-800: #882808;
+  --color-orange-900: #681808;
+
+  /* Theme vars */
+  --slider-thumb-bg: #e63915;
+  --slider-thumb-border: #fffdf5;
+  --pulse-rgb: 230, 57, 21;
+  --player-flash-rgb: 230, 57, 21;
+
+  /* Shapes — soft, generous curves */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.5rem;
+}
+
+/* ============================================================
+   Theme 3: OCEAN DEPTH
+   Deep sea mystery — dark navy canvas, bioluminescent teal and
+   coral accents, fluid medium-radius shapes
+   ============================================================ */
+[data-theme="ocean-depth"] {
+  /* Stone → Deep ocean blues */
+  --color-stone-50:  #060e1a;
+  --color-stone-100: #0a1628;
+  --color-stone-200: #0f2040;
+  --color-stone-300: #1a3358;
+  --color-stone-400: #305580;
+  --color-stone-500: #5580a8;
+  --color-stone-600: #80a8c8;
+  --color-stone-700: #a0c4e0;
+  --color-stone-800: #c0d8ee;
+  --color-stone-900: #dce8f4;
+
+  /* Surface */
+  --color-surface: #0d1e38;
+
+  /* Emerald → Bioluminescent teal (CTA) */
+  --color-emerald-50:  #041a1a;
+  --color-emerald-100: #08302e;
+  --color-emerald-200: #105048;
+  --color-emerald-300: #208070;
+  --color-emerald-400: #38c0a8;
+  --color-emerald-500: #50e8c8;
+  --color-emerald-600: #40d8b8;
+  --color-emerald-700: #30c0a0;
+  --color-emerald-800: #20a888;
+  --color-emerald-900: #188870;
+
+  /* Red → Living coral */
+  --color-red-50:  #1a0808;
+  --color-red-100: #301010;
+  --color-red-200: #582020;
+  --color-red-300: #904040;
+  --color-red-400: #c86060;
+  --color-red-500: #ff7070;
+  --color-red-600: #e05858;
+  --color-red-700: #c04848;
+  --color-red-800: #a03838;
+  --color-red-900: #802828;
+
+  /* Purple → Deep sea violet */
+  --color-purple-50:  #0a0818;
+  --color-purple-100: #140d30;
+  --color-purple-200: #201850;
+  --color-purple-300: #382880;
+  --color-purple-400: #5040b0;
+  --color-purple-500: #6858d0;
+  --color-purple-600: #5848b8;
+  --color-purple-700: #4838a0;
+  --color-purple-800: #382888;
+  --color-purple-900: #281870;
+
+  /* Blue → Abyssal blue */
+  --color-blue-50:  #040818;
+  --color-blue-100: #080d30;
+  --color-blue-200: #101850;
+  --color-blue-300: #202880;
+  --color-blue-400: #3848b0;
+  --color-blue-500: #5068d0;
+  --color-blue-600: #4058b8;
+  --color-blue-700: #3048a0;
+  --color-blue-800: #203888;
+  --color-blue-900: #182870;
+
+  /* Amber → Bioluminescent gold */
+  --color-amber-50:  #181408;
+  --color-amber-100: #282010;
+  --color-amber-200: #483818;
+  --color-amber-300: #786028;
+  --color-amber-400: #b89038;
+  --color-amber-500: #e0b848;
+  --color-amber-600: #c8a038;
+  --color-amber-700: #a88828;
+  --color-amber-800: #887018;
+  --color-amber-900: #685810;
+
+  /* Orange → Deep sea orange */
+  --color-orange-50:  #180c08;
+  --color-orange-100: #281810;
+  --color-orange-200: #482818;
+  --color-orange-300: #784828;
+  --color-orange-400: #b06838;
+  --color-orange-500: #d88848;
+  --color-orange-600: #c07838;
+  --color-orange-700: #a06828;
+  --color-orange-800: #805818;
+  --color-orange-900: #604810;
+
+  /* Theme vars */
+  --slider-thumb-bg: #50e8c8;
+  --slider-thumb-border: #0d1e38;
+  --pulse-rgb: 80, 232, 200;
+  --player-flash-rgb: 80, 232, 200;
+
+  /* Shapes — fluid, medium radius */
+  --radius-xs: 0.2rem;
+  --radius-sm: 0.4rem;
+  --radius-md: 0.6rem;
+  --radius-lg: 0.8rem;
+  --radius-xl: 1.1rem;
+  --radius-2xl: 1.4rem;
+  --radius-3xl: 1.8rem;
+}
+
+/* ============================================================
+   Theme 4: RETRO TERMINAL
+   CRT phosphor green-on-black — monochrome green palette,
+   amber accents, hard square edges, scan-line aesthetic
+   ============================================================ */
+[data-theme="retro-terminal"] {
+  /* Stone → Green phosphor scale */
+  --color-stone-50:  #000a00;
+  --color-stone-100: #001200;
+  --color-stone-200: #001e00;
+  --color-stone-300: #003800;
+  --color-stone-400: #005800;
+  --color-stone-500: #008800;
+  --color-stone-600: #00aa00;
+  --color-stone-700: #00cc00;
+  --color-stone-800: #00e000;
+  --color-stone-900: #00ff00;
+
+  /* Surface */
+  --color-surface: #001000;
+
+  /* Emerald → Amber (CTA) */
+  --color-emerald-50:  #181200;
+  --color-emerald-100: #282000;
+  --color-emerald-200: #483800;
+  --color-emerald-300: #886800;
+  --color-emerald-400: #c89800;
+  --color-emerald-500: #ffb800;
+  --color-emerald-600: #e0a000;
+  --color-emerald-700: #c08800;
+  --color-emerald-800: #a07000;
+  --color-emerald-900: #805800;
+
+  /* Red → Red phosphor (error states) */
+  --color-red-50:  #180000;
+  --color-red-100: #300000;
+  --color-red-200: #580000;
+  --color-red-300: #880000;
+  --color-red-400: #c00000;
+  --color-red-500: #ff0000;
+  --color-red-600: #e00000;
+  --color-red-700: #c00000;
+  --color-red-800: #a00000;
+  --color-red-900: #800000;
+
+  /* Purple → Dim phosphor purple */
+  --color-purple-50:  #080008;
+  --color-purple-100: #140014;
+  --color-purple-200: #280028;
+  --color-purple-300: #500050;
+  --color-purple-400: #780078;
+  --color-purple-500: #a000a0;
+  --color-purple-600: #880088;
+  --color-purple-700: #700070;
+  --color-purple-800: #580058;
+  --color-purple-900: #400040;
+
+  /* Blue → Blue phosphor */
+  --color-blue-50:  #000818;
+  --color-blue-100: #001030;
+  --color-blue-200: #001858;
+  --color-blue-300: #003088;
+  --color-blue-400: #0048b8;
+  --color-blue-500: #0060e8;
+  --color-blue-600: #0050c8;
+  --color-blue-700: #0040a8;
+  --color-blue-800: #003088;
+  --color-blue-900: #002068;
+
+  /* Amber (native amber for terminal) */
+  --color-amber-50:  #181000;
+  --color-amber-100: #282000;
+  --color-amber-200: #483800;
+  --color-amber-300: #886800;
+  --color-amber-400: #c89800;
+  --color-amber-500: #ffb800;
+  --color-amber-600: #e0a000;
+  --color-amber-700: #c08800;
+  --color-amber-800: #a07000;
+  --color-amber-900: #805800;
+
+  /* Orange → Amber-orange */
+  --color-orange-50:  #181000;
+  --color-orange-100: #281800;
+  --color-orange-200: #482800;
+  --color-orange-300: #884800;
+  --color-orange-400: #c87000;
+  --color-orange-500: #ff9000;
+  --color-orange-600: #e08000;
+  --color-orange-700: #c07000;
+  --color-orange-800: #a06000;
+  --color-orange-900: #805000;
+
+  /* Theme vars */
+  --slider-thumb-bg: #00ff00;
+  --slider-thumb-border: #001000;
+  --pulse-rgb: 0, 255, 0;
+  --player-flash-rgb: 0, 255, 0;
+
+  /* Shapes — hard square edges (CRT pixel aesthetic) */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-full: 2px;
+}
+
+/* CRT scanline overlay for retro-terminal */
+[data-theme="retro-terminal"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.08) 0px,
+    rgba(0, 0, 0, 0.08) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* ============================================================
+   Theme 5: CANDY POP
+   Y2K maximalism — lavender/pink backgrounds, hot pink + electric
+   blue accents, ultra-round bubbly shapes, playful energy
+   ============================================================ */
+[data-theme="candy-pop"] {
+  /* Stone → Lavender/pink neutrals */
+  --color-stone-50:  #fef5ff;
+  --color-stone-100: #f5e4ff;
+  --color-stone-200: #e8d0f8;
+  --color-stone-300: #d0ace8;
+  --color-stone-400: #a878c8;
+  --color-stone-500: #7850a0;
+  --color-stone-600: #5a3578;
+  --color-stone-700: #401e58;
+  --color-stone-800: #2d1240;
+  --color-stone-900: #1e0830;
+
+  /* Surface */
+  --color-surface: #fff5ff;
+
+  /* Emerald → Hot pink (CTA) */
+  --color-emerald-50:  #fff0f8;
+  --color-emerald-100: #ffdcef;
+  --color-emerald-200: #ffb0d8;
+  --color-emerald-300: #ff70b8;
+  --color-emerald-400: #ff40a0;
+  --color-emerald-500: #ff1088;
+  --color-emerald-600: #e80078;
+  --color-emerald-700: #c80068;
+  --color-emerald-800: #a80058;
+  --color-emerald-900: #880048;
+
+  /* Red → Warm coral red */
+  --color-red-50:  #fff0f0;
+  --color-red-100: #ffd8d8;
+  --color-red-200: #ffb0b0;
+  --color-red-300: #ff7878;
+  --color-red-400: #ff4848;
+  --color-red-500: #ff2020;
+  --color-red-600: #e01818;
+  --color-red-700: #c01010;
+  --color-red-800: #a00808;
+  --color-red-900: #800505;
+
+  /* Purple → Electric purple */
+  --color-purple-50:  #f5f0ff;
+  --color-purple-100: #e8d8ff;
+  --color-purple-200: #d0b0ff;
+  --color-purple-300: #a878ff;
+  --color-purple-400: #8848ff;
+  --color-purple-500: #7020ff;
+  --color-purple-600: #5810e8;
+  --color-purple-700: #4808c8;
+  --color-purple-800: #3800a8;
+  --color-purple-900: #280088;
+
+  /* Blue → Electric blue */
+  --color-blue-50:  #f0f5ff;
+  --color-blue-100: #d8e8ff;
+  --color-blue-200: #b0d0ff;
+  --color-blue-300: #78a8ff;
+  --color-blue-400: #4880ff;
+  --color-blue-500: #2060ff;
+  --color-blue-600: #1048e8;
+  --color-blue-700: #0838c8;
+  --color-blue-800: #0028a8;
+  --color-blue-900: #001888;
+
+  /* Amber → Bright yellow */
+  --color-amber-50:  #fffde0;
+  --color-amber-100: #fff8a0;
+  --color-amber-200: #fff060;
+  --color-amber-300: #ffe020;
+  --color-amber-400: #ffd000;
+  --color-amber-500: #f0c000;
+  --color-amber-600: #d0a000;
+  --color-amber-700: #b08000;
+  --color-amber-800: #906000;
+  --color-amber-900: #704000;
+
+  /* Orange → Tangerine */
+  --color-orange-50:  #fff5f0;
+  --color-orange-100: #ffe8d8;
+  --color-orange-200: #ffc8a0;
+  --color-orange-300: #ffa068;
+  --color-orange-400: #ff8040;
+  --color-orange-500: #ff6020;
+  --color-orange-600: #e04810;
+  --color-orange-700: #c03808;
+  --color-orange-800: #a02808;
+  --color-orange-900: #801808;
+
+  /* Theme vars */
+  --slider-thumb-bg: #ff1088;
+  --slider-thumb-border: #fff5ff;
+  --pulse-rgb: 255, 16, 136;
+  --player-flash-rgb: 255, 16, 136;
+
+  /* Shapes — ultra-round, bubbly */
+  --radius-xs: 0.5rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2.5rem;
+  --radius-3xl: 3rem;
+}
