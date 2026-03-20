@@ -501,14 +501,16 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           {scriptLoading ? (
             <div className="text-center py-10 text-stone-400 text-sm">Loading script...</div>
           ) : (
-            <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
-              <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
-                {script}
-              </pre>
-            </div>
-            {scriptDate && (
-              <p className="text-xs text-stone-400 mt-2 text-right">Script written on {scriptDate}</p>
-            )}
+            <>
+              <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
+                <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
+                  {script}
+                </pre>
+              </div>
+              {scriptDate && (
+                <p className="text-xs text-stone-400 mt-2 text-right">Script written on {scriptDate}</p>
+              )}
+            </>
           )}
         </div>
       )}
