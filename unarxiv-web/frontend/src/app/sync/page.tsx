@@ -86,12 +86,6 @@ export default function SyncPage() {
           <p className="text-sm text-stone-500">
             This device is now linked to your account. Your playlist, collections, ratings, and playback progress will stay in sync.
           </p>
-          <Link
-            href="/my-papers"
-            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-700 rounded-full transition-colors no-underline"
-          >
-            Go to My Papers
-          </Link>
         </div>
       )}
 
