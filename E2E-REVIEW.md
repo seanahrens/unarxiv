@@ -1,3 +1,62 @@
+# E2E Review — 2026-03-20
+
+**Reviewed:** `unarxiv-web/e2e/` (14 spec files)
+**Branch:** `test/e2e-review-2026-03-20`
+**Result:** 35 passed, 3 failed (pre-existing), 6 skipped — 34.8s
+
+## Issues Found and Fixed
+
+### 1. Duplicate selector constants in 07-media-player.spec.ts
+`SPEED_BTN` and `PLAY_PAUSE_BTN` were redefined locally, duplicating `PLAYER_SPEED` and `PLAYER_PLAY_PAUSE` already exported from `helpers/fixtures.ts`. Replaced with imports — single source of truth.
+
+### 2. Brittle `.text-red-600` selector in 01-admin-auth.spec.ts
+The admin auth error test used a CSS utility class selector that would silently break on any styling change. Added `data-testid="auth-error"` to the auth error paragraph in `admin/page.tsx`. Updated test to `[data-testid="auth-error"], .text-red-600` with fallback for pre-deploy runs.
+
+### 3. Wrong text selector for narrate button in 11-narration-gen.spec.ts
+The test searched for `button:has-text("Generate Audio Narration")` — text that doesn't match the actual button label ("Narrate"). Added `data-testid="generate-narration"` to `PaperActionButton.tsx` (non-compact mode, consistent with how `play-paper` testid is applied). Updated selector to three-way fallback: testid → "Narrate" → legacy text.
+
+## Coverage Map
+
+| Critical Path | Status |
+|---|---|
+| Homepage paper cards | ✅ 04-homepage |
+| Paper card → paper page navigation | ✅ 04-homepage |
+| ArXiv URL routes (`/abs/`, `/html/`, `/pdf/`) | ✅ 02-arxiv-routes |
+| Text search (results, AND semantics, no-results) | ✅ 06-text-search |
+| ArXiv ID search → auto-import | ✅ 03-arxiv-search-import |
+| Audio playback: play, audio src | ✅ 05-audio-playback |
+| PlayerBar: appears, speed cycles | ✅ 07-media-player |
+| Pause/resume/seek controls | ⚠️ fixme'd (headless audio unreliable) |
+| Downloads: PDF + audio | ✅ 08-downloads |
+| Ratings lifecycle (submit, persist, clear) | ✅ 09-ratings |
+| Playlist add/remove | ✅ 10-playlist |
+| Full narration lifecycle | ✅ 11-narration-gen (narration project) |
+| Transcript page + API | ✅ 14-transcript |
+| Admin auth: page + API | ✅ 01-admin-auth |
+| Collections CRUD via API | ✅ 13-lists |
+| Collection view `/l?id=` | ✅ 13-lists |
+| Admin curate page | ❌ Not covered |
+| Error states (invalid ID, failed narration) | ❌ Not covered |
+
+## Pre-existing Failures (not caused by this review)
+
+- `02-arxiv-routes`: "paper page renders with title after redirect" — times out; likely `ADMIN_PASSWORD` missing so prior test cleanup left state, causing rate-limit or import collision
+- `03-arxiv-search-import`: same root cause as above
+- `06-text-search`: "searching a common term returns results" — no paper cards found for "AI" query; suggests search index issue or local network hitting rate limits
+
+## Deployment
+
+Frontend preview: `https://claude-competent-matsumoto.unarxiv-frontend.pages.dev`
+Production updates when merged to `main` via CI/CD pipeline.
+
+## Items Needing Human Decision
+
+- **Pre-existing test failures**: The `02`, `03`, `06` failures occur when `ADMIN_PASSWORD` is not set locally (cleanup doesn't run, leaving test papers that affect subsequent runs). CI has `ADMIN_PASSWORD` so these likely pass there.
+- **Admin curate**: `/admin/curate` has no E2E coverage. Would require `ADMIN_PASSWORD` and careful teardown.
+- **Fixme'd media controls**: Headless audio streaming remains unreliable. No fix recommended without a controlled audio test fixture.
+
+---
+
 # E2E Test Review — 2026-03-19
 
 **Reviewed:** `unarxiv-web/e2e/` (14 spec files, 48 tests)
