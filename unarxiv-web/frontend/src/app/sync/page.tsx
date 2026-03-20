@@ -63,8 +63,6 @@ export default function SyncPage() {
 
       setStatus("imported");
 
-      // Strip the hash from URL so it's not bookmarkable with data
-      window.history.replaceState(null, "", "/sync");
     } catch {
       setStatus("empty");
     }
