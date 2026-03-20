@@ -85,6 +85,7 @@ export default {
       "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password, X-List-Token, X-User-Token",
+      "Access-Control-Expose-Headers": "Last-Modified",
     };
 
     if (method === "OPTIONS") {
@@ -1355,6 +1356,10 @@ async function handleGetTranscript(env: Env, id: string): Promise<Response> {
     "Content-Disposition",
     `inline; filename="${encodeURIComponent(paper.title)} - Transcript.txt"`
   );
+  // Expose upload date so frontend can show "Script written on ..."
+  if (object.uploaded) {
+    headers.set("Last-Modified", object.uploaded.toUTCString());
+  }
 
   return new Response(object.body, { headers });
 }

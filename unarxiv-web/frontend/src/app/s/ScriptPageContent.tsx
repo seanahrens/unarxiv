@@ -11,6 +11,7 @@ export default function ScriptPageContent() {
   const id = searchParams.get("id") || "";
   const [paper, setPaper] = useState<Paper | null>(null);
   const [script, setScript] = useState<string | null>(null);
+  const [scriptDate, setScriptDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +35,13 @@ export default function ScriptPageContent() {
 
         const res = await fetch(transcriptUrl(id));
         if (!res.ok) throw new Error("Script not found");
+        const lastMod = res.headers.get("Last-Modified");
+        if (lastMod) {
+          const d = new Date(lastMod);
+          if (!isNaN(d.getTime())) {
+            setScriptDate(d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }));
+          }
+        }
         const text = await res.text();
         setScript(text);
       } catch (e: any) {
@@ -78,6 +86,9 @@ export default function ScriptPageContent() {
           {script}
         </pre>
       </div>
+      {scriptDate && (
+        <p className="text-xs text-stone-400 mt-2 text-right">Script written on {scriptDate}</p>
+      )}
     </div>
   );
 }

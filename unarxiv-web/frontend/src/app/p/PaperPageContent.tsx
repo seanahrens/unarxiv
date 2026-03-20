@@ -264,6 +264,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [narrationError, setNarrationError] = useState("");
   const [view, setView] = useState<"abstract" | "script">("abstract");
   const [script, setScript] = useState<string | null>(null);
+  const [scriptDate, setScriptDate] = useState<string | null>(null);
   const [scriptLoading, setScriptLoading] = useState(false);
   const [showCaptchaModal, setShowCaptchaModal] = useState(false);
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
@@ -330,6 +331,13 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     fetch(transcriptUrl(paper.id))
       .then((res) => {
         if (!res.ok) throw new Error("not found");
+        const lastMod = res.headers.get("Last-Modified");
+        if (lastMod) {
+          const d = new Date(lastMod);
+          if (!isNaN(d.getTime())) {
+            setScriptDate(d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }));
+          }
+        }
         return res.text();
       })
       .then(setScript)
@@ -498,6 +506,9 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
                 {script}
               </pre>
             </div>
+            {scriptDate && (
+              <p className="text-xs text-stone-400 mt-2 text-right">Script written on {scriptDate}</p>
+            )}
           )}
         </div>
       )}
