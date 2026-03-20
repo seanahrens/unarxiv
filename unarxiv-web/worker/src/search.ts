@@ -72,26 +72,48 @@ export function parseSearchQuery(input: string): SearchToken[] {
   return tokens;
 }
 
-/** Format tokens as an FTS5 MATCH query. */
+/** Format tokens as an FTS5 MATCH query.
+ *  FTS5's NOT is binary — `A NOT B C` means `A NOT (B C)` — so we must
+ *  collect all positive terms first, then append negations at the end:
+ *    positive_expr NOT (neg1 OR neg2 OR ...)
+ */
 export function toFtsQuery(tokens: SearchToken[]): string {
-  const parts: string[] = [];
+  const positive: string[] = [];
+  const negative: string[] = [];
 
   for (const token of tokens) {
     if (token.type === "or") {
-      parts.push("OR");
-    } else if (token.type === "phrase") {
-      const prefix = token.negated ? "NOT " : "";
-      parts.push(`${prefix}"${token.value}"`);
+      positive.push("OR");
+      continue;
+    }
+
+    let term: string;
+    if (token.type === "phrase") {
+      term = `"${token.value}"`;
     } else {
-      // Bare word — sanitize and add prefix matching
       const clean = token.value.replace(/['"]/g, "");
       if (!clean) continue;
-      const prefix = token.negated ? "NOT " : "";
-      parts.push(`${prefix}"${clean}"*`);
+      term = `"${clean}"*`;
+    }
+
+    if (token.negated) {
+      negative.push(term);
+    } else {
+      positive.push(term);
     }
   }
 
-  return parts.join(" ");
+  // Clean trailing/leading OR
+  while (positive.length > 0 && positive[0] === "OR") positive.shift();
+  while (positive.length > 0 && positive[positive.length - 1] === "OR")
+    positive.pop();
+
+  let result = positive.join(" ");
+  if (negative.length > 0 && result) {
+    result += ` NOT (${negative.join(" OR ")})`;
+  }
+
+  return result;
 }
 
 /** Format tokens as an arXiv API search_query string. */
