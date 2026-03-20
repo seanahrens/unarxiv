@@ -251,8 +251,8 @@ export default function MyCollectionsPage() {
               </button>
             </div>
             <div className="text-sm text-stone-600 space-y-2 mb-4">
-              <p>This copies a link that links this unarXiv profile to that on another device, like a phone, tablet, or laptop. You can even use it to link across different browsers.</p>
-              <p>Once you visit this URL from your other device or browser, your playlist, collections, ratings, and playback progress will merge, and stay in sync across devices going forward.</p>
+              <p>Copy a link to sync your unarXiv profile to another device &mdash; phone, tablet, laptop, or even a different browser on this computer.</p>
+              <p>Open the link on your other device and your playlist, collections, ratings, and playback progress will merge and stay in sync going forward.</p>
             </div>
             <button
               onClick={() => { handleCopySyncLink(); }}
