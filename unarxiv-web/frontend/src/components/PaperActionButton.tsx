@@ -58,6 +58,8 @@ export default function PaperActionButton({
   onMenuToggle,
   etaSeconds,
   onEnsureImported,
+  onToggleScript,
+  currentView,
 }: {
   paper: Paper;
   compact?: boolean;
@@ -71,6 +73,10 @@ export default function PaperActionButton({
   etaSeconds?: number | null;
   /** Called before playlist add/narration for arXiv-only papers that need importing first. */
   onEnsureImported?: () => Promise<Paper | null>;
+  /** Toggle between abstract and script view (paper detail page only) */
+  onToggleScript?: () => void;
+  /** Current view mode — "abstract" or "script" */
+  currentView?: "abstract" | "script";
 }) {
   const { state, actions } = useAudio();
   const { addOrMoveToTop } = usePlaylist();
@@ -159,6 +165,8 @@ export default function PaperActionButton({
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
             onEnsureImported={onEnsureImported}
+            onToggleScript={onToggleScript}
+            currentView={currentView}
           />
         )}
       </div>

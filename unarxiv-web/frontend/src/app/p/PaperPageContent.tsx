@@ -427,6 +427,8 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             generateDisabled={narrationLoading}
             onAddToPlaylist={handleAddToPlaylist}
             onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
+            onToggleScript={() => setView(view === "abstract" ? "script" : "abstract")}
+            currentView={view}
           />
           {/* Hidden poller for processing state — drives status updates & completion */}
           {isProcessing && !narrationLoading && (
@@ -454,17 +456,6 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           </div>
         )}
 
-        {/* View toggle — only when transcript is available */}
-        {paper.status === "narrated" && (
-          <div className="mt-1">
-            <button
-              onClick={() => setView(view === "abstract" ? "script" : "abstract")}
-              className="px-3 py-1 text-xs font-medium rounded-full transition-colors text-stone-600 border border-stone-300 hover:bg-stone-100"
-            >
-              {view === "abstract" ? "View Script" : "View Abstract + PDF"}
-            </button>
-          </div>
-        )}
       </article>
 
       {isFailed && (

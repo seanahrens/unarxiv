@@ -112,6 +112,29 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Voice Quality */}
+        <section className="bg-surface rounded-2xl border border-stone-200 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-400 mb-3">Voice Quality</h2>
+          <div className="text-sm text-stone-600 space-y-3 leading-relaxed">
+            <p>
+              As a free service, <SiteName /> aims for good narration quality &mdash; but not state-of-the-art.
+              True SOTA voice synthesis would cost roughly $8 per paper. The model we use is effectively free,
+              which is how we can offer unlimited narrations at no cost.
+            </p>
+            <p>
+              We&apos;d love to offer a bring-your-own-API-key option for premium voice models.
+              If that&apos;s something you&apos;d use, drop us a line &mdash; the more interest we hear,
+              the sooner it&apos;ll happen.
+            </p>
+            <p>
+              In the meantime, the single best way to improve narration quality for a specific paper is
+              to <strong>rate it</strong>. Use the dropdown menu on any paper&apos;s page to leave a star rating
+              and optional comments. An autonomous agent regularly reviews low-rated narrations
+              and works to improve the underlying code.
+            </p>
+          </div>
+        </section>
+
         {/* Who + Contact side by side on desktop */}
         <div className="grid sm:grid-cols-2 gap-6">
           <section className="bg-surface rounded-2xl border border-stone-200 p-6">
