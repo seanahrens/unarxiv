@@ -6,7 +6,6 @@ import { mergeTokensApi } from "@/lib/api";
 
 export default function SyncPage() {
   const [status, setStatus] = useState<"loading" | "imported" | "empty">("loading");
-  const [counts, setCounts] = useState<{ lists: number; identity: boolean }>({ lists: 0, identity: false });
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -19,8 +18,6 @@ export default function SyncPage() {
     try {
       const json = decodeURIComponent(atob(hash));
       const data = JSON.parse(json) as Record<string, unknown>;
-
-      let lists = 0, identity = false;
 
       // Always adopt the sender's token and merge backend data
       if (data.user_token && typeof data.user_token === "string") {
@@ -53,7 +50,6 @@ export default function SyncPage() {
         }
 
         localStorage.setItem("user_token", JSON.stringify(incomingToken));
-        identity = !existingToken || existingToken !== incomingToken;
       }
 
       // Merge list_tokens if present (for collection ownership)
@@ -63,10 +59,8 @@ export default function SyncPage() {
         })();
         const merged = { ...existing, ...(data.list_tokens as Record<string, unknown>) };
         localStorage.setItem("list_tokens", JSON.stringify(merged));
-        lists = Object.keys(data.list_tokens as object).length;
       }
 
-      setCounts({ lists, identity });
       setStatus("imported");
 
       // Strip the hash from URL so it's not bookmarkable with data
@@ -94,13 +88,6 @@ export default function SyncPage() {
           <p className="text-sm text-stone-500">
             This device is now linked to your account. Your playlist, collections, ratings, and playback progress will stay in sync.
           </p>
-          <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 text-left text-sm text-stone-600 space-y-1">
-            {counts.identity && <p>Account identity linked</p>}
-            {counts.lists > 0 && <p>{counts.lists} collection{counts.lists > 1 ? "s" : ""} linked</p>}
-            {!counts.identity && counts.lists === 0 && (
-              <p>Everything was already in sync.</p>
-            )}
-          </div>
           <Link
             href="/my-papers"
             className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-700 rounded-full transition-colors no-underline"
