@@ -9,12 +9,6 @@ from __future__ import annotations
 
 import re
 
-# Parser version identifier — appended to every script output.
-# Increment on any parser logic change.
-# Format: L = LaTeX source, P = PDF source, number = version.
-PARSER_VERSION = 4
-
-
 def build_script(
     body: str,
     title: str,
@@ -24,17 +18,16 @@ def build_script(
 ) -> str:
     """Wrap cleaned body text with a spoken header and footer.
 
-    The header/footer format matches the existing system so scripts
-    are drop-in compatible.
-
     Args:
-        source_type: "LaTeX" or "PDF" — recorded in the version tag.
+        source_type: "LaTeX" or "PDF" — recorded in the metadata tag.
     """
+    from datetime import date as date_type
     header = _build_header(title or "Untitled", date, authors)
     footer = _build_footer(title or "Untitled", date, authors)
-    prefix = "L" if source_type == "LaTeX" else "P"
-    version_tag = f"\n\n%%%%%% Software Version {prefix}{PARSER_VERSION} %%%%%%"
-    return header + "\n" + body.strip() + footer + version_tag
+    source_label = "Tex" if source_type == "LaTeX" else "PDF"
+    today = date_type.today().strftime("%y-%m-%d")
+    metadata_tag = f"\n\n%%% {today} {source_label} %%%"
+    return header + "\n" + body.strip() + footer + metadata_tag
 
 
 def _build_header(title: str, date: str, authors: list[str]) -> str:
