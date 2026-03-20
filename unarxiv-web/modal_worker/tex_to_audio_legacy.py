@@ -354,38 +354,38 @@ def _ensure_period(s: str) -> str:
     return s if s.endswith(".") else s + "."
 
 
+def _format_authors(authors: list[str]) -> str:
+    if len(authors) == 1:
+        return f"By {authors[0]}."
+    elif len(authors) == 2:
+        return f"By {authors[0]} and {authors[1]}."
+    elif len(authors) == 3:
+        return f"By {authors[0]}, {authors[1]}, and {authors[2]}."
+    else:
+        first_three = f"{authors[0]}, {authors[1]}, {authors[2]}"
+        remaining = len(authors) - 3
+        return f"By {first_three}, and {remaining} more author{'s' if remaining != 1 else ''}."
+
+
 def _build_transcript_header(title: str, date: str, authors: list[str]) -> str:
     """Build the spoken header prepended to the transcript."""
     lines = [_ensure_period(title), ""]
-    if date:
-        lines += [f"Published {date}.", ""]
     if authors:
-        if len(authors) <= 3:
-            if len(authors) == 1:
-                lines += [f"By {authors[0]}.", ""]
-            elif len(authors) == 2:
-                lines += [f"By {authors[0]} and {authors[1]}.", ""]
-            else:
-                lines += [f"By {authors[0]}, {authors[1]}, and {authors[2]}.", ""]
-        else:
-            first_three = f"{authors[0]}, {authors[1]}, {authors[2]}"
-            remaining = len(authors) - 3
-            lines += [f"By {first_three}, and {remaining} more author{'s' if remaining != 1 else ''}.", ""]
-    lines += ["Narration by un. archive.org.", ""]
+        lines += [_format_authors(authors), ""]
+    if date:
+        lines += [f"Published on {date}.", ""]
     return "\n".join(lines)
 
 
 def _build_transcript_footer(title: str, date: str, authors: list[str]) -> str:
     """Build the spoken footer appended to the transcript."""
-    info = _format_paper_info(title, date, authors)
-    return (
-        f"\n\n"
-        f"Thanks for listening. "
-        f"This has been an audio narration of {info} "
-        f"This paper was narrated by un. archive dot org, developed by Sean Ahrens & Claude. "
-        f"un. archive.org lets you listen to archive papers for free. "
-        f"Horribly spelled, it's U; N; A; R; X; I; V; dot org."
-    )
+    parts = [f"Thanks for listening. This has been an audio narration of {_ensure_period(title)}"]
+    if authors:
+        parts.append(_format_authors(authors))
+    if date:
+        parts.append(f"Published on {date}.")
+    parts.append("Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.")
+    return "\n\n" + " ".join(parts)
 
 
 def _safe_filename_part(text: str, max_len: int = 100) -> str:

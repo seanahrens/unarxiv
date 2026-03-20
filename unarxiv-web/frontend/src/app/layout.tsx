@@ -90,7 +90,7 @@ export default function RootLayout({
         </header>
         <main className="max-w-5xl mx-auto px-6 py-4">{children}</main>
         {/* Spacer so fixed player bar doesn't obscure content */}
-        <div className="h-28 md:h-16" aria-hidden />
+        <div className="h-20 md:h-20" aria-hidden />
         <a
           href="/admin"
           className="hidden md:flex fixed bottom-20 right-4 z-40 w-9 h-9 items-center justify-center rounded-full bg-stone-200/80 hover:bg-stone-300 text-stone-500 hover:text-stone-700 transition-all shadow-sm backdrop-blur-sm no-underline"

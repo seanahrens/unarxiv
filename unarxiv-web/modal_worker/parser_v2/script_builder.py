@@ -40,25 +40,22 @@ def build_script(
 def _build_header(title: str, date: str, authors: list[str]) -> str:
     """Build the spoken header prepended to the transcript."""
     lines = [_ensure_period(title), ""]
-    if date:
-        lines += [f"Published {date}.", ""]
     if authors:
         lines += [_format_authors(authors), ""]
-    lines += ["Narration by un. archive.org.", ""]
+    if date:
+        lines += [f"Published on {date}.", ""]
     return "\n".join(lines)
 
 
 def _build_footer(title: str, date: str, authors: list[str]) -> str:
     """Build the spoken footer appended to the transcript."""
-    info = _format_paper_info(title, date, authors)
-    return (
-        f"\n\n"
-        f"Thanks for listening. "
-        f"This has been an audio narration of {info} "
-        f"This paper was narrated by un. archive dot org, developed by Sean Ahrens & Claude. "
-        f"un. archive.org lets you listen to archive papers for free. "
-        f"Horribly spelled, it's U; N; A; R; X; I; V; dot org."
-    )
+    parts = [f"Thanks for listening. This has been an audio narration of {_ensure_period(title)}"]
+    if authors:
+        parts.append(_format_authors(authors))
+    if date:
+        parts.append(f"Published on {date}.")
+    parts.append("Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.")
+    return "\n\n" + " ".join(parts)
 
 
 def _ensure_period(s: str) -> str:
