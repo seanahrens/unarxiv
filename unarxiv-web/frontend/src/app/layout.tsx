@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import SiteName from "@/components/SiteName";
 import LogoIcon from "@/components/LogoIcon";
+import AboutNavButton from "@/components/AboutNavButton";
 import { ACTIVE_THEME } from "@/lib/theme-config";
 
 const quicksand = Quicksand({
@@ -77,13 +78,7 @@ export default function RootLayout({
             <div className="flex-1 md:hidden" />
             {/* Right: about + playlist */}
             <div className="flex items-center gap-3 shrink-0">
-              <Link
-                href="/about"
-                className="w-6 h-6 flex items-center justify-center rounded-full bg-stone-500 text-white text-sm font-bold leading-none hover:bg-stone-600 transition-colors no-underline"
-                title="About"
-              >
-                i
-              </Link>
+              <AboutNavButton />
               <PlaylistNavButton />
             </div>
           </div>
