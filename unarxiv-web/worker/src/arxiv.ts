@@ -1,6 +1,7 @@
 /**
  * ArXiv URL parsing and metadata scraping.
  */
+import { parseSearchQuery, toArxivQuery } from "./search";
 
 /** Extract an arXiv ID, supporting both new format (YYMM.NNNNN) and old format (category/YYMMNNN).
  *  Strips any version suffix (e.g. v1, v12). */
@@ -158,7 +159,7 @@ export async function searchArxiv(
   maxResults: number
 ): Promise<ArxivSearchResponse> {
   const params = new URLSearchParams({
-    search_query: `all:${query}`,
+    search_query: toArxivQuery(parseSearchQuery(query)),
     start: String(start),
     max_results: String(maxResults),
     sortBy: "relevance",

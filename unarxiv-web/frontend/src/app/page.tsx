@@ -267,7 +267,7 @@ function HomePageContent() {
             <>
               <div className="flex items-center justify-between mt-4 mb-4">
                 <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wider">
-                  {`Results for "${searchQuery}"`}
+                  {`Results for ${searchQuery}`}
                 </h2>
                 {searchTotalPages > 1 && (
                   <Paginator

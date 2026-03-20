@@ -2,6 +2,7 @@
  * Database queries for D1.
  */
 import type { Paper, PaperStatus, List, ListItem } from "./types";
+import { parseSearchQuery, toFtsQuery } from "./search";
 
 /** Get a paper by arXiv ID. */
 export async function getPaper(db: D1Database, id: string): Promise<Paper | null> {
@@ -126,13 +127,7 @@ export async function searchPapers(
   limit: number = 20,
   offset: number = 0
 ): Promise<Paper[]> {
-  // Sanitize FTS query: escape special chars, add prefix matching
-  const sanitized = query
-    .replace(/['"]/g, "")
-    .split(/\s+/)
-    .filter((w) => w.length > 0)
-    .map((w) => `"${w}"*`)
-    .join(" ");
+  const sanitized = toFtsQuery(parseSearchQuery(query));
 
   if (!sanitized) return [];
 
