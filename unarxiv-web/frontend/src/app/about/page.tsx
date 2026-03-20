@@ -122,9 +122,16 @@ export default function AboutPage() {
               which is how we can offer unlimited narrations at no cost.
             </p>
             <p>
-              We&apos;d love to offer a bring-your-own-API-key option for premium voice models.
-              If that&apos;s something you&apos;d use, drop us a line &mdash; the more interest we hear,
-              the sooner it&apos;ll happen.
+              Beyond the voice itself, converting a PDF into a script formatted for speech is a non-trivial task.
+              Academic papers are full of equations, tables, figures, and formatting that don&apos;t translate
+              cleanly to spoken word. We handle this conversion programmatically to keep the service free &mdash;
+              which means some errors are inevitable.
+            </p>
+            <p>
+              An LLM-based pipeline paired with a premium voice model could address both challenges &mdash;
+              smarter script conversion and better synthesis &mdash; but it would mean running the service at a cost.
+              We&apos;d love to offer a bring-your-own-API-key option for this. If that&apos;s something you&apos;d
+              use, drop us a line &mdash; the more interest we hear, the sooner it&apos;ll happen.
             </p>
             <p>
               In the meantime, the single best way to improve narration quality for a specific paper is

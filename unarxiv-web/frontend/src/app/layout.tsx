@@ -5,7 +5,7 @@ import Link from "next/link";
 import SiteName from "@/components/SiteName";
 import LogoIcon from "@/components/LogoIcon";
 import AboutNavButton from "@/components/AboutNavButton";
-import { ACTIVE_THEME } from "@/lib/theme-config";
+import { ACTIVE_THEME, getThemeMeta } from "@/lib/theme-config";
 
 const quicksand = Quicksand({
   subsets: ["latin"],
@@ -27,19 +27,21 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { NavigationHistoryProvider } from "@/contexts/NavigationHistoryContext";
 
+const themeMeta = getThemeMeta();
+
 export const metadata: Metadata = {
   title: "unarXiv — Listen to Research Papers",
   description:
     "Browse and listen to narrated research papers from arXiv. Submit any paper for audio narration.",
   icons: {
-    icon: "/favicon.svg",
-    apple: "/apple-touch-icon.png",
+    icon: `${themeMeta.iconDir}/favicon.svg`,
+    apple: `${themeMeta.iconDir}/apple-touch-icon.png`,
   },
-  manifest: "/manifest.json",
+  manifest: `${themeMeta.iconDir}/manifest.json`,
   appleWebApp: {
     capable: true,
     title: "unarXiv",
-    statusBarStyle: "default",
+    statusBarStyle: themeMeta.statusBarStyle,
   },
 };
 

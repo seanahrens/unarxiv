@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+  <rect width="24" height="24" fill="#000a00"/>
+  <!-- Left bracket -->
+  <rect x="2" y="4" width="2" height="16" fill="#00ff00"/>
+  <rect x="2" y="4" width="5" height="2" fill="#00ff00"/>
+  <rect x="2" y="18" width="5" height="2" fill="#00ff00"/>
+  <!-- Right bracket -->
+  <rect x="20" y="4" width="2" height="16" fill="#00ff00"/>
+  <rect x="17" y="4" width="5" height="2" fill="#00ff00"/>
+  <rect x="17" y="18" width="5" height="2" fill="#00ff00"/>
+  <!-- Up arrow -->
+  <rect x="11" y="5" width="2" height="12" fill="#00ff00"/>
+  <rect x="9" y="7" width="2" height="2" fill="#00ff00"/>
+  <rect x="7" y="9" width="2" height="2" fill="#00ff00"/>
+  <rect x="13" y="7" width="2" height="2" fill="#00ff00"/>
+  <rect x="15" y="9" width="2" height="2" fill="#00ff00"/>
+</svg>

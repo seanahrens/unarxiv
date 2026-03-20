@@ -1,0 +1,13 @@
+{
+  "name": "unarXiv — Listen to Research Papers",
+  "short_name": "unarXiv",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000a00",
+  "theme_color": "#000a00",
+  "icons": [
+    { "src": "/themes/retro-terminal/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/themes/retro-terminal/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/themes/retro-terminal/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ]
+}
