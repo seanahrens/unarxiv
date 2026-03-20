@@ -6,12 +6,9 @@ import {
   getMyListTokens,
   getTokenForList,
   removeListToken,
-  saveListToken,
-  createListApi,
   fetchMyLists,
   deleteListApi,
   type ListMeta,
-  DEFAULT_COLLECTION_NAME,
 } from "@/lib/lists";
 import { MyPapersSectionSkeleton } from "@/components/Skeleton";
 
@@ -54,17 +51,6 @@ export default function MyCollectionsPage() {
   }, []);
 
   useEffect(() => { loadLists(); }, [loadLists]);
-
-  const handleCreateList = async () => {
-    setListError("");
-    try {
-      const { list, owner_token } = await createListApi(DEFAULT_COLLECTION_NAME, "");
-      saveListToken(list.id, owner_token, list.name);
-      router.push(`/l?id=${list.id}&edit=1`);
-    } catch (e: any) {
-      setListError(e.message || "Failed to create collection");
-    }
-  };
 
   const handleDeleteList = async (listId: string) => {
     const token = getTokenForList(listId);
@@ -115,16 +101,7 @@ export default function MyCollectionsPage() {
           </svg>
           My Collections
         </h1>
-        <button
-          onClick={handleCreateList}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-stone-300 text-stone-600 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 rounded-lg transition-colors"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Collection
-        </button>
+{/* New Collection button removed — collections are created from paper action menus */}
       </div>
 
       {listError && (
@@ -141,7 +118,7 @@ export default function MyCollectionsPage() {
             <path d="M21 4h-7l-2-2H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
           </svg>
           <p className="text-stone-500 text-sm">No collections yet.</p>
-          <p className="text-stone-400 text-xs mt-1">Create one to organize your papers.</p>
+          <p className="text-stone-400 text-xs mt-1">Create your first from a paper&apos;s play button submenu.</p>
         </div>
       ) : (
         <div className="border border-stone-300 rounded-xl overflow-hidden divide-y divide-stone-200">
@@ -209,7 +186,7 @@ export default function MyCollectionsPage() {
       <div className="flex justify-center mt-8">
         <button
           onClick={() => setShowSyncModal(true)}
-          className="group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors text-stone-400 border-stone-200 bg-surface hover:text-stone-600 hover:border-stone-300"
+          className="group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors text-stone-600 border-stone-300 bg-surface hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50"
         >
           {/* Laptop icon on mobile */}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:hidden">
