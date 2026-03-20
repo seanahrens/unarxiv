@@ -122,17 +122,27 @@ input[type="range"]::-moz-range-thumb {
   background-size: 200% 100%;
   animation: progress-flow 1.8s linear infinite;
 }
-/* Scan line animation for processing paper icons */
-@keyframes scan-line {
-  0% { top: 0%; }
-  50% { top: 85%; }
-  100% { top: 0%; }
+/* Scan erase animation for processing paper icons —
+   a transparent horizontal strip moves up and down through the icon */
+@keyframes scan-erase {
+  0% { -webkit-mask-position: 0 -34px; mask-position: 0 -34px; }
+  50% { -webkit-mask-position: 0 34px; mask-position: 0 34px; }
+  100% { -webkit-mask-position: 0 -34px; mask-position: 0 -34px; }
 }
-.scan-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, rgb(168 162 158 / 0.8) 30%, rgb(120 113 108) 50%, rgb(168 162 158 / 0.8) 70%, transparent 100%);
-  animation: scan-line 2s ease-in-out infinite;
+.scan-erase {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%, black calc(50% - 3px),
+    transparent calc(50% - 3px), transparent calc(50% + 3px),
+    black calc(50% + 3px), black 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%, black calc(50% - 3px),
+    transparent calc(50% - 3px), transparent calc(50% + 3px),
+    black calc(50% + 3px), black 100%
+  );
+  -webkit-mask-size: 100% 200%;
+  mask-size: 100% 200%;
+  animation: scan-erase 2s ease-in-out infinite;
 }

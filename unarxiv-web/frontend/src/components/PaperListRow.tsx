@@ -53,9 +53,8 @@ export default function PaperListRow({
     paper.status === "narrated" ? (
       <AudioFileIcon size={28} />
     ) : inProgress ? (
-      <div className="relative">
+      <div className="scan-erase">
         <AudioFileIcon size={28} />
-        <div className="scan-line" />
       </div>
     ) : (
       <FileIcon size={28} />

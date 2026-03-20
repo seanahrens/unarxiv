@@ -744,7 +744,7 @@ export default function AdminPage() {
                   </td>
                   <td className="px-1 py-1.5 text-center">
                     <span className="text-stone-400">
-                      {paper.status === "narrated" ? <AudioFileIcon size={18} /> : paper.status === "narrating" ? <span className="relative inline-block"><AudioFileIcon size={18} /><span className="scan-line" /></span> : <FileIcon size={18} />}
+                      {paper.status === "narrated" ? <AudioFileIcon size={18} /> : paper.status === "narrating" ? <span className="inline-block scan-erase"><AudioFileIcon size={18} /></span> : <FileIcon size={18} />}
                     </span>
                   </td>
                   <td className="px-1 py-1.5 text-right">
