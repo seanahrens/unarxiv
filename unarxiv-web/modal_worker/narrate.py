@@ -117,7 +117,7 @@ def _use_legacy_parser() -> bool:
     timeout=3600,  # 1 hour max per paper
     retries=0,
 )
-def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_title: str = "", paper_author: str = "", mode: str = "full", source_priority: str = "latex"):
+def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_title: str = "", paper_author: str = "", paper_date: str = "", mode: str = "full", source_priority: str = "latex"):
     """Download, process, and narrate an arXiv paper.
 
     mode: "full" (default) = regenerate script + audio
@@ -192,7 +192,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                     source_priority=source_priority,
                     fallback_title=paper_title,
                     fallback_authors=authors_list,
-                    fallback_date="",  # arXiv date inserted by worker at query time
+                    fallback_date=paper_date,
                     pdf_path=pdf_path,
                 )
 
@@ -206,7 +206,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 return legacy_parser.build_speech_text_from_pdf(
                     pdf_path,
                     title=paper_title,
-                    date="",
+                    date=paper_date,
                     authors=authors_list,
                 )
 
@@ -484,6 +484,7 @@ def trigger_narration(request: dict):
     callback_url = request.get("callback_url")
     paper_title = request.get("paper_title", "")
     paper_author = request.get("paper_author", "")
+    paper_date = request.get("paper_date", "")
     mode = request.get("mode", "full")
     source_priority = request.get("source_priority", "latex")
     if source_priority not in ("latex", "pdf"):
@@ -501,6 +502,6 @@ def trigger_narration(request: dict):
         raise HTTPException(status_code=400, detail="Invalid callback_url")
 
     # Spawn the narration as an async job
-    narrate_paper.spawn(arxiv_id, tex_source_url or "", callback_url, paper_title, paper_author, mode, source_priority)
+    narrate_paper.spawn(arxiv_id, tex_source_url or "", callback_url, paper_title, paper_author, paper_date, mode, source_priority)
 
     return {"status": "dispatched", "arxiv_id": arxiv_id, "mode": mode, "source_priority": source_priority}
