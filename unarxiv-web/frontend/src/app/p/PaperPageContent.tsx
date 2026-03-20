@@ -324,7 +324,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   // Lazy-fetch transcript when switching to script view
   useEffect(() => {
     if (view !== "script" || script !== null || !paper) return;
-    const canShow = ["narrating", "narrated"].includes(paper.status);
+    const canShow = paper.status === "narrated";
     if (!canShow) return;
     setScriptLoading(true);
     fetch(transcriptUrl(paper.id))
@@ -447,7 +447,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         )}
 
         {/* View toggle — only when transcript is available */}
-        {(paper.status === "narrating" || paper.status === "narrated") && (
+        {paper.status === "narrated" && (
           <div className="mt-1">
             <button
               onClick={() => setView(view === "abstract" ? "script" : "abstract")}
