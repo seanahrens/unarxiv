@@ -122,7 +122,7 @@ export default function PaperActionsMenu({
   };
 
   return (
-    <div className="absolute top-full right-0 mt-1 bg-surface border border-stone-300 rounded-xl shadow-lg z-50 min-w-[180px] py-1">
+    <div className="absolute top-full right-0 mt-1 bg-surface border border-stone-300 rounded-xl shadow-lg z-[110] min-w-[180px] py-1">
       {/* Play Paper — only when showPlayItem AND paper has audio */}
       {showPlayItem && isComplete && (
         <>
