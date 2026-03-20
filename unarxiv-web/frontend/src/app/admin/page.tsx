@@ -229,6 +229,16 @@ const externalLinks = [
     ),
   },
   {
+    label: "PostHog Analytics",
+    url: "https://us.posthog.com/project/350363/home",
+    description: "User behavior, sessions & funnels",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18" /><path d="M7 16l4-8 4 4 4-6" />
+      </svg>
+    ),
+  },
+  {
     label: "DNS",
     url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/aixdemocracy.fyi/dns/records",
     description: "DNS records for papers.aixdemocracy.fyi",
