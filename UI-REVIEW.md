@@ -1,84 +1,119 @@
-# UI Review — 2026-03-19
+# UI Review — 2026-03-20
 
-## Visual Consistency Issues Found and Fixed
+## Summary
 
-### 1. PaperListRow active state used non-stone color (`bg-blue-100`)
-- **File**: `src/components/PaperListRow.tsx`
-- **Issue**: The row highlight for the currently-playing paper used `bg-blue-100`, which is outside the stone-only color palette used everywhere else in the app.
-- **Fix**: Changed to `bg-stone-200`, consistent with the hover state (`bg-stone-100`) and one step above it for clear active indication.
+Automated daily UX/UI review. Audited all pages visually (via dev server with retro-terminal theme, connecting to production API) and reviewed all component source files. One file changed: `src/components/Skeleton.tsx`.
 
-### 2. BrowseLayout collection loading showed plain text instead of skeleton cards
-- **File**: `src/components/BrowseLayout.tsx`
-- **Issue**: When a collection's papers were loading, the content area displayed a centered `"Loading..."` text string — the only place in the entire app that did this. All other loading states use `PaperCardSkeleton` components.
-- **Fix**: Replaced the text with 3 `PaperCardSkeleton` cards matching every other loading state in the app.
+---
 
-### 3. PaperCardSkeleton border lighter than real PaperCard border
-- **File**: `src/components/Skeleton.tsx`
-- **Issue**: `PaperCardSkeleton` used `border-stone-200` while the real `PaperCard` uses `border-stone-300`. This caused a visible border weight jump when the skeleton resolved to the real card.
-- **Fix**: Changed `PaperCardSkeleton` border to `border-stone-300` to match exactly.
+## Visual Consistency Audit
 
-### 4. SearchBar focus ring inconsistent with all other form inputs
-- **File**: `src/components/SearchBar.tsx`
-- **Issue**: The main search input used `focus:ring-stone-500` while every other input across the codebase (`CreateCollectionModal`, `PaperPageContent` rating textarea, admin search) used `focus:ring-stone-400`.
-- **Fix**: Standardized to `focus:ring-stone-400`.
+**Spacing / Typography / Colors:** Consistent throughout. Stone palette applied uniformly. The active theme in development (and production) is `retro-terminal` — all stone color tokens are remapped to green phosphor values in `themes.css`. No hardcoded hex values in component files; all colors go through Tailwind tokens.
 
-## Skeleton Audit Results
+**One exception found (low priority, not changed):** `globals.css` progress-flow animation uses raw `rgb(59 130 246)` / `rgb(99 102 241)` values (blue/indigo) for the narration progress bar. This is intentional — the "processing" bar intentionally differs from the stone palette to signal activity. Left as-is.
 
-All skeleton components were reviewed against their corresponding rendered layouts:
+**Interactive elements:** Hover/focus states present on all interactive elements. Back buttons, pills, and menu items all have `transition-colors` and appropriate hover states.
 
-| Skeleton | Matches Layout | Notes |
-|---|---|---|
-| `PaperCardSkeleton` | Yes (after fix) | Border corrected from stone-200 to stone-300 |
-| `PaperListRowSkeleton` | Yes | Matches DraggablePaperList rows accurately |
-| `CollectionSidebarSkeleton` | Yes | Matches sidebar items in BrowseLayout |
-| `PaperDetailSkeleton` | Yes | Matches PaperPageContent layout accurately |
-| `ScriptPageSkeleton` | Yes | Matches ScriptPageContent layout |
-| `MyPapersSectionSkeleton` | Yes | Matches my-papers section rows |
-| `CollectionPageSkeleton` | Yes | Matches collection page header + card grid |
-| `HomePageSkeleton` (Suspense fallback) | Yes | Correctly represents full-page pre-hydration state |
+**Cards and containers:** Consistent `rounded-xl border border-stone-300 p-5 bg-surface` on PaperCard. Collection list rows use `border border-stone-300 rounded-xl overflow-hidden divide-y divide-stone-200`.
 
-Note: `HomePageSkeleton` (for Suspense fallback) and the inline `loading` state inside `HomePageContent` serve different purposes and are intentionally separate — the Suspense fallback represents the full page before any client JS runs, while the inline state covers post-hydration data loading with the real header already rendered.
+**Icons:** Entirely custom inline SVGs — Lucide React is not actually used in the codebase despite being listed as available. This is a consistent (if verbose) pattern; not changed per the "progressive" principle.
 
-## New Shared Components Created
+**Responsive behavior:** Two-column desktop / pill mobile layout in BrowseLayout is consistent with other pages.
 
-None. The existing shared component structure is adequate. No pattern appears 3+ times with near-identical markup that is not already shared.
+---
 
-## Design Tokens Observed and Confirmed Consistent
+## Skeleton Audit
 
-- Stone palette only (no zinc, neutral, gray) — emerald used only for success/CTA accents
-- Focus rings: `focus:ring-stone-400` (standardized in this review)
-- Card borders: `border-stone-300` (aligned in this review)
-- Active row highlight: `bg-stone-200` (fixed from `bg-blue-100`)
-- Hover row highlight: `bg-stone-100`
-- Card shadow: `shadow-sm`, hover: `shadow-lg`
-- Border radius for cards: `rounded-xl`
-- Border radius for modals: `rounded-2xl`
-- Border radius for pill/tag buttons: `rounded-full`
-- Custom text sizes: `text-2xs` (11px) and `text-3xs` (10px) via `@theme`
+### Pages and Their Skeletons
 
-## Accessibility
+| Page | Skeleton | Status Before | Status After |
+|------|----------|---------------|--------------|
+| `/` (homepage) | `HomePageSkeleton` (inline) + `BrowseLayoutSkeleton` | Accurate | Accurate |
+| `/p?id=...` (paper detail) | `PaperDetailSkeleton` | Missing action button | Fixed |
+| `/s?id=...` (script viewer) | `ScriptPageSkeleton` | Accurate | Accurate |
+| `/my-papers` (collections) | `MyPapersSectionSkeleton` | Missing border wrapper | Fixed |
+| `/l?id=...` (collection view) | `CollectionPageSkeleton` | Stale — wrong structure | Fixed |
+| `/about` | No skeleton (not needed) | n/a | n/a |
+| `/admin` | No skeleton | n/a | n/a |
 
-No new issues found. Existing coverage:
-- All icon-only buttons have `title` attributes
-- `role="switch"` and `aria-checked` on toggle in `CreateCollectionModal`
-- `aria-label` on Paginator prev/next buttons
-- `lang="en"` on `<html>` element
-- Modal backdrops dismiss on click via `useClickOutside`
+### Skeletons Fixed
 
-## Remaining Issues Needing Human Input
+#### 1. `PaperDetailSkeleton` (`/p` page)
 
-1. **CLAUDE.md deploy name is stale**: The `CLAUDE.md` says deploy with `--project-name=texreader-frontend` but the actual Cloudflare Pages project is now named `unarxiv-frontend`. CLAUDE.md should be updated.
+**Problem:** The actual paper detail page renders title and `PaperActionButton` side-by-side on desktop (`flex flex-col md:flex-row md:items-start gap-3`). The skeleton only showed stacked title lines — no action button placeholder on the right side.
 
-2. **`my-papers/page.tsx` and `l/page.tsx` use `alert()` for error messages**: Both files use `window.alert()` for list create/delete errors. This is inconsistent with the inline error pattern used elsewhere, but changing it requires a toast/notification system.
+**Fix:** Wrapped title lines in `flex-1 min-w-0` and added a `shrink-0 rounded-xl w-[100px] h-[36px]` skeleton block to the right, matching the Narrate/Play button's approximate size.
 
-3. **`PaperPageContent.tsx` uses `confirm()` for read-status warning**: The "add to playlist when already listened" flow uses a browser `confirm()` dialog. CLAUDE.md states no confirm dialogs on individual actions, but this may be intentional given the destructive read-status consequence.
+#### 2. `MyPapersSectionSkeleton` (`/my-papers` page)
 
-4. **`about/page.tsx` uses `rounded-2xl border-stone-200`** for its cards vs the standard `rounded-xl border-stone-300` — may be intentional for a softer look on a static content page.
+**Problem:** The actual loaded collections list wraps rows in `border border-stone-300 rounded-xl overflow-hidden`. The skeleton used bare `divide-y divide-stone-200` with no outer border/radius, causing a visible layout jump when content loaded.
+
+**Fix:** Added `border border-stone-300 rounded-xl overflow-hidden` to the skeleton wrapper.
+
+#### 3. `CollectionPageSkeleton` (`/l` page)
+
+**Problem:** The public collection list view renders: `HeaderSearchBar → h-6 gap → BrowseLayout` (which itself has a two-column desktop layout with sidebar and paper grid, plus horizontal pills on mobile). The skeleton was a simple `space-y-4` with a title, description, and 3 plain paper cards — structurally wrong on every dimension: missing the search bar, missing the sidebar, missing the pill row.
+
+**Fix:** Replaced with a skeleton that mirrors the full public view structure:
+- Search bar placeholder (`max-w-2xl mx-auto ... h-12 rounded-xl`)
+- `h-6` spacer
+- Mobile: 3 pill skeletons in a flex row
+- Desktop: two-column layout with `w-56` sidebar (label + 5 nav item rows) and `flex-1` papers grid (section label + 3 `PaperCardSkeleton`)
+
+---
+
+## Component Inventory
+
+**Patterns with 3+ usages that could be shared components:**
+
+| Pattern | Usages | Recommendation |
+|---------|--------|----------------|
+| Back button (`rounded-full px-3 py-1 border border-stone-300`) | 3+ pages | Could be a shared component, but each has custom nav logic — leave inline |
+| Inline folder/globe/edit SVG icons | 6+ files | Consider Lucide React — large scope, skip for now |
+| Input focus ring (`focus:outline-none focus:ring-2 focus:ring-stone-300/400`) | 5+ inputs | Minor drift in ring color — see Remaining Issues |
+
+---
+
+## Design Tokens
+
+Implicit tokens in use:
+
+| Token | Values | Consistency |
+|-------|--------|-------------|
+| Border radius — cards | `rounded-xl` | Consistent |
+| Border radius — buttons | `rounded-lg`, `rounded-full`, `rounded-xl` | Intentional by context |
+| Card border | `border border-stone-300` | Consistent |
+| Section divider | `divide-y divide-stone-200` | Consistent |
+| Transition | `transition-colors` | Consistent on interactive elements |
+| Muted text | `text-stone-400` (decorative), `text-stone-500` (secondary) | Consistent |
+| Surface bg | `bg-surface` (CSS var) | Consistent |
+
+---
+
+## Remaining Issues (needs human input)
+
+1. **Input style drift** — three distinct input border styles exist:
+   - Rating modal textarea: `border border-stone-300 focus:ring-stone-400`
+   - Collection import textarea: `border-2 border-stone-400 focus:ring-stone-300 bg-stone-100`
+   - Edit mode fields: borderless (`bg-transparent outline-none`)
+   The `border-2` in the import textarea is visually heavier. Worth unifying if a design decision is made.
+
+2. **Inline SVGs vs Lucide** — the codebase doesn't use Lucide React despite it being available. Switching would require replacing ~40+ custom SVGs. Recommend making this a deliberate choice.
+
+3. **`BrowseLayoutSkeleton` duplication** — `BrowseLayoutSkeleton` lives in `BrowseLayout.tsx` (co-located). `CollectionPageSkeleton` now mirrors its structure to avoid a circular dependency. A future refactor could move `BrowseLayoutSkeleton` into `Skeleton.tsx` and have `BrowseLayout.tsx` import it from there.
+
+---
+
+## Changes Made
+
+**File:** `unarxiv-web/frontend/src/components/Skeleton.tsx`
+**Commit:** `d9c6915` — "fix: update stale skeleton layouts to match current rendered pages"
+**Branch:** `design/ui-review-2026-03-20` → merged to `main`
+
+---
 
 ## Deploy Status
 
-- Branch: `design/ui-review-2026-03-19`
-- Merged to: `main`
-- Pushed to: `origin/main`
-- Build: passed (`next build` clean)
-- Deployed to: Cloudflare Pages (`unarxiv-frontend`) — https://cef8e630.unarxiv-frontend.pages.dev
+- Build: ✅ Passed (`npm run build`, all 10 routes, no TypeScript errors)
+- Push: ✅ `git push origin main`
+- Deploy: ✅ Cloudflare Pages (`unarxiv-frontend`) — deployment complete
