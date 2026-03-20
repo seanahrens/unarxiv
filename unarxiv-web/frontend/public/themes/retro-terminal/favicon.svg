@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-  <rect width="24" height="24" fill="#000a00"/>
   <!-- Left bracket -->
   <rect x="2" y="4" width="2" height="16" fill="#00ff00"/>
   <rect x="2" y="4" width="5" height="2" fill="#00ff00"/>
