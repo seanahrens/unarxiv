@@ -13,6 +13,7 @@ import {
 } from "@/lib/playlist";
 import { mergeBackendHistory } from "@/lib/readStatus";
 import { getPlaylistApi, getListenHistoryApi } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 interface PlaylistContextValue {
   playlist: PlaylistEntry[];
@@ -74,8 +75,10 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
   const addToPlaylist = useCallback((paperId: string, sourceRect?: DOMRect) => {
     addToStorage(paperId);
-    setPlaylist(loadPlaylist());
+    const updated = loadPlaylist();
+    setPlaylist(updated);
     triggerAddAnimation(sourceRect);
+    track("playlist_modified", { action: "add", arxiv_id: paperId, playlist_size: updated.length });
   }, [triggerAddAnimation]);
 
   const addOrMoveToTop = useCallback((paperId: string, sourceRect?: DOMRect) => {
@@ -94,13 +97,17 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       setRemoveAnimationTargetRect(targetRect);
       setTimeout(() => {
         removeFromStorage(paperId);
-        setPlaylist(loadPlaylist());
+        const updated = loadPlaylist();
+        setPlaylist(updated);
         setRemovingPaperId(null);
         setRemoveAnimationTargetRect(null);
+        track("playlist_modified", { action: "remove", arxiv_id: paperId, playlist_size: updated.length });
       }, 500);
     } else {
       removeFromStorage(paperId);
-      setPlaylist(loadPlaylist());
+      const updated = loadPlaylist();
+      setPlaylist(updated);
+      track("playlist_modified", { action: "remove", arxiv_id: paperId, playlist_size: updated.length });
     }
   }, []);
 
@@ -110,7 +117,9 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
   const reorderPlaylistAction = useCallback((orderedIds: string[]) => {
     reorderStorage(orderedIds);
-    setPlaylist(loadPlaylist());
+    const updated = loadPlaylist();
+    setPlaylist(updated);
+    track("playlist_modified", { action: "reorder", playlist_size: updated.length });
   }, []);
 
   return (

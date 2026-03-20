@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import { fetchRecentLists, type ListMeta } from "@/lib/lists";
 import { useBatchPaperPolling } from "@/hooks/usePaperPolling";
+import { track } from "@/lib/analytics";
 
 const PAGE_SIZE = 6;
 const MAX_PAGES = 10;
@@ -122,6 +123,7 @@ function HomePageContent() {
         try {
           const meta = await previewPaper(arxivParam);
           const paper = await submitPaper(meta.arxiv_url, meta);
+          track("paper_imported", { arxiv_id: paper.id, source: "url_paste" });
           router.push(`/p?id=${paper.id}`);
         } catch (e: any) {
           setPreviewError(e.message || "Could not fetch paper details");
@@ -162,8 +164,10 @@ function HomePageContent() {
               : { source: "arxiv" as const, result: r };
           });
 
-          setMergedResults([...dbResults, ...arxivResults]);
+          const allResults = [...dbResults, ...arxivResults];
+          setMergedResults(allResults);
           setTotalArxivResults(arxivData.total);
+          track("search", { query: qParam, result_count: allResults.length, has_arxiv_id: false });
         })
         .catch(console.error)
         .finally(() => setLoading(false));

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { getMyListTokens, addItemsToList, removeItemFromList, fetchList } from "@/lib/lists";
 import type { Paper } from "@/lib/api";
 import CreateCollectionModal from "./CreateCollectionModal";
+import { track } from "@/lib/analytics";
 
 interface ListSubmenuProps {
   paperId: string;
@@ -61,6 +62,7 @@ export default function ListSubmenu({ paperId, onClose, onEnsureImported }: List
     try {
       if (isAdded) {
         await removeItemFromList(listId, token, paperId);
+        track("collection_modified", { action: "remove_paper", list_id: listId });
         setAddedTo((prev) => {
           const next = new Set(prev);
           next.delete(listId);
@@ -75,6 +77,7 @@ export default function ListSubmenu({ paperId, onClose, onEnsureImported }: List
           if (!imported) return;
         }
         await addItemsToList(listId, token, [paperId]);
+        track("collection_modified", { action: "add_paper", list_id: listId });
         setAddedTo((prev) => {
           const next = new Set([...prev, listId]);
           if (membershipCache.current?.paperId === paperId) {

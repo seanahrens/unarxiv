@@ -6,6 +6,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, requestNarration, type Paper } from "@/lib/api";
 import ListSubmenu from "@/components/ListSubmenu";
+import { track } from "@/lib/analytics";
 
 function useDownload() {
   const [downloading, setDownloading] = useState(false);
@@ -216,7 +217,7 @@ export default function PaperActionsMenu({
           <div className={DIVIDER} />
           <button
             data-testid="download-audio"
-            onClick={() => { download(audioUrl(paper.id), mp3Filename); onClose(); }}
+            onClick={() => { track("download", { arxiv_id: paper.id, file_type: "mp3" }); download(audioUrl(paper.id), mp3Filename); onClose(); }}
             disabled={downloading}
             className={`${MENU_ITEM} disabled:opacity-50`}
           >
@@ -233,7 +234,7 @@ export default function PaperActionsMenu({
       <div className={DIVIDER} />
       <button
         data-testid="download-pdf"
-        onClick={() => { download(`https://arxiv.org/pdf/${paper.id}`, pdfFilename); onClose(); }}
+        onClick={() => { track("download", { arxiv_id: paper.id, file_type: "pdf" }); download(`https://arxiv.org/pdf/${paper.id}`, pdfFilename); onClose(); }}
         disabled={downloading}
         className={`${MENU_ITEM} disabled:opacity-50`}
       >
