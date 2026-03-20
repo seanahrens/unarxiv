@@ -40,8 +40,8 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 Cloudflare credentials are picked up automatically from the environment (wrangler OAuth login or `CLOUDFLARE_API_TOKEN`). No `.env` sourcing needed if already authenticated.
 
 ```bash
-# Worker API
-cd unarxiv-web/worker && npx wrangler deploy
+# Worker API (wrangler.toml has a placeholder DB ID; use production config)
+cd unarxiv-web/worker && npx wrangler deploy --config wrangler.production.toml
 
 # Frontend
 cd unarxiv-web/frontend && npm run build
