@@ -88,11 +88,12 @@ export default function NarrationProgress({
   if (!isNarrating) return null;
 
   const etaText = displayEta !== null && displayEta > 0 ? formatEta(displayEta) : null;
+  const statusText = etaText ? `Narrating (${etaText})` : "Narrating (estimating time...)";
 
   return (
     <div className="flex items-center gap-2">
       <span className="text-2xs text-stone-500 font-medium shrink-0">
-        Narrating{etaText ? ` (${etaText})` : ""}
+        {statusText}
       </span>
       <div className="flex-1 max-w-[100px] h-1.5 rounded-full bg-stone-100 overflow-hidden">
         <div className="h-full rounded-full progress-flow w-full" />

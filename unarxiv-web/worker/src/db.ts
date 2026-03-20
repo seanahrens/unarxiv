@@ -75,7 +75,7 @@ export async function updatePaperStatus(
   details?: {
     progress_detail?: string;
     error_message?: string;
-    eta_seconds?: number;
+    eta_seconds?: number | null;
     audio_r2_key?: string;
     audio_size_bytes?: number;
     duration_seconds?: number;
@@ -290,7 +290,7 @@ export async function resetPaperForReprocess(
   await db
     .prepare(
       `UPDATE papers SET title = ?, authors = ?, abstract = ?, published_date = ?,
-       status = 'narrating', eta_seconds = 55, progress_detail = NULL, error_message = NULL,
+       status = 'narrating', eta_seconds = NULL, progress_detail = NULL, error_message = NULL,
        audio_r2_key = NULL, audio_size_bytes = NULL, duration_seconds = NULL, completed_at = NULL,
        updated_at = datetime('now')
        WHERE id = ?`
@@ -680,7 +680,7 @@ export async function getRecentPublicLists(
  */
 export async function claimPaperForNarration(db: D1Database, id: string): Promise<boolean> {
   const result = await db
-    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = 55, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed')")
+    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = NULL, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed')")
     .bind(id)
     .run();
   return (result.meta?.changes ?? 0) > 0;

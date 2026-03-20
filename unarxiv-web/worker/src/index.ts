@@ -1166,7 +1166,7 @@ async function recoverStalePapers(env: Env): Promise<void> {
 
     for (const paper of stuck.results) {
       console.log(`Recovering stale paper: ${paper.id}`);
-      await updatePaperStatus(env.DB, paper.id, "narrating", { eta_seconds: 55 });
+      await updatePaperStatus(env.DB, paper.id, "narrating", { eta_seconds: null });
       await dispatchToModal(env, paper, baseUrl);
     }
   } catch (e: any) {

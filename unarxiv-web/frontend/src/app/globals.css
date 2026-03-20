@@ -122,27 +122,18 @@ input[type="range"]::-moz-range-thumb {
   background-size: 200% 100%;
   animation: progress-flow 1.8s linear infinite;
 }
-/* Scan erase animation for processing paper icons —
-   a transparent horizontal strip moves up and down through the icon */
-@keyframes scan-erase {
-  0% { -webkit-mask-position: 0 -34px; mask-position: 0 -34px; }
-  50% { -webkit-mask-position: 0 34px; mask-position: 0 34px; }
-  100% { -webkit-mask-position: 0 -34px; mask-position: 0 -34px; }
+/* CRT phosphor glow for processing paper icons —
+   icon pulses between dim and bright with a green phosphor bloom */
+@keyframes phosphor-glow {
+  0%, 100% {
+    opacity: 0.5;
+    filter: drop-shadow(0 0 0px currentColor);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+  }
 }
 .scan-erase {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    black 0%, black calc(50% - 3px),
-    transparent calc(50% - 3px), transparent calc(50% + 3px),
-    black calc(50% + 3px), black 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    black 0%, black calc(50% - 3px),
-    transparent calc(50% - 3px), transparent calc(50% + 3px),
-    black calc(50% + 3px), black 100%
-  );
-  -webkit-mask-size: 100% 200%;
-  mask-size: 100% 200%;
-  animation: scan-erase 2s ease-in-out infinite;
+  animation: phosphor-glow 2.5s ease-in-out infinite;
 }

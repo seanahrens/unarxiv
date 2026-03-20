@@ -175,7 +175,7 @@ export default function PaperActionButton({
 
   // --- NARRATING: Spinning sparkles + "Narrating" + ETA ---
   if (isProcessing) {
-    const etaText = displayEta !== null ? formatEtaShort(displayEta) : "";
+    const etaText = displayEta !== null ? formatEtaShort(displayEta) : "estimating...";
     const colors = compact ? compactColors : "text-stone-600 bg-stone-50 border-stone-300 hover:bg-stone-100";
     const chevronBorder = compact ? compactChevronBorder : "border-l-stone-300";
 
