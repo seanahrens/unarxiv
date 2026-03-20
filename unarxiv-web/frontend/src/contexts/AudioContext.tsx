@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback, ty
 import { markAsRead } from "@/lib/readStatus";
 import { removeFromPlaylist, getPlaylist } from "@/lib/playlist";
 import { fetchPaper, audioUrl, savePlaybackPositionApi, getPlaybackPositionsApi } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 function getStorageKey(paperId: string) {
   return `pos-${paperId}`;
@@ -96,6 +97,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playbackRateRef = useRef(playbackRate);
   playbackRateRef.current = playbackRate;
   const loadPaperRef = useRef<((id: string, title: string, src: string) => void) | null>(null);
+  const firedMilestonesRef = useRef<Set<25 | 50 | 75>>(new Set());
 
   // Save position for current paper (localStorage only)
   const savePosition = useCallback(() => {
@@ -127,15 +129,42 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (paperIdRef.current && audio.currentTime > 0 && Math.floor(audio.currentTime) % 3 === 0) {
         writeLocalPosition(paperIdRef.current, audio.currentTime);
       }
+      // Analytics: fire milestone events at 25/50/75%
+      if (paperIdRef.current && audio.duration > 0) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        for (const milestone of [25, 50, 75] as const) {
+          if (pct >= milestone && !firedMilestonesRef.current.has(milestone)) {
+            firedMilestonesRef.current.add(milestone);
+            track("playback_progress", {
+              arxiv_id: paperIdRef.current,
+              percent: milestone,
+              seconds_listened: Math.round(audio.currentTime),
+            });
+          }
+        }
+      }
     };
     const onDurationChange = () => setDuration(audio.duration || 0);
     const onPlay = () => {
       setIsPlaying(true);
       savePositionToBackend();
+      if (paperIdRef.current) {
+        track("playback_started", {
+          arxiv_id: paperIdRef.current,
+          duration_seconds: Math.round(audio.duration || 0),
+        });
+      }
     };
     const onPause = () => {
       setIsPlaying(false);
       savePositionToBackend();
+      if (paperIdRef.current) {
+        track("playback_paused", {
+          arxiv_id: paperIdRef.current,
+          position_seconds: Math.round(audio.currentTime),
+          duration_seconds: Math.round(audio.duration || 0),
+        });
+      }
     };
     const playNextInPlaylist = (afterId: string | null, skipCount: number = 0) => {
       if (skipCount > 20) { setIsPlaying(false); return; } // safety limit
@@ -176,6 +205,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const finishedId = paperIdRef.current;
 
       if (finishedId) {
+        track("playback_completed", {
+          arxiv_id: finishedId,
+          duration_seconds: Math.round(audio.duration || 0),
+          playback_rate: playbackRateRef.current,
+        });
         markAsRead(finishedId);
         removeFromPlaylist(finishedId);
       }
@@ -295,6 +329,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setSrc(newSrc);
     setCurrentTime(0);
     setDuration(0);
+    firedMilestonesRef.current = new Set();
 
     // Persist for refresh survival
     try { localStorage.setItem(CURRENT_PAPER_KEY, JSON.stringify({ paperId: newPaperId, paperTitle: title, src: newSrc })); } catch {}
@@ -365,6 +400,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setPlaybackRate(next);
     if (audio) audio.playbackRate = next;
     try { localStorage.setItem(RATE_KEY, String(next)); } catch {}
+    if (paperIdRef.current) {
+      track("playback_speed_changed", { speed: next, arxiv_id: paperIdRef.current });
+    }
   }, [playbackRate]);
 
   const stop = useCallback(() => {

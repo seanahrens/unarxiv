@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Paper, submitPaper, requestNarration, formatDurationShort, formatAuthors, formatPaperYear } from "@/lib/api";
 import { usePlaylist } from "@/contexts/PlaylistContext";
+import { track } from "@/lib/analytics";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
@@ -51,6 +52,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
     if (!needsImport) return paper;
     try {
       const imported = await submitPaper(arxivUrl!);
+      track("paper_imported", { arxiv_id: imported.id, source: "search" });
       onPaperChange?.(imported);
       return imported;
     } catch {

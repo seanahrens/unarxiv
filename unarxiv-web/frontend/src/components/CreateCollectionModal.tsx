@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { createListApi, saveListToken, addItemsToList } from "@/lib/lists";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import type { Paper } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 interface CreateCollectionModalProps {
   paperId: string;
@@ -47,6 +48,7 @@ export default function CreateCollectionModal({ paperId, onClose, sourceRect, on
       const { list, owner_token } = await createListApi(trimmed, "", publiclyListed);
       saveListToken(list.id, owner_token, list.name);
       await addItemsToList(list.id, owner_token, [paperId]);
+      track("collection_created", { is_public: publiclyListed, paper_count: 1 });
       onClose();
       // Delay then trigger fly-to animation
       setTimeout(() => {

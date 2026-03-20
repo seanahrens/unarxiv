@@ -26,6 +26,7 @@ import { Suspense } from "react";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { NavigationHistoryProvider } from "@/contexts/NavigationHistoryContext";
+import AnalyticsInit from "@/components/AnalyticsInit";
 
 const themeMeta = getThemeMeta();
 
@@ -53,6 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme={ACTIVE_THEME} className={`${quicksand.variable} ${ibmPlexMono.variable}`}>
       <body className="bg-stone-100 text-stone-900 min-h-screen antialiased">
+        <AnalyticsInit />
         <AudioProvider>
         <PlaylistProvider>
         <Suspense>

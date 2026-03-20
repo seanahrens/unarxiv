@@ -7,6 +7,7 @@ import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, type Paper, type Rating } from "@/lib/api";
 import { PaperDetailSkeleton } from "@/components/Skeleton";
+import { track } from "@/lib/analytics";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import PaperActionButton from "@/components/PaperActionButton";
@@ -134,6 +135,7 @@ function RatingModal({
     setError("");
     try {
       const saved = await submitRating(paperId, stars, comment);
+      track("rating_submitted", { arxiv_id: paperId, stars, has_comment: !!comment.trim() });
       onSaved(saved);
       onClose();
     } catch (e: any) {
@@ -283,10 +285,15 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       return;
     }
 
+    const from = searchParams.get("from");
+    const viewSource: "search" | "collection" | "direct" =
+      from === "home" ? "search" : from ? "collection" : "direct";
+
     fetchPaper(id)
       .then((p) => {
         setPaper(p);
         recordVisit(id);
+        track("paper_viewed", { arxiv_id: id, source: viewSource });
         setLoading(false);
       })
       .catch(async () => {
@@ -355,6 +362,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     setNarrationError("");
     // Optimistically show progress bar immediately (before any network calls)
     setPaper({ ...paper, status: "narrating", eta_seconds: 55 });
+    track("narration_requested", { arxiv_id: paper.id, is_retry: paper.status === "failed" });
     // Add to playlist with fly animation
     if (!isInPlaylist(paper.id)) {
       addToPlaylist(paper.id, rect);
