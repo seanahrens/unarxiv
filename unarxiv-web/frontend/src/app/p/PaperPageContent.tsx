@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, isInProgress, formatPaperDate, transcriptUrl, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, type Paper, type Rating } from "@/lib/api";
 import { PaperDetailSkeleton } from "@/components/Skeleton";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
@@ -324,7 +324,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   // Lazy-fetch transcript when switching to script view
   useEffect(() => {
     if (view !== "script" || script !== null || !paper) return;
-    const canShow = ["generating_audio", "complete"].includes(paper.status);
+    const canShow = ["narrating", "narrated"].includes(paper.status);
     if (!canShow) return;
     setScriptLoading(true);
     fetch(transcriptUrl(paper.id))
@@ -346,7 +346,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     setNarrationLoading(true);
     setNarrationError("");
     // Optimistically show progress bar immediately (before any network calls)
-    setPaper({ ...paper, status: "queued" });
+    setPaper({ ...paper, status: "narrating", eta_seconds: 55 });
     // Add to playlist with fly animation
     if (!isInPlaylist(paper.id)) {
       addToPlaylist(paper.id, rect);
@@ -397,10 +397,10 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     );
   }
 
-  const isReady = paper.status === "complete";
+  const isReady = paper.status === "narrated";
   const isFailed = paper.status === "failed";
-  const isNotRequested = paper.status === "not_requested";
-  const isProcessing = isInProgress(paper.status);
+  const isNotRequested = paper.status === "unnarrated";
+  const isProcessing = paper.status === "narrating";
   const authors: string[] = paper.authors || [];
 
   return (
@@ -447,7 +447,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         )}
 
         {/* View toggle — only when transcript is available */}
-        {(paper.status === "generating_audio" || paper.status === "complete") && (
+        {(paper.status === "narrating" || paper.status === "narrated") && (
           <div className="mt-1">
             <button
               onClick={() => setView(view === "abstract" ? "script" : "abstract")}

@@ -156,10 +156,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         const nextId = nextPaperId;
         fetchPaper(nextId)
           .then((paper) => {
-            if (paper.status === "complete" && loadPaperRef.current) {
+            if (paper.status === "narrated" && loadPaperRef.current) {
               loadPaperRef.current(nextId, paper.title, audioUrl(nextId));
             } else {
-              // Skip non-complete papers
+              // Skip non-narrated papers
               playNextInPlaylist(nextId, skipCount + 1);
             }
           })

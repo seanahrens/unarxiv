@@ -35,7 +35,6 @@ import {
   recordVisit,
   getSubmissionCount,
   recordSubmission,
-  getQueuedPapers,
   claimPaperForNarration,
   cleanup,
   getRating,
@@ -93,28 +92,10 @@ export default {
     }
 
     try {
-      const response = await handleRequest(request, env, url, path, method);
+      const response = await handleRequest(request, env, url, path, method, ctx);
       // Add CORS headers to all responses
       for (const [key, value] of Object.entries(corsHeaders)) {
         response.headers.set(key, value);
-      }
-
-      // Dispatch to Modal immediately after narrate/reprocess — no queue indirection
-      if (
-        method === "POST" &&
-        response.ok &&
-        (/\/api\/papers\/(.+?)\/(narrate|reprocess)$/.test(path))
-      ) {
-        const paperId = path.match(/\/api\/papers\/(.+?)\/(narrate|reprocess)$/)?.[1];
-        if (paperId) {
-          ctx.waitUntil(
-            getPaper(env.DB, paperId).then((paper) => {
-              if (paper && paper.status === "preparing") {
-                return dispatchToModal(env, paper, "https://api.unarxiv.org");
-              }
-            })
-          );
-        }
       }
 
       return response;
@@ -124,10 +105,10 @@ export default {
     }
   },
 
-  // Scheduled: cleanup old data + drain narration queue
+  // Scheduled: cleanup old data + recover stuck narrations
   async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
     await cleanup(env.DB);
-    await drainNarrationQueue(env);
+    await recoverStalePapers(env);
   },
 };
 
@@ -636,7 +617,8 @@ type RouteHandler = (
   request: Request,
   env: Env,
   url: URL,
-  matches: RegExpMatchArray
+  matches: RegExpMatchArray,
+  ctx?: ExecutionContext
 ) => Promise<Response>;
 
 interface RouteEntry {
@@ -813,12 +795,12 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     {
       method: "POST",
       pattern: /^\/api\/papers\/(.+?)\/narrate$/,
-      handler: (req, env, _url, m) => handleNarratePaper(req, env, m[1], baseUrl),
+      handler: (req, env, _url, m, ctx) => handleNarratePaper(req, env, m[1], baseUrl, ctx),
     },
     {
       method: "POST",
       pattern: /^\/api\/papers\/(.+?)\/reprocess$/,
-      handler: (req, env, _url, m) => handleReprocessPaper(req, env, m[1], baseUrl),
+      handler: (req, env, _url, m, ctx) => handleReprocessPaper(req, env, m[1], baseUrl, ctx),
     },
     {
       method: "DELETE",
@@ -888,7 +870,8 @@ async function handleRequest(
   env: Env,
   url: URL,
   path: string,
-  method: string
+  method: string,
+  ctx?: ExecutionContext
 ): Promise<Response> {
   const baseUrl = url.origin;
   const routes = buildRouteTable(baseUrl);
@@ -897,7 +880,7 @@ async function handleRequest(
     if (route.method !== null && route.method !== method) continue;
     const m = path.match(route.pattern);
     if (m) {
-      return route.handler(request, env, url, m);
+      return route.handler(request, env, url, m, ctx);
     }
   }
 
@@ -1045,7 +1028,7 @@ async function handleSubmitPaper(
     }
   }
 
-  // --- Insert paper with status "not_requested" ---
+  // --- Insert paper with status "unnarrated" ---
   const userToken = request.headers.get("X-User-Token") || undefined;
   const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
   const inserted = await insertPaper(env.DB, {
@@ -1075,14 +1058,15 @@ async function handleNarratePaper(
   request: Request,
   env: Env,
   id: string,
-  baseUrl: string
+  baseUrl: string,
+  ctx?: ExecutionContext
 ): Promise<Response> {
   const paper = await getPaper(env.DB, id);
   if (!paper) {
     return json({ error: "Paper not found" }, 404);
   }
 
-  // Atomic claim: only one caller wins the race from not_requested → preparing.
+  // Atomic claim: only one caller wins the race from unnarrated/failed → narrating.
   // Everyone else gets a success response with the current paper state (already in progress).
   const claimed = await claimPaperForNarration(env.DB, id);
 
@@ -1095,11 +1079,20 @@ async function handleNarratePaper(
       const count = await getSubmissionCount(env.DB, ip);
       if (count >= limit) {
         // Revert the claim — they're over limit
-        await updatePaperStatus(env.DB, id, "not_requested");
+        await updatePaperStatus(env.DB, id, "unnarrated");
         return json({ error: "Daily narration limit reached. Try again tomorrow." }, 429);
       }
     }
     await recordSubmission(env.DB, ip);
+
+    // Dispatch to Modal after responding
+    const dispatch = getPaper(env.DB, id).then((p) => {
+      if (p && p.status === "narrating") {
+        return dispatchToModal(env, p, "https://api.unarxiv.org");
+      }
+    });
+    if (ctx) ctx.waitUntil(dispatch);
+    else void dispatch;
   }
 
   // Return current state — whether we claimed it or someone else already did
@@ -1108,8 +1101,8 @@ async function handleNarratePaper(
 }
 
 /**
- * Dispatch a single paper to Modal for narration. Paper should already be in "preparing" status.
- * On failure, reverts to "queued" so the cron safety net can retry.
+ * Dispatch a single paper to Modal for narration. Paper should already be in "narrating" status.
+ * On failure, reverts to "unnarrated" so the user can retry.
  */
 async function dispatchToModal(
   env: Env,
@@ -1122,7 +1115,7 @@ async function dispatchToModal(
     console.log(`[local-dev] Skipping Modal dispatch for ${paper.id} (no MODAL_WEBHOOK_SECRET). ` +
       `Simulate completion: curl -X POST http://localhost:8787/api/webhooks/modal ` +
       `-H 'Content-Type: application/json' ` +
-      `-d '{"arxiv_id":"${paper.id}","status":"complete","duration_seconds":600}'`);
+      `-d '{"arxiv_id":"${paper.id}","status":"narrated","duration_seconds":600}'`);
     return;
   }
   if (!env.MODAL_FUNCTION_URL) return;
@@ -1146,39 +1139,36 @@ async function dispatchToModal(
     });
     if (!resp.ok) {
       console.error(`Modal returned ${resp.status} for ${paper.id}: ${await resp.text().catch(() => "")}`);
-      await updatePaperStatus(env.DB, paper.id, "queued");
+      await updatePaperStatus(env.DB, paper.id, "unnarrated");
     }
   } catch (e: any) {
     console.error(`Failed to dispatch ${paper.id} to Modal:`, e);
-    await updatePaperStatus(env.DB, paper.id, "queued");
+    await updatePaperStatus(env.DB, paper.id, "unnarrated");
   }
 }
 
 /**
- * Cron safety net: recover stale papers and dispatch any that are still queued.
- * This handles edge cases where the direct dispatch in the narrate handler failed.
+ * Cron safety net: re-dispatch papers stuck in "narrating" for over 20 minutes.
+ * This handles cases where Modal never called back (crash, timeout, network error).
  */
-async function drainNarrationQueue(env: Env): Promise<void> {
+async function recoverStalePapers(env: Env): Promise<void> {
   if (!env.MODAL_FUNCTION_URL) return;
 
-  const batchSize = parseInt(env.QUEUE_BATCH_SIZE || "3");
   const baseUrl = "https://api.unarxiv.org";
 
-  // Recover stale papers stuck in "preparing" for over 15 minutes (Modal never called back)
   try {
-    await env.DB.prepare(
-      `UPDATE papers SET status = 'queued' WHERE status = 'preparing'
-       AND updated_at < datetime('now', '-15 minutes')`
-    ).run();
+    const stuck = await env.DB.prepare(
+      `SELECT * FROM papers WHERE status = 'narrating'
+       AND updated_at < datetime('now', '-20 minutes')`
+    ).all<Paper>();
+
+    for (const paper of stuck.results) {
+      console.log(`Recovering stale paper: ${paper.id}`);
+      await updatePaperStatus(env.DB, paper.id, "narrating", { eta_seconds: 55 });
+      await dispatchToModal(env, paper, baseUrl);
+    }
   } catch (e: any) {
-    console.error("Failed to recover stale preparing papers:", e);
-  }
-
-  const papers = await getQueuedPapers(env.DB, batchSize);
-
-  for (const paper of papers) {
-    await updatePaperStatus(env.DB, paper.id, "preparing");
-    await dispatchToModal(env, paper, baseUrl);
+    console.error("Failed to recover stale papers:", e);
   }
 }
 
@@ -1195,7 +1185,8 @@ async function handleReprocessPaper(
   request: Request,
   env: Env,
   id: string,
-  baseUrl: string
+  baseUrl: string,
+  ctx?: ExecutionContext
 ): Promise<Response> {
   const authErr = requireAdmin(request, env);
   if (authErr) return authErr;
@@ -1320,7 +1311,7 @@ async function handleDeletePaper(
 
 async function handleGetAudio(env: Env, id: string): Promise<Response> {
   const paper = await getPaper(env.DB, id);
-  if (!paper || paper.status !== "complete" || !paper.audio_r2_key) {
+  if (!paper || paper.status !== "narrated" || !paper.audio_r2_key) {
     return json({ error: "Audio not available" }, 404);
   }
 
@@ -1345,7 +1336,7 @@ async function handleGetAudio(env: Env, id: string): Promise<Response> {
 
 async function handleGetTranscript(env: Env, id: string): Promise<Response> {
   const paper = await getPaper(env.DB, id);
-  if (!paper || !["generating_audio", "complete"].includes(paper.status)) {
+  if (!paper || !["narrating", "narrated"].includes(paper.status)) {
     return json({ error: "Transcript not available" }, 404);
   }
 
@@ -1394,6 +1385,7 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     status: string;
     progress_detail?: string;
     error_message?: string;
+    eta_seconds?: number;
     audio_r2_key?: string;
     audio_size_bytes?: number;
     duration_seconds?: number;
@@ -1403,7 +1395,7 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     return json({ error: "arxiv_id and status required" }, 400);
   }
 
-  const VALID_STATUSES: PaperStatus[] = ["not_requested", "queued", "preparing", "generating_audio", "complete", "failed"];
+  const VALID_STATUSES: PaperStatus[] = ["unnarrated", "narrating", "narrated", "failed"];
   if (!VALID_STATUSES.includes(body.status as PaperStatus)) {
     return json({ error: "Invalid status" }, 400);
   }
@@ -1416,6 +1408,7 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
   await updatePaperStatus(env.DB, body.arxiv_id, body.status as PaperStatus, {
     progress_detail: body.progress_detail,
     error_message: body.error_message,
+    eta_seconds: body.eta_seconds,
     audio_r2_key: body.audio_r2_key,
     audio_size_bytes: body.audio_size_bytes,
     duration_seconds: body.duration_seconds,

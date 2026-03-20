@@ -36,21 +36,21 @@ test.describe("Narration Generation", () => {
     await genBtn.click();
 
     // Step 4: Wait for status to change (button may disappear or show progress)
-    // The page shows a progress tracker when status changes from not_requested
+    // The page shows a progress tracker when status changes from unnarrated
     await expect(genBtn).not.toBeVisible({ timeout: 15000 });
 
-    // Step 5: Poll API until complete (up to 2.5 minutes)
+    // Step 5: Poll API until narrated (up to 2.5 minutes)
     let paper = null;
     const deadline = Date.now() + 150_000;
     while (Date.now() < deadline) {
       paper = await getPaper(TEST_ARXIV_ID);
-      if (paper?.status === "complete") break;
+      if (paper?.status === "narrated") break;
       if (paper?.status === "failed") {
         throw new Error(`Narration failed: ${paper.error_message}`);
       }
       await new Promise((r) => setTimeout(r, 5000)); // Poll every 5s
     }
-    expect(paper?.status).toBe("complete");
+    expect(paper?.status).toBe("narrated");
 
     // Step 6: Verify audio is accessible (use Range GET since Worker doesn't handle HEAD)
     const res = await fetch(`${API_BASE}/api/papers/${TEST_ARXIV_ID}/audio`, {

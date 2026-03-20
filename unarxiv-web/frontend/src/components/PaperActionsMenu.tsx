@@ -70,8 +70,8 @@ export default function PaperActionsMenu({
   const { addToPlaylist, addOrMoveToTop, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const { downloading, download } = useDownload();
 
-  const isComplete = paper.status === "complete";
-  const isNotRequested = paper.status === "not_requested";
+  const isComplete = paper.status === "narrated";
+  const isNotRequested = paper.status === "unnarrated";
   const inPlaylist = isInPlaylist(paper.id);
 
   const isGloballyActive = state.paperId === paper.id;

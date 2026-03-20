@@ -12,7 +12,6 @@ import {
   clearPaperRatings,
   formatDurationShort,
   isInProgress,
-  formatEtaShort,
   fetchAdminLists,
   deleteListAdmin,
   type Contributor,
@@ -29,17 +28,23 @@ const PAGE_SIZE = 30;
 
 type SortKey = "created_at" | "title" | "rating" | "status";
 type SortDir = "asc" | "desc";
-type StatusFilter = "all" | "complete" | "in_progress" | "failed" | "not_requested";
+type StatusFilter = "all" | "narrated" | "narrating" | "failed" | "unnarrated";
 
 function statusColor(status: string) {
-  if (status === "complete") return "bg-emerald-500";
+  if (status === "narrated") return "bg-emerald-500";
   if (status === "failed") return "bg-red-500";
-  if (status === "not_requested") return "bg-stone-300";
+  if (status === "unnarrated") return "bg-stone-300";
   return "bg-purple-400";
 }
 
 function durationLabel(paper: PaperWithRating): string | null {
-  if (isInProgress(paper.status)) return formatEtaShort(paper.progress_detail) || "...";
+  if (isInProgress(paper.status)) {
+    if (paper.eta_seconds != null && paper.eta_seconds > 0) {
+      if (paper.eta_seconds < 60) return `~${Math.round(paper.eta_seconds / 5) * 5}s`;
+      return `~${Math.floor(paper.eta_seconds / 60)}m`;
+    }
+    return "...";
+  }
   if (paper.duration_seconds) return formatDurationShort(paper.duration_seconds);
   return null;
 }
@@ -365,10 +370,10 @@ export default function AdminPage() {
   // Filtered → sorted → paginated
   const filtered = useMemo(() => {
     let list = papers;
-    if (statusFilter === "complete") list = list.filter((p) => p.status === "complete");
+    if (statusFilter === "narrated") list = list.filter((p) => p.status === "narrated");
     else if (statusFilter === "failed") list = list.filter((p) => p.status === "failed");
-    else if (statusFilter === "not_requested") list = list.filter((p) => p.status === "not_requested");
-    else if (statusFilter === "in_progress") list = list.filter((p) => !["complete", "failed", "not_requested"].includes(p.status));
+    else if (statusFilter === "unnarrated") list = list.filter((p) => p.status === "unnarrated");
+    else if (statusFilter === "narrating") list = list.filter((p) => p.status === "narrating");
     if (showLowRated) list = list.filter((p) => p.has_low_rating);
     if (showYours) list = list.filter((p) => yourPaperIds.has(p.id));
     if (searchQuery.trim()) {
@@ -380,11 +385,9 @@ export default function AdminPage() {
 
   const STATUS_ORDER: Record<string, number> = {
     failed: 0,
-    queued: 1,
-    preparing: 2,
-    generating_audio: 3,
-    complete: 4,
-    not_requested: 5,
+    narrating: 1,
+    narrated: 2,
+    unnarrated: 3,
   };
 
   const sorted = useMemo(() => {
@@ -529,9 +532,9 @@ export default function AdminPage() {
   // --- Authenticated dashboard ---
   const statusFilters: { key: StatusFilter; label: string; dotColor: string }[] = [
     { key: "all", label: "All", dotColor: "" },
-    { key: "not_requested", label: "New", dotColor: "bg-stone-300" },
-    { key: "in_progress", label: "Active", dotColor: "bg-purple-400" },
-    { key: "complete", label: "Done", dotColor: "bg-emerald-500" },
+    { key: "unnarrated", label: "New", dotColor: "bg-stone-300" },
+    { key: "narrating", label: "Active", dotColor: "bg-purple-400" },
+    { key: "narrated", label: "Done", dotColor: "bg-emerald-500" },
     { key: "failed", label: "Failed", dotColor: "bg-red-500" },
   ];
 
@@ -741,7 +744,7 @@ export default function AdminPage() {
                   </td>
                   <td className="px-1 py-1.5 text-center">
                     <span className="text-stone-400">
-                      {paper.status === "complete" ? <AudioFileIcon size={18} /> : isInProgress(paper.status) ? <span className="relative inline-block"><AudioFileIcon size={18} /><span className="scan-line" /></span> : <FileIcon size={18} />}
+                      {paper.status === "narrated" ? <AudioFileIcon size={18} /> : paper.status === "narrating" ? <span className="relative inline-block"><AudioFileIcon size={18} /><span className="scan-line" /></span> : <FileIcon size={18} />}
                     </span>
                   </td>
                   <td className="px-1 py-1.5 text-right">
@@ -770,7 +773,7 @@ export default function AdminPage() {
                     )}
                   </td>
                   <td className="px-2 py-1.5 text-center">
-                    {(paper.status === "complete" || paper.status === "generating_audio") ? (
+                    {(paper.status === "narrated" || paper.status === "narrating") ? (
                       <a href={`/s?id=${paper.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors inline-block" title="View script">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />

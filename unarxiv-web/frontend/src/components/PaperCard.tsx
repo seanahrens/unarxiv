@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Paper, submitPaper, requestNarration, formatDurationShort, isInProgress, formatAuthors, formatPaperYear } from "@/lib/api";
+import { Paper, submitPaper, requestNarration, formatDurationShort, formatAuthors, formatPaperYear } from "@/lib/api";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 
 import AudioFileIcon from "@/components/AudioFileIcon";
@@ -27,21 +27,19 @@ interface PaperCardProps {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  not_requested: "",
-  queued: "In Progress",
-  preparing: "In Progress",
-  generating_audio: "In Progress",
-  complete: "",
+  unnarrated: "",
+  narrating: "",
+  narrated: "",
   failed: "Failed",
 };
 
 function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collectionId }: PaperCardProps) {
   const router = useRouter();
   const { addToPlaylist, isInPlaylist } = usePlaylist();
-  const isReady = paper.status === "complete";
+  const isReady = paper.status === "narrated";
   const isFailed = paper.status === "failed";
-  const isNotRequested = paper.status === "not_requested";
-  const isProcessing = isInProgress(paper.status);
+  const isNotRequested = paper.status === "unnarrated";
+  const isProcessing = paper.status === "narrating";
   const [menuOpen, setMenuOpen] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -172,7 +170,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
 export default memo(PaperCard, (prev, next) =>
   prev.paper.id === next.paper.id
   && prev.paper.status === next.paper.status
-  && prev.paper.progress_detail === next.paper.progress_detail
+  && prev.paper.eta_seconds === next.paper.eta_seconds
   && prev.arxivUrl === next.arxivUrl
   && prev.collectionId === next.collectionId
 );

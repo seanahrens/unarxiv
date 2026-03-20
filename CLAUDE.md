@@ -53,18 +53,21 @@ cd unarxiv-web/modal_worker && modal deploy narrate.py
 
 ## Database
 
-Schema in `unarxiv-web/schema.sql`. Paper statuses: `not_requested → preparing → generating_audio → complete | failed`.
+Schema in `unarxiv-web/schema.sql`. Paper statuses: `unnarrated → narrating → narrated | failed`.
 
 ### Narration dispatch flow
 
-When a user clicks "Narrate", the worker dispatches to Modal **immediately** (no queue):
+When a user clicks "Narrate", the worker dispatches to Modal immediately:
 
-1. `handleNarratePaper` atomically claims the paper via `claimPaperForNarration()` — a single `UPDATE ... WHERE status = 'not_requested'` so only one concurrent caller wins the race.
-2. The winner's response triggers `dispatchToModal()` via `ctx.waitUntil()` (runs after HTTP response is sent).
-3. All callers (winner + losers) get a 200 with the paper in `preparing` status.
-4. Modal calls back to `/api/webhooks/modal` with status updates (`generating_audio`, `complete`, or `failed`).
+1. `handleNarratePaper` atomically claims the paper via `claimPaperForNarration()` — a single `UPDATE ... WHERE status IN ('unnarrated', 'failed')` so only one concurrent caller wins the race. Also allows retry from `failed`.
+2. The winner dispatches to Modal via `ctx.waitUntil()` (runs after HTTP response is sent). Sets `eta_seconds = 55` as a default estimate.
+3. All callers get a 200 with the paper in `narrating` status.
+4. Modal calls back to `/api/webhooks/modal` with status updates and `eta_seconds` (real chunk-based ETA).
+5. On dispatch failure, paper reverts to `unnarrated` (user can retry).
 
-**Safety net**: A cron job (every 15 min) recovers papers stuck in `preparing` for >15 min (reverts to `queued`) and dispatches any `queued` papers. The `queued` status only exists as a fallback for failed dispatches — normal flow skips it entirely.
+**ETA tracking**: `eta_seconds` is an integer column on the papers table. The worker sets it to 55 on claim, Modal updates it with real chunk-based estimates (~5s per chunk). The frontend reads it directly — no string parsing.
+
+**Safety net**: A cron job (every 15 min) re-dispatches papers stuck in `narrating` for >20 min.
 
 D1 migrations must be run with:
 ```bash
@@ -107,12 +110,12 @@ cd unarxiv-web
 - Admin password: `localdev`
 - Frontend `.env.local` points API to `http://localhost:8787`
 - Worker `.dev.vars` provides local secrets (`ADMIN_PASSWORD`, `MODAL_WEBHOOK_SECRET`)
-- DB is seeded with sample papers in all statuses (complete, queued, failed, etc.)
+- DB is seeded with sample papers in all statuses (narrated, narrating, failed, unnarrated)
 - Modal narration is skipped locally — simulate completion via webhook:
   ```bash
   curl -X POST http://localhost:8787/api/webhooks/modal \
     -H 'Content-Type: application/json' \
-    -d '{"arxiv_id":"PAPER_ID","status":"complete","duration_seconds":600}'
+    -d '{"arxiv_id":"PAPER_ID","status":"narrated","duration_seconds":600,"eta_seconds":0}'
   ```
 - R2 is emulated locally by wrangler (audio files won't exist but UI renders)
 - `./dev.sh reset` wipes and re-seeds the local database

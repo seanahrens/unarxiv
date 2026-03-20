@@ -22,6 +22,7 @@ export interface Paper {
   status: PaperStatus;
   error_message: string | null;
   progress_detail: string | null;
+  eta_seconds: number | null;
   audio_r2_key: string | null;
   audio_size_bytes: number | null;
   duration_seconds: number | null;
@@ -35,15 +36,10 @@ export interface Paper {
   has_low_rating: boolean;
   created_at: string;
   completed_at: string | null;
+  updated_at: string;
 }
 
-export type PaperStatus =
-  | "not_requested"
-  | "queued"
-  | "preparing"
-  | "generating_audio"
-  | "complete"
-  | "failed";
+export type PaperStatus = "unnarrated" | "narrating" | "narrated" | "failed";
 
 export interface PaperResponse {
   id: string;
@@ -55,6 +51,7 @@ export interface PaperResponse {
   status: PaperStatus;
   error_message: string | null;
   progress_detail: string | null;
+  eta_seconds: number | null;
   audio_url: string | null;
   audio_size_bytes: number | null;
   duration_seconds: number | null;
@@ -104,7 +101,8 @@ export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse 
     status: paper.status,
     error_message: paper.error_message,
     progress_detail: paper.progress_detail,
-    audio_url: paper.status === "complete" ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,
+    eta_seconds: paper.eta_seconds,
+    audio_url: paper.status === "narrated" ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,
     audio_size_bytes: paper.audio_size_bytes,
     duration_seconds: paper.duration_seconds,
     created_at: paper.created_at,

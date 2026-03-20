@@ -4,8 +4,8 @@
 -- Provides a handful of papers in various statuses so you can test
 -- the full UI without hitting production or running narration.
 
--- A completed paper with audio metadata (audio file won't exist in local R2,
--- but the UI will render the player and show "complete" status)
+-- A narrated paper with audio metadata (audio file won't exist in local R2,
+-- but the UI will render the player and show "narrated" status)
 INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, audio_r2_key, audio_size_bytes, duration_seconds, created_at, completed_at)
 VALUES (
   '2301.07041',
@@ -14,7 +14,7 @@ VALUES (
   '["Danijar Hafner","Jurgis Pasukonis","Jimmy Ba","Timothy Lillicrap"]',
   'General intelligence requires solving tasks across many domains. Existing reinforcement learning algorithms specialize to individual domains. We present DreamerV3, the first algorithm to collect diamonds in Minecraft from scratch without human data or curricula.',
   '2023-01-18',
-  'complete',
+  'narrated',
   'audio/2301.07041.mp3',
   15728640,
   1847,
@@ -23,7 +23,7 @@ VALUES (
 );
 
 -- A paper currently being narrated
-INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, progress_detail, created_at)
+INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, eta_seconds, created_at)
 VALUES (
   '2303.08774',
   'https://arxiv.org/abs/2303.08774',
@@ -31,25 +31,12 @@ VALUES (
   '["OpenAI"]',
   'We report the development of GPT-4, a large-scale, multimodal model which can accept image and text inputs and produce text outputs.',
   '2023-03-15',
-  'generating_audio',
-  'chunk 14/37|eta:240',
+  'narrating',
+  120,
   datetime('now', '-1 hour')
 );
 
--- A queued paper waiting for narration
-INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, created_at)
-VALUES (
-  '2005.14165',
-  'https://arxiv.org/abs/2005.14165',
-  'Language Models are Few-Shot Learners',
-  '["Tom B. Brown","Benjamin Mann","Nick Ryder","Melanie Subbiah","Jared Kaplan"]',
-  'We demonstrate that scaling up language models greatly improves task-agnostic, few-shot performance.',
-  '2020-05-28',
-  'queued',
-  datetime('now', '-30 minutes')
-);
-
--- A paper that has not been requested for narration
+-- An unnarrated paper
 INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, created_at)
 VALUES (
   '1706.03762',
@@ -58,7 +45,7 @@ VALUES (
   '["Ashish Vaswani","Noam Shazeer","Niki Parmar","Jakob Uszkoreit","Llion Jones","Aidan N. Gomez"]',
   'The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.',
   '2017-06-12',
-  'not_requested',
+  'unnarrated',
   datetime('now', '-2 days')
 );
 

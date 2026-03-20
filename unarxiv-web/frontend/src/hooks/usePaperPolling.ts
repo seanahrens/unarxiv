@@ -10,7 +10,7 @@ const POLL_INTERVAL_MS = 10_000;
 
 /**
  * Polls a single paper's status while it's in a non-terminal state.
- * Returns the latest paper data. Stops polling when status is `complete` or `failed`.
+ * Returns the latest paper data. Stops polling when status is `narrated` or `failed`.
  *
  * @param paper - The paper object (or null). Polling only runs when status is non-terminal.
  * @param intervalMs - Polling interval in milliseconds (default 10s).

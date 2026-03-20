@@ -43,7 +43,7 @@ export async function insertPaper(
       .prepare(
         `INSERT INTO papers (id, arxiv_url, title, authors, abstract, published_date, status,
          submitted_by_ip, submitted_by_token, submitted_by_country, submitted_by_city)
-         VALUES (?, ?, ?, ?, ?, ?, 'not_requested', ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, 'unnarrated', ?, ?, ?, ?)`
       )
       .bind(
         paper.id,
@@ -74,6 +74,7 @@ export async function updatePaperStatus(
   details?: {
     progress_detail?: string;
     error_message?: string;
+    eta_seconds?: number;
     audio_r2_key?: string;
     audio_size_bytes?: number;
     duration_seconds?: number;
@@ -90,6 +91,10 @@ export async function updatePaperStatus(
     sets.push("error_message = ?");
     values.push(details.error_message);
   }
+  if (details?.eta_seconds !== undefined) {
+    sets.push("eta_seconds = ?");
+    values.push(details.eta_seconds);
+  }
   if (details?.audio_r2_key !== undefined) {
     sets.push("audio_r2_key = ?");
     values.push(details.audio_r2_key);
@@ -102,8 +107,9 @@ export async function updatePaperStatus(
     sets.push("duration_seconds = ?");
     values.push(details.duration_seconds);
   }
-  if (status === "complete") {
+  if (status === "narrated") {
     sets.push("completed_at = datetime('now')");
+    sets.push("eta_seconds = 0");
   }
 
   values.push(id);
@@ -275,7 +281,7 @@ export async function getAllPapers(
   return results.results;
 }
 
-/** Reset a paper for reprocessing: update metadata and set status to queued. */
+/** Reset a paper for reprocessing: update metadata and set status to narrating. */
 export async function resetPaperForReprocess(
   db: D1Database,
   id: string,
@@ -289,8 +295,9 @@ export async function resetPaperForReprocess(
   await db
     .prepare(
       `UPDATE papers SET title = ?, authors = ?, abstract = ?, published_date = ?,
-       status = 'queued', progress_detail = NULL, error_message = NULL,
-       audio_r2_key = NULL, audio_size_bytes = NULL, duration_seconds = NULL, completed_at = NULL
+       status = 'narrating', eta_seconds = 55, progress_detail = NULL, error_message = NULL,
+       audio_r2_key = NULL, audio_size_bytes = NULL, duration_seconds = NULL, completed_at = NULL,
+       updated_at = datetime('now')
        WHERE id = ?`
     )
     .bind(meta.title, JSON.stringify(meta.authors), meta.abstract, meta.published_date, id)
@@ -673,24 +680,15 @@ export async function getRecentPublicLists(
 }
 
 /**
- * Atomically claim a paper for narration: only transitions not_requested → preparing.
+ * Atomically claim a paper for narration: transitions unnarrated or failed → narrating.
  * Returns true if this caller won the race, false if someone else already claimed it.
  */
 export async function claimPaperForNarration(db: D1Database, id: string): Promise<boolean> {
   const result = await db
-    .prepare("UPDATE papers SET status = 'preparing', updated_at = datetime('now') WHERE id = ? AND status = 'not_requested'")
+    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = 55, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed')")
     .bind(id)
     .run();
   return (result.meta?.changes ?? 0) > 0;
-}
-
-/** Get papers in queued status, ordered by created_at ascending (oldest first). */
-export async function getQueuedPapers(db: D1Database, limit: number = 5): Promise<Paper[]> {
-  const results = await db
-    .prepare("SELECT * FROM papers WHERE status = 'queued' ORDER BY created_at ASC LIMIT ?")
-    .bind(limit)
-    .all<Paper>();
-  return results.results;
 }
 
 // --- User Playlist ---

@@ -11,8 +11,8 @@ export async function findCompletePaper(): Promise<string> {
   const res = await fetch(`${API_BASE}/api/papers?sort=popular`);
   if (!res.ok) throw new Error(`findCompletePaper failed: ${res.status}`);
   const data = await res.json();
-  const paper = data.papers.find((p: any) => p.status === "complete");
-  if (!paper) throw new Error("No complete paper found in prod");
+  const paper = data.papers.find((p: any) => p.status === "narrated");
+  if (!paper) throw new Error("No narrated paper found in prod");
   return paper.id;
 }
 

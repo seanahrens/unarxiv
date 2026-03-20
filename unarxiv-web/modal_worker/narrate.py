@@ -153,7 +153,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
         if mode == "narration_only":
             # --- Download existing transcript from R2 ---
-            send_status(callback_url, secret, arxiv_id, status="preparing",
+            send_status(callback_url, secret, arxiv_id, status="narrating",
                         progress_detail="Downloading existing transcript...")
             print(f"Downloading existing transcript for {arxiv_id}...")
             speech = _download_from_r2(f"transcripts/{arxiv_id}.txt")
@@ -162,7 +162,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             print(f"Loaded transcript: {len(speech):,} chars")
         else:
             # --- Stage 1: Download, extract, process source ---
-            send_status(callback_url, secret, arxiv_id, status="preparing")
+            send_status(callback_url, secret, arxiv_id, status="narrating")
 
             pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
             authors_list = [a.strip() for a in paper_author.split(",")] if paper_author else []
@@ -351,7 +351,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         if mode == "script_only":
             send_status(
                 callback_url, secret, arxiv_id,
-                status="complete",
+                status="narrated",
                 progress_detail="Script regenerated",
             )
             print(f"Script-only done: {arxiv_id}")
@@ -370,8 +370,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         initial_eta = total_chunks * EST_SECS_PER_CHUNK
         send_status(
             callback_url, secret, arxiv_id,
-            status="generating_audio",
-            progress_detail=f"eta:{initial_eta}",
+            status="narrating",
+            eta_seconds=initial_eta,
         )
 
         # Generate audio with progress tracking + ETA
@@ -393,8 +393,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             remaining_secs = int(secs_per_chunk * remaining_chunks)
             send_status(
                 callback_url, secret, arxiv_id,
-                status="generating_audio",
-                progress_detail=f"eta:{remaining_secs}",
+                status="narrating",
+                eta_seconds=remaining_secs,
             )
 
         # Concatenate chunks with ffmpeg
@@ -443,7 +443,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         # --- Done ---
         send_status(
             callback_url, secret, arxiv_id,
-            status="complete",
+            status="narrated",
+            eta_seconds=0,
             audio_r2_key=r2_key,
             audio_size_bytes=file_size,
             duration_seconds=duration_seconds,

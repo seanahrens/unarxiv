@@ -56,9 +56,10 @@ function arxivResultToPaper(result: ArxivSearchResult): Paper {
     authors: result.authors,
     abstract: result.abstract,
     published_date: result.published_date,
-    status: "not_requested" as const,
+    status: "unnarrated" as const,
     error_message: null,
     progress_detail: null,
+    eta_seconds: null,
     audio_url: null,
     audio_size_bytes: null,
     duration_seconds: null,
@@ -175,11 +176,11 @@ function HomePageContent() {
       setPage(0);
 
       Promise.all([
-        fetchPapers({ sort: "recent", per_page: PAGE_SIZE * MAX_PAGES, status: "complete" }),
+        fetchPapers({ sort: "recent", per_page: PAGE_SIZE * MAX_PAGES, status: "narrated" }),
         fetchRecentLists(20),
       ])
         .then(([recentData, recentLists]) => {
-          setNewPapers(recentData.papers.filter((p) => p.status === "complete"));
+          setNewPapers(recentData.papers.filter((p) => p.status === "narrated"));
           setCollections(recentLists);
         })
         .catch(console.error)
@@ -195,10 +196,10 @@ function HomePageContent() {
     const refresh = async () => {
       try {
         const [recentData, recentLists] = await Promise.all([
-          fetchPapers({ sort: "recent", per_page: PAGE_SIZE * MAX_PAGES, status: "complete" }),
+          fetchPapers({ sort: "recent", per_page: PAGE_SIZE * MAX_PAGES, status: "narrated" }),
           fetchRecentLists(20),
         ]);
-        setNewPapers(recentData.papers.filter((p) => p.status === "complete"));
+        setNewPapers(recentData.papers.filter((p) => p.status === "narrated"));
         setCollections(recentLists);
       } catch {
         // Silently ignore background refresh errors

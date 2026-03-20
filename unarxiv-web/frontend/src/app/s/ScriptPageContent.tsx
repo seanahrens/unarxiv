@@ -26,7 +26,7 @@ export default function ScriptPageContent() {
         const p = await fetchPaper(id);
         setPaper(p);
 
-        if (!["generating_audio", "complete"].includes(p.status)) {
+        if (!["narrating", "narrated"].includes(p.status)) {
           setError("Script not available yet");
           setLoading(false);
           return;

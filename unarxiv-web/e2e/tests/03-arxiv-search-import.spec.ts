@@ -37,10 +37,10 @@ test.describe.serial("ArXiv Search Import", () => {
     await expect(page.locator(`text=${TEST_ARXIV_ID}`).first()).toBeVisible();
   });
 
-  test("imported paper has status not_requested via API", async () => {
+  test("imported paper has status unnarrated via API", async () => {
     const paper = await getPaper(TEST_ARXIV_ID);
     expect(paper).not.toBeNull();
-    expect(paper.status).toBe("not_requested");
+    expect(paper.status).toBe("unnarrated");
   });
 
   test("My Additions section is visible on playlist page", async ({ page }) => {

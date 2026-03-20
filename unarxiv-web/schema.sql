@@ -11,12 +11,11 @@ CREATE TABLE IF NOT EXISTS papers (
     published_date  TEXT DEFAULT '',
 
     -- Job state
-    status          TEXT NOT NULL DEFAULT 'not_requested'
-                    CHECK(status IN ('not_requested','queued','preparing',
-                                     'generating_audio',
-                                     'complete','failed')),
+    status          TEXT NOT NULL DEFAULT 'unnarrated'
+                    CHECK(status IN ('unnarrated','narrating','narrated','failed')),
     error_message   TEXT,
-    progress_detail TEXT,                       -- e.g. "chunk 14/37"
+    progress_detail TEXT,                       -- admin reprocess status messages
+    eta_seconds     INTEGER,                    -- estimated seconds remaining (set by Modal)
 
     -- Audio metadata (populated on completion)
     audio_r2_key    TEXT,                       -- R2 object key
@@ -37,7 +36,8 @@ CREATE TABLE IF NOT EXISTS papers (
 
     -- Timestamps
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-    completed_at    TEXT
+    completed_at    TEXT,
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_papers_status ON papers(status);

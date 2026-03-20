@@ -45,12 +45,12 @@ export default function PaperListRow({
   };
 
   const iconColorClass =
-    paper.status === "complete"
+    paper.status === "narrated"
       ? "text-stone-500 hover:text-stone-700"
       : "text-stone-400";
 
   const icon =
-    paper.status === "complete" ? (
+    paper.status === "narrated" ? (
       <AudioFileIcon size={28} />
     ) : inProgress ? (
       <div className="relative">
@@ -90,7 +90,7 @@ export default function PaperListRow({
         {icon}
       </Link>
 
-      {paper.status === "complete" ? (
+      {paper.status === "narrated" ? (
         <button onClick={handlePlay} className="flex-1 min-w-0 text-left cursor-pointer">
           {titleAuthors}
         </button>

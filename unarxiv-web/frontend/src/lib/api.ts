@@ -20,6 +20,7 @@ export interface Paper {
   status: string;
   error_message: string | null;
   progress_detail: string | null;
+  eta_seconds: number | null;
   audio_url: string | null;
   audio_size_bytes: number | null;
   duration_seconds: number | null;
@@ -373,7 +374,7 @@ export function formatDurationShort(seconds: number): string {
 }
 
 export function isInProgress(status: string): boolean {
-  return ["queued", "preparing", "generating_audio"].includes(status);
+  return status === "narrating";
 }
 
 export function formatAuthors(authors: string[], maxShown = 3): string {
@@ -389,24 +390,6 @@ export function formatPaperDate(dateStr: string): string {
 
 export function formatPaperYear(dateStr: string): string {
   return dateStr?.slice(0, 4) || "";
-}
-
-/** Parse "eta:240" or "30%|eta:240" progress_detail → seconds remaining, or null. */
-export function parseEtaSeconds(detail: string | null): number | null {
-  if (!detail) return null;
-  const m = detail.match(/eta:(\d+)/);
-  return m ? parseInt(m[1]) : null;
-}
-
-/**
- * Format a progress_detail string as a short ETA label (e.g. "~2m" or "~30s").
- * Returns null if detail contains no usable ETA or the ETA is <= 0.
- */
-export function formatEtaShort(detail: string | null): string | null {
-  const secs = parseEtaSeconds(detail);
-  if (secs === null || secs <= 0) return null;
-  if (secs < 60) return `~${Math.round(secs / 5) * 5}s`;
-  return `~${Math.floor(secs / 60)}m`;
 }
 
 // Extract an arXiv ID — new format (YYMM.NNNNN) or old format (category/YYMMNNN) with optional vN.

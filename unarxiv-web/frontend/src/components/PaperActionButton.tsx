@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useEtaCountdown } from "@/hooks/useEtaCountdown";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
-import { audioUrl, formatDuration, isInProgress, parseEtaSeconds, type Paper } from "@/lib/api";
+import { audioUrl, formatDuration, isInProgress, type Paper } from "@/lib/api";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
 
 const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
@@ -32,12 +33,6 @@ const ChevronIcon = ({ size = 12 }: { size?: number }) => (
   </svg>
 );
 
-const STATUS_LABELS: Record<string, string> = {
-  queued: "Queued",
-  preparing: "Scripting",
-  generating_audio: "Narrating",
-};
-
 function formatEtaShort(seconds: number): string {
   if (seconds <= 0) return "~5s";
   if (seconds < 10) return "~5s";
@@ -50,7 +45,7 @@ function formatEtaShort(seconds: number): string {
 
 /**
  * Unified play/generate/progress button with dropdown menu.
- * Handles all paper states: complete, not_requested, and processing.
+ * Handles all paper states: narrated, unnarrated, narrating, and failed.
  */
 export default function PaperActionButton({
   paper,
@@ -72,7 +67,7 @@ export default function PaperActionButton({
   onAddToPlaylist?: (rect?: DOMRect) => void;
   onRemoveFromPlaylist?: (rect?: DOMRect) => void;
   onMenuToggle?: (open: boolean) => void;
-  /** Override ETA seconds (e.g. from polling countdown). Falls back to paper.progress_detail. */
+  /** Override ETA seconds (e.g. from polling countdown). Falls back to paper.eta_seconds. */
   etaSeconds?: number | null;
   /** Called before playlist add/narration for arXiv-only papers that need importing first. */
   onEnsureImported?: () => Promise<Paper | null>;
@@ -89,35 +84,14 @@ export default function PaperActionButton({
 
   useClickOutside(menuRef, () => toggleMenu(false), menuOpen);
 
-  const isComplete = paper.status === "complete";
-  const isNotRequested = paper.status === "not_requested";
+  const isNarrated = paper.status === "narrated";
+  const isUnnarrated = paper.status === "unnarrated";
+  const isFailed = paper.status === "failed";
   const isProcessing = isInProgress(paper.status);
 
-  // Client-side ETA countdown for processing state
-  const [displayEta, setDisplayEta] = useState<number>(55);
-  const anchorRef = useRef<{ eta: number; time: number } | null>(null);
-
-  useEffect(() => {
-    if (!isProcessing) { anchorRef.current = null; return; }
-    const serverEta = etaSeconds ?? parseEtaSeconds(paper.progress_detail);
-    if (serverEta !== null && serverEta > 0) {
-      anchorRef.current = { eta: serverEta, time: Date.now() };
-      setDisplayEta(serverEta);
-    } else if (!anchorRef.current) {
-      anchorRef.current = { eta: 55, time: Date.now() };
-      setDisplayEta(55);
-    }
-  }, [isProcessing, paper.progress_detail, etaSeconds]);
-
-  useEffect(() => {
-    if (!isProcessing || !anchorRef.current) return;
-    const timer = setInterval(() => {
-      if (!anchorRef.current) return;
-      const elapsed = (Date.now() - anchorRef.current.time) / 1000;
-      setDisplayEta(Math.max(0, Math.round(anchorRef.current.eta - elapsed)));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isProcessing]);
+  // Client-side ETA countdown
+  const serverEta = etaSeconds ?? paper.eta_seconds;
+  const displayEta = useEtaCountdown(serverEta, isProcessing);
 
   const isGloballyActive = state.paperId === paper.id;
   const isPlaying = isGloballyActive && state.isPlaying;
@@ -146,8 +120,8 @@ export default function PaperActionButton({
   const compactColors = "text-stone-700 bg-surface border-stone-300 hover:bg-stone-100 hover:text-stone-900";
   const compactChevronBorder = "border-l-stone-300";
 
-  // --- COMPLETE: Play button ---
-  if (isComplete) {
+  // --- NARRATED: Play button ---
+  if (isNarrated) {
     const colors = compact ? compactColors : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
     const chevronBorder = compact ? compactChevronBorder : "border-l-stone-700";
 
@@ -191,10 +165,9 @@ export default function PaperActionButton({
     );
   }
 
-  // --- PROCESSING: Spinning sparkles + status label + ETA ---
+  // --- NARRATING: Spinning sparkles + "Narrating" + ETA ---
   if (isProcessing) {
-    const statusLabel = STATUS_LABELS[paper.status] || "Processing";
-    const etaText = formatEtaShort(displayEta);
+    const etaText = displayEta !== null ? formatEtaShort(displayEta) : "";
     const colors = compact ? compactColors : "text-stone-600 bg-stone-50 border-stone-300 hover:bg-stone-100";
     const chevronBorder = compact ? compactChevronBorder : "border-l-stone-300";
 
@@ -206,7 +179,7 @@ export default function PaperActionButton({
           <SparklesIcon className="animate-spin" />
           {!compact && (
             <div className="flex flex-col items-start leading-tight">
-              <span>{statusLabel}</span>
+              <span>Narrating</span>
               <span className="text-2xs text-stone-400">{etaText}</span>
             </div>
           )}
@@ -230,8 +203,8 @@ export default function PaperActionButton({
     );
   }
 
-  // --- NOT REQUESTED: Narrate button ---
-  if (isNotRequested) {
+  // --- UNNARRATED or FAILED: Narrate/Retry button ---
+  if (isUnnarrated || isFailed) {
     return (
       <div className={wrapperClass} ref={menuRef}>
         <button
@@ -244,9 +217,9 @@ export default function PaperActionButton({
         >
           <SparklesIcon />
           {compact ? (
-            <span className="hidden md:inline">Narrate</span>
+            <span className="hidden md:inline">{isFailed ? "Retry" : "Narrate"}</span>
           ) : (
-            <span>Narrate</span>
+            <span>{isFailed ? "Retry" : "Narrate"}</span>
           )}
         </button>
         <button

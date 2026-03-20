@@ -385,11 +385,11 @@ export default function PlayerBar() {
     try {
       const paper = await fetchPaper(viewingPaperId);
       const rect = e.currentTarget.getBoundingClientRect();
-      if (paper.status === "complete") {
+      if (paper.status === "narrated") {
         window.dispatchEvent(new CustomEvent("playerbar-play", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }));
         actions.loadPaper(paper.id, paper.title, audioUrl(paper.id));
         addOrMoveToTop(paper.id, rect);
-      } else if (paper.status === "not_requested") {
+      } else if (paper.status === "unnarrated" || paper.status === "failed") {
         // Trigger narration + add to playlist
         if (!isInPlaylist(paper.id)) addToPlaylist(paper.id, rect);
         await requestNarration(paper.id);
