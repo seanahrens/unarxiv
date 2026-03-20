@@ -29,8 +29,9 @@ test.describe("Narration Generation", () => {
     await page.locator("h1").waitFor({ timeout: 15000 });
 
     // Step 3: Click "Generate Audio Narration"
+    // Fallback covers production before generate-narration testid is deployed
     const genBtn = page
-      .locator('button:has-text("Generate Audio Narration")')
+      .locator('[data-testid="generate-narration"], button:has-text("Narrate"), button:has-text("Generate Audio Narration")')
       .first();
     await expect(genBtn).toBeVisible({ timeout: 5000 });
     await genBtn.click();

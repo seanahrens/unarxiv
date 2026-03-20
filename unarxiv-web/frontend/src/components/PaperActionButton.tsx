@@ -216,6 +216,7 @@ export default function PaperActionButton({
     return (
       <div className={wrapperClass} ref={menuRef}>
         <button
+          data-testid={compact ? undefined : "generate-narration"}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             onGenerate?.(rect);
