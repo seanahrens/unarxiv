@@ -29,6 +29,7 @@ import argparse
 import glob
 import os
 import re
+from datetime import datetime
 import sys
 import tarfile
 import tempfile
@@ -352,6 +353,15 @@ def _format_paper_info(title: str, date: str, authors: list[str]) -> str:
 def _ensure_period(s: str) -> str:
     """Ensure *s* ends with a period."""
     return s if s.endswith(".") else s + "."
+
+
+def _format_date(date: str) -> str:
+    """Convert YYYY-MM-DD to 'Month D, YYYY'; pass through other formats."""
+    try:
+        dt = datetime.strptime(date.strip(), "%Y-%m-%d")
+        return dt.strftime("%B %-d, %Y")
+    except (ValueError, AttributeError):
+        return date
 
 
 def _build_transcript_header(title: str, date: str, authors: list[str]) -> str:
@@ -1098,7 +1108,7 @@ def build_speech_text(latex: str, source_stem: str = "", fallback_title: str = "
     body = _finalize_speech(_convert_markers_to_speech(clean_latex(latex)))
     meta = extract_full_metadata(latex, source_stem)
     title   = meta["title"] if meta["title"] and meta["title"] != "Untitled" else (fallback_title or meta["title"])
-    date    = meta["date"]
+    date    = _format_date(meta["date"])
     authors = meta["authors"] if meta["authors"] else (fallback_authors or [])
     header = _build_transcript_header(title, date, authors)
     footer = _build_transcript_footer(title, date, authors)
@@ -1329,8 +1339,8 @@ def build_speech_text_from_pdf(
             "The PDF may be scanned/image-based."
         )
 
-    header = _build_transcript_header(title or "Untitled", date, authors)
-    footer = _build_transcript_footer(title or "Untitled", date, authors)
+    header = _build_transcript_header(title or "Untitled", _format_date(date), authors)
+    footer = _build_transcript_footer(title or "Untitled", _format_date(date), authors)
     return header + "\n" + body + footer
 
 

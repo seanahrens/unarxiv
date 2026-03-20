@@ -8,6 +8,7 @@ plaintext at this point; this module just adds the spoken intro/outro.
 from __future__ import annotations
 
 import re
+from datetime import datetime
 
 def build_script(
     body: str,
@@ -16,18 +17,11 @@ def build_script(
     date: str,
     source_type: str = "unknown",
 ) -> str:
-    """Wrap cleaned body text with a spoken header and footer.
-
-    Args:
-        source_type: "LaTeX" or "PDF" — recorded in the metadata tag.
-    """
-    from datetime import date as date_type
-    header = _build_header(title or "Untitled", date, authors)
-    footer = _build_footer(title or "Untitled", date, authors)
-    source_label = "Tex" if source_type == "LaTeX" else "PDF"
-    today = date_type.today().strftime("%y-%m-%d")
-    metadata_tag = f"\n\n%%% {today} {source_label} %%%"
-    return header + "\n" + body.strip() + footer + metadata_tag
+    """Wrap cleaned body text with a spoken header and footer."""
+    formatted_date = _format_date(date)
+    header = _build_header(title or "Untitled", formatted_date, authors)
+    footer = _build_footer(title or "Untitled", formatted_date, authors)
+    return header + "\n" + body.strip() + footer
 
 
 def _build_header(title: str, date: str, authors: list[str]) -> str:
@@ -49,6 +43,15 @@ def _build_footer(title: str, date: str, authors: list[str]) -> str:
         parts.append(f"Published on {date}.")
     parts.append("Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.")
     return "\n\n" + " ".join(parts)
+
+
+def _format_date(date: str) -> str:
+    """Convert YYYY-MM-DD to 'Month D, YYYY'; pass through other formats."""
+    try:
+        dt = datetime.strptime(date.strip(), "%Y-%m-%d")
+        return dt.strftime("%B %-d, %Y")
+    except (ValueError, AttributeError):
+        return date
 
 
 def _ensure_period(s: str) -> str:
