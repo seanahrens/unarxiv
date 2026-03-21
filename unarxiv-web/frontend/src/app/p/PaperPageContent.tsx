@@ -6,7 +6,7 @@ import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, type Paper, type Rating } from "@/lib/api";
-import { PaperDetailSkeleton } from "@/components/Skeleton";
+import { PaperDetailSkeleton, ScriptContentSkeleton } from "@/components/Skeleton";
 import { track } from "@/lib/analytics";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
@@ -498,7 +498,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       ) : (
         <div className="mt-4">
           {scriptLoading ? (
-            <div className="text-center py-10 text-stone-400 text-sm">Loading script...</div>
+            <ScriptContentSkeleton />
           ) : (
             <>
               <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">

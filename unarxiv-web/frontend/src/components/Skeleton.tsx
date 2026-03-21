@@ -122,6 +122,20 @@ export function MyPapersSectionSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
+/** Skeleton for the inline script content block (used when toggling to script view on paper page). */
+export function ScriptContentSkeleton() {
+  return (
+    <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
+      <Skeleton className="mb-2" width="100%" height="12px" />
+      <Skeleton className="mb-2" width="95%" height="12px" />
+      <Skeleton className="mb-2" width="88%" height="12px" />
+      <Skeleton className="mb-2" width="92%" height="12px" />
+      <Skeleton className="mb-2" width="80%" height="12px" />
+      <Skeleton width="60%" height="12px" />
+    </div>
+  );
+}
+
 /** Skeleton for collection list page loading. Mirrors the public list view:
  *  HeaderSearchBar → gap → BrowseLayout (two-column desktop, pills mobile). */
 export function CollectionPageSkeleton() {
