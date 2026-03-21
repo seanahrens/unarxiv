@@ -75,22 +75,6 @@ const DUAL_KEY_OPTIONS: OptionConfig[] = [
     keyLabel: "ElevenLabs API Key",
     providerLink: { label: "Get ElevenLabs API Key →", url: "https://elevenlabs.io/app/settings/api-keys" },
   },
-  {
-    id: "polly",
-    provider: "polly",
-    needsLlmKey: true,
-    unifiedKey: false,
-    keyLabel: "AWS Access Key / Secret",
-    providerLink: { label: "Get AWS Credentials →", url: "https://console.aws.amazon.com/iam/home#/users" },
-  },
-  {
-    id: "azure",
-    provider: "azure",
-    needsLlmKey: true,
-    unifiedKey: false,
-    keyLabel: "Azure Speech API Key",
-    providerLink: { label: "Get Azure Speech Key →", url: "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices" },
-  },
 ];
 
 // unarXiv Voice — free TTS, just needs LLM key
@@ -777,26 +761,6 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
       estimated_cost_usd: 0.12,
       llm_cost_usd: 0.04,
       tts_cost_usd: 0.08,
-      available: true,
-    },
-    {
-      option_id: "azure",
-      display_name: "Azure Speech",
-      stars: 4,
-      tagline: "Crisp neural voices from Microsoft Azure.",
-      estimated_cost_usd: 0.14,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.10,
-      available: true,
-    },
-    {
-      option_id: "polly",
-      display_name: "Amazon Polly",
-      stars: 4,
-      tagline: "Reliable, low-latency AWS voice synthesis.",
-      estimated_cost_usd: 0.1,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.06,
       available: true,
     },
     {
