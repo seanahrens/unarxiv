@@ -70,6 +70,11 @@ type AnalyticsEvents = {
     stars: number;
     has_comment: boolean;
   };
+  premium_narration_requested: {
+    arxiv_id: string;
+    option_id: string;
+    estimated_cost: number;
+  };
 };
 
 // ── Public API ─────────────────────────────────────────────────────────
