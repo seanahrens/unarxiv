@@ -1,119 +1,124 @@
-# UI Review — 2026-03-20
-
-## Summary
-
-Automated daily UX/UI review. Audited all pages visually (via dev server with retro-terminal theme, connecting to production API) and reviewed all component source files. One file changed: `src/components/Skeleton.tsx`.
-
----
+# UI Review — 2026-03-21
 
 ## Visual Consistency Audit
 
-**Spacing / Typography / Colors:** Consistent throughout. Stone palette applied uniformly. The active theme in development (and production) is `retro-terminal` — all stone color tokens are remapped to green phosphor values in `themes.css`. No hardcoded hex values in component files; all colors go through Tailwind tokens.
+**Colors:** The site runs in the `retro-terminal` theme by default (green phosphor on black). This is
+intentional — `ACTIVE_THEME` defaults to `"retro-terminal"` in `src/lib/theme-config.ts`. All color
+usage is consistent within the theme via Tailwind CSS variable overrides. No hardcoded hex values
+found in component files; all colors reference the stone (retro-remapped) palette as expected.
 
-**One exception found (low priority, not changed):** `globals.css` progress-flow animation uses raw `rgb(59 130 246)` / `rgb(99 102 241)` values (blue/indigo) for the narration progress bar. This is intentional — the "processing" bar intentionally differs from the stone palette to signal activity. Left as-is.
+**Spacing/Typography:** Consistent throughout. Custom size tokens `text-2xs` (11px) and `text-3xs`
+(10px) are defined in `globals.css` and used consistently. Standard spacing scale followed across
+components.
 
-**Interactive elements:** Hover/focus states present on all interactive elements. Back buttons, pills, and menu items all have `transition-colors` and appropriate hover states.
+**Cards:** Two card families exist with intentional differentiation:
+- Paper cards: `rounded-xl border p-5 bg-surface border-stone-300` — tighter, content-dense.
+- About/section cards: `rounded-2xl border p-6 bg-surface border-stone-200` — slightly softer, more
+  breathing room for prose sections.
+Both are internally consistent. Not a bug.
 
-**Cards and containers:** Consistent `rounded-xl border border-stone-300 p-5 bg-surface` on PaperCard. Collection list rows use `border border-stone-300 rounded-xl overflow-hidden divide-y divide-stone-200`.
+**Interactive elements:** All buttons have consistent `transition-colors` hover states. Focus rings
+are present on interactive inputs. The `button, [role="button"] { cursor: pointer }` rule in
+`globals.css` applies universally.
 
-**Icons:** Entirely custom inline SVGs — Lucide React is not actually used in the codebase despite being listed as available. This is a consistent (if verbose) pattern; not changed per the "progressive" principle.
+**Icons:** All icons are inline SVGs or custom components (`AudioFileIcon`, `FileIcon`, `LogoIcon`).
+No mixed icon libraries. Sizes are consistent within each context.
 
-**Responsive behavior:** Two-column desktop / pill mobile layout in BrowseLayout is consistent with other pages.
+**Responsive:** All pages use responsive Tailwind breakpoints consistently (`md:`, `lg:`). The
+mobile/desktop layouts (pill nav vs sidebar) in `BrowseLayout` degrade cleanly.
+
+**No issues found in this section.**
 
 ---
 
 ## Skeleton Audit
 
-### Pages and Their Skeletons
+### `BrowseLayoutSkeleton` — STALE (fixed)
 
-| Page | Skeleton | Status Before | Status After |
-|------|----------|---------------|--------------|
-| `/` (homepage) | `HomePageSkeleton` (inline) + `BrowseLayoutSkeleton` | Accurate | Accurate |
-| `/p?id=...` (paper detail) | `PaperDetailSkeleton` | Missing action button | Fixed |
-| `/s?id=...` (script viewer) | `ScriptPageSkeleton` | Accurate | Accurate |
-| `/my-papers` (collections) | `MyPapersSectionSkeleton` | Missing border wrapper | Fixed |
-| `/l?id=...` (collection view) | `CollectionPageSkeleton` | Stale — wrong structure | Fixed |
-| `/about` | No skeleton (not needed) | n/a | n/a |
-| `/admin` | No skeleton | n/a | n/a |
+**Location:** `unarxiv-web/frontend/src/components/BrowseLayout.tsx`
 
-### Skeletons Fixed
+**Issue:** `BrowseLayoutSkeleton` (exported, used on homepage and collection pages as the initial
+loading state) showed **4** `PaperCardSkeleton` items in the right column. `BrowseLayout` uses
+`PAGE_SIZE = 6`, meaning the loaded state renders up to 6 paper cards. This caused a visible layout
+shift — 4 skeleton cards would collapse/jump to 6 real cards when content loaded.
 
-#### 1. `PaperDetailSkeleton` (`/p` page)
+**Fix:** Added 2 more `PaperCardSkeleton` entries. Now shows 6, matching `PAGE_SIZE`.
 
-**Problem:** The actual paper detail page renders title and `PaperActionButton` side-by-side on desktop (`flex flex-col md:flex-row md:items-start gap-3`). The skeleton only showed stacked title lines — no action button placeholder on the right side.
+### Search Results Loading Skeleton — STALE (fixed)
 
-**Fix:** Wrapped title lines in `flex-1 min-w-0` and added a `shrink-0 rounded-xl w-[100px] h-[36px]` skeleton block to the right, matching the Narrate/Play button's approximate size.
+**Location:** `unarxiv-web/frontend/src/app/page.tsx`
 
-#### 2. `MyPapersSectionSkeleton` (`/my-papers` page)
+**Issue:** The inline search loading skeleton (shown while `loading && searchQuery`) rendered
+**3** `PaperCardSkeleton` items, but `SEARCH_PAGE_SIZE = 10`. On a typical search, 3 skeleton cards
+would jump to 5–10 real results.
 
-**Problem:** The actual loaded collections list wraps rows in `border border-stone-300 rounded-xl overflow-hidden`. The skeleton used bare `divide-y divide-stone-200` with no outer border/radius, causing a visible layout jump when content loaded.
+**Fix:** Updated to 5 skeleton cards — a closer approximation that smooths the transition without
+over-rendering on fast connections.
 
-**Fix:** Added `border border-stone-300 rounded-xl overflow-hidden` to the skeleton wrapper.
+### All other skeletons — OK
 
-#### 3. `CollectionPageSkeleton` (`/l` page)
-
-**Problem:** The public collection list view renders: `HeaderSearchBar → h-6 gap → BrowseLayout` (which itself has a two-column desktop layout with sidebar and paper grid, plus horizontal pills on mobile). The skeleton was a simple `space-y-4` with a title, description, and 3 plain paper cards — structurally wrong on every dimension: missing the search bar, missing the sidebar, missing the pill row.
-
-**Fix:** Replaced with a skeleton that mirrors the full public view structure:
-- Search bar placeholder (`max-w-2xl mx-auto ... h-12 rounded-xl`)
-- `h-6` spacer
-- Mobile: 3 pill skeletons in a flex row
-- Desktop: two-column layout with `w-56` sidebar (label + 5 nav item rows) and `flex-1` papers grid (section label + 3 `PaperCardSkeleton`)
+| Skeleton | Used for | Status |
+|----------|----------|--------|
+| `PaperDetailSkeleton` | `/p` paper detail page | Matches title/authors/abstract layout ✓ |
+| `ScriptPageSkeleton` | `/s` script viewer | Matches back link + title + script block ✓ |
+| `MyPapersSectionSkeleton` | `/my-papers` collections list | Matches `PaperListRow` layout ✓ |
+| `PaperListRowSkeleton` | PlayerBar playlist, DraggablePaperList | Matches row layout ✓ |
+| `CollectionPageSkeleton` | `/l` collection view (initial load) | Matches HeaderSearchBar + BrowseLayout structure ✓ |
+| `BrowseLayoutPapersSkeleton` | Collection switching within BrowseLayout | 3 cards for variable-size collections, acceptable ✓ |
 
 ---
 
 ## Component Inventory
 
-**Patterns with 3+ usages that could be shared components:**
+**No new shared components created.** All repeated patterns already have appropriate abstractions:
+- `PaperCard`, `PaperListRow`, `PaperActionButton`, `PaperActionsMenu` cover paper interactions.
+- `BrowseLayout` encapsulates the two-column browse UI.
+- `Skeleton.tsx` provides all shared loading primitives.
+- `PlayerBar` is the single audio player.
 
-| Pattern | Usages | Recommendation |
-|---------|--------|----------------|
-| Back button (`rounded-full px-3 py-1 border border-stone-300`) | 3+ pages | Could be a shared component, but each has custom nav logic — leave inline |
-| Inline folder/globe/edit SVG icons | 6+ files | Consider Lucide React — large scope, skip for now |
-| Input focus ring (`focus:outline-none focus:ring-2 focus:ring-stone-300/400`) | 5+ inputs | Minor drift in ring color — see Remaining Issues |
-
----
-
-## Design Tokens
-
-Implicit tokens in use:
-
-| Token | Values | Consistency |
-|-------|--------|-------------|
-| Border radius — cards | `rounded-xl` | Consistent |
-| Border radius — buttons | `rounded-lg`, `rounded-full`, `rounded-xl` | Intentional by context |
-| Card border | `border border-stone-300` | Consistent |
-| Section divider | `divide-y divide-stone-200` | Consistent |
-| Transition | `transition-colors` | Consistent on interactive elements |
-| Muted text | `text-stone-400` (decorative), `text-stone-500` (secondary) | Consistent |
-| Surface bg | `bg-surface` (CSS var) | Consistent |
+The "Back" button pattern (pill-shaped, `border border-stone-300 rounded-full px-3 py-1`) appears in
+3 places (`PaperPageContent.tsx`, `l/page.tsx` ×2) and is already implemented as a local `BackButton`
+component in `PaperPageContent.tsx`. Not extracted globally — it has page-specific navigation logic
+in each location, making a shared component harder to justify without behavioral coupling.
 
 ---
 
-## Remaining Issues (needs human input)
+## Design Tokens Established
 
-1. **Input style drift** — three distinct input border styles exist:
-   - Rating modal textarea: `border border-stone-300 focus:ring-stone-400`
-   - Collection import textarea: `border-2 border-stone-400 focus:ring-stone-300 bg-stone-100`
-   - Edit mode fields: borderless (`bg-transparent outline-none`)
-   The `border-2` in the import textarea is visually heavier. Worth unifying if a design decision is made.
-
-2. **Inline SVGs vs Lucide** — the codebase doesn't use Lucide React despite it being available. Switching would require replacing ~40+ custom SVGs. Recommend making this a deliberate choice.
-
-3. **`BrowseLayoutSkeleton` duplication** — `BrowseLayoutSkeleton` lives in `BrowseLayout.tsx` (co-located). `CollectionPageSkeleton` now mirrors its structure to avoid a circular dependency. A future refactor could move `BrowseLayoutSkeleton` into `Skeleton.tsx` and have `BrowseLayout.tsx` import it from there.
+No new tokens established — the existing system is sufficient:
+- Tailwind v4 CSS variable overrides in `themes.css` handle per-theme tokens.
+- `@theme` block in `globals.css` defines the two custom text sizes.
+- `--color-surface` is the semantic card/panel color, used consistently.
 
 ---
 
-## Changes Made
+## Accessibility Baseline
 
-**File:** `unarxiv-web/frontend/src/components/Skeleton.tsx`
-**Commit:** `d9c6915` — "fix: update stale skeleton layouts to match current rendered pages"
-**Branch:** `design/ui-review-2026-03-20` → merged to `main`
+- Keyboard navigation: interactive elements are buttons/links with appropriate roles.
+- Focus indicators: browser defaults (plus Tailwind ring utilities where applied).
+- Alt text: the logo image uses `LogoIcon` which renders an inline SVG without an alt (acceptable
+  for decorative icons alongside text).
+- ARIA: player controls in `PlayerBar` lack explicit ARIA labels on some icon-only buttons — noted
+  as a future improvement, not addressed in this styling-only pass.
+- Color contrast: in the retro-terminal theme, the green-on-black palette uses high-contrast values
+  (`stone-900` → `#00ff00`, `stone-600` → `#00cc00`). Secondary text is still legible on dark bg.
+
+---
+
+## Remaining Issues for Human Review
+
+1. **PlayerBar icon-only buttons** lack `aria-label` attributes (play, pause, skip, rewind, speed).
+   These should be labeled for screen reader users — but this is a behavioral/accessibility concern,
+   not a styling refactor.
+
+2. **Scheduled task deploy command is stale:** The `SKILL.md` for this task references
+   `texreader-frontend` as the Cloudflare Pages project name. The actual project is
+   `unarxiv-frontend`. Update the task's deploy command to avoid the error on future runs.
 
 ---
 
 ## Deploy Status
 
-- Build: ✅ Passed (`npm run build`, all 10 routes, no TypeScript errors)
-- Push: ✅ `git push origin main`
-- Deploy: ✅ Cloudflare Pages (`unarxiv-frontend`) — deployment complete
+- **Build:** ✅ Passed (`next build` — all 10 routes compiled, no TypeScript errors)
+- **Deploy:** ✅ Success — https://869e29cc.unarxiv-frontend.pages.dev
+- **Project:** `unarxiv-frontend` (Cloudflare Pages)
