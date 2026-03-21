@@ -328,7 +328,7 @@ export default function PremiumNarrationModal({
     setEstimateError(false);
     getPremiumEstimate(paper.id)
       .then((resp) => {
-        setEstimates(resp.options);
+        setEstimates(resp.options ?? buildFallbackEstimates());
         setLoading(false);
       })
       .catch(() => {
