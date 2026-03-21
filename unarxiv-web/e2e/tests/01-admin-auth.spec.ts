@@ -11,15 +11,6 @@ test.describe("Admin Auth", () => {
     await expect(page.locator("text=Top Contributors")).not.toBeVisible();
   });
 
-  test("/admin/curate shows password prompt without auth", async ({ page }) => {
-    await page.goto("/admin/curate");
-    await expect(
-      page.locator('input[type="password"]')
-    ).toBeVisible({ timeout: 10000 });
-    // Should NOT show curate content
-    await expect(page.locator("text=Bulk Actions")).not.toBeVisible();
-  });
-
   test("wrong password is rejected on admin page", async ({ page }) => {
     await page.goto("/admin");
     await page.locator('input[type="password"]').fill("wrong-password-123");

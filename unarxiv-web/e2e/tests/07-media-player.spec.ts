@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { knownCompleteId, PLAYER_SPEED, PLAYER_PLAY_PAUSE } from "../helpers/fixtures";
+import { knownCompleteId, PLAYER_SPEED } from "../helpers/fixtures";
 import { startAudioPlayback } from "../helpers/page-actions";
 
 test.describe("Global Media Player", () => {

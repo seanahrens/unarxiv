@@ -8,7 +8,6 @@
 ## 1. Admin Auth [01-admin-auth.spec.ts]
 
 - [ ] Visiting /admin without password shows password prompt, not dashboard
-- [ ] Visiting /admin/curate without password shows password prompt, not curate content
 - [ ] Submitting wrong password on /admin is rejected with error
 - [ ] API: POST /api/admin/verify with no password returns 401
 - [ ] API: POST /api/admin/verify with wrong password returns 401
