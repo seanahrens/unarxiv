@@ -16,7 +16,9 @@ test.describe("Admin Auth", () => {
     await page.locator('input[type="password"]').fill("wrong-password-123");
     await page.locator('button:has-text("Continue")').click();
     // Should show error and remain on login
-    await expect(page.locator(".text-red-600")).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.locator('[data-testid="admin-auth-error"], .text-red-600')
+    ).toBeVisible({ timeout: 5000 });
     await expect(page.locator("text=Top Contributors")).not.toBeVisible();
   });
 

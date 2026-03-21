@@ -1,13 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { knownCompleteId } from "../helpers/fixtures";
+import { knownCompleteId, PLAYER_SPEED } from "../helpers/fixtures";
 import { startAudioPlayback } from "../helpers/page-actions";
-
-/**
- * Selectors — prefer data-testid (deployed), fall back to legacy attrs.
- * PlayerBar is the primary media player; HeaderPlayer is legacy (only visible on /p page scroll-up).
- */
-const SPEED_BTN = '[data-testid="player-speed"], button[title="Speed"]';
-const PLAY_PAUSE_BTN = '[data-testid="player-play-pause"], button[title="Pause"], button[title="Play"]';
 
 test.describe("Global Media Player", () => {
   // All tests in this suite need audio playing; startAudioPlayback handles navigation + play
@@ -17,7 +10,7 @@ test.describe("Global Media Player", () => {
 
   test("player bar appears after starting playback", async ({ page }) => {
     // Speed button is the most reliable indicator the PlayerBar is rendered
-    const speedBtn = page.locator(SPEED_BTN).first();
+    const speedBtn = page.locator(PLAYER_SPEED).first();
     await expect(speedBtn).toBeVisible({ timeout: 5000 });
   });
 
@@ -86,7 +79,7 @@ test.describe("Global Media Player", () => {
   });
 
   test("speed button cycles playback rate", async ({ page }) => {
-    const speedBtn = page.locator(SPEED_BTN).first();
+    const speedBtn = page.locator(PLAYER_SPEED).first();
     await expect(speedBtn).toBeVisible({ timeout: 5000 });
 
     // Verify it shows 1x before clicking

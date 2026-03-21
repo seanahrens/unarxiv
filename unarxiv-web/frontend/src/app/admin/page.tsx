@@ -525,7 +525,7 @@ export default function AdminPage() {
                        focus:outline-none focus:ring-2 focus:ring-stone-400"
             autoFocus
           />
-          {authError && <p className="text-sm text-red-600 mb-3">{authError}</p>}
+          {authError && <p data-testid="admin-auth-error" className="text-sm text-red-600 mb-3">{authError}</p>}
           <button
             type="submit"
             disabled={verifying}
