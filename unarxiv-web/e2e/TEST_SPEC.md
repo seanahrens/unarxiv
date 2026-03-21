@@ -8,7 +8,7 @@
 ## 1. Admin Auth [01-admin-auth.spec.ts]
 
 - [ ] Visiting /admin without password shows password prompt, not dashboard
-- [ ] Visiting /admin/curate without password shows password prompt
+- [ ] Visiting /admin/curate without password shows password prompt, not curate content
 - [ ] Submitting wrong password on /admin is rejected with error
 - [ ] API: POST /api/admin/verify with no password returns 401
 - [ ] API: POST /api/admin/verify with wrong password returns 401
@@ -25,9 +25,9 @@
 ## 3. ArXiv Search Import [03-arxiv-search-import.spec.ts]
 
 - [ ] Typing "2602.21593" in search bar detects arXiv ID and redirects to paper page
-- [ ] Imported paper page shows title, authors, abstract
-- [ ] API confirms paper exists with status "not_requested"
-- [ ] "Papers I Added" section visible on /playlist
+- [ ] Imported paper page shows title and arXiv ID
+- [ ] API confirms paper exists with status "unnarrated"
+- [ ] My Collections heading visible on /my-papers
 - [ ] Admin delete removes the test paper (GET returns 404 after)
 
 ## 4. Homepage [04-homepage.spec.ts]
@@ -82,7 +82,7 @@
 
 - [ ] API: create list, get (public), add items, update metadata, auth required for mutations
 - [ ] API: reorder items, remove item, my-lists returns owned lists, delete list
-- [ ] Frontend: My Collections section visible on /playlist
+- [ ] Frontend: My Collections heading visible on /my-papers
 - [ ] Frontend: create via API + store token → collection appears in My Collections → view at /l?id=
 - [ ] Admin: can see all lists with tokens (skipped if no ADMIN_PASSWORD)
 
