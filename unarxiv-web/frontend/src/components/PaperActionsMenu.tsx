@@ -205,11 +205,11 @@ export default function PaperActionsMenu({
           <div className={DIVIDER} />
           <button
             data-testid="premium-narration"
-            onClick={() => { setShowPremiumModal(true); onClose(); }}
+            onClick={() => setShowPremiumModal(true)}
             className={MENU_ITEM}
           >
             <span style={{ fontSize: "12px", lineHeight: 1 }}>✨</span>
-            Get Near-Human Narration
+            Premium Narration
           </button>
         </>
       )}
@@ -218,7 +218,7 @@ export default function PaperActionsMenu({
       {showPremiumModal && (
         <PremiumNarrationModal
           paper={paper}
-          onClose={() => setShowPremiumModal(false)}
+          onClose={() => { setShowPremiumModal(false); onClose(); }}
           onSuccess={onPremiumSuccess}
         />
       )}
