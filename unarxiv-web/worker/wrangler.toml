@@ -8,6 +8,7 @@ compatibility_date = "2024-12-01"
 #   MODAL_WEBHOOK_SECRET
 #   ADMIN_PASSWORD
 #   MODAL_FUNCTION_URL   ← moved to secret to avoid exposing the public endpoint URL
+#   ENCRYPTION_KEY       ← AES-256-GCM key for encrypting user API keys (generate with: openssl rand -base64 32)
 #
 # Public Turnstile site key (safe to commit — it's embedded in the frontend too)
 TURNSTILE_SITE_KEY = "0x4AAAAAACq7Empy5Tza8tKi"

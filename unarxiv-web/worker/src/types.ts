@@ -10,6 +10,26 @@ export interface Env {
   PAPER_SUBMISSION_DAILY_LIMIT: string;
   QUEUE_BATCH_SIZE: string;
   ADMIN_PASSWORD: string;
+  ENCRYPTION_KEY: string; // AES-256-GCM key material for encrypting user API keys
+}
+
+export interface NarrationVersion {
+  id: number;
+  paper_id: string;
+  version_type: "free" | "premium";
+  quality_rank: number;
+  script_type: "free" | "premium";
+  tts_provider: string | null;
+  tts_model: string | null;
+  llm_provider: string | null;
+  llm_model: string | null;
+  audio_r2_key: string | null;
+  transcript_r2_key: string | null;
+  duration_seconds: number | null;
+  actual_cost: number | null;
+  llm_cost: number | null;
+  tts_cost: number | null;
+  created_at: string;
 }
 
 export interface Paper {
@@ -34,6 +54,8 @@ export interface Paper {
   rating_sum: number;
   bayesian_avg: number | null;
   has_low_rating: boolean;
+  best_version_id: number | null;
+  script_char_count: number | null;
   created_at: string;
   completed_at: string | null;
   updated_at: string;

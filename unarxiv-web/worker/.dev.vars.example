@@ -11,3 +11,8 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 # or via `wrangler secret put MODAL_FUNCTION_URL` for production.
 # Leave blank locally; the worker skips Modal dispatch when this is unset.
 MODAL_FUNCTION_URL=
+# ENCRYPTION_KEY is used for AES-256-GCM encryption of user-supplied API keys.
+# Any string works for local dev. For production, generate a strong random secret:
+#   openssl rand -base64 32
+# Then set via: wrangler secret put ENCRYPTION_KEY
+ENCRYPTION_KEY=localdev-encryption-key-change-in-production

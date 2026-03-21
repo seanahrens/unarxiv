@@ -68,6 +68,10 @@ import {
   getUserListenHistory,
   markPaperListened,
   unmarkPaperListened,
+  insertNarrationVersion,
+  getNarrationVersions,
+  updateBestVersionId,
+  updateScriptCharCount,
 } from "./db";
 
 export default {
@@ -595,6 +599,497 @@ async function handleGetPositions(request: Request, env: Env): Promise<Response>
   return json({ positions: map });
 }
 
+// ─── Premium Narration ────────────────────────────────────────────────────────
+
+/**
+ * Pricing constants for cost estimation. Update these as provider pricing changes.
+ * All costs are in USD.
+ */
+const PRICING = {
+  llm: {
+    openai: {
+      "gpt-4o":      { input_per_1m_tokens: 2.50,  output_per_1m_tokens: 10.00 },
+      "gpt-4o-mini": { input_per_1m_tokens: 0.15,  output_per_1m_tokens: 0.60  },
+    },
+    anthropic: {
+      "claude-3-5-haiku-20241022":  { input_per_1m_tokens: 0.80,  output_per_1m_tokens: 4.00  },
+      "claude-3-7-sonnet-20250219": { input_per_1m_tokens: 3.00,  output_per_1m_tokens: 15.00 },
+    },
+  },
+  tts: {
+    openai: {
+      "tts-1":    { per_1m_chars: 15.00 },
+      "tts-1-hd": { per_1m_chars: 30.00 },
+    },
+    elevenlabs: {
+      "eleven_flash_v2_5":     { per_1m_chars: 30.00  },
+      "eleven_multilingual_v2": { per_1m_chars: 180.00 },
+    },
+    google: {
+      "standard": { per_1m_chars: 4.00  },
+      "wavenet":  { per_1m_chars: 16.00 },
+    },
+  },
+} as const;
+
+/** Default models per provider. */
+const DEFAULT_MODELS = {
+  llm: {
+    openai:    "gpt-4o-mini",
+    anthropic: "claude-3-5-haiku-20241022",
+  },
+  tts: {
+    openai:     "tts-1-hd",
+    elevenlabs: "eleven_multilingual_v2",
+    google:     "wavenet",
+  },
+} as const;
+
+/**
+ * Quality rank for a premium narration configuration.
+ * Free narrations are rank 0; premium ranks start at 5.
+ * Higher = better quality / more expensive.
+ */
+function computeQualityRank(ttsProvider: string | null, ttsModel: string | null): number {
+  if (!ttsProvider) return 5; // premium script + free voice
+  if (ttsProvider === "openai") {
+    return ttsModel === "tts-1-hd" ? 25 : 15;
+  }
+  if (ttsProvider === "google") {
+    return ttsModel === "wavenet" ? 20 : 10;
+  }
+  if (ttsProvider === "elevenlabs") {
+    return ttsModel === "eleven_multilingual_v2" ? 45 : 35;
+  }
+  return 10;
+}
+
+/**
+ * Derive a 256-bit AES-GCM CryptoKey from the ENCRYPTION_KEY secret.
+ * Uses SHA-256 of the key material so any string length works.
+ */
+async function deriveAesKey(keyMaterial: string): Promise<CryptoKey> {
+  const raw = new TextEncoder().encode(keyMaterial);
+  const hashed = await crypto.subtle.digest("SHA-256", raw);
+  return crypto.subtle.importKey("raw", hashed, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+/** Encrypt a plaintext string using AES-256-GCM. Returns base64(iv || ciphertext). */
+async function aesEncrypt(plaintext: string, key: CryptoKey): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(plaintext);
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
+  const combined = new Uint8Array(12 + ciphertext.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ciphertext), 12);
+  // btoa over binary string
+  return btoa(String.fromCharCode(...combined));
+}
+
+/** Decrypt a base64(iv || ciphertext) string using AES-256-GCM. */
+async function aesDecrypt(ciphertextB64: string, key: CryptoKey): Promise<string> {
+  const combined = Uint8Array.from(atob(ciphertextB64), (c) => c.charCodeAt(0));
+  const iv = combined.slice(0, 12);
+  const data = combined.slice(12);
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+  return new TextDecoder().decode(plaintext);
+}
+
+/** Estimate cost for one (provider, model) combination from script char count. */
+function estimateCost(
+  llmProvider: string,
+  llmModel: string,
+  ttsProvider: string | null,
+  ttsModel: string | null,
+  scriptCharCount: number
+): { llm_cost: number; tts_cost: number; total_cost: number } {
+  // Rough token estimate: 1 token ≈ 4 chars. Output tokens ≈ script chars / 4.
+  // Input tokens ≈ 30% of output (system prompt + abstract context).
+  const outputTokens = scriptCharCount / 4;
+  const inputTokens = outputTokens * 0.3;
+
+  const llmPrices = (PRICING.llm as any)[llmProvider]?.[llmModel];
+  const llm_cost = llmPrices
+    ? (inputTokens * llmPrices.input_per_1m_tokens + outputTokens * llmPrices.output_per_1m_tokens) / 1_000_000
+    : 0;
+
+  const ttsPrices = ttsProvider ? (PRICING.tts as any)[ttsProvider]?.[ttsModel ?? ""] : null;
+  const tts_cost = ttsPrices ? (scriptCharCount * ttsPrices.per_1m_chars) / 1_000_000 : 0;
+
+  return { llm_cost, tts_cost, total_cost: llm_cost + tts_cost };
+}
+
+/** Make a lightweight test call to verify an API key. Returns { valid, info? }. */
+async function validateProviderKey(
+  provider: string,
+  apiKey: string
+): Promise<{ valid: boolean; info?: string; error?: string }> {
+  try {
+    if (provider === "openai") {
+      const resp = await fetch("https://api.openai.com/v1/models", {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (resp.status === 401) return { valid: false, error: "Invalid API key" };
+      if (!resp.ok) return { valid: false, error: `OpenAI returned ${resp.status}` };
+      return { valid: true, info: "OpenAI key valid" };
+    }
+
+    if (provider === "anthropic") {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-haiku-20241022",
+          max_tokens: 1,
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      });
+      if (resp.status === 401) return { valid: false, error: "Invalid API key" };
+      // 200 or 400 (bad request but key worked) = valid
+      if (resp.ok || resp.status === 400) return { valid: true, info: "Anthropic key valid" };
+      return { valid: false, error: `Anthropic returned ${resp.status}` };
+    }
+
+    if (provider === "elevenlabs") {
+      const resp = await fetch("https://api.elevenlabs.io/v1/user", {
+        headers: { "xi-api-key": apiKey },
+      });
+      if (resp.status === 401) return { valid: false, error: "Invalid API key" };
+      if (!resp.ok) return { valid: false, error: `ElevenLabs returned ${resp.status}` };
+      const data = await resp.json<{ subscription?: { character_limit?: number } }>();
+      const limit = data?.subscription?.character_limit;
+      return { valid: true, info: limit != null ? `${limit.toLocaleString()} char limit` : "ElevenLabs key valid" };
+    }
+
+    if (provider === "google") {
+      // Google TTS uses the key as a query param — test with a minimal synthesis
+      const resp = await fetch(
+        `https://texttospeech.googleapis.com/v1/voices?key=${apiKey}`
+      );
+      if (resp.status === 400 || resp.status === 401 || resp.status === 403) {
+        const body = await resp.json<{ error?: { message?: string } }>().catch(() => ({ error: undefined }));
+        return { valid: false, error: body?.error?.message || `Google returned ${resp.status}` };
+      }
+      if (!resp.ok) return { valid: false, error: `Google returned ${resp.status}` };
+      return { valid: true, info: "Google TTS key valid" };
+    }
+
+    return { valid: false, error: `Unknown provider: ${provider}` };
+  } catch (e: any) {
+    return { valid: false, error: `Network error: ${e.message}` };
+  }
+}
+
+// --- Request shapes for narrate-premium ---
+
+interface UnifiedKeyRequest {
+  type: "unified";
+  provider: string;        // 'openai' — handles both LLM and TTS
+  encrypted_key: string;
+  llm_model?: string;
+  tts_model?: string;
+}
+
+interface DualKeyRequest {
+  type: "dual";
+  llm_provider: string;
+  encrypted_llm_key: string;
+  llm_model?: string;
+  tts_provider: string;
+  encrypted_tts_key: string;
+  tts_model?: string;
+}
+
+interface FreeVoiceRequest {
+  type: "free_voice";
+  llm_provider: string;
+  encrypted_llm_key: string;
+  llm_model?: string;
+}
+
+type NarratePremiumRequest = UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest;
+
+/** POST /api/papers/:id/narrate-premium */
+async function handleNarratePremium(
+  request: Request,
+  env: Env,
+  id: string,
+  baseUrl: string,
+  ctx?: ExecutionContext
+): Promise<Response> {
+  if (!env.ENCRYPTION_KEY) {
+    return json({ error: "Premium narration not configured" }, 503);
+  }
+
+  const paper = await getPaper(env.DB, id);
+  if (!paper) return json({ error: "Paper not found" }, 404);
+
+  let body: NarratePremiumRequest;
+  try {
+    body = await request.json<NarratePremiumRequest>();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  if (!body.type || !["unified", "dual", "free_voice"].includes(body.type)) {
+    return json({ error: "type must be 'unified', 'dual', or 'free_voice'" }, 400);
+  }
+
+  const aesKey = await deriveAesKey(env.ENCRYPTION_KEY);
+
+  // Decrypt and resolve provider/model/key combinations
+  let llmProvider: string;
+  let llmApiKey: string;
+  let llmModel: string;
+  let ttsProvider: string | null = null;
+  let ttsApiKey: string | null = null;
+  let ttsModel: string | null = null;
+
+  try {
+    if (body.type === "unified") {
+      const req = body as UnifiedKeyRequest;
+      if (!req.provider || !req.encrypted_key) {
+        return json({ error: "provider and encrypted_key required" }, 400);
+      }
+      llmProvider = req.provider;
+      llmApiKey = await aesDecrypt(req.encrypted_key, aesKey);
+      llmModel = req.llm_model || (DEFAULT_MODELS.llm as any)[req.provider] || "gpt-4o-mini";
+      ttsProvider = req.provider;
+      ttsApiKey = llmApiKey; // same key
+      ttsModel = req.tts_model || (DEFAULT_MODELS.tts as any)[req.provider] || "tts-1-hd";
+    } else if (body.type === "dual") {
+      const req = body as DualKeyRequest;
+      if (!req.llm_provider || !req.encrypted_llm_key || !req.tts_provider || !req.encrypted_tts_key) {
+        return json({ error: "llm_provider, encrypted_llm_key, tts_provider, encrypted_tts_key required" }, 400);
+      }
+      llmProvider = req.llm_provider;
+      llmApiKey = await aesDecrypt(req.encrypted_llm_key, aesKey);
+      llmModel = req.llm_model || (DEFAULT_MODELS.llm as any)[req.llm_provider] || "gpt-4o-mini";
+      ttsProvider = req.tts_provider;
+      ttsApiKey = await aesDecrypt(req.encrypted_tts_key, aesKey);
+      ttsModel = req.tts_model || (DEFAULT_MODELS.tts as any)[req.tts_provider] || null;
+    } else {
+      // free_voice
+      const req = body as FreeVoiceRequest;
+      if (!req.llm_provider || !req.encrypted_llm_key) {
+        return json({ error: "llm_provider and encrypted_llm_key required" }, 400);
+      }
+      llmProvider = req.llm_provider;
+      llmApiKey = await aesDecrypt(req.encrypted_llm_key, aesKey);
+      llmModel = req.llm_model || (DEFAULT_MODELS.llm as any)[req.llm_provider] || "gpt-4o-mini";
+    }
+  } catch {
+    return json({ error: "Failed to decrypt key — was it encrypted with this server?" }, 400);
+  }
+
+  // Claim the paper atomically (reuses existing claim logic for status 'narrating')
+  const claimed = await claimPaperForNarration(env.DB, id);
+  if (!claimed) {
+    // Already narrating — still 200, return current state
+    const current = await getPaper(env.DB, id);
+    return json(paperToResponse(current!, baseUrl));
+  }
+
+  // Dispatch to Modal with decrypted keys (never persisted in D1)
+  const dispatch = async () => {
+    if (!env.MODAL_FUNCTION_URL) {
+      console.log(`[local-dev] Skipping Modal premium dispatch for ${id} (no MODAL_FUNCTION_URL)`);
+      return;
+    }
+    try {
+      const payload: Record<string, string | null> = {
+        arxiv_id: id,
+        tex_source_url: arxivSrcUrl(id),
+        callback_url: `${baseUrl}/api/webhooks/modal`,
+        paper_title: paper.title,
+        paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
+        paper_date: paper.published_date || "",
+        narration_mode: "premium",
+        llm_provider: llmProvider,
+        llm_api_key: llmApiKey,
+        llm_model: llmModel,
+        tts_provider: ttsProvider,
+        tts_api_key: ttsApiKey,
+        tts_model: ttsModel,
+        source_preference: "tex",
+        _secret: env.MODAL_WEBHOOK_SECRET,
+      };
+      const resp = await fetch(env.MODAL_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        console.error(`Modal premium dispatch failed for ${id}: ${resp.status}`);
+        await updatePaperStatus(env.DB, id, "unnarrated");
+      }
+    } catch (e: any) {
+      console.error(`Failed to dispatch premium for ${id}:`, e);
+      await updatePaperStatus(env.DB, id, "unnarrated");
+    }
+  };
+
+  if (ctx) ctx.waitUntil(dispatch());
+  else void dispatch();
+
+  const updated = await getPaper(env.DB, id);
+  return json(paperToResponse(updated!, baseUrl));
+}
+
+/** GET /api/papers/:id/estimate */
+async function handleEstimate(env: Env, id: string): Promise<Response> {
+  const paper = await getPaper(env.DB, id);
+  if (!paper) return json({ error: "Paper not found" }, 404);
+
+  const charCount = paper.script_char_count;
+  if (!charCount) {
+    return json({ estimated: false, message: "Script not yet generated; estimates unavailable" });
+  }
+
+  // Build options matrix: all meaningful provider/model combinations
+  const options: {
+    id: string;
+    label: string;
+    llm_provider: string;
+    llm_model: string;
+    tts_provider: string | null;
+    tts_model: string | null;
+    quality_rank: number;
+    llm_cost: number;
+    tts_cost: number;
+    total_cost: number;
+  }[] = [];
+
+  const llmOptions = [
+    { provider: "openai", model: "gpt-4o-mini",                   label: "GPT-4o Mini" },
+    { provider: "openai", model: "gpt-4o",                        label: "GPT-4o" },
+    { provider: "anthropic", model: "claude-3-5-haiku-20241022",  label: "Claude Haiku 3.5" },
+    { provider: "anthropic", model: "claude-3-7-sonnet-20250219", label: "Claude Sonnet 3.7" },
+  ];
+  const ttsOptions: { provider: string | null; model: string | null; label: string }[] = [
+    { provider: null,         model: null,                       label: "Free voice" },
+    { provider: "openai",     model: "tts-1",                    label: "OpenAI TTS Standard" },
+    { provider: "openai",     model: "tts-1-hd",                 label: "OpenAI TTS HD" },
+    { provider: "elevenlabs", model: "eleven_flash_v2_5",        label: "ElevenLabs Flash" },
+    { provider: "elevenlabs", model: "eleven_multilingual_v2",   label: "ElevenLabs Multilingual" },
+    { provider: "google",     model: "wavenet",                  label: "Google WaveNet" },
+  ];
+
+  for (const llm of llmOptions) {
+    for (const tts of ttsOptions) {
+      const costs = estimateCost(llm.provider, llm.model, tts.provider, tts.model, charCount);
+      const quality_rank = computeQualityRank(tts.provider, tts.model);
+      options.push({
+        id: `${llm.provider}/${llm.model}+${tts.provider ?? "free"}/${tts.model ?? "free"}`,
+        label: `${llm.label} + ${tts.label}`,
+        llm_provider: llm.provider,
+        llm_model: llm.model,
+        tts_provider: tts.provider,
+        tts_model: tts.model,
+        quality_rank,
+        ...costs,
+      });
+    }
+  }
+
+  // Sort best quality first
+  options.sort((a, b) => b.quality_rank - a.quality_rank || a.total_cost - b.total_cost);
+
+  return json({ estimated: true, script_char_count: charCount, options });
+}
+
+/** GET /api/papers/:id/versions */
+async function handleGetVersions(env: Env, id: string, baseUrl: string): Promise<Response> {
+  const paper = await getPaper(env.DB, id);
+  if (!paper) return json({ error: "Paper not found" }, 404);
+
+  const versions = await getNarrationVersions(env.DB, id);
+  return json({
+    versions: versions.map((v) => ({
+      id: v.id,
+      version_type: v.version_type,
+      quality_rank: v.quality_rank,
+      script_type: v.script_type,
+      tts_provider: v.tts_provider,
+      tts_model: v.tts_model,
+      llm_provider: v.llm_provider,
+      llm_model: v.llm_model,
+      audio_url: v.audio_r2_key ? `${baseUrl}/api/papers/${id}/audio?version=${v.id}` : null,
+      duration_seconds: v.duration_seconds,
+      actual_cost: v.actual_cost,
+      llm_cost: v.llm_cost,
+      tts_cost: v.tts_cost,
+      created_at: v.created_at,
+      is_best: v.id === paper.best_version_id,
+    })),
+    best_version_id: paper.best_version_id,
+  });
+}
+
+/** POST /api/keys/encrypt */
+async function handleEncryptKey(request: Request, env: Env): Promise<Response> {
+  if (!env.ENCRYPTION_KEY) {
+    return json({ error: "Encryption not configured" }, 503);
+  }
+  let body: { key?: string; provider?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+  if (!body.key || typeof body.key !== "string") {
+    return json({ error: "key is required" }, 400);
+  }
+  if (!body.provider || typeof body.provider !== "string") {
+    return json({ error: "provider is required" }, 400);
+  }
+  const validProviders = ["openai", "anthropic", "elevenlabs", "google"];
+  if (!validProviders.includes(body.provider)) {
+    return json({ error: `provider must be one of: ${validProviders.join(", ")}` }, 400);
+  }
+  const aesKey = await deriveAesKey(env.ENCRYPTION_KEY);
+  const ciphertext = await aesEncrypt(body.key, aesKey);
+  return json({ encrypted_key: ciphertext, provider: body.provider });
+}
+
+/** POST /api/keys/validate */
+async function handleValidateKey(request: Request, env: Env): Promise<Response> {
+  if (!env.ENCRYPTION_KEY) {
+    return json({ error: "Encryption not configured" }, 503);
+  }
+  let body: { encrypted_key?: string; provider?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+  if (!body.encrypted_key || typeof body.encrypted_key !== "string") {
+    return json({ error: "encrypted_key is required" }, 400);
+  }
+  if (!body.provider || typeof body.provider !== "string") {
+    return json({ error: "provider is required" }, 400);
+  }
+
+  let rawKey: string;
+  try {
+    const aesKey = await deriveAesKey(env.ENCRYPTION_KEY);
+    rawKey = await aesDecrypt(body.encrypted_key, aesKey);
+  } catch {
+    return json({ valid: false, error: "Failed to decrypt — key may be corrupted" }, 400);
+  }
+
+  const result = await validateProviderKey(body.provider, rawKey);
+  // Never include the raw key in the response
+  return json({ valid: result.valid, info: result.info, error: result.error });
+}
+
 async function handleArxivSearch(url: URL): Promise<Response> {
   const query = url.searchParams.get("q") || "";
   if (!query.trim()) {
@@ -746,6 +1241,16 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       pattern: /^\/api\/webhooks\/modal$/,
       handler: (req, env) => handleModalWebhook(req, env),
     },
+    {
+      method: "POST",
+      pattern: /^\/api\/keys\/encrypt$/,
+      handler: (req, env) => handleEncryptKey(req, env),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/keys\/validate$/,
+      handler: (req, env) => handleValidateKey(req, env),
+    },
     // Regex patterns with capture groups
     // Paper IDs use (.+?) to support old-style arXiv IDs with slashes (e.g. astro-ph/9905136)
     {
@@ -797,6 +1302,21 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "POST",
       pattern: /^\/api\/papers\/(.+?)\/narrate$/,
       handler: (req, env, _url, m, ctx) => handleNarratePaper(req, env, m[1], baseUrl, ctx),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/papers\/(.+?)\/narrate-premium$/,
+      handler: (req, env, _url, m, ctx) => handleNarratePremium(req, env, m[1], baseUrl, ctx),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/papers\/(.+?)\/estimate$/,
+      handler: (_req, env, _url, m) => handleEstimate(env, m[1]),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/papers\/(.+?)\/versions$/,
+      handler: (_req, env, _url, m) => handleGetVersions(env, m[1], baseUrl),
     },
     {
       method: "POST",
@@ -1396,6 +1916,19 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     audio_r2_key?: string;
     audio_size_bytes?: number;
     duration_seconds?: number;
+    // Premium narration fields
+    narration_mode?: "free" | "premium";
+    version_type?: "free" | "premium";
+    script_type?: "free" | "premium";
+    tts_provider?: string;
+    tts_model?: string;
+    llm_provider?: string;
+    llm_model?: string;
+    transcript_r2_key?: string;
+    actual_cost?: number;
+    llm_cost?: number;
+    tts_cost?: number;
+    script_char_count?: number;
   }>();
 
   if (!body.arxiv_id || !body.status) {
@@ -1412,6 +1945,11 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     return json({ error: "Invalid audio_r2_key format" }, 400);
   }
 
+  // Update script_char_count if provided (from script generation phase)
+  if (body.script_char_count != null && body.script_char_count > 0) {
+    await updateScriptCharCount(env.DB, body.arxiv_id, body.script_char_count);
+  }
+
   await updatePaperStatus(env.DB, body.arxiv_id, body.status as PaperStatus, {
     progress_detail: body.progress_detail,
     error_message: body.error_message,
@@ -1420,6 +1958,35 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     audio_size_bytes: body.audio_size_bytes,
     duration_seconds: body.duration_seconds,
   });
+
+  // On completion, record a narration_version and update best_version_id
+  if (body.status === "narrated" && body.audio_r2_key) {
+    const versionType = body.version_type ?? (body.narration_mode === "premium" ? "premium" : "free");
+    const scriptType = body.script_type ?? (body.narration_mode === "premium" ? "premium" : "free");
+    const ttsProvider = body.tts_provider ?? (versionType === "free" ? "openai" : null);
+    const ttsModel = body.tts_model ?? (versionType === "free" ? "tts-1" : null);
+    const qualityRank = versionType === "free" ? 0 : computeQualityRank(ttsProvider, ttsModel);
+
+    const version = await insertNarrationVersion(env.DB, {
+      paper_id: body.arxiv_id,
+      version_type: versionType,
+      quality_rank: qualityRank,
+      script_type: scriptType,
+      tts_provider: ttsProvider,
+      tts_model: ttsModel,
+      llm_provider: body.llm_provider ?? null,
+      llm_model: body.llm_model ?? null,
+      audio_r2_key: body.audio_r2_key,
+      transcript_r2_key: body.transcript_r2_key ?? null,
+      duration_seconds: body.duration_seconds ?? null,
+      actual_cost: body.actual_cost ?? null,
+      llm_cost: body.llm_cost ?? null,
+      tts_cost: body.tts_cost ?? null,
+    });
+
+    // Atomically upgrade best_version_id if this version is better
+    await updateBestVersionId(env.DB, body.arxiv_id, version.id);
+  }
 
   return json({ ok: true });
 }
