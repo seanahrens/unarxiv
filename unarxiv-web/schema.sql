@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS papers (
     submitted_by_country TEXT,
     submitted_by_city    TEXT,
 
+    -- Premium narration tracking
+    best_version_id  INTEGER,              -- FK to narration_versions (set after migration 004)
+    script_char_count INTEGER,             -- cached char count for cost estimation
+
     -- Timestamps
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     completed_at    TEXT,
@@ -161,3 +165,27 @@ CREATE TABLE IF NOT EXISTS playback_positions (
     updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (user_token, paper_id)
 );
+
+-- Narration versions: multiple quality tiers per paper (free + premium)
+-- best_version_id and script_char_count are added to papers via migration 004
+CREATE TABLE IF NOT EXISTS narration_versions (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    paper_id          TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
+    version_type      TEXT NOT NULL CHECK(version_type IN ('free', 'premium')),
+    quality_rank      INTEGER NOT NULL DEFAULT 0,  -- higher = better quality
+    script_type       TEXT NOT NULL CHECK(script_type IN ('free', 'premium')),
+    tts_provider      TEXT,     -- 'openai' | 'elevenlabs' | 'google' | null (free voice)
+    tts_model         TEXT,     -- provider-specific model ID
+    llm_provider      TEXT,     -- 'openai' | 'anthropic' | null (free script)
+    llm_model         TEXT,     -- provider-specific model ID
+    audio_r2_key      TEXT,     -- R2 key for this version's audio
+    transcript_r2_key TEXT,     -- R2 key for this version's transcript
+    duration_seconds  INTEGER,
+    actual_cost       REAL,     -- total USD spent (llm_cost + tts_cost)
+    llm_cost          REAL,
+    tts_cost          REAL,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_nv_paper ON narration_versions(paper_id);
+CREATE INDEX IF NOT EXISTS idx_nv_quality ON narration_versions(paper_id, quality_rank DESC);

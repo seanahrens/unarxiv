@@ -1,7 +1,7 @@
 /**
  * Database queries for D1.
  */
-import type { Paper, PaperStatus, List, ListItem } from "./types";
+import type { Paper, PaperStatus, List, ListItem, NarrationVersion } from "./types";
 import { parseSearchQuery, toFtsQuery } from "./search";
 
 /** Get a paper by arXiv ID. */
@@ -833,4 +833,93 @@ export async function getPlaybackPositions(db: D1Database, token: string): Promi
     .bind(token)
     .all<{ paper_id: string; position: number; updated_at: string }>();
   return results.results;
+}
+
+// --- Narration Versions ---
+
+/** Insert a new narration version record. Returns the inserted row. */
+export async function insertNarrationVersion(
+  db: D1Database,
+  v: {
+    paper_id: string;
+    version_type: "free" | "premium";
+    quality_rank: number;
+    script_type: "free" | "premium";
+    tts_provider?: string | null;
+    tts_model?: string | null;
+    llm_provider?: string | null;
+    llm_model?: string | null;
+    audio_r2_key?: string | null;
+    transcript_r2_key?: string | null;
+    duration_seconds?: number | null;
+    actual_cost?: number | null;
+    llm_cost?: number | null;
+    tts_cost?: number | null;
+  }
+): Promise<NarrationVersion> {
+  const result = await db
+    .prepare(
+      `INSERT INTO narration_versions
+         (paper_id, version_type, quality_rank, script_type,
+          tts_provider, tts_model, llm_provider, llm_model,
+          audio_r2_key, transcript_r2_key, duration_seconds,
+          actual_cost, llm_cost, tts_cost)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING *`
+    )
+    .bind(
+      v.paper_id,
+      v.version_type,
+      v.quality_rank,
+      v.script_type,
+      v.tts_provider ?? null,
+      v.tts_model ?? null,
+      v.llm_provider ?? null,
+      v.llm_model ?? null,
+      v.audio_r2_key ?? null,
+      v.transcript_r2_key ?? null,
+      v.duration_seconds ?? null,
+      v.actual_cost ?? null,
+      v.llm_cost ?? null,
+      v.tts_cost ?? null
+    )
+    .first<NarrationVersion>();
+  return result!;
+}
+
+/** Get all narration versions for a paper, ordered best first. */
+export async function getNarrationVersions(db: D1Database, paperId: string): Promise<NarrationVersion[]> {
+  const results = await db
+    .prepare("SELECT * FROM narration_versions WHERE paper_id = ? ORDER BY quality_rank DESC, created_at DESC")
+    .bind(paperId)
+    .all<NarrationVersion>();
+  return results.results;
+}
+
+/**
+ * Update best_version_id on a paper atomically — only upgrades, never downgrades.
+ * Sets best_version_id to newVersionId only if newVersionId has a higher quality_rank
+ * than the current best_version_id (or if best_version_id is currently NULL).
+ */
+export async function updateBestVersionId(db: D1Database, paperId: string, newVersionId: number): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE papers SET best_version_id = ?
+       WHERE id = ?
+         AND (
+           best_version_id IS NULL
+           OR (SELECT quality_rank FROM narration_versions WHERE id = ?)
+              > (SELECT quality_rank FROM narration_versions WHERE id = best_version_id)
+         )`
+    )
+    .bind(newVersionId, paperId, newVersionId)
+    .run();
+}
+
+/** Update script_char_count on a paper (from eager script generation). */
+export async function updateScriptCharCount(db: D1Database, paperId: string, charCount: number): Promise<void> {
+  await db
+    .prepare("UPDATE papers SET script_char_count = ? WHERE id = ?")
+    .bind(charCount, paperId)
+    .run();
 }
