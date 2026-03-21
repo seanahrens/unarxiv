@@ -512,3 +512,114 @@ export function extractArxivId(input: string): string | null {
   if (oldFmt) return oldFmt[1];
   return null;
 }
+
+// --- Premium Narration ---
+
+export interface PremiumOptionEstimate {
+  option_id: string;          // e.g. "openai", "elevenlabs", "free"
+  display_name: string;       // e.g. "OpenAI TTS"
+  stars: number;              // 3-5
+  tagline: string;            // one-liner
+  estimated_cost_usd: number; // total cost for this paper
+  llm_cost_usd: number;
+  tts_cost_usd: number;
+  available: boolean;
+}
+
+export interface PremiumEstimateResponse {
+  paper_id: string;
+  word_count: number;
+  options: PremiumOptionEstimate[];
+}
+
+export async function getPremiumEstimate(paperId: string): Promise<PremiumEstimateResponse> {
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/estimate`, {
+    headers: userHeaders(),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+export interface PremiumNarrationConfig {
+  option_id: string;
+  /** Encrypted API keys — opaque ciphertext from /api/keys/encrypt */
+  encrypted_keys: Partial<Record<string, string>>;
+  /** If the user chose a separate LLM provider (for dual-key options) */
+  llm_provider?: string;
+}
+
+export async function requestPremiumNarration(
+  paperId: string,
+  config: PremiumNarrationConfig
+): Promise<Paper> {
+  const headers = userHeaders({ "Content-Type": "application/json" });
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/narrate-premium`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(config),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(data.error || `API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface EncryptKeyResponse {
+  encrypted_key: string;
+  provider: string;
+}
+
+export async function encryptKey(provider: string, rawKey: string): Promise<EncryptKeyResponse> {
+  const res = await fetch(`${API_BASE}/api/keys/encrypt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, raw_key: rawKey }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(data.error || `API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface ValidateKeyResponse {
+  valid: boolean;
+  error?: string;
+}
+
+export async function validateKey(
+  provider: string,
+  encryptedKey: string
+): Promise<ValidateKeyResponse> {
+  const res = await fetch(`${API_BASE}/api/keys/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, encrypted_key: encryptedKey }),
+  });
+  if (!res.ok) return { valid: false, error: "Validation request failed" };
+  return res.json();
+}
+
+export interface PaperVersion {
+  version_id: string;
+  provider: string;        // e.g. "elevenlabs", "openai", "system"
+  quality_rank: number;    // higher = better quality
+  audio_url: string;
+  duration_seconds: number | null;
+  created_at: string;
+}
+
+export interface PaperVersionsResponse {
+  paper_id: string;
+  versions: PaperVersion[];
+  best_version: PaperVersion | null;
+}
+
+export async function getPaperVersions(paperId: string): Promise<PaperVersionsResponse> {
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/versions`, {
+    headers: userHeaders(),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}

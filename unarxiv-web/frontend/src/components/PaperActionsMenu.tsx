@@ -6,6 +6,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, requestNarration, type Paper } from "@/lib/api";
 import ListSubmenu from "@/components/ListSubmenu";
+import PremiumNarrationModal from "@/components/PremiumNarrationModal";
 import { track } from "@/lib/analytics";
 
 function useDownload() {
@@ -56,6 +57,8 @@ interface PaperActionsMenuProps {
   onToggleScript?: () => void;
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
+  /** Called when premium narration completes successfully (to update paper state) */
+  onPremiumSuccess?: (paper: Paper) => void;
 }
 
 export default function PaperActionsMenu({
@@ -71,11 +74,13 @@ export default function PaperActionsMenu({
   onEnsureImported,
   onToggleScript,
   currentView,
+  onPremiumSuccess,
 }: PaperActionsMenuProps) {
   const router = useRouter();
   const { state, actions } = useAudio();
   const { addToPlaylist, addOrMoveToTop, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const { downloading, download } = useDownload();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const isComplete = paper.status === "narrated";
   const isNotRequested = paper.status === "unnarrated";
@@ -192,6 +197,30 @@ export default function PaperActionsMenu({
             Rate Narration
           </button>
         </>
+      )}
+
+      {/* Premium Narration — only when narrated */}
+      {isComplete && (
+        <>
+          <div className={DIVIDER} />
+          <button
+            data-testid="premium-narration"
+            onClick={() => { setShowPremiumModal(true); onClose(); }}
+            className={MENU_ITEM}
+          >
+            <span style={{ fontSize: "12px", lineHeight: 1 }}>✨</span>
+            Get Near-Human Narration
+          </button>
+        </>
+      )}
+
+      {/* Premium narration modal (rendered outside menu via portal) */}
+      {showPremiumModal && (
+        <PremiumNarrationModal
+          paper={paper}
+          onClose={() => setShowPremiumModal(false)}
+          onSuccess={onPremiumSuccess}
+        />
       )}
 
       {/* View Script / View Abstract — only on paper detail page when narrated */}

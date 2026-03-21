@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { markAsRead } from "@/lib/readStatus";
 import { removeFromPlaylist, getPlaylist } from "@/lib/playlist";
-import { fetchPaper, audioUrl, savePlaybackPositionApi, getPlaybackPositionsApi } from "@/lib/api";
+import { fetchPaper, audioUrl, getPaperVersions, savePlaybackPositionApi, getPlaybackPositionsApi, type PaperVersion } from "@/lib/api";
 import { track } from "@/lib/analytics";
 
 function getStorageKey(paperId: string) {
@@ -51,6 +51,8 @@ interface AudioState {
   currentTime: number;
   duration: number;
   playbackRate: number;
+  /** The version currently playing, if premium audio is loaded. */
+  currentVersion: PaperVersion | null;
 }
 
 interface AudioActions {
@@ -88,6 +90,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [currentVersion, setCurrentVersion] = useState<PaperVersion | null>(null);
 
   // Refs to avoid stale closures in event listeners
   const paperIdRef = useRef(paperId);
@@ -323,10 +326,47 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     // Save position for current paper before switching (including backend)
     savePositionToBackend();
 
+    // Check for best-quality version (fire-and-forget, update src if better found)
+    getPaperVersions(newPaperId)
+      .then((resp) => {
+        if (resp.best_version && paperIdRef.current === newPaperId) {
+          const bestSrc = resp.best_version.audio_url;
+          // Only switch if a premium version exists (higher quality rank)
+          if (resp.best_version.quality_rank > 1 && bestSrc !== audio.src) {
+            const wasPlaying = !audio.paused;
+            const savedTime = audio.currentTime;
+            setSrc(bestSrc);
+            setCurrentVersion(resp.best_version);
+            try {
+              const stored = JSON.parse(localStorage.getItem(CURRENT_PAPER_KEY) || "{}");
+              stored.src = bestSrc;
+              localStorage.setItem(CURRENT_PAPER_KEY, JSON.stringify(stored));
+            } catch {}
+            audio.src = bestSrc;
+            audio.load();
+            const onUpgrade = () => {
+              audio.playbackRate = playbackRateRef.current;
+              if (savedTime > 0 && isFinite(audio.duration) && savedTime < audio.duration) {
+                audio.currentTime = savedTime;
+              }
+              if (wasPlaying) audio.play();
+              audio.removeEventListener("loadedmetadata", onUpgrade);
+            };
+            audio.addEventListener("loadedmetadata", onUpgrade);
+          } else if (resp.best_version.quality_rank <= 1) {
+            setCurrentVersion(null);
+          } else {
+            setCurrentVersion(resp.best_version);
+          }
+        }
+      })
+      .catch(() => {}); // graceful: fall back to standard audio
+
     // Update state
     setPaperId(newPaperId);
     setPaperTitle(title);
     setSrc(newSrc);
+    setCurrentVersion(null); // reset until version check completes
     setCurrentTime(0);
     setDuration(0);
     firedMilestonesRef.current = new Set();
@@ -416,13 +456,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setPaperId(null);
     setPaperTitle(null);
     setSrc(null);
+    setCurrentVersion(null);
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
     try { localStorage.removeItem(CURRENT_PAPER_KEY); } catch {}
   }, [savePositionToBackend]);
 
-  const state: AudioState = { paperId, paperTitle, src, isPlaying, currentTime, duration, playbackRate };
+  const state: AudioState = { paperId, paperTitle, src, isPlaying, currentTime, duration, playbackRate, currentVersion };
   const actions: AudioActions = { loadPaper, togglePlay, pause, seek, skipBack, skipForward, cycleSpeed, stop };
 
   return (
