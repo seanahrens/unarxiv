@@ -10,6 +10,7 @@ import {
   deleteListApi,
   type ListMeta,
 } from "@/lib/lists";
+import { getPremiumDataForSync } from "@/lib/premiumKeys";
 import { MyPapersSectionSkeleton } from "@/components/Skeleton";
 
 export default function MyCollectionsPage() {
@@ -82,6 +83,12 @@ export default function MyCollectionsPage() {
     try {
       const lt = localStorage.getItem("list_tokens");
       if (lt) data.list_tokens = JSON.parse(lt);
+    } catch {}
+    try {
+      const premiumData = getPremiumDataForSync();
+      if (Object.keys(premiumData.keys).length > 0) {
+        data.premium_keys = premiumData;
+      }
     } catch {}
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
     const url = `${window.location.origin}/sync#${encoded}`;
