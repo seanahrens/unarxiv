@@ -294,6 +294,8 @@ export function BrowseLayoutSkeleton() {
             <PaperCardSkeleton />
             <PaperCardSkeleton />
             <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
           </div>
         </div>
       </div>

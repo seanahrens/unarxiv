@@ -286,6 +286,8 @@ function HomePageContent() {
                   <PaperCardSkeleton />
                   <PaperCardSkeleton />
                   <PaperCardSkeleton />
+                  <PaperCardSkeleton />
+                  <PaperCardSkeleton />
                 </div>
               ) : paginatedResults.length === 0 ? (
                 <div className="text-center py-10 text-sm text-stone-500">No results found.</div>
