@@ -1,19 +1,7 @@
 /**
  * unarXiv API — Cloudflare Worker
  *
- * Routes:
- *   GET  /api/papers?q=...&sort=popular|recent|all&page=1
- *   GET  /api/papers/:id
- *   POST /api/papers/preview  { arxiv_url }  — scrape metadata without inserting
- *   POST /api/papers  { arxiv_url, metadata? }  — create paper record (no narration)
- *   POST /api/papers/:id/narrate  — request narration (conditional captcha)
- *   GET  /api/narration-check  — check if captcha is required for caller
- *   GET  /api/my-additions  — papers submitted by caller's IP
- *   DELETE /api/papers/:id  (requires admin password)
- *   GET  /api/papers/:id/audio
- *   GET  /api/papers/:id/progress
- *   POST /api/papers/:id/visit
- *   POST /api/webhooks/modal  (callback from Modal worker)
+ * See buildRouteTable() below for the complete list of API routes.
  */
 
 import type { IncomingRequestCfProperties } from "@cloudflare/workers-types";
