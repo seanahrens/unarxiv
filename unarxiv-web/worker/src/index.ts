@@ -290,35 +290,6 @@ async function handleAdminLists(request: Request, env: Env): Promise<Response> {
   });
 }
 
-async function handleAdminMigrateListIds(request: Request, env: Env): Promise<Response> {
-  const authErr = requireAdmin(request, env);
-  if (authErr) return authErr;
-
-  // Find all lists with IDs shorter than 6 characters
-  const shortLists = await env.DB.prepare("SELECT id FROM lists WHERE length(id) < 6").all<{ id: string }>();
-  if (!shortLists.results || shortLists.results.length === 0) {
-    return json({ message: "No short list IDs to migrate", migrated: 0 });
-  }
-
-  const migrated: { old_id: string; new_id: string }[] = [];
-  for (const row of shortLists.results) {
-    const newId = await generateListId(env.DB);
-    // Insert new row, move items, delete old row (avoids FK issues)
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO lists (id, owner_token, name, description, creator_ip, publicly_listed, created_at, updated_at)
-         SELECT ?, owner_token, name, description, creator_ip, publicly_listed, created_at, updated_at
-         FROM lists WHERE id = ?`
-      ).bind(newId, row.id),
-      env.DB.prepare("UPDATE list_items SET list_id = ? WHERE list_id = ?").bind(newId, row.id),
-      env.DB.prepare("DELETE FROM lists WHERE id = ?").bind(row.id),
-    ]);
-    migrated.push({ old_id: row.id, new_id: newId });
-  }
-
-  return json({ message: `Migrated ${migrated.length} list(s)`, migrated });
-}
-
 async function handleCreateList(request: Request, env: Env): Promise<Response> {
   const body = await request.json<{ name?: string; description?: string; publicly_listed?: boolean }>();
   if (!body.name || !body.name.trim()) {
@@ -1226,11 +1197,6 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "GET",
       pattern: /^\/api\/admin\/has-low-ratings$/,
       handler: (req, env) => handleAdminHasLowRatings(req, env),
-    },
-    {
-      method: "POST",
-      pattern: /^\/api\/admin\/migrate-list-ids$/,
-      handler: (req, env) => handleAdminMigrateListIds(req, env),
     },
     {
       method: "GET",
