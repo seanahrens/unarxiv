@@ -17,24 +17,29 @@ const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?
   </svg>
 );
 
-const PlayIcon = ({ size = 14, enhanced = false }: { size?: number; enhanced?: boolean }) => (
-  <svg width={size} height={size} viewBox={enhanced ? "-1 -2 28 28" : "0 0 24 24"} fill="currentColor">
-    {enhanced ? (
-      <>
-        <polygon
-          points="5,-1 27,12 5,25"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-        <polygon points="9,6 19,12 9,18" />
-      </>
-    ) : (
+const PlayIcon = ({ size = 14, enhanced = false }: { size?: number; enhanced?: boolean }) => {
+  if (!enhanced) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="7,3 21,12 7,21" />
+      </svg>
+    );
+  }
+  // Enhanced: same filled triangle as non-enhanced + uniform 4-unit outer border
+  // Outer triangle computed by offsetting each edge outward, sharing the same centroid
+  return (
+    <svg width={size + 8} height={size + 8} viewBox="2 -5 28 34" fill="currentColor">
+      <polygon
+        points="3,-4.3 28.4,12 3,28.3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
       <polygon points="7,3 21,12 7,21" />
-    )}
-  </svg>
-);
+    </svg>
+  );
+};
 
 const PauseIcon = ({ size = 14 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
