@@ -159,6 +159,9 @@ export function CollectionPageSkeleton() {
             <PaperCardSkeleton />
             <PaperCardSkeleton />
             <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
+            <PaperCardSkeleton />
           </div>
         </div>
       </div>
