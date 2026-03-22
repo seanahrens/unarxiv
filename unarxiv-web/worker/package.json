@@ -2,7 +2,10 @@
   "name": "unarxiv-api",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute unarxiv-db --local --file=../schema.sql",
@@ -11,8 +14,10 @@
     "db:init:remote": "wrangler d1 execute unarxiv-db --remote --file=../schema.sql"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.13.3",
     "@cloudflare/workers-types": "^4.20241205.0",
     "typescript": "^5.7.0",
+    "vitest": "^4.1.0",
     "wrangler": "^3.99.0"
   }
 }
