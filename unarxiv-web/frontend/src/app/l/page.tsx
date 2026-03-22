@@ -165,7 +165,7 @@ function ListView({ listId, startInEditMode }: { listId: string; startInEditMode
           id: p.id, arxiv_url: "", title: `${p.id} [Deleted Paper - Click to Restore]`,
           authors: [], abstract: "", published_date: "", status: "not_found" as Paper["status"],
           error_message: null, progress_detail: null, eta_seconds: null, audio_url: null,
-          audio_size_bytes: null, duration_seconds: null, created_at: "", completed_at: null,
+          audio_size_bytes: null, duration_seconds: null, created_at: "", completed_at: null, best_version_id: null,
         });
       } else {
         rawPapers.push(p as Paper);
