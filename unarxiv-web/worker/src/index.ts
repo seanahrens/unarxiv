@@ -2127,8 +2127,12 @@ async function handleDeletePremiumVersions(request: Request, env: Env, paperId: 
   await env.DB.prepare("DELETE FROM narration_versions WHERE paper_id = ? AND quality_rank > 0")
     .bind(paperId)
     .run();
-  // Reset best_version_id and restore original audio R2 key
-  await env.DB.prepare("UPDATE papers SET best_version_id = NULL, audio_r2_key = ? WHERE id = ?")
+  // Reset best_version_id, restore original audio R2 key, and reset status if stuck narrating
+  await env.DB.prepare(
+    `UPDATE papers SET best_version_id = NULL, audio_r2_key = ?,
+     status = CASE WHEN status = 'narrating' THEN 'narrated' ELSE status END
+     WHERE id = ?`
+  )
     .bind(`audio/${paperId}.mp3`, paperId)
     .run();
 
