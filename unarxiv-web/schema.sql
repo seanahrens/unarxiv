@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS ratings (
     rater_token TEXT,                              -- client-generated user identity token
     stars       INTEGER NOT NULL CHECK(stars BETWEEN 1 AND 5),
     comment     TEXT NOT NULL DEFAULT '',
+    voice_tier  TEXT,                              -- 'elevenlabs' | 'openai' | 'free' — best tier at time of review
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );

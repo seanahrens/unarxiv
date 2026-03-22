@@ -15,12 +15,13 @@ import {
 import {
   storeEncryptedKey,
   getStoredKey,
-  getLastOption,
   setLastOption,
   hasKeyForProvider,
   type PremiumProvider,
 } from "@/lib/premiumKeys";
 import { track } from "@/lib/analytics";
+import { VOICE_TIERS } from "@/lib/voiceTiers";
+import PlusIcons from "@/components/PlusIcons";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +56,7 @@ const UNIFIED_KEY_OPTIONS: OptionConfig[] = [
     needsLlmKey: false,
     unifiedKey: true,
     keyLabel: "OpenAI API Key",
-    providerLink: { label: "Get OpenAI API Key →", url: "https://platform.openai.com/api-keys" },
+    providerLink: { label: "Get API Key →", url: "https://platform.openai.com/api-keys" },
   },
 ];
 
@@ -67,7 +68,7 @@ const DUAL_KEY_OPTIONS: OptionConfig[] = [
     needsLlmKey: true,
     unifiedKey: false,
     keyLabel: "ElevenLabs API Key",
-    providerLink: { label: "Get ElevenLabs API Key →", url: "https://elevenlabs.io/app/settings/api-keys" },
+    providerLink: { label: "Get API Key →", url: "https://elevenlabs.io/app/settings/api-keys" },
   },
 ];
 
@@ -90,39 +91,8 @@ const LLM_PROVIDERS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Quality labels & voice descriptions (client-side, keyed by option_id)
-// ---------------------------------------------------------------------------
-
-const QUALITY_INFO: Record<string, { label: string; voiceNote: string; providerName: string }> = {
-  elevenlabs: { label: "Most Lifelike Voice", voiceNote: "Almost indistinguishable from a real narrator. The most human-sounding AI voice available. Plus Improved Script.", providerName: "ElevenLabs" },
-  openai: { label: "More Polished Voice", voiceNote: "Expressive and pleasant. You can tell it's AI, but it's easy to listen to for long papers. Plus Improved Script.", providerName: "OpenAI" },
-  free: { label: "Just Improved Script", voiceNote: "Same voice as the existing narration, but with a much-improved AI-enhanced script.", providerName: "Microsoft Edge" },
-};
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-
-function Stars({ count }: { count: number }) {
-  return (
-    <span className="flex gap-px" aria-label={`${count} stars`}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <svg
-          key={i}
-          width="11"
-          height="11"
-          viewBox="0 0 24 24"
-          fill={i <= count ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth="2"
-          className={i <= count ? "text-amber-500" : "text-stone-300"}
-        >
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </span>
-  );
-}
 
 function OptionCard({
   option,
@@ -139,57 +109,78 @@ function OptionCard({
   disabled: boolean;
   onClick: () => void;
 }) {
-  const qi = QUALITY_INFO[estimate.option_id];
-  const qualityLabel = qi?.label ?? estimate.display_name;
-  const voiceNote = qi?.voiceNote ?? estimate.tagline;
-  const providerName = qi?.providerName ?? estimate.display_name;
+  const tier = VOICE_TIERS[estimate.option_id];
+  const description = tier?.description ?? `${estimate.display_name}. ${estimate.tagline}`;
+  const providerName = tier?.providerName ?? estimate.display_name;
+  const plusCount = tier?.plusCount ?? 0;
+
+  // Split description into bold lead phrase + rest
+  const dotIdx = description.indexOf(".");
+  const leadPhrase = dotIdx >= 0 ? description.slice(0, dotIdx + 1) : description;
+  const rest = dotIdx >= 0 ? description.slice(dotIdx + 1).trim() : "";
 
   return (
     <button
       type="button"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all ${
+      className={`relative w-full text-left rounded-xl border-2 transition-all overflow-hidden ${
         disabled
           ? "border-stone-200 bg-stone-50 opacity-50 cursor-not-allowed"
           : selected
           ? "border-stone-700 bg-stone-50"
-          : supported
-          ? "border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50"
-          : "border-stone-200 bg-white opacity-60 hover:opacity-80"
+          : "border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50"
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-800"}`}>{qualityLabel}</span>
-            {disabled && (
-              <span data-testid="completed-badge" className="text-[10px] font-medium text-stone-400 bg-stone-100 border border-stone-200 rounded px-1.5 py-px flex items-center gap-0.5">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Upgraded
-              </span>
-            )}
-            {!disabled && supported && (
-              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-px">
-                Key saved
-              </span>
-            )}
-          </div>
-          <div className="mb-1">
-            <Stars count={estimate.stars} />
-          </div>
-          <p className="text-xs text-stone-500 leading-snug">{voiceNote}</p>
-          <p className="text-[10px] text-stone-400 mt-0.5">{providerName}</p>
+      {/* Key saved — corner triangle */}
+      {!disabled && supported && (
+        <div className="absolute top-0 left-0 w-7 h-7 z-10 opacity-50" title="API key saved">
+          <div className="absolute inset-0 bg-stone-600" style={{ clipPath: "polygon(0 0, 100% 0, 0 100%)" }} />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute top-[3px] left-[3px]">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+          </svg>
         </div>
-        <div className="text-right shrink-0 flex flex-col items-end">
-          <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
-            {estimate.estimated_cost_usd === 0 ? "Free" : `~$${estimate.estimated_cost_usd.toFixed(2)}`}
-          </span>
-          {estimate.estimated_cost_usd > 0 && (
-            <p className="text-[10px] text-stone-400">for this paper</p>
+      )}
+      {/* Upgraded — corner triangle */}
+      {disabled && (
+        <div className="absolute top-0 left-0 w-5 h-5 z-10" title="Already upgraded">
+          <div className="absolute inset-0 bg-stone-400" style={{ clipPath: "polygon(0 0, 100% 0, 0 100%)" }} />
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="absolute top-[2px] left-[2px]">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+      )}
+
+      <div className="flex items-stretch">
+        {/* Plus icons column — fixed width, horizontal layout */}
+        <div
+          className={`flex flex-col items-center justify-center rounded-l-[10px] border-r border-stone-200 bg-stone-50/50 px-3 shrink-0 ${disabled ? "opacity-40" : ""}`}
+          style={{ width: "4rem" }}
+        >
+          {plusCount > 0 ? (
+            <PlusIcons count={plusCount} size={15} className={disabled ? "text-stone-300" : "text-stone-600"} gap="gap-0.5" />
+          ) : (
+            <span className="text-stone-300 text-[10px]">—</span>
           )}
+          <span className={`text-[7px] mt-1 ${disabled ? "text-stone-300" : "text-stone-400"} leading-tight text-center`}>
+            {providerName}
+          </span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 px-3 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{leadPhrase}</p>
+            {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
+          </div>
+          <div className="text-right shrink-0 flex flex-col items-end">
+            <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
+              {estimate.estimated_cost_usd === 0 ? "Free" : `~$${estimate.estimated_cost_usd.toFixed(2)}`}
+            </span>
+            {estimate.estimated_cost_usd > 0 && (
+              <p className="text-[10px] text-stone-400">for this paper</p>
+            )}
+          </div>
         </div>
       </div>
     </button>
@@ -296,9 +287,9 @@ export default function PremiumNarrationModal({
   const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>([]);
   const [estimateError, setEstimateError] = useState(false);
 
-  // Step 1 selection
-  const lastOption = getLastOption();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "elevenlabs");
+  // Step 1 selection — smart default computed once estimates + versions load
+  const [selectedOptionId, setSelectedOptionId] = useState<string>("elevenlabs");
+  const hasPickedDefault = useRef(false);
 
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");
@@ -317,18 +308,17 @@ export default function PremiumNarrationModal({
   const selectedConfig = ALL_OPTIONS.find((o) => o.id === selectedOptionId) ?? ALL_OPTIONS[1];
   const selectedEstimate = estimates.find((e) => e.option_id === selectedOptionId);
 
-  // Determine the highest completed star tier (for cascading disable logic)
-  // If elevenlabs (5★) purchased → all disabled. openai (4★) → openai+free disabled. etc.
-  const TIER_STAR_MAP: Record<string, number> = { elevenlabs: 5, openai: 4, free: 3 };
-  let highestCompletedStars = 0;
+  // Determine the highest completed tier rank (for cascading disable logic)
+  // If elevenlabs (rank 4) purchased → all disabled. openai (rank 3) → openai+free disabled. etc.
+  let highestCompletedRank = 0;
   for (const v of existingVersions) {
     if (v.version_type === "free" && v.quality_rank === 0) continue; // base narration
-    const tier = v.tts_provider === "elevenlabs" ? "elevenlabs"
+    const tierId = v.tts_provider === "elevenlabs" ? "elevenlabs"
       : v.tts_provider === "openai" ? "openai" : "free";
-    const stars = TIER_STAR_MAP[tier] ?? 0;
-    if (stars > highestCompletedStars) highestCompletedStars = stars;
+    const rank = VOICE_TIERS[tierId]?.rank ?? 0;
+    if (rank > highestCompletedRank) highestCompletedRank = rank;
   }
-  const isFullyUpgraded = highestCompletedStars >= 5;
+  const isFullyUpgraded = highestCompletedRank >= 4;
 
   // Load estimates + existing versions on mount
   useEffect(() => {
@@ -350,15 +340,31 @@ export default function PremiumNarrationModal({
       .catch(() => {});
   }, [paper.id]);
 
-  // Auto-select the first non-disabled option when current selection would be disabled
+  // Smart default: pick the highest-rank unpurchased tier the user has a key for,
+  // or fall back to the highest unpurchased tier overall.
   useEffect(() => {
-    if (estimates.length === 0) return;
-    const currentEst = estimates.find((e) => e.option_id === selectedOptionId);
-    if (currentEst && currentEst.stars <= highestCompletedStars) {
-      const firstAvailable = estimates.find((e) => e.stars > highestCompletedStars);
-      if (firstAvailable) setSelectedOptionId(firstAvailable.option_id);
-    }
-  }, [estimates, highestCompletedStars]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (estimates.length === 0 || hasPickedDefault.current) return;
+    hasPickedDefault.current = true;
+
+    // Sort available (unpurchased) options by rank descending
+    const available = estimates
+      .filter((e) => (VOICE_TIERS[e.option_id]?.rank ?? 0) > highestCompletedRank)
+      .sort((a, b) => (VOICE_TIERS[b.option_id]?.rank ?? 0) - (VOICE_TIERS[a.option_id]?.rank ?? 0));
+
+    if (available.length === 0) return;
+
+    // Prefer highest tier where user already has a saved API key
+    const cfg = (id: string) => ALL_OPTIONS.find((o) => o.id === id);
+    const withKey = available.find((e) => {
+      const c = cfg(e.option_id);
+      if (!c) return false;
+      if (c.id === "free") return true; // free needs no TTS key
+      if (c.unifiedKey) return hasKeyForProvider(c.provider);
+      return hasKeyForProvider(c.provider);
+    });
+
+    setSelectedOptionId((withKey ?? available[0]).option_id);
+  }, [estimates, highestCompletedRank]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When option changes, reset key state and pre-fill from stored keys
   useEffect(() => {
@@ -493,8 +499,13 @@ export default function PremiumNarrationModal({
         <div className="px-6 pt-5 pb-3 border-b border-stone-100">
           <div className="flex items-start justify-between">
             <h2 className="text-base font-semibold text-stone-900 flex items-center gap-1.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-current shrink-0">
-                <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="text-stone-600 shrink-0">
+                <rect x="8.5" y="2.5" width="3" height="15" rx="0.4" />
+                <rect x="2.5" y="8.5" width="15" height="3" rx="0.4" />
+                <rect x="7.5" y="1.8" width="5" height="1.2" rx="0.3" />
+                <rect x="7.5" y="17" width="5" height="1.2" rx="0.3" />
+                <rect x="1.8" y="7.5" width="1.2" height="5" rx="0.3" />
+                <rect x="17" y="7.5" width="1.2" height="5" rx="0.3" />
               </svg>
               Upgrade Narration
             </h2>
@@ -517,15 +528,13 @@ export default function PremiumNarrationModal({
           {step === 1 && (
             <>
               <p className="text-xs text-stone-500 leading-snug">
-                Every upgrade rewrites the narration script with AI — adding natural descriptions of figures
-                and equations so you can actually follow along. Upgrade the voice too if you want something
-                more human. You bring your own API key; we don&apos;t charge anything.
+                Every voice upgrade includes an improved script with AI narrations of figures, graphs, and math equations.
               </p>
 
               {loading ? (
                 <div className="space-y-2">
                   {[0, 1, 2].map((i) => (
-                    <div key={i} className="h-16 rounded-xl bg-stone-100 animate-pulse" />
+                    <div key={i} className="h-[4.5rem] rounded-xl bg-stone-100 animate-pulse" />
                   ))}
                 </div>
               ) : (
@@ -538,7 +547,7 @@ export default function PremiumNarrationModal({
                       : cfg.id === "free"
                       ? hasLlmKeyStored(llmProvider)
                       : hasKeyForProvider(cfg.provider);
-                    const isDisabled = est.stars <= highestCompletedStars;
+                    const isDisabled = (VOICE_TIERS[est.option_id]?.rank ?? 0) <= highestCompletedRank;
                     return (
                       <OptionCard
                         key={est.option_id}
@@ -551,11 +560,7 @@ export default function PremiumNarrationModal({
                       />
                     );
                   })}
-                  {estimateError && (
-                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                      Estimates are approximate — costs may vary depending on paper length.
-                    </p>
-                  )}
+                  {/* estimate error handled silently — disclaimer shown in step 3 */}
                 </div>
               )}
             </>
@@ -565,18 +570,16 @@ export default function PremiumNarrationModal({
           {step === 2 && (
             <div className="space-y-4">
               <p className="text-xs text-stone-500 leading-snug">
-                unarXiv doesn&apos;t charge you — the only cost is what your API provider bills for usage.
-                Your keys are encrypted and saved locally in your browser. They&apos;re sent encrypted to our server
-                only during narration and are never stored on our end.{" "}
+                You&apos;ll only need to enter these key(s) once. Keys are encrypted and saved locally in your browser.{" "}
                 <a href="https://github.com/unarxiv/unarxiv" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-700">
-                  See for yourself on GitHub.
+                  See how on GitHub.
                 </a>
               </p>
 
               {/* TTS key — shown for non-free options */}
               {selectedConfig.id !== "free" && (
                 <KeyInputRow
-                  label={`${selectedConfig.keyLabel}${selectedConfig.unifiedKey ? " (covers scripting + voice)" : ""}`}
+                  label={selectedConfig.keyLabel}
                   value={ttsKeyRaw}
                   onChange={(v) => { setTtsKeyRaw(v); setTtsTestState("idle"); }}
                   providerLink={selectedConfig.providerLink}
@@ -616,7 +619,7 @@ export default function PremiumNarrationModal({
                     value={llmKeyRaw}
                     onChange={(v) => { setLlmKeyRaw(v); setLlmTestState("idle"); }}
                     providerLink={{
-                      label: `Get ${LLM_PROVIDERS.find((p) => p.id === llmProvider)?.label ?? ""} Key →`,
+                      label: "Get API Key →",
                       url: LLM_PROVIDERS.find((p) => p.id === llmProvider)?.link ?? "",
                     }}
                     onTest={() => handleTestKey("llm", llmKeyRaw, llmProvider)}
@@ -636,12 +639,18 @@ export default function PremiumNarrationModal({
           {step === 3 && selectedEstimate && (
             <div className="space-y-4">
               <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-stone-800">{selectedEstimate.display_name}</span>
-                  <div className="flex items-center gap-1.5">
-                    <Stars count={selectedEstimate.stars} />
-                  </div>
-                </div>
+                {(() => {
+                  const t = VOICE_TIERS[selectedEstimate.option_id];
+                  return (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <PlusIcons count={t?.plusCount ?? 0} size={12} />
+                        <span className="text-sm font-semibold text-stone-800">{t?.label ?? selectedEstimate.display_name}</span>
+                      </div>
+                      <span className="text-xs text-stone-400">{t?.providerName ?? ""}</span>
+                    </div>
+                  );
+                })()}
                 <p className="text-xs text-stone-500">{selectedEstimate.tagline}</p>
                 <div className="flex items-center justify-between pt-1 border-t border-stone-200 mt-1">
                   <span className="text-xs text-stone-500">Estimated cost</span>
@@ -649,11 +658,14 @@ export default function PremiumNarrationModal({
                     {totalCost === 0 ? "Free" : `~$${totalCost?.toFixed(2)}`}
                   </span>
                 </div>
+                <p className="text-[10px] text-stone-400 text-center mt-1">
+                  Estimates are approximate — actual costs depend on the AI-generated script length.
+                </p>
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-xs text-amber-800 leading-snug">
-                  <span className="font-semibold">You&apos;re helping the community —</span>{" "}
+              <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
+                <p className="text-xs text-stone-500 leading-snug">
+                  <span className="font-semibold text-stone-700">You&apos;re helping the community —</span>{" "}
                   everyone benefits from the upgraded narration of this paper. Thank you!
                 </p>
               </div>
@@ -757,7 +769,6 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
     {
       option_id: "elevenlabs",
       display_name: "ElevenLabs",
-      stars: 5,
       tagline: "Near-human voice quality.",
       estimated_cost_usd: 0.55,
       llm_cost_usd: 0.04,
@@ -767,7 +778,6 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
     {
       option_id: "openai",
       display_name: "OpenAI",
-      stars: 4,
       tagline: "Natural-sounding, expressive voice.",
       estimated_cost_usd: 0.18,
       llm_cost_usd: 0.04,
@@ -776,8 +786,7 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
     },
     {
       option_id: "free",
-      display_name: "Same Voice, Better Script",
-      stars: 3,
+      display_name: "Same Voice",
       tagline: "Same voice, AI-enhanced script.",
       estimated_cost_usd: 0.04,
       llm_cost_usd: 0.04,

@@ -23,6 +23,8 @@ import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 
 import { Skeleton } from "@/components/Skeleton";
+import PlusIcons from "@/components/PlusIcons";
+import { VOICE_TIERS } from "@/lib/voiceTiers";
 
 const PAGE_SIZE = 30;
 
@@ -135,6 +137,15 @@ function RatingsModal({
                       />
                     </svg>
                   ))}
+                  {r.voice_tier && (() => {
+                    const tier = VOICE_TIERS[r.voice_tier];
+                    return (
+                      <span className="ml-1.5 inline-flex items-center gap-1 text-[10px] text-stone-500">
+                        {tier && <PlusIcons count={tier.plusCount} size={9} className="text-stone-600" gap="gap-px" />}
+                        <span>{tier?.providerName ?? r.voice_tier}</span>
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   {r.comment ? (

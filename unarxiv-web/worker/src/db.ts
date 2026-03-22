@@ -338,6 +338,7 @@ export interface RatingRow {
   rater_ip: string;
   stars: number;
   comment: string;
+  voice_tier: string | null;  // 'elevenlabs' | 'openai' | 'free' | null (legacy)
   created_at: string;
   updated_at: string;
 }
@@ -394,8 +395,10 @@ export async function upsertRating(
   ip: string,
   stars: number,
   comment: string,
-  token?: string | null
+  token?: string | null,
+  voiceTier?: string | null
 ): Promise<RatingRow> {
+  const vt = voiceTier ?? null;
   if (token) {
     // Delete any existing rating from this user (by token or same IP) to avoid
     // unique constraint conflicts. The partial unique index on (paper_id, rater_token)
@@ -406,23 +409,24 @@ export async function upsertRating(
       .run();
     await db
       .prepare(
-        `INSERT INTO ratings (paper_id, rater_ip, rater_token, stars, comment)
-         VALUES (?, ?, ?, ?, ?)`
+        `INSERT INTO ratings (paper_id, rater_ip, rater_token, stars, comment, voice_tier)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .bind(paperId, ip, token, stars, comment)
+      .bind(paperId, ip, token, stars, comment, vt)
       .run();
   } else {
     // Legacy: upsert by IP
     await db
       .prepare(
-        `INSERT INTO ratings (paper_id, rater_ip, stars, comment)
-         VALUES (?, ?, ?, ?)
+        `INSERT INTO ratings (paper_id, rater_ip, stars, comment, voice_tier)
+         VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(paper_id, rater_ip) DO UPDATE SET
            stars = excluded.stars,
            comment = excluded.comment,
+           voice_tier = excluded.voice_tier,
            updated_at = datetime('now')`
       )
-      .bind(paperId, ip, stars, comment)
+      .bind(paperId, ip, stars, comment, vt)
       .run();
   }
 
@@ -471,6 +475,29 @@ export async function getAllRatingsForPaper(db: D1Database, paperId: string): Pr
     .bind(paperId)
     .all<RatingRow>();
   return results.results;
+}
+
+/**
+ * Determine the best voice tier for a paper based on its narration versions.
+ * Returns 'elevenlabs', 'openai', 'free' (improved script), or 'base' (default narration).
+ */
+export async function getBestVoiceTier(db: D1Database, paperId: string): Promise<string> {
+  // Check the best_version_id first
+  const paper = await getPaper(db, paperId);
+  if (paper?.best_version_id) {
+    const version = await getVersionById(db, paper.best_version_id, paperId);
+    if (version?.tts_provider === "elevenlabs") return "elevenlabs";
+    if (version?.tts_provider === "openai") return "openai";
+    if (version && version.script_type === "premium") return "free"; // premium script, free voice
+  }
+  // Fallback: check all versions for this paper
+  const versions = await getNarrationVersions(db, paperId);
+  const tierOrder = ["elevenlabs", "openai"];
+  for (const tier of tierOrder) {
+    if (versions.some((v) => v.tts_provider === tier)) return tier;
+  }
+  if (versions.some((v) => v.script_type === "premium")) return "free";
+  return "base"; // default narration, no upgrades
 }
 
 /** Clear all ratings for a paper and reset denormalized columns. */

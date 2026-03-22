@@ -6,6 +6,8 @@ import { useEtaCountdown } from "@/hooks/useEtaCountdown";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, isInProgress, getPaperVersions, type Paper, type PaperVersion } from "@/lib/api";
+import { getBestTierFromVersions, VOICE_TIERS } from "@/lib/voiceTiers";
+import PlusIcons from "@/components/PlusIcons";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
 import PremiumNarrationModal from "@/components/PremiumNarrationModal";
 
@@ -34,30 +36,10 @@ const ChevronIcon = ({ size = 12 }: { size?: number }) => (
   </svg>
 );
 
-/** Compute the highest upgrade star tier from versions list */
-function getHighestUpgradeStars(versions: PaperVersion[]): number {
-  const TIER_STARS: Record<string, number> = { elevenlabs: 5, openai: 4 };
-  let max = 0;
-  for (const v of versions) {
-    if (v.version_type === "free" && v.quality_rank === 0) continue;
-    const tier = v.tts_provider === "elevenlabs" ? "elevenlabs"
-      : v.tts_provider === "openai" ? "openai" : "free";
-    max = Math.max(max, TIER_STARS[tier] ?? 3);
-  }
-  return max;
-}
-
-/** Small inline stars for the play button */
-function MiniStars({ count }: { count: number }) {
-  return (
-    <span className="flex gap-px items-center" data-testid="play-stars">
-      {Array.from({ length: count }, (_, i) => (
-        <svg key={i} width="8" height="8" viewBox="0 0 24 24" fill="currentColor" className="text-amber-400">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </span>
-  );
+/** Compute the plus count for the play button from versions list */
+function getUpgradePlusCount(versions: PaperVersion[]): number {
+  const tier = getBestTierFromVersions(versions);
+  return tier.plusCount;
 }
 
 function formatEtaShort(seconds: number): string {
@@ -155,17 +137,17 @@ export default function PaperActionButton({
   const compactChevronBorder = "border-l-stone-300";
 
   // Fetch versions to determine upgrade tier (non-compact narrated papers only)
-  const [upgradeStars, setUpgradeStars] = useState(0);
+  const [upgradePlus, setUpgradePlus] = useState(0);
   useEffect(() => {
     if (paper.status !== "narrated" || compact) return;
-    if (paper.best_version_id == null) { setUpgradeStars(0); return; }
+    if (paper.best_version_id == null) { setUpgradePlus(0); return; }
     getPaperVersions(paper.id)
-      .then((resp) => setUpgradeStars(getHighestUpgradeStars(resp.versions)))
+      .then((resp) => setUpgradePlus(getUpgradePlusCount(resp.versions)))
       .catch(() => {});
   }, [paper.id, paper.status, paper.best_version_id, compact]);
 
   const isEnhanced = paper.best_version_id != null;
-  const isFullyUpgraded = upgradeStars >= 5;
+  const isFullyUpgraded = upgradePlus >= 3;
 
   const openPremiumModal = () => { setShowPremiumModal(true); toggleMenu(false); };
 
@@ -188,7 +170,7 @@ export default function PaperActionButton({
               {!compact && (
                 <>
                   <span>{isPlaying ? "Pause" : "Play"}</span>
-                  {upgradeStars > 0 && <MiniStars count={upgradeStars} />}
+                  {upgradePlus > 0 && <PlusIcons count={upgradePlus} size={9} className="text-stone-500" gap="gap-px" />}
                   {paper.duration_seconds && (
                     <span className="opacity-70">{formatDuration(paper.duration_seconds)}</span>
                   )}

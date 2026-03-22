@@ -7,6 +7,7 @@ import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, requestNarration, type Paper } from "@/lib/api";
 import ListSubmenu from "@/components/ListSubmenu";
 import { track } from "@/lib/analytics";
+import { SerifPlus } from "@/components/PlusIcons";
 
 function useDownload() {
   const [downloading, setDownloading] = useState(false);
@@ -187,19 +188,6 @@ export default function PaperActionsMenu({
         {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
 
-      {/* Rate Narration — only when complete */}
-      {isComplete && onRate && (
-        <>
-          <div className={DIVIDER} />
-          <button data-testid="rate-narration" onClick={() => { onRate(); onClose(); }} className={MENU_ITEM}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            Rate Narration
-          </button>
-        </>
-      )}
-
       {/* Upgrade Narration — only when narrated and not fully upgraded */}
       {isComplete && !hideUpgradeNarration && (
         <>
@@ -209,10 +197,21 @@ export default function PaperActionsMenu({
             onClick={() => { onOpenPremiumModal?.(); onClose(); }}
             className={MENU_ITEM}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
-            </svg>
+            <SerifPlus size={14} className="text-stone-600" />
             Upgrade Narration
+          </button>
+        </>
+      )}
+
+      {/* Rate Narration — only when complete */}
+      {isComplete && onRate && (
+        <>
+          <div className={DIVIDER} />
+          <button data-testid="rate-narration" onClick={() => { onRate(); onClose(); }} className={MENU_ITEM}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            Rate Narration
           </button>
         </>
       )}

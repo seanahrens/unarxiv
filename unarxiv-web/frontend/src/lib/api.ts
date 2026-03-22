@@ -1,4 +1,5 @@
 import { getUserToken } from "./userToken";
+import { VOICE_TIERS } from "./voiceTiers";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.unarxiv.org";
 
@@ -231,6 +232,7 @@ export interface Rating {
   paper_id: string;
   stars: number;
   comment: string;
+  voice_tier: string | null;  // 'elevenlabs' | 'openai' | 'free' | null (legacy)
   created_at: string;
   updated_at: string;
 }
@@ -275,6 +277,7 @@ export interface PaperWithRating extends Paper {
 export interface AdminRating {
   stars: number;
   comment: string;
+  voice_tier: string | null;  // 'elevenlabs' | 'openai' | 'free' | null (legacy)
   created_at: string;
 }
 
@@ -519,7 +522,6 @@ export function extractArxivId(input: string): string | null {
 export interface PremiumOptionEstimate {
   option_id: string;          // e.g. "openai", "elevenlabs", "free"
   display_name: string;       // e.g. "OpenAI TTS"
-  stars: number;              // 3-5
   tagline: string;            // one-liner
   estimated_cost_usd: number; // total cost for this paper
   llm_cost_usd: number;
@@ -542,7 +544,6 @@ function ttsProviderToTierId(ttsProvider: string | null): string {
   return ttsProvider;
 }
 
-const TIER_STARS: Record<string, number> = { elevenlabs: 5, openai: 4, google: 3, free: 3 };
 
 export async function getPremiumEstimate(paperId: string): Promise<PremiumEstimateResponse> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/estimate`, {
@@ -570,7 +571,6 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
     options.push({
       option_id: tierId,
       display_name: tierId,
-      stars: TIER_STARS[tierId] ?? 3,
       tagline: "",
       estimated_cost_usd: costs.total,
       llm_cost_usd: costs.llm,
@@ -579,8 +579,8 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
     });
   }
 
-  // Sort: highest stars first
-  options.sort((a, b) => b.stars - a.stars);
+  // Sort: highest quality tier first
+  options.sort((a, b) => (VOICE_TIERS[b.option_id]?.rank ?? 0) - (VOICE_TIERS[a.option_id]?.rank ?? 0));
 
   return { paper_id: paperId, word_count: raw.script_char_count, options };
 }

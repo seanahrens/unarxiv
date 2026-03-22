@@ -5,12 +5,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
-import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, type Paper, type Rating } from "@/lib/api";
+import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, getPaperVersions, type Paper, type Rating, type PaperVersion } from "@/lib/api";
+import { VOICE_TIERS, getBestTierFromVersions, type VoiceTier } from "@/lib/voiceTiers";
+import PlusIcons from "@/components/PlusIcons";
 import { PaperDetailSkeleton, Skeleton } from "@/components/Skeleton";
 import { track } from "@/lib/analytics";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import PaperActionButton from "@/components/PaperActionButton";
+import PremiumNarrationModal from "@/components/PremiumNarrationModal";
 
 function CopyableId({ id }: { id: string }) {
   const [toast, setToast] = useState<{ x: number; y: number } | null>(null);
@@ -110,21 +113,28 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
 function RatingModal({
   paperId,
   existingRating,
+  currentTier,
+  canUpgrade,
   onClose,
   onSaved,
   onCleared,
+  onUpgrade,
 }: {
   paperId: string;
   existingRating: Rating | null;
+  currentTier: VoiceTier | null;
+  canUpgrade: boolean;
   onClose: () => void;
   onSaved: (r: Rating) => void;
   onCleared: () => void;
+  onUpgrade?: () => void;
 }) {
   const [stars, setStars] = useState(existingRating?.stars || 0);
   const [comment, setComment] = useState(existingRating?.comment || "");
   const [saving, setSaving] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = useCallback(async () => {
     if (stars === 0) {
@@ -137,13 +147,13 @@ function RatingModal({
       const saved = await submitRating(paperId, stars, comment);
       track("rating_submitted", { arxiv_id: paperId, stars, has_comment: !!comment.trim() });
       onSaved(saved);
-      onClose();
+      setSubmitted(true);
     } catch (e: any) {
       setError(e.message || "Failed to submit rating");
     } finally {
       setSaving(false);
     }
-  }, [paperId, stars, comment, onSaved, onClose]);
+  }, [paperId, stars, comment, onSaved]);
 
   const handleClear = useCallback(async () => {
     setClearing(true);
@@ -158,6 +168,45 @@ function RatingModal({
       setClearing(false);
     }
   }, [paperId, onCleared, onClose]);
+
+  // Post-submit view with optional upgrade prompt
+  if (submitted) {
+    return (
+      <div data-testid="rating-modal" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+        <div
+          className="bg-surface rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 className="text-lg font-bold text-stone-900 mb-2">Thanks for your feedback!</h3>
+          <p className="text-sm text-stone-500 mb-4">Your rating helps improve narration quality for everyone.</p>
+
+          {canUpgrade && onUpgrade && (
+            <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 mb-4">
+              <p className="text-sm text-stone-700">
+                Want an even better narration?{" "}
+                <button
+                  type="button"
+                  onClick={() => { onClose(); onUpgrade(); }}
+                  className="font-medium text-stone-900 underline hover:text-stone-700"
+                >
+                  Upgrade the voice &amp; script →
+                </button>
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-700 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="rating-modal" className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
@@ -185,6 +234,14 @@ function RatingModal({
         </div>
 
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+
+        {currentTier && (
+          <div className="flex items-center gap-1.5 text-xs text-stone-400 mb-3">
+            <span>Reviewing</span>
+            {currentTier.plusCount > 0 && <PlusIcons count={currentTier.plusCount} size={10} />}
+            <span>{currentTier.providerName} narration</span>
+          </div>
+        )}
 
         <div className="flex justify-between">
           <div>
@@ -260,7 +317,9 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [myRating, setMyRating] = useState<Rating | null>(null);
+  const [paperVersions, setPaperVersions] = useState<PaperVersion[]>([]);
   const [paperRead, setPaperRead] = useState(false);
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
@@ -313,6 +372,11 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     // Fetch existing rating for this user
     fetchRating(id)
       .then((r) => setMyRating(r))
+      .catch(() => {});
+
+    // Fetch narration versions (for voice tier display)
+    getPaperVersions(id)
+      .then((resp) => setPaperVersions(resp.versions))
       .catch(() => {});
 
     // Check read status from localStorage
@@ -521,13 +585,28 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         </div>
       )}
 
-      {showRatingModal && (
-        <RatingModal
-          paperId={paper.id}
-          existingRating={myRating}
-          onClose={() => setShowRatingModal(false)}
-          onSaved={(r) => setMyRating(r)}
-          onCleared={() => setMyRating(null)}
+      {showRatingModal && (() => {
+        const currentTier = getBestTierFromVersions(paperVersions);
+        const canUpgrade = currentTier.rank < VOICE_TIERS.elevenlabs.rank; // can still upgrade if not at top tier
+        return (
+          <RatingModal
+            paperId={paper.id}
+            existingRating={myRating}
+            currentTier={currentTier}
+            canUpgrade={canUpgrade}
+            onClose={() => setShowRatingModal(false)}
+            onSaved={(r) => setMyRating(r)}
+            onCleared={() => setMyRating(null)}
+            onUpgrade={() => setShowUpgradeModal(true)}
+          />
+        );
+      })()}
+
+      {showUpgradeModal && (
+        <PremiumNarrationModal
+          paper={paper}
+          onClose={() => setShowUpgradeModal(false)}
+          onSuccess={(updatedPaper) => setPaper(updatedPaper)}
         />
       )}
 

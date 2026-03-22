@@ -62,6 +62,7 @@ import {
   getVersionById,
   updateBestVersionId,
   updateScriptCharCount,
+  getBestVoiceTier,
 } from "./db";
 
 export default {
@@ -136,6 +137,7 @@ async function handleRating(request: Request, env: Env, paperId: string): Promis
       paper_id: rating.paper_id,
       stars: rating.stars,
       comment: rating.comment,
+      voice_tier: rating.voice_tier,
       created_at: rating.created_at,
       updated_at: rating.updated_at,
     });
@@ -147,11 +149,14 @@ async function handleRating(request: Request, env: Env, paperId: string): Promis
       return json({ error: "stars must be 1-5" }, 400);
     }
     const comment = (body.comment || "").slice(0, 2000);
-    const rating = await upsertRating(env.DB, paperId, ip, stars, comment, token);
+    // Record which voice tier was the best available when this review was written
+    const voiceTier = await getBestVoiceTier(env.DB, paperId);
+    const rating = await upsertRating(env.DB, paperId, ip, stars, comment, token, voiceTier);
     return json({
       paper_id: rating.paper_id,
       stars: rating.stars,
       comment: rating.comment,
+      voice_tier: rating.voice_tier,
       created_at: rating.created_at,
       updated_at: rating.updated_at,
     });
@@ -243,7 +248,7 @@ async function handleAdminPaperRatings(request: Request, env: Env, paperId: stri
   const authErr = requireAdmin(request, env);
   if (authErr) return authErr;
   const ratings = await getAllRatingsForPaper(env.DB, paperId);
-  return json({ ratings: ratings.map((r) => ({ stars: r.stars, comment: r.comment, created_at: r.created_at })) });
+  return json({ ratings: ratings.map((r) => ({ stars: r.stars, comment: r.comment, voice_tier: r.voice_tier, created_at: r.created_at })) });
 }
 
 async function handleAdminClearRatings(request: Request, env: Env): Promise<Response> {
@@ -948,10 +953,14 @@ async function handleEstimate(env: Env, id: string): Promise<Response> {
   const paper = await getPaper(env.DB, id);
   if (!paper) return json({ error: "Paper not found" }, 404);
 
-  const charCount = paper.script_char_count;
-  if (!charCount) {
+  const rawCharCount = paper.script_char_count;
+  if (!rawCharCount) {
     return json({ estimated: false, message: "Script not yet generated; estimates unavailable" });
   }
+
+  // script_char_count reflects the base narration script. AI-enhanced scripts are
+  // typically ~20% longer due to added narrations of figures, graphs, and equations.
+  const charCount = Math.ceil(rawCharCount * 1.2);
 
   // Build options matrix: all meaningful provider/model combinations
   const options: {
