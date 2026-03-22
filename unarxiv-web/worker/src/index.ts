@@ -967,9 +967,9 @@ async function handleEstimate(env: Env, id: string): Promise<Response> {
     return json({ estimated: false, message: "Script not yet generated; estimates unavailable" });
   }
 
-  // script_char_count reflects the base narration script. AI-enhanced scripts are
-  // typically ~20% longer due to added narrations of figures, graphs, and equations.
-  const charCount = Math.ceil(rawCharCount * 1.2);
+  // script_char_count reflects the base narration script. AI-generated scripts from
+  // LaTeX are typically ~33% longer due to added narrations of figures, graphs, and equations.
+  const charCount = Math.ceil(rawCharCount * 1.33);
 
   // Build options matrix: all meaningful provider/model combinations
   const options: {
