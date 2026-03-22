@@ -4,9 +4,9 @@
 -- Provides a handful of papers in various statuses so you can test
 -- the full UI without hitting production or running narration.
 
--- A narrated paper with audio metadata (audio file won't exist in local R2,
--- but the UI will render the player and show "narrated" status)
-INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, audio_r2_key, audio_size_bytes, duration_seconds, created_at, completed_at)
+-- A narrated paper with audio metadata.
+-- The db:seed script copies fixtures/silence.mp3 into local R2 so audio playback works.
+INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, audio_r2_key, audio_size_bytes, duration_seconds, script_char_count, created_at, completed_at)
 VALUES (
   '2301.07041',
   'https://arxiv.org/abs/2301.07041',
@@ -18,9 +18,14 @@ VALUES (
   'audio/2301.07041.mp3',
   15728640,
   1847,
+  50000,
   datetime('now', '-7 days'),
   datetime('now', '-7 days')
 );
+
+-- Free-tier narration version for the narrated paper (base quality, no premium upgrade)
+INSERT OR IGNORE INTO narration_versions (paper_id, version_type, quality_rank, script_type, tts_provider, tts_model, audio_r2_key, duration_seconds)
+VALUES ('2301.07041', 'free', 0, 'free', 'openai', 'tts-1', 'audio/2301.07041.mp3', 1847);
 
 -- A paper currently being narrated
 INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, eta_seconds, created_at)

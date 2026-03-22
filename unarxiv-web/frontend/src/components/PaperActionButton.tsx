@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEtaCountdown } from "@/hooks/useEtaCountdown";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
-import { audioUrl, formatDuration, isInProgress, type Paper } from "@/lib/api";
+import { audioUrl, formatDuration, isInProgress, getPaperVersions, type Paper, type PaperVersion } from "@/lib/api";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
 import PremiumNarrationModal from "@/components/PremiumNarrationModal";
 
@@ -33,6 +33,32 @@ const ChevronIcon = ({ size = 12 }: { size?: number }) => (
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
+
+/** Compute the highest upgrade star tier from versions list */
+function getHighestUpgradeStars(versions: PaperVersion[]): number {
+  const TIER_STARS: Record<string, number> = { elevenlabs: 5, openai: 4 };
+  let max = 0;
+  for (const v of versions) {
+    if (v.version_type === "free" && v.quality_rank === 0) continue;
+    const tier = v.tts_provider === "elevenlabs" ? "elevenlabs"
+      : v.tts_provider === "openai" ? "openai" : "free";
+    max = Math.max(max, TIER_STARS[tier] ?? 3);
+  }
+  return max;
+}
+
+/** Small inline stars for the play button */
+function MiniStars({ count }: { count: number }) {
+  return (
+    <span className="flex gap-px items-center" data-testid="play-stars">
+      {Array.from({ length: count }, (_, i) => (
+        <svg key={i} width="8" height="8" viewBox="0 0 24 24" fill="currentColor" className="text-amber-400">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      ))}
+    </span>
+  );
+}
 
 function formatEtaShort(seconds: number): string {
   if (seconds <= 0) return "~5s";
@@ -128,7 +154,20 @@ export default function PaperActionButton({
   const compactColors = "text-stone-700 bg-surface border-stone-300 hover:bg-stone-100 hover:text-stone-900";
   const compactChevronBorder = "border-l-stone-300";
 
+  // Fetch versions to determine upgrade tier (non-compact narrated papers only)
+  const [upgradeStars, setUpgradeStars] = useState(0);
+  useEffect(() => {
+    if (paper.status !== "narrated" || compact) return;
+    if (paper.best_version_id == null) { setUpgradeStars(0); return; }
+    getPaperVersions(paper.id)
+      .then((resp) => setUpgradeStars(getHighestUpgradeStars(resp.versions)))
+      .catch(() => {});
+  }, [paper.id, paper.status, paper.best_version_id, compact]);
+
   // --- NARRATED: Play button ---
+  const isEnhanced = paper.best_version_id != null;
+  const isFullyUpgraded = upgradeStars >= 5;
+
   if (isNarrated) {
     const colors = compact ? compactColors : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
     const chevronBorder = compact ? compactChevronBorder : "border-l-stone-700";
@@ -144,6 +183,7 @@ export default function PaperActionButton({
           {!compact && (
             <>
               <span>{isPlaying ? "Pause" : "Play"}</span>
+              {upgradeStars > 0 && <MiniStars count={upgradeStars} />}
               {paper.duration_seconds && (
                 <span className="opacity-70">{formatDuration(paper.duration_seconds)}</span>
               )}
@@ -170,6 +210,7 @@ export default function PaperActionButton({
             onToggleScript={onToggleScript}
             currentView={currentView}
             onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
+            hideUpgradeNarration={isFullyUpgraded}
           />
         )}
         {showPremiumModal && (

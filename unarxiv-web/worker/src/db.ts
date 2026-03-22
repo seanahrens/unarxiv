@@ -686,6 +686,18 @@ export async function claimPaperForNarration(db: D1Database, id: string): Promis
   return (result.meta?.changes ?? 0) > 0;
 }
 
+/**
+ * Atomically claim a paper for premium upgrade narration.
+ * Like claimPaperForNarration, but also allows already-narrated papers.
+ */
+export async function claimPaperForPremium(db: D1Database, id: string): Promise<boolean> {
+  const result = await db
+    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = 55, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed', 'narrated')")
+    .bind(id)
+    .run();
+  return (result.meta?.changes ?? 0) > 0;
+}
+
 // --- User Playlist ---
 
 /** Get a user's playlist (ordered). */
@@ -885,6 +897,14 @@ export async function insertNarrationVersion(
     )
     .first<NarrationVersion>();
   return result!;
+}
+
+/** Get a specific narration version by ID and paper ID. */
+export async function getVersionById(db: D1Database, versionId: number, paperId: string): Promise<NarrationVersion | null> {
+  return db
+    .prepare("SELECT * FROM narration_versions WHERE id = ? AND paper_id = ?")
+    .bind(versionId, paperId)
+    .first<NarrationVersion>();
 }
 
 /** Get all narration versions for a paper, ordered best first. */

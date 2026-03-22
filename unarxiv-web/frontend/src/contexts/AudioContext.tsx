@@ -329,7 +329,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     // Check for best-quality version (fire-and-forget, update src if better found)
     getPaperVersions(newPaperId)
       .then((resp) => {
-        if (resp.best_version && paperIdRef.current === newPaperId) {
+        if (resp.best_version && resp.best_version.audio_url && paperIdRef.current === newPaperId) {
           const bestSrc = resp.best_version.audio_url;
           // Only switch if a premium version exists (higher quality rank)
           if (resp.best_version.quality_rank > 1 && bestSrc !== audio.src) {

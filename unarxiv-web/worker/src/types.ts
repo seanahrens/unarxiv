@@ -77,6 +77,7 @@ export interface PaperResponse {
   audio_url: string | null;
   audio_size_bytes: number | null;
   duration_seconds: number | null;
+  best_version_id: number | null;
   created_at: string;
   completed_at: string | null;
 }
@@ -127,6 +128,7 @@ export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse 
     audio_url: paper.status === "narrated" ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,
     audio_size_bytes: paper.audio_size_bytes,
     duration_seconds: paper.duration_seconds,
+    best_version_id: paper.best_version_id,
     created_at: paper.created_at,
     completed_at: paper.completed_at,
   };

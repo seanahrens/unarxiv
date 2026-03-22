@@ -56,8 +56,10 @@ interface PaperActionsMenuProps {
   onToggleScript?: () => void;
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
-  /** Called when user clicks Premium Narration — opens the modal in the parent */
+  /** Called when user clicks Upgrade Narration — opens the modal in the parent */
   onOpenPremiumModal?: () => void;
+  /** Hide the Upgrade Narration option (e.g. when paper is fully upgraded) */
+  hideUpgradeNarration?: boolean;
 }
 
 export default function PaperActionsMenu({
@@ -74,6 +76,7 @@ export default function PaperActionsMenu({
   onToggleScript,
   currentView,
   onOpenPremiumModal,
+  hideUpgradeNarration,
 }: PaperActionsMenuProps) {
   const router = useRouter();
   const { state, actions } = useAudio();
@@ -197,8 +200,8 @@ export default function PaperActionsMenu({
         </>
       )}
 
-      {/* Premium Narration — only when narrated */}
-      {isComplete && (
+      {/* Upgrade Narration — only when narrated and not fully upgraded */}
+      {isComplete && !hideUpgradeNarration && (
         <>
           <div className={DIVIDER} />
           <button
@@ -206,8 +209,10 @@ export default function PaperActionsMenu({
             onClick={() => { onOpenPremiumModal?.(); onClose(); }}
             className={MENU_ITEM}
           >
-            <span style={{ fontSize: "12px", lineHeight: 1 }}>✨</span>
-            Premium Narration
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
+            </svg>
+            Upgrade Narration
           </button>
         </>
       )}

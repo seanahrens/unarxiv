@@ -7,7 +7,9 @@ import {
   requestPremiumNarration,
   encryptKey,
   validateKey,
+  getPaperVersions,
   type PremiumOptionEstimate,
+  type PaperVersion,
   type Paper,
 } from "@/lib/api";
 import {
@@ -55,14 +57,6 @@ const UNIFIED_KEY_OPTIONS: OptionConfig[] = [
     keyLabel: "OpenAI API Key",
     providerLink: { label: "Get OpenAI API Key →", url: "https://platform.openai.com/api-keys" },
   },
-  {
-    id: "google",
-    provider: "google",
-    needsLlmKey: false,
-    unifiedKey: true,
-    keyLabel: "Google Cloud API Key",
-    providerLink: { label: "Get Google Cloud API Key →", url: "https://console.cloud.google.com/apis/credentials" },
-  },
 ];
 
 // Providers that need a TTS key + separate LLM provider
@@ -96,37 +90,18 @@ const LLM_PROVIDERS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Quality labels & voice descriptions (client-side, keyed by option_id)
 // ---------------------------------------------------------------------------
 
-function InfoTooltip({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
-  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+const QUALITY_INFO: Record<string, { label: string; voiceNote: string; providerName: string }> = {
+  elevenlabs: { label: "Most Lifelike Voice", voiceNote: "Almost indistinguishable from a real narrator. The most human-sounding AI voice available. Plus Improved Script.", providerName: "ElevenLabs" },
+  openai: { label: "More Polished Voice", voiceNote: "Expressive and pleasant. You can tell it's AI, but it's easy to listen to for long papers. Plus Improved Script.", providerName: "OpenAI" },
+  free: { label: "Just Improved Script", voiceNote: "Same voice as the existing narration, but with a much-improved AI-enhanced script.", providerName: "Microsoft Edge" },
+};
 
-  const show = () => {
-    if (timeout.current) clearTimeout(timeout.current);
-    setOpen(true);
-    timeout.current = setTimeout(() => setOpen(false), 4000);
-  };
-
-  return (
-    <span className="relative inline-flex">
-      <button
-        type="button"
-        onClick={show}
-        className="w-4 h-4 rounded-full border border-stone-400 text-stone-400 hover:text-stone-600 hover:border-stone-600 flex items-center justify-center text-[10px] font-bold leading-none transition-colors"
-      >
-        i
-      </button>
-      {open && (
-        <span className="absolute left-6 top-1/2 -translate-y-1/2 bg-stone-800 text-white text-xs rounded-lg px-3 py-2 w-60 z-50 shadow-lg leading-snug">
-          {text}
-          <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-stone-800" />
-        </span>
-      )}
-    </span>
-  );
-}
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
 function Stars({ count }: { count: number }) {
   return (
@@ -154,41 +129,62 @@ function OptionCard({
   estimate,
   selected,
   supported,
+  disabled,
   onClick,
 }: {
   option: OptionConfig;
   estimate: PremiumOptionEstimate;
   selected: boolean;
   supported: boolean;
+  disabled: boolean;
   onClick: () => void;
 }) {
+  const qi = QUALITY_INFO[estimate.option_id];
+  const qualityLabel = qi?.label ?? estimate.display_name;
+  const voiceNote = qi?.voiceNote ?? estimate.tagline;
+  const providerName = qi?.providerName ?? estimate.display_name;
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all ${
-        selected
+        disabled
+          ? "border-stone-200 bg-stone-50 opacity-50 cursor-not-allowed"
+          : selected
           ? "border-stone-700 bg-stone-50"
           : supported
           ? "border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50"
           : "border-stone-200 bg-white opacity-60 hover:opacity-80"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-semibold text-stone-800">{estimate.display_name}</span>
-            <Stars count={estimate.stars} />
-            {supported && (
+            <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-800"}`}>{qualityLabel}</span>
+            {disabled && (
+              <span data-testid="completed-badge" className="text-[10px] font-medium text-stone-400 bg-stone-100 border border-stone-200 rounded px-1.5 py-px flex items-center gap-0.5">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Upgraded
+              </span>
+            )}
+            {!disabled && supported && (
               <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-px">
                 Key saved
               </span>
             )}
           </div>
-          <p className="text-xs text-stone-500 leading-snug">{estimate.tagline}</p>
+          <div className="mb-1">
+            <Stars count={estimate.stars} />
+          </div>
+          <p className="text-xs text-stone-500 leading-snug">{voiceNote}</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">{providerName}</p>
         </div>
-        <div className="text-right shrink-0">
-          <span className="text-sm font-semibold text-stone-700">
+        <div className="text-right shrink-0 flex flex-col items-end">
+          <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
             {estimate.estimated_cost_usd === 0 ? "Free" : `~$${estimate.estimated_cost_usd.toFixed(2)}`}
           </span>
           {estimate.estimated_cost_usd > 0 && (
@@ -221,6 +217,32 @@ function KeyInputRow({
   testState: "idle" | "testing" | "ok" | "fail";
   placeholder?: string;
 }) {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-test key after typing pause (800ms) or immediate on paste (value jump)
+  const prevLenRef = useRef(0);
+  useEffect(() => {
+    if (!value.trim()) return;
+    if (testState === "testing" || testState === "ok") return;
+    // If value length jumped by 10+ chars, likely a paste — test immediately
+    const isPaste = value.length - prevLenRef.current >= 10;
+    prevLenRef.current = value.length;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(onTest, isPaste ? 100 : 800);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const statusText = testState === "testing" ? "Checking…"
+    : testState === "ok" ? "✓ Valid"
+    : testState === "fail" ? "✗ Invalid"
+    : null;
+
+  const statusClass = testState === "ok"
+    ? "text-emerald-600"
+    : testState === "fail"
+    ? "text-red-500"
+    : "text-stone-400";
+
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -236,7 +258,7 @@ function KeyInputRow({
           </a>
         )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <input
           type="password"
           value={value}
@@ -244,20 +266,11 @@ function KeyInputRow({
           placeholder={placeholder || "sk-..."}
           className="flex-1 border border-stone-300 rounded-lg px-3 py-1.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono"
         />
-        <button
-          type="button"
-          onClick={onTest}
-          disabled={!value.trim() || testState === "testing"}
-          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shrink-0 ${
-            testState === "ok"
-              ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
-              : testState === "fail"
-              ? "bg-red-50 text-red-600 border border-red-300"
-              : "bg-stone-100 text-stone-600 border border-stone-300 hover:bg-stone-200 disabled:opacity-50"
-          }`}
-        >
-          {testState === "testing" ? "Testing…" : testState === "ok" ? "✓ Valid" : testState === "fail" ? "✗ Invalid" : "Test"}
-        </button>
+        {statusText && (
+          <span className={`text-xs font-medium shrink-0 ${statusClass}`}>
+            {statusText}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -285,7 +298,7 @@ export default function PremiumNarrationModal({
 
   // Step 1 selection
   const lastOption = getLastOption();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "");
+  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "elevenlabs");
 
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");
@@ -293,35 +306,59 @@ export default function PremiumNarrationModal({
   const [llmProvider, setLlmProvider] = useState<string>(LLM_PROVIDERS[0].id);
   const [llmKeyRaw, setLlmKeyRaw] = useState("");
   const [llmTestState, setLlmTestState] = useState<"idle" | "testing" | "ok" | "fail">("idle");
-  const [rememberKeys, setRememberKeys] = useState(true);
+
+  // Existing versions (to show completed badges)
+  const [existingVersions, setExistingVersions] = useState<PaperVersion[]>([]);
 
   // Step 3 / submission
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // AI scripting tooltip text
-  const scriptingInfoText =
-    "AI-enhanced scripting adds: natural descriptions of figures and equations, improved readability for math notation, and smooth section transitions. This makes the narration much easier to follow.";
-
   const selectedConfig = ALL_OPTIONS.find((o) => o.id === selectedOptionId) ?? ALL_OPTIONS[1];
   const selectedEstimate = estimates.find((e) => e.option_id === selectedOptionId);
 
-  // Load estimates on mount
+  // Determine the highest completed star tier (for cascading disable logic)
+  // If elevenlabs (5★) purchased → all disabled. openai (4★) → openai+free disabled. etc.
+  const TIER_STAR_MAP: Record<string, number> = { elevenlabs: 5, openai: 4, free: 3 };
+  let highestCompletedStars = 0;
+  for (const v of existingVersions) {
+    if (v.version_type === "free" && v.quality_rank === 0) continue; // base narration
+    const tier = v.tts_provider === "elevenlabs" ? "elevenlabs"
+      : v.tts_provider === "openai" ? "openai" : "free";
+    const stars = TIER_STAR_MAP[tier] ?? 0;
+    if (stars > highestCompletedStars) highestCompletedStars = stars;
+  }
+  const isFullyUpgraded = highestCompletedStars >= 5;
+
+  // Load estimates + existing versions on mount
   useEffect(() => {
     setLoading(true);
     setEstimateError(false);
     getPremiumEstimate(paper.id)
       .then((resp) => {
-        setEstimates(resp.options ?? buildFallbackEstimates());
+        const opts = (resp.options ?? buildFallbackEstimates()).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
+        setEstimates(opts);
         setLoading(false);
       })
       .catch(() => {
         setEstimateError(true);
         setLoading(false);
-        // Fallback estimates so the UI is still usable
         setEstimates(buildFallbackEstimates());
       });
+    getPaperVersions(paper.id)
+      .then((resp) => setExistingVersions(resp.versions))
+      .catch(() => {});
   }, [paper.id]);
+
+  // Auto-select the first non-disabled option when current selection would be disabled
+  useEffect(() => {
+    if (estimates.length === 0) return;
+    const currentEst = estimates.find((e) => e.option_id === selectedOptionId);
+    if (currentEst && currentEst.stars <= highestCompletedStars) {
+      const firstAvailable = estimates.find((e) => e.stars > highestCompletedStars);
+      if (firstAvailable) setSelectedOptionId(firstAvailable.option_id);
+    }
+  }, [estimates, highestCompletedStars]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When option changes, reset key state and pre-fill from stored keys
   useEffect(() => {
@@ -382,9 +419,7 @@ export default function PremiumNarrationModal({
       if (!rawKey.trim()) return null;
       try {
         const resp = await encryptKey(provider, rawKey.trim());
-        if (rememberKeys) {
-          storeEncryptedKey(provider as PremiumProvider, resp.encrypted_key);
-        }
+        storeEncryptedKey(provider as PremiumProvider, resp.encrypted_key);
         return resp.encrypted_key;
       } catch {
         return null;
@@ -455,17 +490,14 @@ export default function PremiumNarrationModal({
     >
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg mx-auto overflow-hidden">
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-stone-100">
+        <div className="px-6 pt-5 pb-3 border-b border-stone-100">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-stone-900 flex items-center gap-1.5">
-                <span>✨</span>
-                Premium Narration
-              </h2>
-              <p className="text-xs text-stone-500 mt-0.5 line-clamp-1" title={paper.title}>
-                {paper.title}
-              </p>
-            </div>
+            <h2 className="text-base font-semibold text-stone-900 flex items-center gap-1.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-current shrink-0">
+                <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
+              </svg>
+              Upgrade Narration
+            </h2>
             <button
               type="button"
               onClick={onClose}
@@ -477,29 +509,18 @@ export default function PremiumNarrationModal({
               </svg>
             </button>
           </div>
-
-          {/* Step indicator */}
-          <div className="flex items-center gap-1.5 mt-4">
-            {([1, 2, 3] as const).map((s) => (
-              <div
-                key={s}
-                className={`h-1 rounded-full transition-all ${
-                  s === step ? "flex-1 bg-stone-700" : s < step ? "w-8 bg-stone-400" : "w-8 bg-stone-200"
-                }`}
-              />
-            ))}
-          </div>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="px-6 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
           {/* ── Step 1: Choose option ── */}
           {step === 1 && (
             <>
-              <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span>All options include AI-enhanced scripting</span>
-                <InfoTooltip text={scriptingInfoText} />
-              </div>
+              <p className="text-xs text-stone-500 leading-snug">
+                Every upgrade rewrites the narration script with AI — adding natural descriptions of figures
+                and equations so you can actually follow along. Upgrade the voice too if you want something
+                more human. You bring your own API key; we don&apos;t charge anything.
+              </p>
 
               {loading ? (
                 <div className="space-y-2">
@@ -517,14 +538,16 @@ export default function PremiumNarrationModal({
                       : cfg.id === "free"
                       ? hasLlmKeyStored(llmProvider)
                       : hasKeyForProvider(cfg.provider);
+                    const isDisabled = est.stars <= highestCompletedStars;
                     return (
                       <OptionCard
                         key={est.option_id}
                         option={cfg}
                         estimate={est}
-                        selected={selectedOptionId === est.option_id}
+                        selected={!isDisabled && selectedOptionId === est.option_id}
                         supported={isSupported}
-                        onClick={() => setSelectedOptionId(est.option_id)}
+                        disabled={isDisabled}
+                        onClick={() => { if (!isDisabled) setSelectedOptionId(est.option_id); }}
                       />
                     );
                   })}
@@ -541,10 +564,14 @@ export default function PremiumNarrationModal({
           {/* ── Step 2: API Keys ── */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="flex items-center gap-1.5 text-xs text-stone-500">
-                <span>Key storage policy</span>
-                <InfoTooltip text="Your API keys are encrypted server-side before being stored. They are never logged or shared. You can clear them at any time from My Papers." />
-              </div>
+              <p className="text-xs text-stone-500 leading-snug">
+                unarXiv doesn&apos;t charge you — the only cost is what your API provider bills for usage.
+                Your keys are encrypted and saved locally in your browser. They&apos;re sent encrypted to our server
+                only during narration and are never stored on our end.{" "}
+                <a href="https://github.com/unarxiv/unarxiv" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-700">
+                  See for yourself on GitHub.
+                </a>
+              </p>
 
               {/* TTS key — shown for non-free options */}
               {selectedConfig.id !== "free" && (
@@ -598,16 +625,6 @@ export default function PremiumNarrationModal({
                 </>
               )}
 
-              {/* Remember keys checkbox */}
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberKeys}
-                  onChange={(e) => setRememberKeys(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded accent-stone-700"
-                />
-                <span className="text-xs text-stone-600">Remember my keys on this device</span>
-              </label>
 
               {submitError && (
                 <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{submitError}</p>
@@ -687,7 +704,11 @@ export default function PremiumNarrationModal({
               <button
                 type="button"
                 onClick={handleStep2Next}
-                className="px-5 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+                disabled={
+                  (selectedConfig.id !== "free" && ttsTestState !== "ok" && !hasTtsKey) ||
+                  (selectedConfig.needsLlmKey && llmTestState !== "ok" && !hasLlmKeyStored(llmProvider))
+                }
+                className="px-5 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Review & Confirm
               </button>
@@ -716,7 +737,7 @@ export default function PremiumNarrationModal({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                 )}
-                Start Premium Narration
+                Start Upgrade Narration
               </button>
             </>
           )}
@@ -737,7 +758,7 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
       option_id: "elevenlabs",
       display_name: "ElevenLabs",
       stars: 5,
-      tagline: "Near-human voice quality. Best for long papers.",
+      tagline: "Near-human voice quality.",
       estimated_cost_usd: 0.55,
       llm_cost_usd: 0.04,
       tts_cost_usd: 0.51,
@@ -745,29 +766,19 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
     },
     {
       option_id: "openai",
-      display_name: "OpenAI TTS",
+      display_name: "OpenAI",
       stars: 4,
-      tagline: "Natural-sounding, expressive voices.",
+      tagline: "Natural-sounding, expressive voice.",
       estimated_cost_usd: 0.18,
       llm_cost_usd: 0.04,
       tts_cost_usd: 0.14,
       available: true,
     },
     {
-      option_id: "google",
-      display_name: "Google Cloud TTS",
-      stars: 4,
-      tagline: "High-quality, multilingual voices.",
-      estimated_cost_usd: 0.12,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.08,
-      available: true,
-    },
-    {
       option_id: "free",
-      display_name: "Microsoft Edge TTS",
+      display_name: "Same Voice, Better Script",
       stars: 3,
-      tagline: "Jenny Neural — free, AI-enhanced scripting.",
+      tagline: "Same voice, AI-enhanced script.",
       estimated_cost_usd: 0.04,
       llm_cost_usd: 0.04,
       tts_cost_usd: 0,

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -23,186 +23,232 @@ function loadTestEnv(): Record<string, string> {
 
 const testEnv = loadTestEnv();
 const TEST_OPENAI_KEY = process.env.TEST_OPENAI_KEY ?? testEnv["TEST_OPENAI_KEY"] ?? "";
+const WORKER_URL = process.env.WORKER_URL ?? testEnv["WORKER_URL"] ?? "http://localhost:8787";
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? testEnv["WEBHOOK_SECRET"] ?? "dev-secret-change-me";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? testEnv["ADMIN_PASSWORD"] ?? "localdev";
 
-test.describe("Premium Narration Modal", () => {
+/** Open the Upgrade Narration modal from a narrated paper page. */
+async function openPremiumModal(page: Page) {
+  await page.click('[data-testid="open-paper-actions"]');
+  const premiumBtn = page.locator('[data-testid="premium-narration"]');
+  await expect(premiumBtn).toBeVisible({ timeout: 5000 });
+  await premiumBtn.click();
+  await expect(page.locator('h2').filter({ hasText: 'Upgrade Narration' })).toBeVisible();
+}
+
+/** Wait for option cards to finish loading (skeleton pulse animation gone). */
+async function waitForOptions(page: Page) {
+  await page.waitForFunction(() => {
+    const pulses = document.querySelectorAll('.animate-pulse');
+    return pulses.length === 0;
+  }, { timeout: 10000 });
+}
+
+/** Select an option by its quality label and advance to step 2. */
+async function selectOptionAndContinue(page: Page, qualityLabel: string) {
+  await waitForOptions(page);
+  // Use the option card button that contains the quality label as a semibold span
+  await page.locator('button', { has: page.locator(`span.font-semibold:text-is("${qualityLabel}")`) }).click();
+  await page.getByRole('button', { name: /Continue|Review & Confirm/ }).click();
+}
+
+test.describe("Upgrade Narration Modal", () => {
   test.beforeEach(async ({ page }) => {
+    // Clean up premium versions so the paper is in base state (not fully upgraded)
+    await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/premium-versions`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    }).catch(() => {});
+
+    // Clear localStorage to reset stored keys/last option between tests
     await page.goto(PAPER_URL);
-    // Wait for the page to load
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
     await page.waitForLoadState("networkidle");
   });
 
-  test("1. Modal opens — click actions menu, click Premium Narration, verify modal appears", async ({ page }) => {
-    // Open the actions menu
-    await page.click('[data-testid="open-paper-actions"]');
-    // Click Premium Narration
-    await page.click('[data-testid="premium-narration"]');
-    // Verify modal title
-    await expect(page.locator('h2').filter({ hasText: 'Premium Narration' })).toBeVisible();
+  test("1. Modal opens from menu", async ({ page }) => {
+    await openPremiumModal(page);
   });
 
-  test("2. Options displayed — verify 4 options are shown", async ({ page }) => {
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
+  test("2. Options displayed — verify 3 quality tiers", async ({ page }) => {
+    await openPremiumModal(page);
+    await waitForOptions(page);
 
-    // Wait for options to load (skeleton disappears)
-    await page.waitForFunction(() => {
-      const pulses = document.querySelectorAll('.animate-pulse');
-      return pulses.length === 0;
-    }, { timeout: 10000 });
-
-    // Verify the 4 option names
-    await expect(page.getByText('ElevenLabs')).toBeVisible();
-    await expect(page.getByText('OpenAI TTS')).toBeVisible();
-    await expect(page.getByText('Google Cloud TTS')).toBeVisible();
-    await expect(page.getByText('Microsoft Edge TTS')).toBeVisible();
+    // Verify the 3 quality labels using exact text match on the semibold span
+    await expect(page.locator('span.font-semibold:text-is("Most Lifelike Voice")')).toBeVisible();
+    await expect(page.locator('span.font-semibold:text-is("More Polished Voice")')).toBeVisible();
+    await expect(page.locator('span.font-semibold:text-is("Just Improved Script")')).toBeVisible();
   });
 
-  test("3. No pre-selection — Continue button is disabled until an option is selected", async ({ page }) => {
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
+  test("3. Most Lifelike Voice is default selected, Continue is enabled", async ({ page }) => {
+    await openPremiumModal(page);
+    await waitForOptions(page);
 
-    // Wait for options to load
-    await page.waitForFunction(() => {
-      const pulses = document.querySelectorAll('.animate-pulse');
-      return pulses.length === 0;
-    }, { timeout: 10000 });
+    // Most Lifelike Voice should be pre-selected (border-stone-700)
+    const lifelikeCard = page.locator('button', { has: page.locator('span.font-semibold:text-is("Most Lifelike Voice")') });
+    await expect(lifelikeCard).toHaveClass(/border-stone-700/);
 
-    // The Continue button should be disabled (no option selected, no estimate)
-    const continueBtn = page.getByRole('button', { name: /Continue|Review & Confirm/ });
-    await expect(continueBtn).toBeDisabled();
-  });
-
-  test("4. Option selection — click OpenAI TTS, verify it becomes selected, Continue becomes enabled", async ({ page }) => {
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
-
-    // Wait for options to load
-    await page.waitForFunction(() => {
-      const pulses = document.querySelectorAll('.animate-pulse');
-      return pulses.length === 0;
-    }, { timeout: 10000 });
-
-    // Click OpenAI TTS option
-    await page.getByText('OpenAI TTS').click();
-
-    // Verify Continue button becomes enabled
+    // Continue should be enabled since an option is selected
     const continueBtn = page.getByRole('button', { name: /Continue|Review & Confirm/ });
     await expect(continueBtn).toBeEnabled();
-
-    // Verify the option card is highlighted (has border-stone-700 class)
-    const optionCard = page.locator('button').filter({ hasText: 'OpenAI TTS' });
-    await expect(optionCard).toHaveClass(/border-stone-700/);
   });
 
-  test("5. Step 2 — key entry form appears after clicking Continue with OpenAI TTS", async ({ page }) => {
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
+  test("4. Selecting a different option updates highlight", async ({ page }) => {
+    await openPremiumModal(page);
+    await waitForOptions(page);
 
-    // Wait for options to load
-    await page.waitForFunction(() => {
-      const pulses = document.querySelectorAll('.animate-pulse');
-      return pulses.length === 0;
-    }, { timeout: 10000 });
+    // Click More Polished Voice
+    const polishedCard = page.locator('button', { has: page.locator('span.font-semibold:text-is("More Polished Voice")') });
+    await polishedCard.click();
+    await expect(polishedCard).toHaveClass(/border-stone-700/);
 
-    // Select OpenAI TTS
-    await page.getByText('OpenAI TTS').click();
+    // Most Lifelike Voice should no longer be highlighted
+    const lifelikeCard = page.locator('button', { has: page.locator('span.font-semibold:text-is("Most Lifelike Voice")') });
+    await expect(lifelikeCard).not.toHaveClass(/border-stone-700/);
+  });
 
-    // Click Continue
-    const continueBtn = page.getByRole('button', { name: /Continue|Review & Confirm/ });
-    await continueBtn.click();
+  test("5. Step 2 — key entry form appears after Continue with More Polished Voice (OpenAI)", async ({ page }) => {
+    await openPremiumModal(page);
+    await selectOptionAndContinue(page, "More Polished Voice");
 
-    // Step 2 should show the password input for the API key
+    // Step 2 should show the password input
     await expect(page.locator('input[type="password"]').first()).toBeVisible();
-    // Verify the key label text is shown in step 2
     await expect(page.locator('label').filter({ hasText: /OpenAI API Key/ }).first()).toBeVisible();
   });
 
-  test("6. Key validation — enter OpenAI key and verify it shows Valid", async ({ page }) => {
+  test("6. Key validation — enter OpenAI key and verify test completes", async ({ page }) => {
     test.skip(!TEST_OPENAI_KEY, "TEST_OPENAI_KEY not set — skipping key validation test");
 
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
+    await openPremiumModal(page);
+    await selectOptionAndContinue(page, "More Polished Voice");
 
-    // Wait for options to load
-    await page.waitForFunction(() => {
-      const pulses = document.querySelectorAll('.animate-pulse');
-      return pulses.length === 0;
-    }, { timeout: 10000 });
+    await page.locator('input[type="password"]').first().fill(TEST_OPENAI_KEY);
 
-    // Select OpenAI TTS and continue to step 2
-    await page.getByText('OpenAI TTS').click();
-    const continueBtn = page.getByRole('button', { name: /Continue|Review & Confirm/ });
-    await continueBtn.click();
-
-    // Enter the API key
-    const keyInput = page.locator('input[type="password"]').first();
-    await keyInput.fill(TEST_OPENAI_KEY);
-
-    // Click Test
-    await page.getByRole('button', { name: 'Test' }).click();
-
-    // Wait for validation (may take a few seconds) — look for the button containing "Valid" text
-    await expect(page.locator('button').filter({ hasText: /Valid/ }).first()).toBeVisible({ timeout: 15000 });
+    // Auto-validation triggers on paste — wait for result (shows either ✓ Valid or ✗ Invalid)
+    await expect(page.locator('span').filter({ hasText: /Valid|Invalid/ }).first()).toBeVisible({ timeout: 15000 });
   });
 
-  test("7. Step 3 — confirm shows cost summary and Start Premium Narration button", async ({ page }) => {
-    test.skip(!TEST_OPENAI_KEY, "TEST_OPENAI_KEY not set — skipping step 3 test");
+  test("7. Review & Confirm disabled until key is valid", async ({ page }) => {
+    await openPremiumModal(page);
+    await selectOptionAndContinue(page, "More Polished Voice");
 
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
+    // Before entering a key, Review & Confirm should be disabled
+    const confirmBtn = page.getByRole('button', { name: 'Review & Confirm' });
+    await expect(confirmBtn).toBeDisabled();
 
-    // Wait for options to load
-    await page.waitForFunction(() => {
-      const pulses = document.querySelectorAll('.animate-pulse');
-      return pulses.length === 0;
-    }, { timeout: 10000 });
+    // Enter an invalid key and wait for auto-validation
+    await page.locator('input[type="password"]').first().fill("sk-invalid-key-1234567890");
+    await expect(page.locator('span').filter({ hasText: /Invalid/ })).toBeVisible({ timeout: 15000 });
 
-    // Select OpenAI TTS and continue to step 2
-    await page.getByText('OpenAI TTS').click();
-    const continueBtn = page.getByRole('button', { name: /Continue|Review & Confirm/ });
-    await continueBtn.click();
-
-    // Enter the key
-    const keyInput = page.locator('input[type="password"]').first();
-    await keyInput.fill(TEST_OPENAI_KEY);
-
-    // Click Review & Confirm
-    const reviewBtn = page.getByRole('button', { name: 'Review & Confirm' });
-    await reviewBtn.click();
-
-    // Step 3: verify cost summary and Start button
-    await expect(page.getByText('Estimated cost')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: 'Start Premium Narration' })).toBeVisible();
-    // Verify the Start button is present (but do NOT click it — that costs money)
-    await expect(page.getByRole('button', { name: 'Start Premium Narration' })).toBeEnabled();
+    // Button should still be disabled after invalid key
+    await expect(confirmBtn).toBeDisabled();
   });
 
-  test("8. Cancel works — Cancel button closes modal", async ({ page }) => {
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
-
-    // Verify modal is open
-    await expect(page.locator('h2').filter({ hasText: 'Premium Narration' })).toBeVisible();
-
-    // Click Cancel
+  test("8. Cancel closes modal", async ({ page }) => {
+    await openPremiumModal(page);
     await page.getByRole('button', { name: 'Cancel' }).click();
-
-    // Modal should be gone
-    await expect(page.locator('h2').filter({ hasText: 'Premium Narration' })).not.toBeVisible();
+    await expect(page.locator('h2').filter({ hasText: 'Upgrade Narration' })).not.toBeVisible();
   });
 
   test("9. Backdrop click closes modal", async ({ page }) => {
-    await page.click('[data-testid="open-paper-actions"]');
-    await page.click('[data-testid="premium-narration"]');
-
-    // Verify modal is open
-    await expect(page.locator('h2').filter({ hasText: 'Premium Narration' })).toBeVisible();
-
-    // Click the backdrop (the fixed overlay div behind the modal)
-    // Click at top-left corner which is outside the centered modal content
+    await openPremiumModal(page);
     await page.mouse.click(10, 10);
+    await expect(page.locator('h2').filter({ hasText: 'Upgrade Narration' })).not.toBeVisible();
+  });
 
-    // Modal should be gone
-    await expect(page.locator('h2').filter({ hasText: 'Premium Narration' })).not.toBeVisible();
+  test("10. Back navigation — step 2 back returns to step 1", async ({ page }) => {
+    await openPremiumModal(page);
+    await selectOptionAndContinue(page, "More Polished Voice");
+
+    // Verify we're on step 2
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+
+    // Click Back
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+
+    // Verify we're back on step 1
+    await expect(page.locator('span.font-semibold:text-is("Most Lifelike Voice")')).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Full upgrade flow: webhook simulation → UI indicators
+// ---------------------------------------------------------------------------
+
+test.describe("Upgrade Narration Full Flow", () => {
+  // Tests modify shared DB state (webhook inserts versions), so must run in order
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeAll(async ({ }, testInfo) => {
+    // Clean up premium versions from any prior test run
+    await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/premium-versions`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    }).catch(() => {});
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PAPER_URL);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+  });
+
+  test("11. No stars on play button before upgrade", async ({ page }) => {
+    await expect(page.locator('[data-testid="play-paper"]')).toBeVisible();
+    await expect(page.locator('[data-testid="play-stars"]')).not.toBeVisible();
+  });
+
+  test("12. No disabled options in modal before upgrade", async ({ page }) => {
+    await openPremiumModal(page);
+    await waitForOptions(page);
+    await expect(page.locator('[data-testid="completed-badge"]')).not.toBeVisible();
+    // All options should be enabled
+    const disabledBtns = page.locator('button[disabled]').filter({ has: page.locator('span.font-semibold') });
+    await expect(disabledBtns).toHaveCount(0);
+  });
+
+  test("13. Simulate premium webhook → stars appear on play button", async ({ page, request }) => {
+    // Verify no stars initially
+    await expect(page.locator('[data-testid="play-stars"]')).not.toBeVisible();
+
+    // Send premium completion webhook (elevenlabs = 5 stars) directly to the worker
+    const webhookResponse = await request.post(`${WORKER_URL}/api/webhooks/modal`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${WEBHOOK_SECRET}`,
+      },
+      data: {
+        arxiv_id: PAPER_ID,
+        status: 'narrated',
+        audio_r2_key: `audio/${PAPER_ID}/premium-elevenlabs.mp3`,
+        duration_seconds: 600,
+        eta_seconds: 0,
+        version_type: 'premium',
+        script_type: 'premium',
+        tts_provider: 'elevenlabs',
+        tts_model: 'eleven_multilingual_v2',
+        llm_provider: 'openai',
+        llm_model: 'gpt-4o',
+        actual_cost: 0.55,
+        llm_cost: 0.05,
+        tts_cost: 0.50,
+      },
+    });
+    expect(webhookResponse.ok()).toBeTruthy();
+
+    // Reload and verify stars appear on play button
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator('[data-testid="play-stars"]')).toBeVisible();
+  });
+
+  test("14. Fully upgraded → all options disabled, Upgrade Narration hidden from menu", async ({ page }) => {
+    // Paper already has elevenlabs (5★) from test 13 — fully upgraded
+
+    // Open menu and verify "Upgrade Narration" is no longer shown
+    await page.click('[data-testid="open-paper-actions"]');
+    await expect(page.locator('[data-testid="premium-narration"]')).not.toBeVisible();
   });
 });

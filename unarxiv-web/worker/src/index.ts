@@ -36,6 +36,7 @@ import {
   getSubmissionCount,
   recordSubmission,
   claimPaperForNarration,
+  claimPaperForPremium,
   cleanup,
   getRating,
   upsertRating,
@@ -70,6 +71,7 @@ import {
   unmarkPaperListened,
   insertNarrationVersion,
   getNarrationVersions,
+  getVersionById,
   updateBestVersionId,
   updateScriptCharCount,
 } from "./db";
@@ -886,8 +888,8 @@ async function handleNarratePremium(
     return json({ error: "Failed to decrypt key — was it encrypted with this server?" }, 400);
   }
 
-  // Claim the paper atomically (reuses existing claim logic for status 'narrating')
-  const claimed = await claimPaperForNarration(env.DB, id);
+  // Claim the paper atomically — premium upgrades also allow 'narrated' → 'narrating'
+  const claimed = await claimPaperForPremium(env.DB, id);
   if (!claimed) {
     // Already narrating — still 200, return current state
     const current = await getPaper(env.DB, id);
@@ -897,7 +899,46 @@ async function handleNarratePremium(
   // Dispatch to Modal with decrypted keys (never persisted in D1)
   const dispatch = async () => {
     if (!env.MODAL_FUNCTION_URL) {
-      console.log(`[local-dev] Skipping Modal premium dispatch for ${id} (no MODAL_FUNCTION_URL)`);
+      console.log(`[local-dev] Auto-completing premium narration for ${id}`);
+
+      // Copy base audio to versioned R2 path (simulates Modal producing a new file)
+      const versionedR2Key = `audio/${id}/premium-${ttsProvider ?? "free"}.mp3`;
+      const baseAudio = await env.AUDIO_BUCKET.get(`audio/${id}.mp3`);
+      if (baseAudio) {
+        await env.AUDIO_BUCKET.put(versionedR2Key, baseAudio.body, {
+          httpMetadata: { contentType: "audio/mpeg" },
+        });
+      }
+
+      // Insert narration version + update best_version_id (same as webhook handler)
+      const qualityRank = computeQualityRank(ttsProvider, ttsModel);
+      const version = await insertNarrationVersion(env.DB, {
+        paper_id: id,
+        version_type: "premium",
+        quality_rank: qualityRank,
+        script_type: "premium",
+        tts_provider: ttsProvider,
+        tts_model: ttsModel,
+        llm_provider: llmProvider,
+        llm_model: llmModel,
+        audio_r2_key: versionedR2Key,
+        transcript_r2_key: null,
+        duration_seconds: 600,
+        actual_cost: null,
+        llm_cost: null,
+        tts_cost: null,
+      });
+      if (version) {
+        await updateBestVersionId(env.DB, id, version.id);
+      }
+
+      // Mark paper as narrated with the new audio
+      await updatePaperStatus(env.DB, id, "narrated", {
+        audio_r2_key: versionedR2Key,
+        duration_seconds: 600,
+      });
+
+      console.log(`[local-dev] Premium narration complete: ${versionedR2Key} (rank=${qualityRank})`);
       return;
     }
     try {
@@ -1197,6 +1238,11 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       handler: (req, env) => handleAdminLists(req, env),
     },
     {
+      method: "DELETE",
+      pattern: /^\/api\/admin\/papers\/([\w.-]+)\/premium-versions$/,
+      handler: (req, env, _url, m) => handleDeletePremiumVersions(req, env, m[1]),
+    },
+    {
       method: "POST",
       pattern: /^\/api\/lists$/,
       handler: (req, env) => handleCreateList(req, env),
@@ -1256,7 +1302,7 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     {
       method: "GET",
       pattern: /^\/api\/papers\/(.+?)\/audio$/,
-      handler: (_req, env, _url, m) => handleGetAudio(env, m[1]),
+      handler: (_req, env, url, m) => handleGetAudio(env, m[1], url),
     },
     {
       method: "GET",
@@ -1832,13 +1878,26 @@ async function handleDeletePaper(
   return json({ ok: true });
 }
 
-async function handleGetAudio(env: Env, id: string): Promise<Response> {
+async function handleGetAudio(env: Env, id: string, url: URL): Promise<Response> {
   const paper = await getPaper(env.DB, id);
   if (!paper || paper.status !== "narrated" || !paper.audio_r2_key) {
     return json({ error: "Audio not available" }, 404);
   }
 
-  const object = await env.AUDIO_BUCKET.get(paper.audio_r2_key);
+  // Support ?version=<id> for serving specific narration versions
+  let r2Key = paper.audio_r2_key;
+  const versionParam = url.searchParams.get("version");
+  if (versionParam) {
+    const versionId = parseInt(versionParam, 10);
+    if (!isNaN(versionId)) {
+      const version = await getVersionById(env.DB, versionId, id);
+      if (version?.audio_r2_key) {
+        r2Key = version.audio_r2_key;
+      }
+    }
+  }
+
+  const object = await env.AUDIO_BUCKET.get(r2Key);
   if (!object) {
     return json({ error: "Audio file not found" }, 404);
   }
@@ -1941,7 +2000,7 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
   }
 
   // Validate audio_r2_key format to prevent path confusion in R2 lookups
-  if (body.audio_r2_key !== undefined && !/^audio\/[\w.-]+\.mp3$/.test(body.audio_r2_key)) {
+  if (body.audio_r2_key !== undefined && !/^audio\/[\w.\/-]+\.mp3$/.test(body.audio_r2_key)) {
     return json({ error: "Invalid audio_r2_key format" }, 400);
   }
 
@@ -1987,6 +2046,23 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     // Atomically upgrade best_version_id if this version is better
     await updateBestVersionId(env.DB, body.arxiv_id, version.id);
   }
+
+  return json({ ok: true });
+}
+
+// ─── Admin: delete premium versions (test cleanup) ─────────────────────────
+
+async function handleDeletePremiumVersions(request: Request, env: Env, paperId: string): Promise<Response> {
+  const denied = requireAdmin(request, env);
+  if (denied) return denied;
+
+  await env.DB.prepare("DELETE FROM narration_versions WHERE paper_id = ? AND quality_rank > 0")
+    .bind(paperId)
+    .run();
+  // Reset best_version_id and restore original audio R2 key
+  await env.DB.prepare("UPDATE papers SET best_version_id = NULL, audio_r2_key = ? WHERE id = ?")
+    .bind(`audio/${paperId}.mp3`, paperId)
+    .run();
 
   return json({ ok: true });
 }

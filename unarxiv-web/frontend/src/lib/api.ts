@@ -24,6 +24,7 @@ export interface Paper {
   audio_url: string | null;
   audio_size_bytes: number | null;
   duration_seconds: number | null;
+  best_version_id: number | null;
   created_at: string;
   completed_at: string | null;
 }
@@ -532,12 +533,56 @@ export interface PremiumEstimateResponse {
   options: PremiumOptionEstimate[];
 }
 
+/** Map a TTS provider from the raw API to the simplified tier ID used by the modal. */
+function ttsProviderToTierId(ttsProvider: string | null): string {
+  if (!ttsProvider || ttsProvider === "free") return "free";
+  if (ttsProvider === "elevenlabs") return "elevenlabs";
+  if (ttsProvider === "openai") return "openai";
+  if (ttsProvider === "google") return "google";
+  return ttsProvider;
+}
+
+const TIER_STARS: Record<string, number> = { elevenlabs: 5, openai: 4, google: 3, free: 3 };
+
 export async function getPremiumEstimate(paperId: string): Promise<PremiumEstimateResponse> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/estimate`, {
     headers: userHeaders(),
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  const raw = await res.json() as {
+    estimated: boolean;
+    script_char_count: number;
+    options: { id: string; tts_provider: string | null; total_cost: number; llm_cost: number; tts_cost: number; quality_rank: number }[];
+  };
+
+  // Aggregate raw options by TTS provider tier, picking cheapest LLM for each
+  const byTier = new Map<string, { total: number; llm: number; tts: number }>();
+  for (const opt of raw.options) {
+    const tier = ttsProviderToTierId(opt.tts_provider);
+    const existing = byTier.get(tier);
+    if (!existing || opt.total_cost < existing.total) {
+      byTier.set(tier, { total: opt.total_cost, llm: opt.llm_cost, tts: opt.tts_cost });
+    }
+  }
+
+  const options: PremiumOptionEstimate[] = [];
+  for (const [tierId, costs] of byTier) {
+    options.push({
+      option_id: tierId,
+      display_name: tierId,
+      stars: TIER_STARS[tierId] ?? 3,
+      tagline: "",
+      estimated_cost_usd: costs.total,
+      llm_cost_usd: costs.llm,
+      tts_cost_usd: costs.tts,
+      available: true,
+    });
+  }
+
+  // Sort: highest stars first
+  options.sort((a, b) => b.stars - a.stars);
+
+  return { paper_id: paperId, word_count: raw.script_char_count, options };
 }
 
 export interface PremiumNarrationConfig {
@@ -552,11 +597,42 @@ export async function requestPremiumNarration(
   paperId: string,
   config: PremiumNarrationConfig
 ): Promise<Paper> {
+  // Transform frontend config to worker request format
+  let body: Record<string, string | undefined>;
+  const optionId = config.option_id;
+
+  if (optionId === "openai") {
+    // OpenAI uses a unified key for both LLM and TTS
+    body = {
+      type: "unified",
+      provider: "openai",
+      encrypted_key: config.encrypted_keys["openai"],
+    };
+  } else if (optionId === "elevenlabs") {
+    // ElevenLabs needs a separate TTS key + LLM provider key
+    const llmProv = config.llm_provider ?? "openai";
+    body = {
+      type: "dual",
+      tts_provider: "elevenlabs",
+      encrypted_tts_key: config.encrypted_keys["elevenlabs"],
+      llm_provider: llmProv,
+      encrypted_llm_key: config.encrypted_keys[llmProv],
+    };
+  } else {
+    // free voice: just needs LLM key for script improvement
+    const llmProv = config.llm_provider ?? "openai";
+    body = {
+      type: "free_voice",
+      llm_provider: llmProv,
+      encrypted_llm_key: config.encrypted_keys[llmProv],
+    };
+  }
+
   const headers = userHeaders({ "Content-Type": "application/json" });
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/narrate-premium`, {
     method: "POST",
     headers,
-    body: JSON.stringify(config),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -602,17 +678,21 @@ export async function validateKey(
 }
 
 export interface PaperVersion {
-  version_id: string;
-  provider: string;        // e.g. "elevenlabs", "openai", "system"
+  id: number;
+  version_type: string;    // "free" | "premium"
   quality_rank: number;    // higher = better quality
-  audio_url: string;
+  tts_provider: string | null;
+  tts_model: string | null;
+  llm_provider: string | null;
+  audio_url: string | null;
   duration_seconds: number | null;
+  is_best: boolean;
   created_at: string;
 }
 
 export interface PaperVersionsResponse {
-  paper_id: string;
   versions: PaperVersion[];
+  best_version_id: number | null;
   best_version: PaperVersion | null;
 }
 
@@ -621,5 +701,7 @@ export async function getPaperVersions(paperId: string): Promise<PaperVersionsRe
     headers: userHeaders(),
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  const data = await res.json() as { versions: PaperVersion[]; best_version_id: number | null };
+  const best = data.versions.find((v) => v.is_best) ?? null;
+  return { ...data, best_version: best };
 }

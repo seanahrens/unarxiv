@@ -9,7 +9,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute unarxiv-db --local --file=../schema.sql",
-    "db:seed": "wrangler d1 execute unarxiv-db --local --file=../seed.sql",
+    "db:seed": "wrangler d1 execute unarxiv-db --local --file=../seed.sql && wrangler r2 object put unarxiv-audio/audio/2301.07041.mp3 --file=../fixtures/silence.mp3 --local --content-type audio/mpeg",
     "db:reset": "rm -rf .wrangler/state && npm run db:init && npm run db:seed",
     "db:init:remote": "wrangler d1 execute unarxiv-db --remote --file=../schema.sql"
   },
