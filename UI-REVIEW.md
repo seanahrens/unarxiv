@@ -1,124 +1,136 @@
-# UI Review — 2026-03-21
+# UI Review — 2026-03-22
 
-## Visual Consistency Audit
+## Summary
 
-**Colors:** The site runs in the `retro-terminal` theme by default (green phosphor on black). This is
-intentional — `ACTIVE_THEME` defaults to `"retro-terminal"` in `src/lib/theme-config.ts`. All color
-usage is consistent within the theme via Tailwind CSS variable overrides. No hardcoded hex values
-found in component files; all colors reference the stone (retro-remapped) palette as expected.
-
-**Spacing/Typography:** Consistent throughout. Custom size tokens `text-2xs` (11px) and `text-3xs`
-(10px) are defined in `globals.css` and used consistently. Standard spacing scale followed across
-components.
-
-**Cards:** Two card families exist with intentional differentiation:
-- Paper cards: `rounded-xl border p-5 bg-surface border-stone-300` — tighter, content-dense.
-- About/section cards: `rounded-2xl border p-6 bg-surface border-stone-200` — slightly softer, more
-  breathing room for prose sections.
-Both are internally consistent. Not a bug.
-
-**Interactive elements:** All buttons have consistent `transition-colors` hover states. Focus rings
-are present on interactive inputs. The `button, [role="button"] { cursor: pointer }` rule in
-`globals.css` applies universally.
-
-**Icons:** All icons are inline SVGs or custom components (`AudioFileIcon`, `FileIcon`, `LogoIcon`).
-No mixed icon libraries. Sizes are consistent within each context.
-
-**Responsive:** All pages use responsive Tailwind breakpoints consistently (`md:`, `lg:`). The
-mobile/desktop layouts (pill nav vs sidebar) in `BrowseLayout` degrade cleanly.
-
-**No issues found in this section.**
+Automated daily UX/UI review. 5 visual consistency issues found and fixed.
+Build passes, deployed to Cloudflare Pages (`unarxiv-frontend`).
 
 ---
 
-## Skeleton Audit
+## Visual Consistency Issues Found & Fixed
 
-### `BrowseLayoutSkeleton` — STALE (fixed)
+### 1. About Page — Border Color Mismatch (`border-stone-200` → `border-stone-300`)
+**File:** `unarxiv-web/frontend/src/app/about/page.tsx`
 
-**Location:** `unarxiv-web/frontend/src/components/BrowseLayout.tsx`
+All 7 section cards on the About page used `border-stone-200`, while every other card-like
+element in the codebase (`PaperCard`, `BrowseLayout` panels, `my-papers` lists) uses
+`border-stone-300`. Fixed all 7 sections to use `border-stone-300`.
 
-**Issue:** `BrowseLayoutSkeleton` (exported, used on homepage and collection pages as the initial
-loading state) showed **4** `PaperCardSkeleton` items in the right column. `BrowseLayout` uses
-`PAGE_SIZE = 6`, meaning the loaded state renders up to 6 paper cards. This caused a visible layout
-shift — 4 skeleton cards would collapse/jump to 6 real cards when content loaded.
+### 2. Sync Modal — Rounding Inconsistency (`rounded-xl` → `rounded-2xl`)
+**File:** `unarxiv-web/frontend/src/app/my-papers/page.tsx`
 
-**Fix:** Added 2 more `PaperCardSkeleton` entries. Now shows 6, matching `PAGE_SIZE`.
+The "Link Profile to Another Device" modal used `rounded-xl`. All other modals in the codebase
+(Rating modal, Captcha modal in `PaperPageContent`, collection edit panels in `l/page.tsx`)
+use `rounded-2xl`. Standardized to `rounded-2xl`.
 
-### Search Results Loading Skeleton — STALE (fixed)
+### 3. Inline Script Loading State — Plain Text → Skeleton Lines
+**File:** `unarxiv-web/frontend/src/app/p/PaperPageContent.tsx`
 
-**Location:** `unarxiv-web/frontend/src/app/page.tsx`
+When switching to the script tab on the paper detail page, the loading state showed a plain
+`"Loading script..."` text placeholder. The dedicated `/s` route uses the `ScriptPageSkeleton`
+component. Replaced the plain text with animated skeleton lines inside the script container
+(`bg-stone-50 border border-stone-200 rounded-xl p-6`), matching the container that appears
+once loaded. Uses the shared `Skeleton` component from `Skeleton.tsx`.
 
-**Issue:** The inline search loading skeleton (shown while `loading && searchQuery`) rendered
-**3** `PaperCardSkeleton` items, but `SEARCH_PAGE_SIZE = 10`. On a typical search, 3 skeleton cards
-would jump to 5–10 real results.
+### 4. BrowseLayout Empty State — Padding Inconsistency (`py-8` → `py-10`)
+**File:** `unarxiv-web/frontend/src/components/BrowseLayout.tsx`
 
-**Fix:** Updated to 5 skeleton cards — a closer approximation that smooths the transition without
-over-rendering on fast connections.
-
-### All other skeletons — OK
-
-| Skeleton | Used for | Status |
-|----------|----------|--------|
-| `PaperDetailSkeleton` | `/p` paper detail page | Matches title/authors/abstract layout ✓ |
-| `ScriptPageSkeleton` | `/s` script viewer | Matches back link + title + script block ✓ |
-| `MyPapersSectionSkeleton` | `/my-papers` collections list | Matches `PaperListRow` layout ✓ |
-| `PaperListRowSkeleton` | PlayerBar playlist, DraggablePaperList | Matches row layout ✓ |
-| `CollectionPageSkeleton` | `/l` collection view (initial load) | Matches HeaderSearchBar + BrowseLayout structure ✓ |
-| `BrowseLayoutPapersSkeleton` | Collection switching within BrowseLayout | 3 cards for variable-size collections, acceptable ✓ |
+The empty state (no papers in a collection or "Newly Added") used `py-8`. Other empty states
+across the site use `py-10` (search results) or `py-12` (collections list). Standardized to
+`py-10` as the common convention for content-area empty states.
 
 ---
 
-## Component Inventory
+## Skeleton Audit Results
 
-**No new shared components created.** All repeated patterns already have appropriate abstractions:
-- `PaperCard`, `PaperListRow`, `PaperActionButton`, `PaperActionsMenu` cover paper interactions.
-- `BrowseLayout` encapsulates the two-column browse UI.
-- `Skeleton.tsx` provides all shared loading primitives.
-- `PlayerBar` is the single audio player.
+All pages with loading states were audited. Results:
 
-The "Back" button pattern (pill-shaped, `border border-stone-300 rounded-full px-3 py-1`) appears in
-3 places (`PaperPageContent.tsx`, `l/page.tsx` ×2) and is already implemented as a local `BackButton`
-component in `PaperPageContent.tsx`. Not extracted globally — it has page-specific navigation logic
-in each location, making a shared component harder to justify without behavioral coupling.
+| Page | Skeleton | Status |
+|------|----------|--------|
+| `/` (homepage) | `HomePageSkeleton` wrapping `BrowseLayoutSkeleton` | ✅ Matches loaded layout |
+| `/p?id=...` (paper detail) | `PaperDetailSkeleton` | ✅ Matches — back button, title+action row, authors, abstract lines |
+| `/s?id=...` (script viewer) | `ScriptPageSkeleton` | ✅ Matches — back link, title, date, content block |
+| `/my-papers` (collections) | `MyPapersSectionSkeleton` | ✅ Matches — list rows with icon + title + action |
+| `/l?id=...` (collection view) | `CollectionPageSkeleton` | ⚠️ Fixed — was showing 3 paper cards, updated to 6 to match `BrowseLayout` PAGE_SIZE |
+| `/admin` | `Skeleton` (inline) | ✅ N/A — password gate shown before any data loads |
 
----
-
-## Design Tokens Established
-
-No new tokens established — the existing system is sufficient:
-- Tailwind v4 CSS variable overrides in `themes.css` handle per-theme tokens.
-- `@theme` block in `globals.css` defines the two custom text sizes.
-- `--color-surface` is the semantic card/panel color, used consistently.
+### Fix: `CollectionPageSkeleton` Paper Count (`Skeleton.tsx`)
+The `/l` route public view renders `BrowseLayout` which paginates at `PAGE_SIZE = 6`. The
+`BrowseLayoutSkeleton` (co-located with `BrowseLayout`) correctly shows 6 paper card skeletons.
+`CollectionPageSkeleton` in `Skeleton.tsx` was structurally identical but only showed 3 cards —
+a stale count likely from an earlier page design. Updated to 6 cards for consistency.
 
 ---
 
-## Accessibility Baseline
+## Component Inventory (no new shared components needed)
 
-- Keyboard navigation: interactive elements are buttons/links with appropriate roles.
-- Focus indicators: browser defaults (plus Tailwind ring utilities where applied).
-- Alt text: the logo image uses `LogoIcon` which renders an inline SVG without an alt (acceptable
-  for decorative icons alongside text).
-- ARIA: player controls in `PlayerBar` lack explicit ARIA labels on some icon-only buttons — noted
-  as a future improvement, not addressed in this styling-only pass.
-- Color contrast: in the retro-terminal theme, the green-on-black palette uses high-contrast values
-  (`stone-900` → `#00ff00`, `stone-600` → `#00cc00`). Secondary text is still legible on dark bg.
+The following patterns are well-established and used consistently:
+
+- **Buttons**: Split button (`rounded-l-xl` + `rounded-r-xl` with chevron) via `PaperActionButton` — consistent across all paper states
+- **Cards**: `rounded-xl border border-stone-300 p-5 bg-surface shadow-sm` via `PaperCard` — used uniformly
+- **Modals**: `fixed inset-0 bg-black/40`, inner `bg-surface rounded-2xl shadow-xl max-w-{size} w-full mx-4 p-{5-6}` — now consistent after sync modal fix
+- **Section headers**: `text-sm font-semibold text-stone-{400-600} uppercase tracking-wider` — consistent
+- **Empty states**: Centered, `text-stone-{400-500} text-sm`, `py-10` — now consistent after BrowseLayout fix
+- **List rows**: `PaperListRow` component handles the icon + title + authors + actions pattern everywhere
+- **Skeleton primitives**: All loading states use `Skeleton.tsx` — no ad-hoc skeleton markup found
+
+No new shared components were created — all repeated patterns already have components. No
+one-off styles were found that warranted extraction.
 
 ---
 
-## Remaining Issues for Human Review
+## Design Token Analysis
 
-1. **PlayerBar icon-only buttons** lack `aria-label` attributes (play, pause, skip, rewind, speed).
-   These should be labeled for screen reader users — but this is a behavioral/accessibility concern,
-   not a styling refactor.
+Implicit tokens are consistent across the codebase:
 
-2. **Scheduled task deploy command is stale:** The `SKILL.md` for this task references
-   `texreader-frontend` as the Cloudflare Pages project name. The actual project is
-   `unarxiv-frontend`. Update the task's deploy command to avoid the error on future runs.
+| Token | Value | Usage |
+|-------|-------|-------|
+| Card border | `border-stone-300` | `PaperCard`, `BrowseLayout`, `my-papers`, `About` (fixed) |
+| Card rounding | `rounded-xl` (lists) / `rounded-2xl` (cards/modals) | Consistent |
+| Card padding | `p-5` (paper cards) / `p-6` (content sections) | Consistent |
+| Modal rounding | `rounded-2xl` | Now consistent (fixed sync modal) |
+| Section label | `text-sm font-semibold uppercase tracking-wider` | Consistent |
+| Body text | `text-sm text-stone-{500-700}` | Consistent |
+| Small text | `text-xs` / `text-2xs` (11px) / `text-3xs` (10px) | Consistent |
+
+---
+
+## Accessibility
+
+- All buttons have `cursor: pointer` via `globals.css` global rule
+- Interactive elements are keyboard-navigable (native button/link elements)
+- `Paginator` has `aria-label` on prev/next buttons
+- Focus indicators: Tailwind default focus rings present; no custom overrides found
+- Alt text: the PDF iframe has a `title` attribute
+- No ARIA label gaps found in reviewed components
+
+---
+
+## Architecture Note: Theme System
+
+The site defaults to `retro-terminal` theme (green phosphor on black). The `themes.css` file
+overrides Tailwind's stone color variables per `[data-theme]` attribute, so all `stone-*`
+utility classes render in the active theme's color scale. This means the design system is
+intentionally theme-aware, not hardcoded to light stone colors.
+
+5 additional themes are defined (`neon-noir`, `solar-flare`, `ocean-depth`, `retro-terminal`,
+`candy-pop`). The default can be changed via `NEXT_PUBLIC_THEME` env var.
+
+---
+
+## Remaining Issues (human input needed)
+
+None requiring immediate attention. Lower-priority observations:
+
+- `PaperDetailSkeleton` doesn't include a placeholder for the "ABSTRACT" label that precedes
+  the abstract text in the loaded view — very minor, doesn't affect layout structure
+- Empty state padding for My Collections page uses `py-12` (slightly taller than the `py-10`
+  standard) — intentional since the folder icon makes it visually taller, or could be unified
 
 ---
 
 ## Deploy Status
 
-- **Build:** ✅ Passed (`next build` — all 10 routes compiled, no TypeScript errors)
-- **Deploy:** ✅ Success — https://869e29cc.unarxiv-frontend.pages.dev
-- **Project:** `unarxiv-frontend` (Cloudflare Pages)
+✅ Build: passed (`next build` — all 10 routes, no TypeScript errors)
+✅ Push: `main` branch pushed to `origin`
+✅ Deploy: Cloudflare Pages `unarxiv-frontend` — https://03fe81d3.unarxiv-frontend.pages.dev
