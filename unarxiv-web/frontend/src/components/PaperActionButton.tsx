@@ -18,17 +18,17 @@ const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?
 );
 
 const PlayIcon = ({ size = 14, enhanced = false }: { size?: number; enhanced?: boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+  <svg width={size} height={size} viewBox={enhanced ? "-1 -2 28 28" : "0 0 24 24"} fill="currentColor">
     {enhanced ? (
       <>
         <polygon
-          points="2,0 22,12 2,24"
+          points="5,-1 27,12 5,25"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1"
+          strokeWidth="1.2"
           strokeLinejoin="round"
         />
-        <polygon points="8,5 18,12 8,19" />
+        <polygon points="9,6 19,12 9,18" />
       </>
     ) : (
       <polygon points="7,3 21,12 7,21" />
