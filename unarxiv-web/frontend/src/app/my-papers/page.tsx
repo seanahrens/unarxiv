@@ -212,7 +212,7 @@ export default function MyCollectionsPage() {
       {/* Sync Modal */}
       {showSyncModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowSyncModal(false); setSyncCopied(false); }}>
-          <div className="bg-surface rounded-xl shadow-xl max-w-sm w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-surface rounded-2xl shadow-xl max-w-sm w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
                 {/* Laptop icon on mobile */}
