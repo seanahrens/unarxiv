@@ -71,6 +71,7 @@ import {
   handleAdminLists,
 } from "./handlers/admin";
 import { cleanup } from "./db";
+import { curateHuggingFaceTopPapers } from "./handlers/curation";
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -108,10 +109,14 @@ export default {
     }
   },
 
-  // Scheduled: cleanup old data + recover stuck narrations
+  // Scheduled: cleanup old data + recover stuck narrations (every 15 min)
+  // Hourly (0 * * * *): also curate top HuggingFace papers
   async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
     await cleanup(env.DB);
     await recoverStalePapers(env);
+    if (event.cron === "0 * * * *") {
+      await curateHuggingFaceTopPapers(env);
+    }
   },
 };
 
