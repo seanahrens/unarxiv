@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   getPremiumEstimate,
@@ -21,7 +21,18 @@ import {
 } from "@/lib/premiumKeys";
 import { track } from "@/lib/analytics";
 import { VOICE_TIERS } from "@/lib/voiceTiers";
+import { useAudio } from "@/contexts/AudioContext";
 import PlusIcons from "@/components/PlusIcons";
+
+// ---------------------------------------------------------------------------
+// Voice sample audio URLs (static files in public/samples/)
+// ---------------------------------------------------------------------------
+
+const SAMPLE_URLS: Record<string, string> = {
+  elevenlabs: "/samples/elevenlabs-sample.mp3",
+  openai: "/samples/openai-sample.mp3",
+  free: "/samples/free-sample.mp3",
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,6 +112,8 @@ function OptionCard({
   supported,
   disabled,
   onClick,
+  isPlayingSample,
+  onToggleSample,
 }: {
   option: OptionConfig;
   estimate: PremiumOptionEstimate;
@@ -108,6 +121,8 @@ function OptionCard({
   supported: boolean;
   disabled: boolean;
   onClick: () => void;
+  isPlayingSample: boolean;
+  onToggleSample: () => void;
 }) {
   const tier = VOICE_TIERS[estimate.option_id];
   const description = tier?.description ?? `${estimate.display_name}. ${estimate.tagline}`;
@@ -120,16 +135,17 @@ function OptionCard({
   const rest = dotIdx >= 0 ? description.slice(dotIdx + 1).trim() : "";
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
       onClick={disabled ? undefined : onClick}
-      disabled={disabled}
+      onKeyDown={disabled ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       className={`relative w-full text-left rounded-xl border-2 transition-all overflow-hidden ${
         disabled
           ? "border-stone-200 bg-stone-50 opacity-50 cursor-not-allowed"
           : selected
           ? "border-stone-700 bg-stone-50"
-          : "border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50"
+          : "border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50 cursor-pointer"
       }`}
     >
       {/* Key saved — corner triangle */}
@@ -173,17 +189,38 @@ function OptionCard({
             <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{leadPhrase}</p>
             {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
           </div>
-          <div className="text-right shrink-0 flex flex-col items-end">
-            <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
-              {estimate.estimated_cost_usd === 0 ? "Free" : `~$${estimate.estimated_cost_usd.toFixed(2)}`}
-            </span>
-            {estimate.estimated_cost_usd > 0 && (
-              <p className="text-[10px] text-stone-400">for this paper</p>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Voice sample play button */}
+            {!disabled && SAMPLE_URLS[option.id] && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onToggleSample(); }}
+                className="w-7 h-7 flex items-center justify-center rounded-full border border-stone-300 hover:border-stone-500 hover:bg-stone-100 transition-colors"
+                title={isPlayingSample ? "Stop sample" : "Play voice sample"}
+              >
+                {isPlayingSample ? (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-stone-600">
+                    <rect x="1" y="1" width="8" height="8" rx="1" />
+                  </svg>
+                ) : (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-stone-600 ml-0.5">
+                    <polygon points="1,0 10,5 1,10" />
+                  </svg>
+                )}
+              </button>
             )}
+            <div className="text-right flex flex-col items-end">
+              <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
+                {estimate.estimated_cost_usd === 0 ? "Free" : `~$${estimate.estimated_cost_usd.toFixed(2)}`}
+              </span>
+              {estimate.estimated_cost_usd > 0 && (
+                <p className="text-[10px] text-stone-400">for this paper</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -286,6 +323,51 @@ export default function PremiumNarrationModal({
   const [loading, setLoading] = useState(true);
   const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>([]);
   const [estimateError, setEstimateError] = useState(false);
+
+  // Voice sample playback (independent of global media player)
+  const sampleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+  const { actions: audioActions } = useAudio();
+
+  const stopSample = useCallback(() => {
+    if (sampleAudioRef.current) {
+      sampleAudioRef.current.pause();
+      sampleAudioRef.current.currentTime = 0;
+    }
+    setPlayingSampleId(null);
+  }, []);
+
+  const toggleSample = useCallback((optionId: string) => {
+    // If already playing this sample, stop it
+    if (playingSampleId === optionId) {
+      stopSample();
+      return;
+    }
+    // Pause the global media player first
+    audioActions.pause();
+    // Stop any other playing sample
+    stopSample();
+    // Create or reuse the audio element
+    if (!sampleAudioRef.current) {
+      sampleAudioRef.current = new Audio();
+      sampleAudioRef.current.addEventListener("ended", () => setPlayingSampleId(null));
+    }
+    const url = SAMPLE_URLS[optionId];
+    if (!url) return;
+    sampleAudioRef.current.src = url;
+    sampleAudioRef.current.play().catch(() => setPlayingSampleId(null));
+    setPlayingSampleId(optionId);
+  }, [playingSampleId, stopSample, audioActions]);
+
+  // Stop sample when modal closes
+  useEffect(() => {
+    return () => {
+      if (sampleAudioRef.current) {
+        sampleAudioRef.current.pause();
+        sampleAudioRef.current = null;
+      }
+    };
+  }, []);
 
   // Step 1 selection — smart default computed when estimates + versions load
   const [selectedOptionId, setSelectedOptionId] = useState<string>("");
@@ -394,6 +476,7 @@ export default function PremiumNarrationModal({
   })();
 
   const handleStep1Next = () => {
+    stopSample();
     setLastOption(selectedOptionId);
     if (canSkipKeys) {
       setStep(3);
@@ -556,6 +639,8 @@ export default function PremiumNarrationModal({
                         supported={isSupported}
                         disabled={isDisabled}
                         onClick={() => { if (!isDisabled) setSelectedOptionId(est.option_id); }}
+                        isPlayingSample={playingSampleId === est.option_id}
+                        onToggleSample={() => toggleSample(est.option_id)}
                       />
                     );
                   })}
