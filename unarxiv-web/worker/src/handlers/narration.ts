@@ -476,6 +476,34 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     await updateScriptCharCount(env.DB, body.arxiv_id, body.script_char_count);
   }
 
+  // script_ready = LLM script is done, TTS still running. Record a partial
+  // narration_version with the transcript so the frontend can show it, but
+  // do NOT change the paper's status — it stays "narrating".
+  if (body.status === "script_ready" && body.transcript_r2_key) {
+    const narrationTier = body.narration_tier ?? "plus1";
+    const ttsProvider = body.tts_provider ?? null;
+    const ttsModel = body.tts_model ?? null;
+    const qualityRank = narrationTier === "base" ? 0 : computeQualityRank(ttsProvider, ttsModel);
+
+    await insertNarrationVersion(env.DB, {
+      paper_id: body.arxiv_id,
+      narration_tier: narrationTier,
+      quality_rank: qualityRank,
+      script_type: "upgraded",
+      tts_provider: ttsProvider,
+      tts_model: ttsModel,
+      llm_provider: body.llm_provider ?? null,
+      llm_model: body.llm_model ?? null,
+      audio_r2_key: null,  // no audio yet
+      transcript_r2_key: body.transcript_r2_key,
+      duration_seconds: null,
+      actual_cost: null,
+      llm_cost: body.llm_cost ?? null,
+      tts_cost: null,
+    });
+    return json({ ok: true });
+  }
+
   await updatePaperStatus(env.DB, body.arxiv_id, body.status as PaperStatus, {
     progress_detail: body.progress_detail,
     error_message: body.error_message,
@@ -492,6 +520,13 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     const ttsProvider = body.tts_provider ?? null;
     const ttsModel = body.tts_model ?? null;
     const qualityRank = narrationTier === "base" ? 0 : computeQualityRank(ttsProvider, ttsModel);
+
+    // Remove any partial version from script_ready (will be replaced with complete version)
+    if (narrationTier !== "base") {
+      await env.DB.prepare(
+        "DELETE FROM narration_versions WHERE paper_id = ? AND narration_tier = ? AND audio_r2_key IS NULL"
+      ).bind(body.arxiv_id, narrationTier).run();
+    }
 
     const version = await insertNarrationVersion(env.DB, {
       paper_id: body.arxiv_id,

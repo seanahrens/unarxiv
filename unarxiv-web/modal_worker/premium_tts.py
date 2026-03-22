@@ -34,7 +34,7 @@ from typing import Callable, Protocol, runtime_checkable
 # ---------------------------------------------------------------------------
 
 _ELEVENLABS_CHUNK_MAX = 5_000
-_OPENAI_TTS_CHUNK_MAX = 4_096
+_OPENAI_TTS_CHUNK_MAX = 2_000  # Smaller chunks for ~20s per call + more frequent ETA updates
 _GOOGLE_TTS_CHUNK_MAX = 5_000
 _POLLY_CHUNK_MAX = 3_000
 _AZURE_CHUNK_MAX = 3_000   # conservative; SSML overhead can be ~100 chars

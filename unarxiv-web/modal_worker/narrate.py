@@ -577,8 +577,17 @@ def narrate_paper_premium(
         # Stage 3: LLM script improvement (skipped if existing_script provided)
         # ---------------------------------------------------------------
         # Estimate total remaining time: LLM + TTS
+        # Provider-specific TTS time estimates (seconds per chunk)
+        _TTS_SECS_PER_CHUNK = {
+            "openai": 20,       # OpenAI TTS-HD: ~20s per 2000-char chunk
+            "elevenlabs": 15,   # ElevenLabs: ~15s per 5000-char chunk
+            "google": 10,       # Google Neural2: ~10s per 5000-char chunk
+            "polly": 8,         # Amazon Polly: ~8s per 3000-char chunk
+            "azure": 8,         # Azure Speech: ~8s per 3000-char chunk
+            "free": 5,          # edge-tts: ~5s per 4000-char chunk
+        }
+        tts_secs_per_chunk = _TTS_SECS_PER_CHUNK.get(tts_provider, 5)
         chunks_est = len(tex_to_audio._split_into_chunks(tts_text))
-        tts_secs_per_chunk = 3 if tts_provider != "free" else 5
         tts_time_est = chunks_est * tts_secs_per_chunk
 
         llm_result = None
@@ -627,6 +636,20 @@ def narrate_paper_premium(
             f.write(tts_text)
         print(f"Uploading improved transcript to R2: {transcript_r2_key}")
         upload_to_r2(transcript_local, transcript_r2_key, content_type="text/plain; charset=utf-8")
+
+        # Notify Worker that the script is ready — creates a partial
+        # narration_version so the frontend can show the script tab
+        # while TTS is still running.
+        send_status(callback_url, secret, arxiv_id,
+                    status="script_ready",
+                    narration_tier=narration_tier,
+                    version_id=version_id,
+                    transcript_r2_key=transcript_r2_key,
+                    script_char_count=len(tts_text),
+                    tts_provider=tts_provider,
+                    llm_provider=llm_provider if llm_result else None,
+                    llm_model=llm_result.model if llm_result else None,
+                    llm_cost=llm_result.cost_usd if llm_result else 0.0)
 
         # ---------------------------------------------------------------
         # Stage 4: Premium TTS synthesis
