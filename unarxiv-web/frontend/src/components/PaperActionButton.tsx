@@ -252,39 +252,28 @@ export default function PaperActionButton({
 
       {/* Dropdown menu — props differ by state */}
       {menuOpen && (
-        isNarrated ? (
-          <PaperActionsMenu
-            paper={paper}
-            showPlayItem={false}
-            onRate={onRate}
-            onAddToPlaylist={onAddToPlaylist}
-            onRemoveFromPlaylist={onRemoveFromPlaylist}
-            onClose={() => toggleMenu(false)}
-            containerRef={menuRef}
-            onEnsureImported={onEnsureImported}
-            onToggleScript={onToggleScript}
-            currentView={currentView}
-            onOpenPremiumModal={openPremiumModal}
-            hideUpgradeNarration={isFullyUpgraded}
-            versions={versions}
-            onPlayVersion={(v) => {
-              if (v.audio_url) {
-                actions.loadPaper(paper.id, paper.title, v.audio_url, true);
-                addOrMoveToTop(paper.id);
-              }
-              toggleMenu(false);
-            }}
-          />
-        ) : (
-          <PaperActionsMenu
-            paper={paper}
-            showPlayItem={false}
-            onClose={() => toggleMenu(false)}
-            containerRef={menuRef}
-            onEnsureImported={onEnsureImported}
-            onOpenPremiumModal={openPremiumModal}
-          />
-        )
+        <PaperActionsMenu
+          paper={paper}
+          showPlayItem={false}
+          onRate={onRate}
+          onAddToPlaylist={onAddToPlaylist}
+          onRemoveFromPlaylist={onRemoveFromPlaylist}
+          onClose={() => toggleMenu(false)}
+          containerRef={menuRef}
+          onEnsureImported={onEnsureImported}
+          onToggleScript={onToggleScript}
+          currentView={currentView}
+          onOpenPremiumModal={openPremiumModal}
+          hideUpgradeNarration={isFullyUpgraded}
+          versions={versions}
+          onPlayVersion={(v) => {
+            if (v.audio_url) {
+              actions.loadPaper(paper.id, paper.title, v.audio_url, true);
+              addOrMoveToTop(paper.id);
+            }
+            toggleMenu(false);
+          }}
+        />
       )}
 
       {/* Premium narration modal — shared across all states */}
