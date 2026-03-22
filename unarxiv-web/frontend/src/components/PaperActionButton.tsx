@@ -17,8 +17,17 @@ const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?
   </svg>
 );
 
-const PlayIcon = ({ size = 14 }: { size?: number }) => (
+const PlayIcon = ({ size = 14, enhanced = false }: { size?: number; enhanced?: boolean }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    {enhanced && (
+      <polygon
+        points="4,0 24,12 4,24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    )}
     <polygon points="7,3 21,12 7,21" />
   </svg>
 );
@@ -173,7 +182,7 @@ export default function PaperActionButton({
               onClick={handlePlay}
               className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {isPlaying ? <PauseIcon /> : <PlayIcon enhanced={isEnhanced} />}
               {!compact && (
                 <>
                   <span className="inline-block text-center" style={{ minWidth: "3.2em" }}>{isPlaying ? "Pause" : "Play"}</span>
