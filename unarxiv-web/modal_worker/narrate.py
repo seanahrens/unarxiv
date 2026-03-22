@@ -521,7 +521,7 @@ def narrate_paper_premium(
 
     import tex_to_audio
     from llm_scripting import get_llm_provider
-    from premium_tts import get_tts_provider
+    from premium_tts import get_tts_provider, PROVIDER_CONFIGS
     from parser_v2.script_builder import _build_header, _build_footer, _format_date
     from source_download import download_and_parse
     import re
@@ -577,16 +577,9 @@ def narrate_paper_premium(
         # Stage 3: LLM script improvement (skipped if existing_script provided)
         # ---------------------------------------------------------------
         # Estimate total remaining time: LLM + TTS
-        # Provider-specific TTS time estimates (seconds per chunk)
-        _TTS_SECS_PER_CHUNK = {
-            "openai": 20,       # OpenAI TTS-HD: ~20s per 2000-char chunk
-            "elevenlabs": 15,   # ElevenLabs: ~15s per 5000-char chunk
-            "google": 10,       # Google Neural2: ~10s per 5000-char chunk
-            "polly": 8,         # Amazon Polly: ~8s per 3000-char chunk
-            "azure": 8,         # Azure Speech: ~8s per 3000-char chunk
-            "free": 5,          # edge-tts: ~5s per 4000-char chunk
-        }
-        tts_secs_per_chunk = _TTS_SECS_PER_CHUNK.get(tts_provider, 5)
+        # Use the provider's chunk config for accurate estimates
+        provider_cfg = PROVIDER_CONFIGS.get(tts_provider, PROVIDER_CONFIGS["free"])
+        tts_secs_per_chunk = provider_cfg.secs_per_chunk
         chunks_est = len(tex_to_audio._split_into_chunks(tts_text))
         tts_time_est = chunks_est * tts_secs_per_chunk
 

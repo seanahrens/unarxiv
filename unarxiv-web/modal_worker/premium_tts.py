@@ -30,36 +30,61 @@ from typing import Callable, Protocol, runtime_checkable
 
 
 # ---------------------------------------------------------------------------
-# Per-provider chunk limits (characters per API call)
+# Per-provider configuration — single source of truth for chunk sizes,
+# cost, estimated speed, and default voices.
+#
+# chunk_max:     max characters per API call
+# cost_per_char: USD per character
+# secs_per_chunk: estimated wall-clock seconds per chunk (for ETA calculation)
+# voice:         default narrator voice
 # ---------------------------------------------------------------------------
 
-_ELEVENLABS_CHUNK_MAX = 5_000
-_OPENAI_TTS_CHUNK_MAX = 2_000  # Smaller chunks for ~20s per call + more frequent ETA updates
-_GOOGLE_TTS_CHUNK_MAX = 5_000
-_POLLY_CHUNK_MAX = 3_000
-_AZURE_CHUNK_MAX = 3_000   # conservative; SSML overhead can be ~100 chars
+@dataclass
+class ProviderConfig:
+    chunk_max: int
+    cost_per_char: float
+    secs_per_chunk: int
+    voice: str
 
 
-# ---------------------------------------------------------------------------
-# Cost per character (USD)
-# ---------------------------------------------------------------------------
-
-_ELEVENLABS_COST_PER_CHAR = 0.30 / 1_000         # $0.30 / 1K chars
-_OPENAI_TTS_COST_PER_CHAR = 15.0 / 1_000_000     # $15 / 1M chars
-_GOOGLE_TTS_COST_PER_CHAR = 16.0 / 1_000_000     # $16 / 1M chars (Neural2)
-_POLLY_COST_PER_CHAR = 16.0 / 1_000_000          # $16 / 1M chars (neural)
-_AZURE_COST_PER_CHAR = 16.0 / 1_000_000          # $16 / 1M chars (neural)
-
-
-# ---------------------------------------------------------------------------
-# Default voices (narrator-style, clear, professional)
-# ---------------------------------------------------------------------------
-
-_ELEVENLABS_DEFAULT_VOICE = "Will"           # ElevenLabs built-in narrator preset
-_OPENAI_TTS_DEFAULT_VOICE = "onyx"          # Deep, authoritative narrator
-_GOOGLE_TTS_DEFAULT_VOICE = "en-US-Neural2-D"  # US English male Neural2
-_POLLY_DEFAULT_VOICE = "Matthew"            # Amazon Polly neural narrator
-_AZURE_DEFAULT_VOICE = "en-US-GuyNeural"   # Azure neural narrator
+PROVIDER_CONFIGS: dict[str, ProviderConfig] = {
+    "elevenlabs": ProviderConfig(
+        chunk_max=5_000,
+        cost_per_char=0.30 / 1_000,        # $0.30 / 1K chars
+        secs_per_chunk=15,
+        voice="Will",
+    ),
+    "openai": ProviderConfig(
+        chunk_max=2_000,                    # smaller for ~20s/call + frequent ETA updates
+        cost_per_char=15.0 / 1_000_000,     # $15 / 1M chars
+        secs_per_chunk=20,
+        voice="onyx",
+    ),
+    "google": ProviderConfig(
+        chunk_max=5_000,
+        cost_per_char=16.0 / 1_000_000,     # $16 / 1M chars (Neural2)
+        secs_per_chunk=10,
+        voice="en-US-Neural2-D",
+    ),
+    "polly": ProviderConfig(
+        chunk_max=3_000,
+        cost_per_char=16.0 / 1_000_000,     # $16 / 1M chars (neural)
+        secs_per_chunk=8,
+        voice="Matthew",
+    ),
+    "azure": ProviderConfig(
+        chunk_max=3_000,                    # conservative; SSML overhead ~100 chars
+        cost_per_char=16.0 / 1_000_000,     # $16 / 1M chars (neural)
+        secs_per_chunk=8,
+        voice="en-US-GuyNeural",
+    ),
+    "free": ProviderConfig(
+        chunk_max=4_000,
+        cost_per_char=0.0,
+        secs_per_chunk=5,
+        voice="en-US-EricNeural",
+    ),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -157,17 +182,19 @@ def _mp3_duration(audio_bytes: bytes) -> float:
 # ---------------------------------------------------------------------------
 
 class ElevenLabsProvider:
-    """ElevenLabs TTS — highest quality, ~$0.30 per 1K characters."""
+    """ElevenLabs TTS — highest quality."""
+
+    _CFG = PROVIDER_CONFIGS["elevenlabs"]
 
     def __init__(self, api_key: str, voice: str | None = None):
         self._api_key = api_key
-        self._voice = voice or _ELEVENLABS_DEFAULT_VOICE
+        self._voice = voice or self._CFG.voice
 
     def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         from elevenlabs.client import ElevenLabs  # noqa: PLC0415
 
         client = ElevenLabs(api_key=self._api_key)
-        chunks = _chunk_text(text, _ELEVENLABS_CHUNK_MAX)
+        chunks = _chunk_text(text, self._CFG.chunk_max)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         for i, chunk in enumerate(chunks):
@@ -186,24 +213,26 @@ class ElevenLabsProvider:
             audio_bytes=audio_bytes,
             duration_seconds=_mp3_duration(audio_bytes),
             char_count=char_count,
-            cost_usd=round(char_count * _ELEVENLABS_COST_PER_CHAR, 6),
+            cost_usd=round(char_count * self._CFG.cost_per_char, 6),
             provider="elevenlabs",
             voice=self._voice,
         )
 
 
 class OpenAITTSProvider:
-    """OpenAI TTS-HD — ~$15 per 1M characters."""
+    """OpenAI TTS-HD."""
+
+    _CFG = PROVIDER_CONFIGS["openai"]
 
     def __init__(self, api_key: str, voice: str | None = None):
         self._api_key = api_key
-        self._voice = voice or _OPENAI_TTS_DEFAULT_VOICE
+        self._voice = voice or self._CFG.voice
 
     def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         from openai import OpenAI  # noqa: PLC0415
 
         client = OpenAI(api_key=self._api_key)
-        chunks = _chunk_text(text, _OPENAI_TTS_CHUNK_MAX)
+        chunks = _chunk_text(text, self._CFG.chunk_max)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         for i, chunk in enumerate(chunks):
@@ -222,7 +251,7 @@ class OpenAITTSProvider:
             audio_bytes=audio_bytes,
             duration_seconds=_mp3_duration(audio_bytes),
             char_count=char_count,
-            cost_usd=round(char_count * _OPENAI_TTS_COST_PER_CHAR, 6),
+            cost_usd=round(char_count * self._CFG.cost_per_char, 6),
             provider="openai",
             voice=self._voice,
         )
@@ -236,9 +265,11 @@ class GoogleCloudTTSProvider:
 
     _ENDPOINT = "https://texttospeech.googleapis.com/v1/text:synthesize"
 
+    _CFG = PROVIDER_CONFIGS["google"]
+
     def __init__(self, api_key: str, voice: str | None = None):
         self._api_key = api_key
-        self._voice = voice or _GOOGLE_TTS_DEFAULT_VOICE
+        self._voice = voice or self._CFG.voice
 
     def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         import base64  # noqa: PLC0415
@@ -246,7 +277,7 @@ class GoogleCloudTTSProvider:
 
         # Derive language code from voice name (e.g. "en-US-Neural2-D" → "en-US")
         lang_code = "-".join(self._voice.split("-")[:2])
-        chunks = _chunk_text(text, _GOOGLE_TTS_CHUNK_MAX)
+        chunks = _chunk_text(text, self._CFG.chunk_max)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         for i, chunk in enumerate(chunks):
@@ -271,7 +302,7 @@ class GoogleCloudTTSProvider:
             audio_bytes=audio_bytes,
             duration_seconds=_mp3_duration(audio_bytes),
             char_count=char_count,
-            cost_usd=round(char_count * _GOOGLE_TTS_COST_PER_CHAR, 6),
+            cost_usd=round(char_count * self._CFG.cost_per_char, 6),
             provider="google",
             voice=self._voice,
         )
@@ -284,9 +315,11 @@ class AmazonPollyProvider:
                     "ACCESS_KEY_ID:SECRET_ACCESS_KEY:REGION"
     """
 
+    _CFG = PROVIDER_CONFIGS["polly"]
+
     def __init__(self, api_key: str, voice: str | None = None):
         self._api_key = api_key
-        self._voice = voice or _POLLY_DEFAULT_VOICE
+        self._voice = voice or self._CFG.voice
 
     def _make_client(self):
         import boto3  # noqa: PLC0415
@@ -307,7 +340,7 @@ class AmazonPollyProvider:
 
     def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         client = self._make_client()
-        chunks = _chunk_text(text, _POLLY_CHUNK_MAX)
+        chunks = _chunk_text(text, self._CFG.chunk_max)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         for i, chunk in enumerate(chunks):
@@ -326,7 +359,7 @@ class AmazonPollyProvider:
             audio_bytes=audio_bytes,
             duration_seconds=_mp3_duration(audio_bytes),
             char_count=char_count,
-            cost_usd=round(char_count * _POLLY_COST_PER_CHAR, 6),
+            cost_usd=round(char_count * self._CFG.cost_per_char, 6),
             provider="polly",
             voice=self._voice,
         )
@@ -338,9 +371,11 @@ class AzureSpeechProvider:
     api_key format: "SUBSCRIPTION_KEY:REGION"  (e.g. "abc123:eastus")
     """
 
+    _CFG = PROVIDER_CONFIGS["azure"]
+
     def __init__(self, api_key: str, voice: str | None = None):
         self._api_key = api_key
-        self._voice = voice or _AZURE_DEFAULT_VOICE
+        self._voice = voice or self._CFG.voice
 
     def _parse_key(self) -> tuple[str, str]:
         parts = self._api_key.split(":", 1)
@@ -357,7 +392,7 @@ class AzureSpeechProvider:
         )
         # Derive language code from voice name (e.g. "en-US-GuyNeural" → "en-US")
         lang = "-".join(self._voice.split("-")[:2])
-        chunks = _chunk_text(text, _AZURE_CHUNK_MAX)
+        chunks = _chunk_text(text, self._CFG.chunk_max)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         for i, chunk in enumerate(chunks):
@@ -388,7 +423,7 @@ class AzureSpeechProvider:
             audio_bytes=audio_bytes,
             duration_seconds=_mp3_duration(audio_bytes),
             char_count=char_count,
-            cost_usd=round(char_count * _AZURE_COST_PER_CHAR, 6),
+            cost_usd=round(char_count * self._CFG.cost_per_char, 6),
             provider="azure",
             voice=self._voice,
         )
@@ -397,8 +432,10 @@ class AzureSpeechProvider:
 class FreeTTSProvider:
     """edge-tts (Microsoft Edge TTS) — free, uses the existing pipeline."""
 
+    _CFG = PROVIDER_CONFIGS["free"]
+
     def __init__(self, voice: str | None = None):
-        self._voice = voice or "en-US-EricNeural"
+        self._voice = voice or self._CFG.voice
 
     def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         import sys  # noqa: PLC0415
