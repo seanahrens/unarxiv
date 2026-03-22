@@ -166,7 +166,7 @@ export default function PaperActionButton({
       .catch(() => {});
   }, [paper.id, paper.status, paper.best_version_id, compact]);
 
-  const isEnhanced = paper.best_version_id != null;
+  const isEnhanced = upgradePlus > 0;
   const isFullyUpgraded = upgradePlus >= 3;
 
   const openPremiumModal = () => { setShowPremiumModal(true); toggleMenu(false); };
@@ -186,13 +186,13 @@ export default function PaperActionButton({
               onClick={handlePlay}
               className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon enhanced={upgradePlus > 0} />}
+              {isPlaying ? <PauseIcon /> : <PlayIcon enhanced={isEnhanced} />}
               {!compact && (
                 <>
                   <span className="inline-block text-center" style={{ minWidth: "3.2em" }}>{isPlaying ? "Pause" : "Play"}</span>
                   {isEnhanced && (
                     <span className="inline-flex" style={{ minWidth: "1.5em" }}>
-                      {upgradePlus > 0 && <PlusIcons count={upgradePlus} size={9} className="text-stone-500" gap="gap-px" />}
+                      <PlusIcons count={upgradePlus} size={9} className="text-stone-500" gap="gap-px" />
                     </span>
                   )}
                   {paper.duration_seconds && (
