@@ -164,40 +164,106 @@ export default function PaperActionButton({
       .catch(() => {});
   }, [paper.id, paper.status, paper.best_version_id, compact]);
 
-  // --- NARRATED: Play button ---
   const isEnhanced = paper.best_version_id != null;
   const isFullyUpgraded = upgradeStars >= 5;
 
-  if (isNarrated) {
-    const colors = compact ? compactColors : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
-    const chevronBorder = compact ? compactChevronBorder : "border-l-stone-700";
+  const openPremiumModal = () => { setShowPremiumModal(true); toggleMenu(false); };
 
-    return (
-      <div className={wrapperClass} ref={menuRef}>
-        <button
-          data-testid={compact ? undefined : "play-paper"}
-          onClick={handlePlay}
-          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
-        >
-          {isPlaying ? <PauseIcon /> : <PlayIcon />}
-          {!compact && (
-            <>
-              <span>{isPlaying ? "Pause" : "Play"}</span>
-              {upgradeStars > 0 && <MiniStars count={upgradeStars} />}
-              {paper.duration_seconds && (
-                <span className="opacity-70">{formatDuration(paper.duration_seconds)}</span>
+  if (!isNarrated && !isProcessing && !isUnnarrated && !isFailed) return null;
+
+  return (
+    <div className={wrapperClass} ref={menuRef}>
+      {/* --- NARRATED: Play button --- */}
+      {isNarrated && (() => {
+        const colors = compact ? compactColors : "text-white bg-stone-900 border-stone-900 hover:bg-stone-700";
+        const chevronBorder = compact ? compactChevronBorder : "border-l-stone-700";
+        return (
+          <>
+            <button
+              data-testid={compact ? undefined : "play-paper"}
+              onClick={handlePlay}
+              className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
+            >
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {!compact && (
+                <>
+                  <span>{isPlaying ? "Pause" : "Play"}</span>
+                  {upgradeStars > 0 && <MiniStars count={upgradeStars} />}
+                  {paper.duration_seconds && (
+                    <span className="opacity-70">{formatDuration(paper.duration_seconds)}</span>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </button>
-        <button
-          data-testid="open-paper-actions"
-          onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
-        >
-          <ChevronIcon />
-        </button>
-        {menuOpen && (
+            </button>
+            <button
+              data-testid="open-paper-actions"
+              onClick={() => toggleMenu(!menuOpen)}
+              className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
+            >
+              <ChevronIcon />
+            </button>
+          </>
+        );
+      })()}
+
+      {/* --- NARRATING: Spinning sparkles + "Narrating" + ETA --- */}
+      {isProcessing && (() => {
+        const etaText = displayEta !== null ? formatEtaShort(displayEta) : "estimating...";
+        const colors = compact ? compactColors : "text-stone-600 bg-stone-50 border-stone-300 hover:bg-stone-100";
+        const chevronBorder = compact ? compactChevronBorder : "border-l-stone-300";
+        return (
+          <>
+            <div
+              className={`${btnBase} ${compact ? "h-auto py-1" : "min-w-[140px] flex-1 md:flex-initial h-auto py-1.5"} gap-2 ${colors} rounded-l-xl rounded-r-none cursor-default`}
+            >
+              <SparklesIcon className="animate-spin" />
+              {!compact && (
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Narrating</span>
+                  <span className="text-2xs text-stone-400">{etaText}</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => toggleMenu(!menuOpen)}
+              className={`${btnBase} ${compact ? "px-1" : "px-1.5 h-auto self-stretch"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
+            >
+              <ChevronIcon />
+            </button>
+          </>
+        );
+      })()}
+
+      {/* --- UNNARRATED or FAILED: Narrate/Retry button --- */}
+      {(isUnnarrated || isFailed) && (
+        <>
+          <button
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              onGenerate?.(rect);
+            }}
+            disabled={generateDisabled}
+            className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${compactColors} disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
+          >
+            <SparklesIcon />
+            {compact ? (
+              <span className="hidden md:inline">{isFailed ? "Retry" : "Narrate"}</span>
+            ) : (
+              <span>{isFailed ? "Retry" : "Narrate"}</span>
+            )}
+          </button>
+          <button
+            onClick={() => toggleMenu(!menuOpen)}
+            className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${compactColors} border-l ${compactChevronBorder} rounded-r-xl rounded-l-none -ml-px`}
+          >
+            <ChevronIcon />
+          </button>
+        </>
+      )}
+
+      {/* Dropdown menu — props differ by state */}
+      {menuOpen && (
+        isNarrated ? (
           <PaperActionsMenu
             paper={paper}
             showPlayItem={false}
@@ -209,109 +275,28 @@ export default function PaperActionButton({
             onEnsureImported={onEnsureImported}
             onToggleScript={onToggleScript}
             currentView={currentView}
-            onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
+            onOpenPremiumModal={openPremiumModal}
             hideUpgradeNarration={isFullyUpgraded}
           />
-        )}
-        {showPremiumModal && (
-          <PremiumNarrationModal
-            paper={paper}
-            onClose={() => setShowPremiumModal(false)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // --- NARRATING: Spinning sparkles + "Narrating" + ETA ---
-  if (isProcessing) {
-    const etaText = displayEta !== null ? formatEtaShort(displayEta) : "estimating...";
-    const colors = compact ? compactColors : "text-stone-600 bg-stone-50 border-stone-300 hover:bg-stone-100";
-    const chevronBorder = compact ? compactChevronBorder : "border-l-stone-300";
-
-    return (
-      <div className={wrapperClass} ref={menuRef}>
-        <div
-          className={`${btnBase} ${compact ? "h-auto py-1" : "min-w-[140px] flex-1 md:flex-initial h-auto py-1.5"} gap-2 ${colors} rounded-l-xl rounded-r-none cursor-default`}
-        >
-          <SparklesIcon className="animate-spin" />
-          {!compact && (
-            <div className="flex flex-col items-start leading-tight">
-              <span>Narrating</span>
-              <span className="text-2xs text-stone-400">{etaText}</span>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5 h-auto self-stretch"} ${colors} border-l ${chevronBorder} rounded-r-xl rounded-l-none -ml-px`}
-        >
-          <ChevronIcon />
-        </button>
-        {menuOpen && (
+        ) : (
           <PaperActionsMenu
             paper={paper}
             showPlayItem={false}
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
             onEnsureImported={onEnsureImported}
-            onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
+            onOpenPremiumModal={openPremiumModal}
           />
-        )}
-        {showPremiumModal && (
-          <PremiumNarrationModal
-            paper={paper}
-            onClose={() => setShowPremiumModal(false)}
-          />
-        )}
-      </div>
-    );
-  }
+        )
+      )}
 
-  // --- UNNARRATED or FAILED: Narrate/Retry button ---
-  if (isUnnarrated || isFailed) {
-    return (
-      <div className={wrapperClass} ref={menuRef}>
-        <button
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            onGenerate?.(rect);
-          }}
-          disabled={generateDisabled}
-          className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${compactColors} disabled:opacity-50 disabled:cursor-not-allowed rounded-l-xl rounded-r-none`}
-        >
-          <SparklesIcon />
-          {compact ? (
-            <span className="hidden md:inline">{isFailed ? "Retry" : "Narrate"}</span>
-          ) : (
-            <span>{isFailed ? "Retry" : "Narrate"}</span>
-          )}
-        </button>
-        <button
-          onClick={() => toggleMenu(!menuOpen)}
-          className={`${btnBase} ${compact ? "px-1" : "px-1.5"} ${compactColors} border-l ${compactChevronBorder} rounded-r-xl rounded-l-none -ml-px`}
-        >
-          <ChevronIcon />
-        </button>
-        {menuOpen && (
-          <PaperActionsMenu
-            paper={paper}
-            showPlayItem={false}
-            onClose={() => toggleMenu(false)}
-            containerRef={menuRef}
-            onEnsureImported={onEnsureImported}
-            onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
-          />
-        )}
-        {showPremiumModal && (
-          <PremiumNarrationModal
-            paper={paper}
-            onClose={() => setShowPremiumModal(false)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  return null;
+      {/* Premium narration modal — shared across all states */}
+      {showPremiumModal && (
+        <PremiumNarrationModal
+          paper={paper}
+          onClose={() => setShowPremiumModal(false)}
+        />
+      )}
+    </div>
+  );
 }
