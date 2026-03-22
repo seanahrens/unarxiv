@@ -197,16 +197,16 @@ export default function PaperActionsMenu({
         {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
 
-      {/* Play alternative versions — non-best versions with audio */}
+      {/* Play specific versions — all versions with audio, sorted by quality */}
       {hasAudio && versions && versions.length > 1 && onPlayVersion && (() => {
-        const alternates = versions
-          .filter(v => !v.is_best && v.audio_url)
+        const playable = versions
+          .filter(v => v.audio_url)
           .sort((a, b) => b.quality_rank - a.quality_rank);
-        if (alternates.length === 0) return null;
+        if (playable.length <= 1) return null;
         return (
           <>
             <div className={DIVIDER} />
-            {alternates.map(v => {
+            {playable.map(v => {
               const tier = getTierFromProvider(v.tts_provider);
               return (
                 <button
@@ -219,7 +219,10 @@ export default function PaperActionsMenu({
                   </svg>
                   <span className="flex items-center gap-1.5">
                     Play
-                    {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={9} className="text-stone-500" gap="gap-px" />}
+                    {tier.plusCount > 0
+                      ? <PlusIcons count={tier.plusCount} size={9} className="text-stone-500" gap="gap-px" />
+                      : <span className="text-stone-400 text-[10px]">Base</span>
+                    }
                   </span>
                 </button>
               );

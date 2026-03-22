@@ -125,7 +125,7 @@ export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse 
     error_message: paper.error_message,
     progress_detail: paper.progress_detail,
     eta_seconds: paper.eta_seconds,
-    audio_url: paper.status === "narrated" ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,
+    audio_url: paper.audio_r2_key ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,
     audio_size_bytes: paper.audio_size_bytes,
     duration_seconds: paper.duration_seconds,
     best_version_id: paper.best_version_id,
