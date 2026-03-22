@@ -4,6 +4,7 @@ export interface Env {
   TURNSTILE_SECRET_KEY: string;
   TURNSTILE_SITE_KEY: string;
   MODAL_FUNCTION_URL: string;
+  MODAL_PREMIUM_FUNCTION_URL?: string;
   MODAL_WEBHOOK_SECRET: string;
   DAILY_GLOBAL_LIMIT: string;
   PER_IP_DAILY_LIMIT: string;

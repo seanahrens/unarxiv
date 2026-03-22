@@ -929,7 +929,10 @@ async function handleNarratePremium(
         source_preference: "tex",
         _secret: env.MODAL_WEBHOOK_SECRET,
       };
-      const resp = await fetch(env.MODAL_FUNCTION_URL, {
+      // Use dedicated premium endpoint — derive from standard URL if not set
+      const premiumUrl = env.MODAL_PREMIUM_FUNCTION_URL
+        || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
+      const resp = await fetch(premiumUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
