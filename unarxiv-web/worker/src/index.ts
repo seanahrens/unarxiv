@@ -1280,7 +1280,7 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     {
       method: "GET",
       pattern: /^\/api\/papers\/(.+?)\/transcript$/,
-      handler: (_req, env, _url, m) => handleGetTranscript(env, m[1]),
+      handler: (_req, env, url, m) => handleGetTranscript(env, m[1], url),
     },
     {
       method: "GET",

@@ -38,10 +38,10 @@ image = (
     .pip_install("edge-tts>=6.1.0", "mutagen>=1.47.0", "httpx>=0.27.0", "boto3>=1.34.0", "fastapi[standard]", "pymupdf>=1.24.0")
     .run_commands("python -c 'import edge_tts; print(edge_tts.__version__)'")  # verify edge-tts installed
     # Legacy parser (kept for A/B switching via PARSER_VERSION=legacy)
-    .add_local_file("tex_to_audio_legacy.py", "/app/tex_to_audio_legacy.py")
+    .add_local_file("tex_to_audio_legacy.py", "/app/tex_to_audio_legacy.py", copy=True)
     # Active parser_v2 modules
-    .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py")
-    .add_local_dir("parser_v2", "/app/parser_v2", ignore=["test_data/*", "__pycache__/*"])
+    .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py", copy=True)
+    .add_local_dir("parser_v2", "/app/parser_v2", copy=True, ignore=["test_data/*", "__pycache__/*"])
 )
 
 # Premium image extends the base image with LLM and premium TTS packages.
@@ -54,8 +54,8 @@ premium_image = (
         "google-generativeai>=0.8",
         "elevenlabs>=1.0",
     )
-    .add_local_file("llm_scripting.py", "/app/llm_scripting.py")
-    .add_local_file("premium_tts.py", "/app/premium_tts.py")
+    .add_local_file("llm_scripting.py", "/app/llm_scripting.py", copy=True)
+    .add_local_file("premium_tts.py", "/app/premium_tts.py", copy=True)
 )
 
 # Modal secret: "unarxiv-secrets" (legacy name — renaming requires recreating in Modal)
