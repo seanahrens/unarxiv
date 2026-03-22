@@ -663,6 +663,7 @@ export async function encryptKey(provider: string, rawKey: string): Promise<Encr
 export interface ValidateKeyResponse {
   valid: boolean;
   error?: string;
+  info?: string;
 }
 
 export async function validateKey(
