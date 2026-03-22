@@ -33,13 +33,12 @@ export function getUpgradedVersions(versions: PaperVersion[]): PaperVersion[] {
 
 /**
  * Best version per voice tier — used for the "Other Narrations" submenu.
- * Only includes versions that have audio available.
+ * Includes ALL tiers with audio (base + upgraded).
  */
 export function getBestVersionPerTier(versions: PaperVersion[]): Map<string, PaperVersion> {
   const byTier = new Map<string, PaperVersion>();
   for (const v of versions) {
     if (!v.audio_url) continue;
-    if (!isUpgradedVersion(v)) continue;
     const tier = VOICE_TIERS[v.narration_tier] ?? VOICE_TIERS.base;
     const existing = byTier.get(tier.id);
     if (!existing || v.quality_rank > existing.quality_rank) {

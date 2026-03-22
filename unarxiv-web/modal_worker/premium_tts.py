@@ -23,9 +23,10 @@ import io
 import os
 import subprocess
 import tempfile
+import time
 import xml.sax.saxutils as _saxutils
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Callable, Protocol, runtime_checkable
 
 
 # ---------------------------------------------------------------------------
@@ -79,10 +80,14 @@ class TTSResult:
 # Provider protocol
 # ---------------------------------------------------------------------------
 
+# Callback type: (chunks_done, total_chunks, elapsed_seconds) → None
+ChunkProgressCallback = Callable[[int, int, float], None]
+
+
 @runtime_checkable
 class TTSProvider(Protocol):
-    def synthesize(self, text: str) -> TTSResult:
-        """Convert text to MP3 audio bytes."""
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
+        """Convert text to MP3 audio bytes, optionally reporting per-chunk progress."""
         ...
 
 
@@ -158,13 +163,14 @@ class ElevenLabsProvider:
         self._api_key = api_key
         self._voice = voice or _ELEVENLABS_DEFAULT_VOICE
 
-    def synthesize(self, text: str) -> TTSResult:
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         from elevenlabs.client import ElevenLabs  # noqa: PLC0415
 
         client = ElevenLabs(api_key=self._api_key)
         chunks = _chunk_text(text, _ELEVENLABS_CHUNK_MAX)
         audio_parts: list[bytes] = []
-        for chunk in chunks:
+        t0 = time.monotonic()
+        for i, chunk in enumerate(chunks):
             audio_iter = client.text_to_speech.convert(
                 voice_id=self._voice,
                 text=chunk,
@@ -172,6 +178,8 @@ class ElevenLabsProvider:
                 output_format="mp3_44100_128",
             )
             audio_parts.append(b"".join(audio_iter))
+            if on_chunk_done:
+                on_chunk_done(i + 1, len(chunks), time.monotonic() - t0)
         audio_bytes = _concatenate_mp3_bytes(audio_parts)
         char_count = len(text)
         return TTSResult(
@@ -191,13 +199,14 @@ class OpenAITTSProvider:
         self._api_key = api_key
         self._voice = voice or _OPENAI_TTS_DEFAULT_VOICE
 
-    def synthesize(self, text: str) -> TTSResult:
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         from openai import OpenAI  # noqa: PLC0415
 
         client = OpenAI(api_key=self._api_key)
         chunks = _chunk_text(text, _OPENAI_TTS_CHUNK_MAX)
         audio_parts: list[bytes] = []
-        for chunk in chunks:
+        t0 = time.monotonic()
+        for i, chunk in enumerate(chunks):
             response = client.audio.speech.create(
                 model="tts-1-hd",
                 voice=self._voice,
@@ -205,6 +214,8 @@ class OpenAITTSProvider:
                 response_format="mp3",
             )
             audio_parts.append(response.content)
+            if on_chunk_done:
+                on_chunk_done(i + 1, len(chunks), time.monotonic() - t0)
         audio_bytes = _concatenate_mp3_bytes(audio_parts)
         char_count = len(text)
         return TTSResult(
@@ -229,7 +240,7 @@ class GoogleCloudTTSProvider:
         self._api_key = api_key
         self._voice = voice or _GOOGLE_TTS_DEFAULT_VOICE
 
-    def synthesize(self, text: str) -> TTSResult:
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         import base64  # noqa: PLC0415
         import httpx  # noqa: PLC0415
 
@@ -237,7 +248,8 @@ class GoogleCloudTTSProvider:
         lang_code = "-".join(self._voice.split("-")[:2])
         chunks = _chunk_text(text, _GOOGLE_TTS_CHUNK_MAX)
         audio_parts: list[bytes] = []
-        for chunk in chunks:
+        t0 = time.monotonic()
+        for i, chunk in enumerate(chunks):
             payload = {
                 "input": {"text": chunk},
                 "voice": {"languageCode": lang_code, "name": self._voice},
@@ -251,6 +263,8 @@ class GoogleCloudTTSProvider:
             )
             resp.raise_for_status()
             audio_parts.append(base64.b64decode(resp.json()["audioContent"]))
+            if on_chunk_done:
+                on_chunk_done(i + 1, len(chunks), time.monotonic() - t0)
         audio_bytes = _concatenate_mp3_bytes(audio_parts)
         char_count = len(text)
         return TTSResult(
@@ -291,11 +305,12 @@ class AmazonPollyProvider:
             region_name=region,
         )
 
-    def synthesize(self, text: str) -> TTSResult:
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         client = self._make_client()
         chunks = _chunk_text(text, _POLLY_CHUNK_MAX)
         audio_parts: list[bytes] = []
-        for chunk in chunks:
+        t0 = time.monotonic()
+        for i, chunk in enumerate(chunks):
             response = client.synthesize_speech(
                 Text=chunk,
                 VoiceId=self._voice,
@@ -303,6 +318,8 @@ class AmazonPollyProvider:
                 Engine="neural",
             )
             audio_parts.append(response["AudioStream"].read())
+            if on_chunk_done:
+                on_chunk_done(i + 1, len(chunks), time.monotonic() - t0)
         audio_bytes = _concatenate_mp3_bytes(audio_parts)
         char_count = len(text)
         return TTSResult(
@@ -331,7 +348,7 @@ class AzureSpeechProvider:
             raise ValueError("Azure api_key must be 'SUBSCRIPTION_KEY:REGION'")
         return parts[0], parts[1]
 
-    def synthesize(self, text: str) -> TTSResult:
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         import httpx  # noqa: PLC0415
 
         sub_key, region = self._parse_key()
@@ -342,7 +359,8 @@ class AzureSpeechProvider:
         lang = "-".join(self._voice.split("-")[:2])
         chunks = _chunk_text(text, _AZURE_CHUNK_MAX)
         audio_parts: list[bytes] = []
-        for chunk in chunks:
+        t0 = time.monotonic()
+        for i, chunk in enumerate(chunks):
             # Escape special XML chars in the spoken text
             escaped = _saxutils.escape(chunk)
             ssml = (
@@ -362,6 +380,8 @@ class AzureSpeechProvider:
             )
             resp.raise_for_status()
             audio_parts.append(resp.content)
+            if on_chunk_done:
+                on_chunk_done(i + 1, len(chunks), time.monotonic() - t0)
         audio_bytes = _concatenate_mp3_bytes(audio_parts)
         char_count = len(text)
         return TTSResult(
@@ -380,19 +400,22 @@ class FreeTTSProvider:
     def __init__(self, voice: str | None = None):
         self._voice = voice or "en-US-EricNeural"
 
-    def synthesize(self, text: str) -> TTSResult:
+    def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         import sys  # noqa: PLC0415
         sys.path.insert(0, "/app")
         import tex_to_audio  # noqa: PLC0415
 
         chunks = tex_to_audio._split_into_chunks(text)
         audio_parts: list[bytes] = []
+        t0 = time.monotonic()
         with tempfile.TemporaryDirectory() as tmp:
             for i, chunk in enumerate(chunks):
                 path = os.path.join(tmp, f"chunk_{i:03d}.mp3")
                 tex_to_audio._tts_chunk(chunk, path, self._voice)
                 with open(path, "rb") as f:
                     audio_parts.append(f.read())
+                if on_chunk_done:
+                    on_chunk_done(i + 1, len(chunks), time.monotonic() - t0)
         audio_bytes = _concatenate_mp3_bytes(audio_parts)
         char_count = len(text)
         return TTSResult(

@@ -592,9 +592,9 @@ def narrate_paper_premium(
                         eta_seconds=tts_time_est,
                         version_id=version_id)
         elif llm_api_key:
-            # Estimate LLM time: ~1 token per 4 chars output, ~20 tokens/sec throughput
+            # Estimate LLM time: ~1 token per 4 chars output, ~60 tokens/sec throughput
             llm_output_tokens_est = len(tts_text) / 4
-            llm_time_est = max(30, int(llm_output_tokens_est / 20))
+            llm_time_est = max(20, int(llm_output_tokens_est / 60))
             total_est = llm_time_est + tts_time_est
             send_status(callback_url, secret, arxiv_id,
                         status="narrating",
@@ -639,10 +639,21 @@ def narrate_paper_premium(
                     eta_seconds=final_tts_eta,
                     version_id=version_id)
 
+        def _on_tts_chunk(done: int, total: int, elapsed: float) -> None:
+            """Report per-chunk ETA updates during TTS synthesis."""
+            remaining = total - done
+            if done > 0 and remaining > 0:
+                secs_per_chunk = elapsed / done
+                eta = int(secs_per_chunk * remaining)
+                send_status(callback_url, secret, arxiv_id,
+                            status="narrating",
+                            eta_seconds=eta,
+                            version_id=version_id)
+
         try:
             print(f"Running TTS ({tts_provider})...")
             tts_provider_obj = get_tts_provider(tts_provider, api_key=tts_api_key or None)
-            tts_result = tts_provider_obj.synthesize(tts_text)
+            tts_result = tts_provider_obj.synthesize(tts_text, on_chunk_done=_on_tts_chunk)
             print(
                 f"TTS done: {tts_result.char_count:,} chars, "
                 f"{tts_result.duration_seconds:.0f}s audio, ${tts_result.cost_usd:.4f}"
