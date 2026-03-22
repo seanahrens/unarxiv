@@ -311,16 +311,20 @@ function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
 }) {
   const [open, setOpen] = useState(false);
 
-  // Map of best version per tier
+  // Map of best version per tier (skip base narrations)
   const versionByTier = new Map<string, PaperVersion>();
   for (const v of versions) {
     if (!v.audio_url) continue;
+    if (v.version_type === "free" && v.quality_rank === 0) continue; // base narration
     const tier = getTierFromProvider(v.tts_provider);
     const existing = versionByTier.get(tier.id);
     if (!existing || v.quality_rank > existing.quality_rank) {
       versionByTier.set(tier.id, v);
     }
   }
+
+  // Don't render submenu if there are no premium versions
+  if (versionByTier.size === 0) return null;
 
   return (
     <div className="relative">

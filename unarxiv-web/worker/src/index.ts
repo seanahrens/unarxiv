@@ -2073,8 +2073,8 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
   if (body.status === "narrated" && body.audio_r2_key) {
     const versionType = body.version_type ?? (body.narration_mode === "premium" ? "premium" : "free");
     const scriptType = body.script_type ?? (body.narration_mode === "premium" ? "premium" : "free");
-    const ttsProvider = body.tts_provider ?? (versionType === "free" ? "openai" : null);
-    const ttsModel = body.tts_model ?? (versionType === "free" ? "tts-1" : null);
+    const ttsProvider = body.tts_provider ?? null;
+    const ttsModel = body.tts_model ?? null;
     const qualityRank = versionType === "free" ? 0 : computeQualityRank(ttsProvider, ttsModel);
 
     const version = await insertNarrationVersion(env.DB, {
