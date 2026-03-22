@@ -40,8 +40,17 @@ Guidelines:
    (e.g. "Moving on to...", "Let's now examine...", "This brings us to...").
 4. Artifacts: Remove text elements that read poorly aloud — citation markers like
    "[1]", footnote references, raw URLs — and smooth any abrupt section breaks.
-5. Accuracy: Preserve all technical content, findings, methods, and conclusions
-   exactly. Do not simplify, editorialize, or omit any important content.
+5. Accuracy: Preserve ALL technical content, findings, methods, and conclusions
+   exactly. Do not simplify, editorialize, or omit ANY content from the original.
+6. Length: Your output MUST be at least as long as the input script. You are
+   ENHANCING the script by ADDING descriptions and improving readability — never
+   removing or condensing content. Every paragraph, every result, every discussion
+   point in the input must appear in your output. If anything, the improved script
+   should be LONGER than the input because you are adding figure descriptions,
+   equation narrations, and transitions.
+7. Completeness: Work through the ENTIRE script from beginning to end. Do not
+   stop early or truncate. If the input has 50 paragraphs, your output must cover
+   all 50 paragraphs. Do not summarize sections — narrate them fully.
 
 Return ONLY the improved script text. Do not include any commentary, preamble,
 or explanation outside the script itself.\
@@ -54,7 +63,9 @@ Here is the draft narration script for the paper:
 {script}
 ---
 
-Please improve this script for audio narration following the guidelines provided.\
+Please improve this script for audio narration following the guidelines provided.
+Your output must cover the ENTIRE script — do not summarize or skip any sections.
+The improved version should be at least as long as the original.\
 """
 
 _USER_TEMPLATE_WITH_SOURCE = """\
@@ -72,7 +83,9 @@ Here is the draft narration script to improve:
 ---
 
 Please improve the script for audio narration, using the TeX source to fill in
-any visual descriptions or equation details that are missing.\
+any visual descriptions or equation details that are missing.
+Your output must cover the ENTIRE script — do not summarize or skip any sections.
+The improved version should be at least as long as the original.\
 """
 
 # Maximum characters of raw source to include in the prompt (avoid huge contexts).
@@ -141,7 +154,7 @@ class AnthropicProvider:
         client = anthropic.Anthropic(api_key=self._api_key)
         message = client.messages.create(
             model=self._model,
-            max_tokens=8192,
+            max_tokens=16384,
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": _build_user_message(script, raw_source)}],
         )
@@ -172,7 +185,7 @@ class OpenAIProvider:
         client = OpenAI(api_key=self._api_key)
         response = client.chat.completions.create(
             model=self._model,
-            max_tokens=8192,
+            max_tokens=16384,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": _build_user_message(script, raw_source)},
