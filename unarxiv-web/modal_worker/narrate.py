@@ -689,6 +689,26 @@ def narrate_paper_premium(
             except Exception as e:
                 print(f"Warning: could not extract LaTeX for LLM context: {e}")
 
+        # Fallback: extract PDF text if no LaTeX source available
+        if not raw_source_text and pdf_local_path:
+            try:
+                import fitz  # pymupdf
+                doc = fitz.open(pdf_local_path)
+                pdf_parts: list[str] = []
+                total_chars = 0
+                for page in doc:
+                    text = page.get_text()
+                    pdf_parts.append(text)
+                    total_chars += len(text)
+                    if total_chars >= 200_000:
+                        break
+                doc.close()
+                raw_source_text = "\n\n".join(pdf_parts) if pdf_parts else None
+                if raw_source_text:
+                    print(f"Using PDF text for LLM context: {len(raw_source_text):,} chars")
+            except Exception as e:
+                print(f"Warning: could not extract PDF text for LLM context: {e}")
+
         # Parse with parser_v2
         send_status(callback_url, secret, arxiv_id,
                     status="narrating",

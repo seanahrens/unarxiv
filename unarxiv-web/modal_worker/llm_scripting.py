@@ -352,17 +352,26 @@ def generate_from_source(
 
     Falls back to chunk-processing the free-tier script if no LaTeX source.
     """
-    # Determine if we have LaTeX source or just a free-tier script
-    is_latex = bool(raw_source and ("\\section" in raw_source or "\\begin{document}" in raw_source))
+    # Determine source type: LaTeX > PDF text > free-tier script
+    has_latex = bool(raw_source and ("\\section" in raw_source or "\\begin{document}" in raw_source))
+    has_source = bool(raw_source and len(raw_source.strip()) > 100)
 
-    if is_latex:
+    if has_latex:
         chunks = _split_latex_into_sections(raw_source)
+        is_latex = True
         print(f"[llm] Splitting LaTeX into {len(chunks)} section chunks "
+              f"(total {len(raw_source):,} chars)")
+    elif has_source:
+        # PDF-extracted text or other raw source — use the LaTeX prompt
+        # (it works well for any academic text, not just LaTeX)
+        chunks = _split_on_paragraphs(raw_source, _MAX_CHUNK_CHARS)
+        is_latex = True  # use the "convert source to narration" prompt
+        print(f"[llm] Splitting PDF/source text into {len(chunks)} chunks "
               f"(total {len(raw_source):,} chars)")
     elif fallback_script:
         chunks = _split_on_paragraphs(fallback_script, _MAX_CHUNK_CHARS)
         is_latex = False
-        print(f"[llm] No LaTeX source — splitting free-tier script into {len(chunks)} chunks "
+        print(f"[llm] No source — splitting free-tier script into {len(chunks)} chunks "
               f"(total {len(fallback_script):,} chars)")
     else:
         raise ValueError("No source material provided for script generation")
