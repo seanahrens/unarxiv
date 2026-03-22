@@ -692,12 +692,15 @@ async function validateProviderKey(
 ): Promise<{ valid: boolean; info?: string; error?: string }> {
   try {
     if (provider === "openai") {
+      // Use /v1/models as a lightweight auth check.
+      // Project-scoped keys (sk-proj-*) may return 403 on this endpoint
+      // even though the key is valid — treat 403 as valid.
       const resp = await fetch("https://api.openai.com/v1/models", {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       if (resp.status === 401) return { valid: false, error: "Invalid API key" };
-      if (!resp.ok) return { valid: false, error: `OpenAI returned ${resp.status}` };
-      return { valid: true, info: "OpenAI key valid" };
+      if (resp.ok || resp.status === 403) return { valid: true, info: "OpenAI key valid" };
+      return { valid: false, error: `OpenAI returned ${resp.status}` };
     }
 
     if (provider === "anthropic") {

@@ -283,8 +283,9 @@ export default function PremiumNarrationModal({
   onSuccess,
 }: PremiumNarrationModalProps) {
   const [step, setStep] = useState<Step>(1);
-  const [loading, setLoading] = useState(true);
-  const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>([]);
+  // Start with fallback estimates so cards render immediately (no skeleton flash)
+  const [loading, setLoading] = useState(false);
+  const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>(buildFallbackEstimates());
   const [estimateError, setEstimateError] = useState(false);
 
   // Step 1 selection — smart default computed once estimates + versions load
@@ -320,20 +321,16 @@ export default function PremiumNarrationModal({
   }
   const isFullyUpgraded = highestCompletedRank >= 4;
 
-  // Load estimates + existing versions on mount
+  // Load real estimates + existing versions on mount (fallbacks shown immediately)
   useEffect(() => {
-    setLoading(true);
     setEstimateError(false);
     getPremiumEstimate(paper.id)
       .then((resp) => {
         const opts = (resp.options ?? buildFallbackEstimates()).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
         setEstimates(opts);
-        setLoading(false);
       })
       .catch(() => {
         setEstimateError(true);
-        setLoading(false);
-        setEstimates(buildFallbackEstimates());
       });
     getPaperVersions(paper.id)
       .then((resp) => setExistingVersions(resp.versions))
@@ -353,14 +350,15 @@ export default function PremiumNarrationModal({
 
     if (available.length === 0) return;
 
-    // Prefer highest tier where user already has a saved API key
+    // Prefer highest tier where user already has all required API keys
     const cfg = (id: string) => ALL_OPTIONS.find((o) => o.id === id);
+    const hasLlm = LLM_PROVIDERS.some((p) => hasKeyForProvider(p.id as PremiumProvider));
     const withKey = available.find((e) => {
       const c = cfg(e.option_id);
       if (!c) return false;
-      if (c.id === "free") return true; // free needs no TTS key
+      if (c.id === "free") return hasLlm; // needs an LLM key
       if (c.unifiedKey) return hasKeyForProvider(c.provider);
-      return hasKeyForProvider(c.provider);
+      return hasKeyForProvider(c.provider) && hasLlm;
     });
 
     setSelectedOptionId((withKey ?? available[0]).option_id);
@@ -571,7 +569,7 @@ export default function PremiumNarrationModal({
             <div className="space-y-4">
               <p className="text-xs text-stone-500 leading-snug">
                 You&apos;ll only need to enter these key(s) once. Keys are encrypted and saved locally in your browser.{" "}
-                <a href="https://github.com/unarxiv/unarxiv" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-700">
+                <a href="https://github.com/seanahrens/unarxiv" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-700">
                   See how on GitHub.
                 </a>
               </p>

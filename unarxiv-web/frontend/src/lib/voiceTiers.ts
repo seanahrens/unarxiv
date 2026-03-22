@@ -41,7 +41,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
   free: {
     id: "free",
     label: "Same Voice",
-    description: "Same Voice. Improved script.",
+    description: "Same Voice. Decent. A tinge botty.",
     providerName: "Microsoft",
     rank: 2,
     plusCount: 1,
