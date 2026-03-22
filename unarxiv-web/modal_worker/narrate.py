@@ -719,7 +719,8 @@ def narrate_paper_premium(
                         progress_detail="Improving script with LLM...",
                         eta_seconds=120,  # rough: 30s LLM + rest for TTS
                         version_id=version_id)
-            print(f"Running LLM script improvement ({llm_provider})...")
+            has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
+            print(f"Running LLM script generation ({llm_provider}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
             provider = get_llm_provider(llm_provider, llm_api_key)
             llm_result = provider.improve_script(tts_text, raw_source=raw_source_text)
             tts_text = llm_result.improved_script

@@ -1,11 +1,13 @@
-"""llm_scripting.py — LLM-powered script improvement for premium narration.
+"""llm_scripting.py — LLM-powered narration script generation from LaTeX source.
 
-Takes a free-tier narration script (and optionally the original TeX/PDF source)
-and uses an LLM to rewrite it for audio listening:
-  - Describes figures, graphs, charts, tables with key takeaways
-  - Rewrites equations for spoken narration
-  - Smooths section transitions
-  - Maintains full academic accuracy
+Generates narration scripts directly from the original LaTeX source, chunked
+by sections for papers of any length (up to 4+ hours):
+  - Splits LaTeX into section-level chunks
+  - Processes each chunk independently via LLM
+  - Concatenates results into a complete narration script
+  - Describes figures, graphs, charts, tables verbally
+  - Speaks equations in plain English
+  - Covers ALL content — never summarizes
 
 Supported LLM providers:
   - anthropic : Anthropic Claude (default model: claude-sonnet-4-6)
@@ -15,6 +17,7 @@ Supported LLM providers:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -24,72 +27,152 @@ from typing import Protocol, runtime_checkable
 # ---------------------------------------------------------------------------
 
 _SYSTEM_PROMPT = """\
-You are an expert audio script editor specialising in academic paper narrations.
-You will receive a draft narration script for a research paper and must improve it
-for audio listening.
+You are an expert audio script writer for academic research papers. You will
+receive a section of a research paper in LaTeX format. Convert it into a
+natural, spoken narration script suitable for text-to-speech audio.
 
 Guidelines:
-1. Visual content: When the script mentions or skips figures, graphs, charts, or
-   tables, provide a moderate verbal description with key takeaways. Use phrases
-   like "Figure X shows...", "The graph illustrates...", "The table compares..."
-   followed by the core finding or trend.
-2. Equations: Rewrite mathematical expressions so they can be spoken naturally.
-   Replace LaTeX-style or symbolic notation with plain English (e.g. "x squared
-   plus y squared equals r squared"). Convey mathematical meaning without symbols.
-3. Transitions: Add natural spoken transitions between sections
-   (e.g. "Moving on to...", "Let's now examine...", "This brings us to...").
-4. Artifacts: Remove text elements that read poorly aloud — citation markers like
-   "[1]", footnote references, raw URLs — and smooth any abrupt section breaks.
-5. Accuracy: Preserve ALL technical content, findings, methods, and conclusions
-   exactly. Do not simplify, editorialize, or omit ANY content from the original.
-6. Length: Your output MUST be at least as long as the input script. You are
-   ENHANCING the script by ADDING descriptions and improving readability — never
-   removing or condensing content. Every paragraph, every result, every discussion
-   point in the input must appear in your output. If anything, the improved script
-   should be LONGER than the input because you are adding figure descriptions,
-   equation narrations, and transitions.
-7. Completeness: Work through the ENTIRE script from beginning to end. Do not
-   stop early or truncate. If the input has 50 paragraphs, your output must cover
-   all 50 paragraphs. Do not summarize sections — narrate them fully.
+1. Comprehensive coverage: Narrate ALL content in the section — every paragraph,
+   every result, every finding, every discussion point. A listener should learn
+   everything they would from reading this section of the paper.
+2. Figures and tables: Describe what they show verbally. Use phrases like
+   "Figure 3 shows...", "The table compares...", followed by key findings and
+   trends. Extract descriptions from captions, labels, and surrounding text.
+3. Equations: Speak mathematical expressions in plain English. For example,
+   "x squared plus y squared equals r squared". Convey the mathematical meaning
+   without any symbols or LaTeX notation.
+4. Clean output: Remove all LaTeX formatting commands, citation markers like
+   [1] or \\cite{}, footnote references, raw URLs, and \\label{} commands.
+   Smooth any abrupt transitions.
+5. Natural speech: Write as if narrating to a listener. Use spoken transitions
+   like "Moving on to...", "Next, the authors examine...", "This brings us to...".
+6. Do NOT summarize: Your narration must be comprehensive, not a summary. Cover
+   every point the authors make. If a paragraph discusses three findings, narrate
+   all three — do not condense them into one sentence.
+7. Accuracy: Preserve all technical claims, numbers, method details, and
+   conclusions exactly as presented in the source.
 
-Return ONLY the improved script text. Do not include any commentary, preamble,
-or explanation outside the script itself.\
+Return ONLY the narration script text. No commentary, preamble, or explanation.\
 """
 
-_USER_TEMPLATE_SCRIPT_ONLY = """\
-Here is the draft narration script for the paper:
+_USER_TEMPLATE = """\
+Here is a section of a research paper in LaTeX:
 
 ---
-{script}
+{source}
 ---
 
-Please improve this script for audio narration following the guidelines provided.
-Your output must cover the ENTIRE script — do not summarize or skip any sections.
-The improved version should be at least as long as the original.\
+Convert this into a spoken narration script. Cover ALL content comprehensively.
+Do not summarize — narrate the full section so a listener learns everything.\
 """
 
-_USER_TEMPLATE_WITH_SOURCE = """\
-Here is the original TeX source (use it to find figure captions, table content,
-and equation context that may have been stripped from the draft):
+# Fallback: when only a free-tier script is available (no LaTeX source)
+_SYSTEM_PROMPT_FALLBACK = """\
+You are an expert audio script editor for academic paper narrations. You will
+receive a section of a draft narration script for a research paper. Improve it
+for audio listening while preserving ALL content.
 
---- TeX SOURCE ---
-{raw_source}
---- END SOURCE ---
+Guidelines:
+1. Preserve ALL content — every paragraph, result, and discussion point.
+2. Figures/tables: Add verbal descriptions where they are mentioned or skipped.
+3. Equations: Rewrite any remaining symbolic notation into plain spoken English.
+4. Remove citation markers like [1], footnote references, raw URLs.
+5. Add natural spoken transitions between topics.
+6. Your output must be at least as long as the input. You are enhancing, not
+   condensing. Do not summarize.
+7. Preserve all technical accuracy.
 
-Here is the draft narration script to improve:
-
----
-{script}
----
-
-Please improve the script for audio narration, using the TeX source to fill in
-any visual descriptions or equation details that are missing.
-Your output must cover the ENTIRE script — do not summarize or skip any sections.
-The improved version should be at least as long as the original.\
+Return ONLY the improved script text.\
 """
 
-# Maximum characters of raw source to include in the prompt (avoid huge contexts).
-_MAX_SOURCE_CHARS_IN_PROMPT = 60_000
+_USER_TEMPLATE_FALLBACK = """\
+Here is a section of a draft narration script:
+
+---
+{source}
+---
+
+Improve this section for audio narration. Cover ALL content — do not shorten.\
+"""
+
+# Maximum chars per chunk sent to the LLM
+_MAX_CHUNK_CHARS = 50_000
+
+
+# ---------------------------------------------------------------------------
+# Section splitting
+# ---------------------------------------------------------------------------
+
+def _split_latex_into_sections(latex: str) -> list[str]:
+    """Split LaTeX source into section-level chunks.
+
+    Splits on \\section, \\subsection, \\chapter boundaries.
+    If a section exceeds _MAX_CHUNK_CHARS, sub-splits on \\subsection
+    or paragraph (blank line) boundaries.
+    """
+    # Pattern matches \section{...}, \subsection{...}, \chapter{...} etc.
+    section_pattern = re.compile(
+        r'(?=\\(?:chapter|section|subsection|subsubsection)\*?\{)',
+        re.MULTILINE,
+    )
+
+    parts = section_pattern.split(latex)
+    # First part is preamble / abstract (before any \section)
+    chunks = [p.strip() for p in parts if p.strip()]
+
+    if not chunks:
+        return [latex]
+
+    # Sub-split any chunks that are too large
+    result = []
+    for chunk in chunks:
+        if len(chunk) <= _MAX_CHUNK_CHARS:
+            result.append(chunk)
+        else:
+            # Try splitting on \subsection boundaries first
+            sub_pattern = re.compile(r'(?=\\(?:subsection|subsubsection)\*?\{)', re.MULTILINE)
+            sub_parts = sub_pattern.split(chunk)
+            sub_parts = [p.strip() for p in sub_parts if p.strip()]
+
+            if len(sub_parts) > 1:
+                # Recombine sub-parts into chunks under the limit
+                current = ""
+                for sp in sub_parts:
+                    if len(current) + len(sp) > _MAX_CHUNK_CHARS and current:
+                        result.append(current)
+                        current = sp
+                    else:
+                        current = (current + "\n\n" + sp).strip()
+                if current:
+                    result.append(current)
+            else:
+                # Fall back to paragraph splitting
+                result.extend(_split_on_paragraphs(chunk, _MAX_CHUNK_CHARS))
+
+    return result if result else [latex]
+
+
+def _split_on_paragraphs(text: str, max_chars: int) -> list[str]:
+    """Split text into paragraph-aligned chunks under max_chars."""
+    chunks = []
+    current_parts: list[str] = []
+    current_len = 0
+
+    for para in text.split("\n\n"):
+        para = para.strip()
+        if not para:
+            continue
+        if current_len + len(para) > max_chars and current_parts:
+            chunks.append("\n\n".join(current_parts))
+            current_parts = [para]
+            current_len = len(para)
+        else:
+            current_parts.append(para)
+            current_len += len(para) + 2
+
+    if current_parts:
+        chunks.append("\n\n".join(current_parts))
+    return chunks
 
 
 # ---------------------------------------------------------------------------
@@ -129,16 +212,21 @@ class LLMResult:
 
 @runtime_checkable
 class LLMProvider(Protocol):
+    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+        """Generate a narration script from source (LaTeX or free-tier script)."""
+        ...
+
+    # Keep backward compat alias
     def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
-        """Return an improved narration script."""
         ...
 
 
-def _build_user_message(script: str, raw_source: str | None) -> str:
-    """Build the user prompt, including source context if provided and not too long."""
-    if raw_source and len(raw_source) <= _MAX_SOURCE_CHARS_IN_PROMPT:
-        return _USER_TEMPLATE_WITH_SOURCE.format(script=script, raw_source=raw_source)
-    return _USER_TEMPLATE_SCRIPT_ONLY.format(script=script)
+def _compute_max_tokens(chunk_chars: int) -> int:
+    """Compute max output tokens for a chunk. Narration is roughly 0.3-0.5x
+    the LaTeX char count (stripping tags), at ~4 chars/token."""
+    estimated_output_chars = int(chunk_chars * 0.5)
+    estimated_tokens = estimated_output_chars // 4
+    return max(4096, min(estimated_tokens, 16384))
 
 
 class AnthropicProvider:
@@ -148,28 +236,33 @@ class AnthropicProvider:
         self._api_key = api_key
         self._model = model or self.DEFAULT_MODEL
 
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def _call_llm(self, system: str, user: str, max_tokens: int) -> LLMResult:
         import anthropic  # noqa: PLC0415
 
         client = anthropic.Anthropic(api_key=self._api_key)
         message = client.messages.create(
             model=self._model,
-            max_tokens=16384,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": _build_user_message(script, raw_source)}],
+            max_tokens=max_tokens,
+            system=system,
+            messages=[{"role": "user", "content": user}],
         )
         improved = message.content[0].text
         in_tok = message.usage.input_tokens
         out_tok = message.usage.output_tokens
         cost = round(in_tok * _ANTHROPIC_COST_IN + out_tok * _ANTHROPIC_COST_OUT, 6)
-        return LLMResult(
-            improved_script=improved,
-            input_tokens=in_tok,
-            output_tokens=out_tok,
-            cost_usd=cost,
-            provider="anthropic",
-            model=self._model,
-        )
+        return LLMResult(improved, in_tok, out_tok, cost, "anthropic", self._model)
+
+    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+        sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
+        user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
+        user_msg = user_tmpl.format(source=source)
+        max_tok = _compute_max_tokens(len(source))
+        return self._call_llm(sys_prompt, user_msg, max_tok)
+
+    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+        if raw_source:
+            return generate_from_source(self, raw_source, fallback_script=script)
+        return self.generate_script(script, is_latex=False)
 
 
 class OpenAIProvider:
@@ -179,30 +272,35 @@ class OpenAIProvider:
         self._api_key = api_key
         self._model = model or self.DEFAULT_MODEL
 
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def _call_llm(self, system: str, user: str, max_tokens: int) -> LLMResult:
         from openai import OpenAI  # noqa: PLC0415
 
         client = OpenAI(api_key=self._api_key)
         response = client.chat.completions.create(
             model=self._model,
-            max_tokens=16384,
+            max_tokens=max_tokens,
             messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": _build_user_message(script, raw_source)},
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
             ],
         )
         improved = response.choices[0].message.content or ""
         in_tok = response.usage.prompt_tokens
         out_tok = response.usage.completion_tokens
         cost = round(in_tok * _OPENAI_COST_IN + out_tok * _OPENAI_COST_OUT, 6)
-        return LLMResult(
-            improved_script=improved,
-            input_tokens=in_tok,
-            output_tokens=out_tok,
-            cost_usd=cost,
-            provider="openai",
-            model=self._model,
-        )
+        return LLMResult(improved, in_tok, out_tok, cost, "openai", self._model)
+
+    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+        sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
+        user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
+        user_msg = user_tmpl.format(source=source)
+        max_tok = _compute_max_tokens(len(source))
+        return self._call_llm(sys_prompt, user_msg, max_tok)
+
+    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+        if raw_source:
+            return generate_from_source(self, raw_source, fallback_script=script)
+        return self.generate_script(script, is_latex=False)
 
 
 class GeminiProvider:
@@ -212,28 +310,93 @@ class GeminiProvider:
         self._api_key = api_key
         self._model = model or self.DEFAULT_MODEL
 
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def _call_llm(self, system: str, user: str, _max_tokens: int) -> LLMResult:
         import google.generativeai as genai  # noqa: PLC0415
 
         genai.configure(api_key=self._api_key)
-        model = genai.GenerativeModel(
-            self._model,
-            system_instruction=_SYSTEM_PROMPT,
-        )
-        response = model.generate_content(_build_user_message(script, raw_source))
+        model = genai.GenerativeModel(self._model, system_instruction=system)
+        response = model.generate_content(user)
         improved = response.text
         usage = response.usage_metadata
         in_tok = usage.prompt_token_count
         out_tok = usage.candidates_token_count
         cost = round(in_tok * _GEMINI_COST_IN + out_tok * _GEMINI_COST_OUT, 6)
-        return LLMResult(
-            improved_script=improved,
-            input_tokens=in_tok,
-            output_tokens=out_tok,
-            cost_usd=cost,
-            provider="gemini",
-            model=self._model,
-        )
+        return LLMResult(improved, in_tok, out_tok, cost, "gemini", self._model)
+
+    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+        sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
+        user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
+        user_msg = user_tmpl.format(source=source)
+        max_tok = _compute_max_tokens(len(source))
+        return self._call_llm(sys_prompt, user_msg, max_tok)
+
+    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+        if raw_source:
+            return generate_from_source(self, raw_source, fallback_script=script)
+        return self.generate_script(script, is_latex=False)
+
+
+# ---------------------------------------------------------------------------
+# Section-chunked generation (the core improvement)
+# ---------------------------------------------------------------------------
+
+def generate_from_source(
+    provider: LLMProvider,
+    raw_source: str,
+    fallback_script: str | None = None,
+) -> LLMResult:
+    """Generate a narration script from LaTeX source, chunked by sections.
+
+    For papers of any length — splits LaTeX into section-level chunks,
+    processes each through the LLM, and concatenates the results.
+
+    Falls back to chunk-processing the free-tier script if no LaTeX source.
+    """
+    # Determine if we have LaTeX source or just a free-tier script
+    is_latex = bool(raw_source and ("\\section" in raw_source or "\\begin{document}" in raw_source))
+
+    if is_latex:
+        chunks = _split_latex_into_sections(raw_source)
+        print(f"[llm] Splitting LaTeX into {len(chunks)} section chunks "
+              f"(total {len(raw_source):,} chars)")
+    elif fallback_script:
+        chunks = _split_on_paragraphs(fallback_script, _MAX_CHUNK_CHARS)
+        is_latex = False
+        print(f"[llm] No LaTeX source — splitting free-tier script into {len(chunks)} chunks "
+              f"(total {len(fallback_script):,} chars)")
+    else:
+        raise ValueError("No source material provided for script generation")
+
+    # Process each chunk sequentially
+    script_parts: list[str] = []
+    total_in_tok = 0
+    total_out_tok = 0
+    total_cost = 0.0
+    result_provider = ""
+    result_model = ""
+
+    for i, chunk in enumerate(chunks):
+        print(f"[llm] Processing chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars)...")
+        result = provider.generate_script(chunk, is_latex=is_latex)
+        script_parts.append(result.improved_script)
+        total_in_tok += result.input_tokens
+        total_out_tok += result.output_tokens
+        total_cost += result.cost_usd
+        result_provider = result.provider
+        result_model = result.model
+
+    combined = "\n\n".join(script_parts)
+    print(f"[llm] Done: {len(chunks)} chunks, {total_in_tok + total_out_tok:,} total tokens, "
+          f"${total_cost:.4f}, output {len(combined):,} chars")
+
+    return LLMResult(
+        improved_script=combined,
+        input_tokens=total_in_tok,
+        output_tokens=total_out_tok,
+        cost_usd=round(total_cost, 6),
+        provider=result_provider,
+        model=result_model,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -252,13 +415,7 @@ def get_llm_provider(
     api_key: str,
     model: str | None = None,
 ) -> LLMProvider:
-    """Return an LLMProvider instance for the given provider name.
-
-    Args:
-        provider_name: One of "anthropic", "openai", "gemini".
-        api_key: API key for the provider (never logged or persisted).
-        model: Optional model override (uses provider default if omitted).
-    """
+    """Return an LLMProvider instance for the given provider name."""
     cls = _PROVIDERS.get(provider_name)
     if cls is None:
         raise ValueError(
