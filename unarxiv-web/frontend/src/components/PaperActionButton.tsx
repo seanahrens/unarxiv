@@ -177,7 +177,11 @@ export default function PaperActionButton({
               {!compact && (
                 <>
                   <span className="inline-block text-center" style={{ minWidth: "3.2em" }}>{isPlaying ? "Pause" : "Play"}</span>
-                  {upgradePlus > 0 && <PlusIcons count={upgradePlus} size={9} className="text-stone-500" gap="gap-px" />}
+                  {isEnhanced && (
+                    <span className="inline-flex" style={{ minWidth: "1.5em" }}>
+                      {upgradePlus > 0 && <PlusIcons count={upgradePlus} size={9} className="text-stone-500" gap="gap-px" />}
+                    </span>
+                  )}
                   {paper.duration_seconds && (
                     <span className="opacity-70">{formatDuration(paper.duration_seconds)}</span>
                   )}
