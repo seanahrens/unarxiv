@@ -110,6 +110,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
             generateDisabled={importing}
             onMenuToggle={setMenuOpen}
             onEnsureImported={needsImport ? ensureImported : undefined}
+            onPaperChange={onPaperChange}
           />
         </div>
       )}

@@ -87,6 +87,7 @@ export default function PaperActionButton({
   onEnsureImported,
   onToggleScript,
   currentView,
+  onPaperChange,
 }: {
   paper: Paper;
   compact?: boolean;
@@ -104,6 +105,8 @@ export default function PaperActionButton({
   onToggleScript?: () => void;
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
+  /** Called when the paper object changes (e.g. after premium narration is submitted). */
+  onPaperChange?: (paper: Paper) => void;
 }) {
   const { state, actions } = useAudio();
   const { addOrMoveToTop } = usePlaylist();
@@ -295,6 +298,7 @@ export default function PaperActionButton({
         <PremiumNarrationModal
           paper={paper}
           onClose={() => setShowPremiumModal(false)}
+          onSuccess={onPaperChange}
         />
       )}
     </div>
