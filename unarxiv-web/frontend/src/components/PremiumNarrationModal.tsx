@@ -283,14 +283,12 @@ export default function PremiumNarrationModal({
   onSuccess,
 }: PremiumNarrationModalProps) {
   const [step, setStep] = useState<Step>(1);
-  // Start with fallback estimates so cards render immediately (no skeleton flash)
-  const [loading, setLoading] = useState(false);
-  const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>(buildFallbackEstimates());
+  const [loading, setLoading] = useState(true);
+  const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>([]);
   const [estimateError, setEstimateError] = useState(false);
 
-  // Step 1 selection — smart default computed once estimates + versions load
+  // Step 1 selection — smart default computed when estimates + versions load
   const [selectedOptionId, setSelectedOptionId] = useState<string>("");
-  const hasPickedDefault = useRef(false);
 
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");
@@ -321,16 +319,19 @@ export default function PremiumNarrationModal({
   }
   const isFullyUpgraded = highestCompletedRank >= 4;
 
-  // Load real estimates + existing versions on mount (fallbacks shown immediately)
+  // Load estimates + existing versions on mount
   useEffect(() => {
+    setLoading(true);
     setEstimateError(false);
     getPremiumEstimate(paper.id)
       .then((resp) => {
-        const opts = (resp.options ?? buildFallbackEstimates()).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
+        const opts = (resp.options ?? []).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
         setEstimates(opts);
+        setLoading(false);
       })
       .catch(() => {
         setEstimateError(true);
+        setLoading(false);
       });
     getPaperVersions(paper.id)
       .then((resp) => setExistingVersions(resp.versions))
@@ -339,9 +340,9 @@ export default function PremiumNarrationModal({
 
   // Smart default: pick the highest-rank unpurchased tier the user has a key for,
   // or fall back to the highest unpurchased tier overall.
+  // Re-runs when highestCompletedRank changes (versions load async).
   useEffect(() => {
-    if (estimates.length === 0 || hasPickedDefault.current) return;
-    hasPickedDefault.current = true;
+    if (estimates.length === 0) return;
 
     // Sort available (unpurchased) options by rank descending
     const available = estimates
@@ -768,34 +769,3 @@ export default function PremiumNarrationModal({
 // Fallback estimates when the API is unavailable
 // ---------------------------------------------------------------------------
 
-function buildFallbackEstimates(): PremiumOptionEstimate[] {
-  return [
-    {
-      option_id: "elevenlabs",
-      display_name: "ElevenLabs",
-      tagline: "Near-human voice quality.",
-      estimated_cost_usd: 0.55,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.51,
-      available: true,
-    },
-    {
-      option_id: "openai",
-      display_name: "OpenAI",
-      tagline: "Natural-sounding, expressive voice.",
-      estimated_cost_usd: 0.18,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.14,
-      available: true,
-    },
-    {
-      option_id: "free",
-      display_name: "Same Voice",
-      tagline: "Same voice, AI-enhanced script.",
-      estimated_cost_usd: 0.04,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0,
-      available: true,
-    },
-  ];
-}

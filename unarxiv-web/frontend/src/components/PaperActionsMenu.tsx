@@ -9,7 +9,7 @@ import ListSubmenu from "@/components/ListSubmenu";
 import { track } from "@/lib/analytics";
 import { SerifPlus } from "@/components/PlusIcons";
 import PlusIcons from "@/components/PlusIcons";
-import { getTierFromProvider } from "@/lib/voiceTiers";
+import { getTierFromProvider, VOICE_TIERS_ORDERED } from "@/lib/voiceTiers";
 
 function useDownload() {
   const [downloading, setDownloading] = useState(false);
@@ -197,32 +197,46 @@ export default function PaperActionsMenu({
         {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
 
-      {/* Play specific versions — all versions with audio, sorted by quality */}
-      {hasAudio && versions && versions.length > 1 && onPlayVersion && (() => {
-        const playable = versions
-          .filter(v => v.audio_url)
-          .sort((a, b) => b.quality_rank - a.quality_rank);
-        if (playable.length <= 1) return null;
+      {/* Play Other Narration — submenu showing all tiers */}
+      {hasAudio && versions && versions.length > 0 && onPlayVersion && (() => {
+        // Build a map of available versions by tier id
+        const versionByTier = new Map<string, PaperVersion>();
+        for (const v of versions) {
+          if (!v.audio_url) continue;
+          const tier = getTierFromProvider(v.tts_provider);
+          const existing = versionByTier.get(tier.id);
+          if (!existing || v.quality_rank > existing.quality_rank) {
+            versionByTier.set(tier.id, v);
+          }
+        }
+        // All tiers to show (excluding the best version's tier — that's the main play button)
+        const bestVersion = versions.find(v => v.is_best);
+        const bestTierId = bestVersion ? getTierFromProvider(bestVersion.tts_provider).id : null;
+        const tiersToShow = VOICE_TIERS_ORDERED.filter(t => t.id !== bestTierId);
+        if (tiersToShow.length === 0) return null;
+        // Only show if at least one non-best tier has audio
+        if (!tiersToShow.some(t => versionByTier.has(t.id))) return null;
+
         return (
           <>
             <div className={DIVIDER} />
-            {playable.map(v => {
-              const tier = getTierFromProvider(v.tts_provider);
+            <div className="px-3 py-1 text-[10px] font-medium text-stone-400 uppercase tracking-wide">Play Other Narration</div>
+            {tiersToShow.map(tier => {
+              const v = versionByTier.get(tier.id);
+              const available = !!v;
               return (
                 <button
-                  key={v.id}
-                  onClick={() => { onPlayVersion(v); onClose(); }}
-                  className={MENU_ITEM}
+                  key={tier.id}
+                  onClick={available ? () => { onPlayVersion(v!); onClose(); } : undefined}
+                  disabled={!available}
+                  className={`${MENU_ITEM} ${!available ? "opacity-30 cursor-not-allowed" : ""}`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="7,3 21,12 7,21" />
                   </svg>
                   <span className="flex items-center gap-1.5">
-                    Play
-                    {tier.plusCount > 0
-                      ? <PlusIcons count={tier.plusCount} size={9} className="text-stone-500" gap="gap-px" />
-                      : <span className="text-stone-400 text-[10px]">Base</span>
-                    }
+                    {tier.label}
+                    {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={8} className="text-stone-500" gap="gap-px" />}
                   </span>
                 </button>
               );
