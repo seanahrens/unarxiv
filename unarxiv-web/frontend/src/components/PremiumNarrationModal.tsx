@@ -289,7 +289,7 @@ export default function PremiumNarrationModal({
   const [estimateError, setEstimateError] = useState(false);
 
   // Step 1 selection — smart default computed once estimates + versions load
-  const [selectedOptionId, setSelectedOptionId] = useState<string>("elevenlabs");
+  const [selectedOptionId, setSelectedOptionId] = useState<string>("");
   const hasPickedDefault = useRef(false);
 
   // Step 2 key state

@@ -93,6 +93,7 @@ export default function PaperActionsMenu({
   const { downloading, download } = useDownload();
 
   const isComplete = paper.status === "narrated";
+  const hasAudio = isComplete || (paper.status === "narrating" && paper.audio_url);
   const isNotRequested = paper.status === "unnarrated";
   const inPlaylist = isInPlaylist(paper.id);
 
@@ -140,7 +141,7 @@ export default function PaperActionsMenu({
   return (
     <div className="absolute top-full right-0 mt-1 bg-surface border border-stone-300 rounded-xl shadow-lg z-[110] min-w-[180px] py-1">
       {/* Play Paper — only when showPlayItem AND paper has audio */}
-      {showPlayItem && isComplete && (
+      {showPlayItem && hasAudio && (
         <>
           <button onClick={handlePlay} className={MENU_ITEM}>
             {isPlaying ? (
@@ -197,7 +198,7 @@ export default function PaperActionsMenu({
       </button>
 
       {/* Play alternative versions — non-best versions with audio */}
-      {isComplete && versions && versions.length > 1 && onPlayVersion && (() => {
+      {hasAudio && versions && versions.length > 1 && onPlayVersion && (() => {
         const alternates = versions
           .filter(v => !v.is_best && v.audio_url)
           .sort((a, b) => b.quality_rank - a.quality_rank);
@@ -227,8 +228,8 @@ export default function PaperActionsMenu({
         );
       })()}
 
-      {/* Upgrade Narration — only when narrated and not fully upgraded */}
-      {isComplete && !hideUpgradeNarration && (
+      {/* Upgrade Narration — only when has audio and not fully upgraded */}
+      {hasAudio && !hideUpgradeNarration && (
         <>
           <div className={DIVIDER} />
           <button
@@ -242,8 +243,8 @@ export default function PaperActionsMenu({
         </>
       )}
 
-      {/* Rate Narration — only when complete */}
-      {isComplete && onRate && (
+      {/* Rate Narration — only when has audio */}
+      {hasAudio && onRate && (
         <>
           <div className={DIVIDER} />
           <button data-testid="rate-narration" onClick={() => { onRate(); onClose(); }} className={MENU_ITEM}>
@@ -255,8 +256,8 @@ export default function PaperActionsMenu({
         </>
       )}
 
-      {/* View Script / View Abstract — only on paper detail page when narrated */}
-      {isComplete && onToggleScript && (
+      {/* View Script / View Abstract — only on paper detail page when has audio */}
+      {hasAudio && onToggleScript && (
         <>
           <div className={DIVIDER} />
           <button onClick={() => { onToggleScript(); onClose(); }} className={MENU_ITEM}>
@@ -272,8 +273,8 @@ export default function PaperActionsMenu({
         </>
       )}
 
-      {/* Download Audio — only when complete */}
-      {isComplete && (
+      {/* Download Audio — only when has audio */}
+      {hasAudio && (
         <>
           <div className={DIVIDER} />
           <button

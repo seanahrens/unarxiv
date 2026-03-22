@@ -1958,10 +1958,33 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     llm_cost?: number;
     tts_cost?: number;
     script_char_count?: number;
+    // Modal sends nested objects for premium narration callbacks
+    providers?: { llm?: string; llm_model?: string; tts?: string; tts_voice?: string };
+    costs?: { llm_cost_usd?: number; tts_cost_usd?: number; total_cost_usd?: number };
+    quality_rank?: number;
+    version_id?: string;
   }>();
 
   if (!body.arxiv_id || !body.status) {
     return json({ error: "arxiv_id and status required" }, 400);
+  }
+
+  // Flatten nested provider/cost objects from Modal's premium callbacks
+  if (body.providers) {
+    if (!body.tts_provider && body.providers.tts) body.tts_provider = body.providers.tts;
+    if (!body.tts_model && body.providers.tts_voice) body.tts_model = body.providers.tts_voice;
+    if (!body.llm_provider && body.providers.llm) body.llm_provider = body.providers.llm;
+    if (!body.llm_model && body.providers.llm_model) body.llm_model = body.providers.llm_model;
+  }
+  if (body.costs) {
+    if (body.actual_cost == null && body.costs.total_cost_usd != null) body.actual_cost = body.costs.total_cost_usd;
+    if (body.llm_cost == null && body.costs.llm_cost_usd != null) body.llm_cost = body.costs.llm_cost_usd;
+    if (body.tts_cost == null && body.costs.tts_cost_usd != null) body.tts_cost = body.costs.tts_cost_usd;
+  }
+  // If Modal sent a quality_rank and version metadata, it's a premium narration
+  if (body.quality_rank != null && body.quality_rank > 0 && !body.version_type) {
+    body.version_type = "premium";
+    body.narration_mode = "premium";
   }
 
   const VALID_STATUSES: PaperStatus[] = ["unnarrated", "narrating", "narrated", "failed"];
