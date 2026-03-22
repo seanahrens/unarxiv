@@ -192,7 +192,7 @@ function OptionCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0 px-3 py-2.5 flex items-center justify-between gap-2">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 whitespace-nowrap">
             <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{leadPhrase}</p>
             {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
           </div>
