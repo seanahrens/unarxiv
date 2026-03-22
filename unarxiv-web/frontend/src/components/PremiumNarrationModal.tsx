@@ -225,8 +225,8 @@ function OptionCard({
               {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
             </span>
             {tier && scriptCharCount > 0 && (
-              <p className="text-[10px] text-stone-400">
-                {formatProcessingTime(estimateProcessingSeconds(tier, scriptCharCount, hasExistingScript))} processing
+              <p className="text-[11px] text-stone-500">
+                {formatProcessingTime(estimateProcessingSeconds(tier, scriptCharCount, hasExistingScript))} to process
               </p>
             )}
           </div>

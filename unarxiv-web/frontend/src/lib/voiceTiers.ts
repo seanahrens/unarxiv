@@ -157,11 +157,9 @@ export function estimateProcessingSeconds(
 }
 
 /**
- * Format seconds as "~Xm Ys" for display.
+ * Format seconds as "~X min" for display, rounded to nearest minute.
  */
 export function formatProcessingTime(seconds: number): string {
-  if (seconds < 60) return `~${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s > 0 ? `~${m}m${s}s` : `~${m}m`;
+  const mins = Math.max(1, Math.round(seconds / 60));
+  return `~${mins} min`;
 }
