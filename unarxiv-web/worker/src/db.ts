@@ -719,7 +719,7 @@ export async function claimPaperForNarration(db: D1Database, id: string): Promis
  */
 export async function claimPaperForPremium(db: D1Database, id: string): Promise<boolean> {
   const result = await db
-    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = 55, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed', 'narrated')")
+    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = NULL, progress_detail = NULL, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed', 'narrated')")
     .bind(id)
     .run();
   return (result.meta?.changes ?? 0) > 0;
