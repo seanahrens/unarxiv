@@ -176,7 +176,7 @@ export default function PaperActionButton({
               {isPlaying ? <PauseIcon /> : <PlayIcon />}
               {!compact && (
                 <>
-                  <span>{isPlaying ? "Pause" : "Play"}</span>
+                  <span className="inline-block text-center" style={{ minWidth: "3.2em" }}>{isPlaying ? "Pause" : "Play"}</span>
                   {upgradePlus > 0 && <PlusIcons count={upgradePlus} size={9} className="text-stone-500" gap="gap-px" />}
                   {paper.duration_seconds && (
                     <span className="opacity-70">{formatDuration(paper.duration_seconds)}</span>

@@ -197,7 +197,7 @@ export default function PaperActionsMenu({
         {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
 
-      {/* Play Other Narration — expandable submenu with all tiers */}
+      {/* Other Narrations — expandable submenu with all tiers */}
       {hasAudio && versions && versions.length > 0 && onPlayVersion && (
         <NarrationVersionSubmenu versions={versions} onPlayVersion={onPlayVersion} onClose={onClose} />
       )}
@@ -332,7 +332,7 @@ function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="7,3 21,12 7,21" />
           </svg>
-          Play Other Narration
+          Other Narrations
         </span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <polyline points="15 18 9 12 15 6" />
@@ -353,6 +353,9 @@ function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
                   available ? "text-stone-700" : "text-stone-300 cursor-not-allowed"
                 }`}
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
+                  <polygon points="7,3 21,12 7,21" />
+                </svg>
                 <span className="flex items-center gap-1.5">
                   {tier.label}
                   {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={8} className={available ? "text-stone-500" : "text-stone-300"} gap="gap-px" />}
