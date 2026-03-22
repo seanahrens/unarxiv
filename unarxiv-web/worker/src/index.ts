@@ -855,6 +855,9 @@ async function handleNarratePremium(
     return json({ error: "Failed to decrypt key — was it encrypted with this server?" }, 400);
   }
 
+  // Save previous status so we can revert correctly on dispatch failure
+  const previousStatus = paper.status as PaperStatus;
+
   // Claim the paper atomically — premium upgrades also allow 'narrated' → 'narrating'
   const claimed = await claimPaperForPremium(env.DB, id);
   if (!claimed) {
@@ -935,12 +938,13 @@ async function handleNarratePremium(
         body: JSON.stringify(payload),
       });
       if (!resp.ok) {
-        console.error(`Modal premium dispatch failed for ${id}: ${resp.status}`);
-        await updatePaperStatus(env.DB, id, "unnarrated");
+        const body = await resp.text().catch(() => "");
+        console.error(`Modal premium dispatch failed for ${id}: ${resp.status} (was ${previousStatus}) ${body}`);
+        await updatePaperStatus(env.DB, id, previousStatus);
       }
     } catch (e: any) {
-      console.error(`Failed to dispatch premium for ${id}:`, e);
-      await updatePaperStatus(env.DB, id, "unnarrated");
+      console.error(`Failed to dispatch premium for ${id} (was ${previousStatus}):`, e);
+      await updatePaperStatus(env.DB, id, previousStatus);
     }
   };
 

@@ -501,6 +501,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             onRemoveFromPlaylist={(rect) => removeFromPlaylist(paper.id, rect)}
             onToggleScript={() => setView(view === "abstract" ? "script" : "abstract")}
             currentView={view}
+            onPaperUpdated={(updatedPaper) => setPaper(updatedPaper)}
           />
           {/* Hidden poller for processing state — drives status updates & completion */}
           {isProcessing && !narrationLoading && (

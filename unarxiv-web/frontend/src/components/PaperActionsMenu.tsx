@@ -4,10 +4,12 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
-import { audioUrl, formatDuration, requestNarration, type Paper } from "@/lib/api";
+import { audioUrl, formatDuration, requestNarration, type Paper, type PaperVersion } from "@/lib/api";
 import ListSubmenu from "@/components/ListSubmenu";
 import { track } from "@/lib/analytics";
 import { SerifPlus } from "@/components/PlusIcons";
+import PlusIcons from "@/components/PlusIcons";
+import { getTierFromProvider } from "@/lib/voiceTiers";
 
 function useDownload() {
   const [downloading, setDownloading] = useState(false);
@@ -61,6 +63,10 @@ interface PaperActionsMenuProps {
   onOpenPremiumModal?: () => void;
   /** Hide the Upgrade Narration option (e.g. when paper is fully upgraded) */
   hideUpgradeNarration?: boolean;
+  /** Available narration versions for per-version play items */
+  versions?: PaperVersion[];
+  /** Called when user clicks a version play item */
+  onPlayVersion?: (version: PaperVersion) => void;
 }
 
 export default function PaperActionsMenu({
@@ -78,6 +84,8 @@ export default function PaperActionsMenu({
   currentView,
   onOpenPremiumModal,
   hideUpgradeNarration,
+  versions,
+  onPlayVersion,
 }: PaperActionsMenuProps) {
   const router = useRouter();
   const { state, actions } = useAudio();
@@ -187,6 +195,37 @@ export default function PaperActionsMenu({
         )}
         {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
+
+      {/* Play alternative versions — non-best versions with audio */}
+      {isComplete && versions && versions.length > 1 && onPlayVersion && (() => {
+        const alternates = versions
+          .filter(v => !v.is_best && v.audio_url)
+          .sort((a, b) => b.quality_rank - a.quality_rank);
+        if (alternates.length === 0) return null;
+        return (
+          <>
+            <div className={DIVIDER} />
+            {alternates.map(v => {
+              const tier = getTierFromProvider(v.tts_provider);
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => { onPlayVersion(v); onClose(); }}
+                  className={MENU_ITEM}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="7,3 21,12 7,21" />
+                  </svg>
+                  <span className="flex items-center gap-1.5">
+                    Play
+                    {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={9} className="text-stone-500" gap="gap-px" />}
+                  </span>
+                </button>
+              );
+            })}
+          </>
+        );
+      })()}
 
       {/* Upgrade Narration — only when narrated and not fully upgraded */}
       {isComplete && !hideUpgradeNarration && (

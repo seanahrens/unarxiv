@@ -56,7 +56,7 @@ interface AudioState {
 }
 
 interface AudioActions {
-  loadPaper: (paperId: string, title: string, src: string) => void;
+  loadPaper: (paperId: string, title: string, src: string, skipAutoUpgrade?: boolean) => void;
   togglePlay: () => void;
   pause: () => void;
   seek: (time: number) => void;
@@ -313,12 +313,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("beforeunload", savePosition);
   }, [savePosition]);
 
-  const loadPaper = useCallback((newPaperId: string, title: string, newSrc: string) => {
+  const loadPaper = useCallback((newPaperId: string, title: string, newSrc: string, skipAutoUpgrade?: boolean) => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Already playing this paper — just resume if paused
-    if (paperIdRef.current === newPaperId) {
+    // Already playing this paper — just resume if paused (unless explicit version switch)
+    if (paperIdRef.current === newPaperId && !skipAutoUpgrade) {
       if (audio.paused) audio.play();
       return;
     }
@@ -327,40 +327,42 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     savePositionToBackend();
 
     // Check for best-quality version (fire-and-forget, update src if better found)
-    getPaperVersions(newPaperId)
-      .then((resp) => {
-        if (resp.best_version && resp.best_version.audio_url && paperIdRef.current === newPaperId) {
-          const bestSrc = resp.best_version.audio_url;
-          // Only switch if a premium version exists (higher quality rank)
-          if (resp.best_version.quality_rank > 1 && bestSrc !== audio.src) {
-            const wasPlaying = !audio.paused;
-            const savedTime = audio.currentTime;
-            setSrc(bestSrc);
-            setCurrentVersion(resp.best_version);
-            try {
-              const stored = JSON.parse(localStorage.getItem(CURRENT_PAPER_KEY) || "{}");
-              stored.src = bestSrc;
-              localStorage.setItem(CURRENT_PAPER_KEY, JSON.stringify(stored));
-            } catch {}
-            audio.src = bestSrc;
-            audio.load();
-            const onUpgrade = () => {
-              audio.playbackRate = playbackRateRef.current;
-              if (savedTime > 0 && isFinite(audio.duration) && savedTime < audio.duration) {
-                audio.currentTime = savedTime;
-              }
-              if (wasPlaying) audio.play();
-              audio.removeEventListener("loadedmetadata", onUpgrade);
-            };
-            audio.addEventListener("loadedmetadata", onUpgrade);
-          } else if (resp.best_version.quality_rank <= 1) {
-            setCurrentVersion(null);
-          } else {
-            setCurrentVersion(resp.best_version);
+    // Skip when user explicitly chose a specific version
+    if (!skipAutoUpgrade) {
+      getPaperVersions(newPaperId)
+        .then((resp) => {
+          if (resp.best_version && resp.best_version.audio_url && paperIdRef.current === newPaperId) {
+            const bestSrc = resp.best_version.audio_url;
+            if (resp.best_version.quality_rank > 1 && bestSrc !== audio.src) {
+              const wasPlaying = !audio.paused;
+              const savedTime = audio.currentTime;
+              setSrc(bestSrc);
+              setCurrentVersion(resp.best_version);
+              try {
+                const stored = JSON.parse(localStorage.getItem(CURRENT_PAPER_KEY) || "{}");
+                stored.src = bestSrc;
+                localStorage.setItem(CURRENT_PAPER_KEY, JSON.stringify(stored));
+              } catch {}
+              audio.src = bestSrc;
+              audio.load();
+              const onUpgrade = () => {
+                audio.playbackRate = playbackRateRef.current;
+                if (savedTime > 0 && isFinite(audio.duration) && savedTime < audio.duration) {
+                  audio.currentTime = savedTime;
+                }
+                if (wasPlaying) audio.play();
+                audio.removeEventListener("loadedmetadata", onUpgrade);
+              };
+              audio.addEventListener("loadedmetadata", onUpgrade);
+            } else if (resp.best_version.quality_rank <= 1) {
+              setCurrentVersion(null);
+            } else {
+              setCurrentVersion(resp.best_version);
+            }
           }
-        }
-      })
-      .catch(() => {}); // graceful: fall back to standard audio
+        })
+        .catch(() => {});
+    }
 
     // Update state
     setPaperId(newPaperId);

@@ -69,6 +69,7 @@ export default function PaperActionButton({
   onEnsureImported,
   onToggleScript,
   currentView,
+  onPaperUpdated,
 }: {
   paper: Paper;
   compact?: boolean;
@@ -86,6 +87,8 @@ export default function PaperActionButton({
   onToggleScript?: () => void;
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
+  /** Called when the paper state changes (e.g. after premium upgrade submission) */
+  onPaperUpdated?: (paper: Paper) => void;
 }) {
   const { state, actions } = useAudio();
   const { addOrMoveToTop } = usePlaylist();
@@ -136,13 +139,17 @@ export default function PaperActionButton({
   const compactColors = "text-stone-700 bg-surface border-stone-300 hover:bg-stone-100 hover:text-stone-900";
   const compactChevronBorder = "border-l-stone-300";
 
-  // Fetch versions to determine upgrade tier (non-compact narrated papers only)
+  // Fetch versions to determine upgrade tier and available alternate versions
   const [upgradePlus, setUpgradePlus] = useState(0);
+  const [versions, setVersions] = useState<PaperVersion[]>([]);
   useEffect(() => {
     if (paper.status !== "narrated" || compact) return;
-    if (paper.best_version_id == null) { setUpgradePlus(0); return; }
+    if (paper.best_version_id == null) { setUpgradePlus(0); setVersions([]); return; }
     getPaperVersions(paper.id)
-      .then((resp) => setUpgradePlus(getUpgradePlusCount(resp.versions)))
+      .then((resp) => {
+        setUpgradePlus(getUpgradePlusCount(resp.versions));
+        setVersions(resp.versions);
+      })
       .catch(() => {});
   }, [paper.id, paper.status, paper.best_version_id, compact]);
 
@@ -259,6 +266,14 @@ export default function PaperActionButton({
             currentView={currentView}
             onOpenPremiumModal={openPremiumModal}
             hideUpgradeNarration={isFullyUpgraded}
+            versions={versions}
+            onPlayVersion={(v) => {
+              if (v.audio_url) {
+                actions.loadPaper(paper.id, paper.title, v.audio_url, true);
+                addOrMoveToTop(paper.id);
+              }
+              toggleMenu(false);
+            }}
           />
         ) : (
           <PaperActionsMenu
@@ -277,6 +292,7 @@ export default function PaperActionButton({
         <PremiumNarrationModal
           paper={paper}
           onClose={() => setShowPremiumModal(false)}
+          onSuccess={onPaperUpdated}
         />
       )}
     </div>
