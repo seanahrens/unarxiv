@@ -7,6 +7,7 @@ import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, getPaperVersions, type Paper, type Rating, type PaperVersion } from "@/lib/api";
 import { VOICE_TIERS, getBestTierFromVersions, getTierFromProvider, type VoiceTier } from "@/lib/voiceTiers";
+import { getUpgradedVersions, resolveTierForVersion } from "@/lib/versionUtils";
 import PlusIcons from "@/components/PlusIcons";
 import { PaperDetailSkeleton, Skeleton } from "@/components/Skeleton";
 import { track } from "@/lib/analytics";
@@ -324,7 +325,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
   const [view, setView] = useState<"abstract" | "script">("abstract");
-  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "free" | "premium" }[]>([]);
+  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded" }[]>([]);
   const [activeScriptTab, setActiveScriptTab] = useState<string>("base");
   const [scriptLoading, setScriptLoading] = useState(false);
   const scriptsFetched = useRef(false);
@@ -422,26 +423,24 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
       // Fetch base transcript
       const base = await fetchTx(transcriptUrl(paper.id));
-      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "free" });
+      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base" });
 
       // Fetch premium version transcripts
       try {
         const resp = await getPaperVersions(paper.id);
-        const premium = resp.versions
-          .filter(v => v.version_type === "premium" || v.quality_rank > 0)
-          .sort((a, b) => b.quality_rank - a.quality_rank);
+        const premium = getUpgradedVersions(resp.versions);
         for (const v of premium) {
           const tx = await fetchTx(transcriptUrl(paper.id, v.id));
           if (tx) {
-            const tier = getTierFromProvider(v.tts_provider);
-            tabs.push({ key: `v${v.id}`, label: `AI Script (${tier.providerName})`, text: tx.text, date: tx.date, type: "premium" });
+            const tier = resolveTierForVersion(v);
+            tabs.push({ key: `v${v.id}`, label: `AI Script (${tier.providerName})`, text: tx.text, date: tx.date, type: "upgraded" });
           }
         }
       } catch {}
 
       setScriptTabs(tabs);
       // Default to highest quality (AI) tab if available
-      const aiTab = tabs.find(t => t.type === "premium");
+      const aiTab = tabs.find(t => t.type === "upgraded");
       setActiveScriptTab(aiTab?.key ?? tabs[0]?.key ?? "base");
       setScriptLoading(false);
     })();
@@ -610,7 +609,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
                 {active && (
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-stone-400">
-                      {active.type === "premium" ? "AI-Generated" : "Programmatically-Generated"} Script
+                      {active.type === "upgraded" ? "AI-Generated" : "Programmatically-Generated"} Script
                     </p>
                     {active.date && <p className="text-xs text-stone-400">{active.date}</p>}
                   </div>
@@ -646,7 +645,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
       {showRatingModal && (() => {
         const currentTier = getBestTierFromVersions(paperVersions);
-        const canUpgrade = currentTier.rank < VOICE_TIERS.elevenlabs.rank; // can still upgrade if not at top tier
+        const canUpgrade = currentTier.rank < VOICE_TIERS.plus3.rank; // can still upgrade if not at top tier
         return (
           <RatingModal
             paperId={paper.id}

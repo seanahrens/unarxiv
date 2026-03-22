@@ -338,7 +338,7 @@ export interface RatingRow {
   rater_ip: string;
   stars: number;
   comment: string;
-  voice_tier: string | null;  // 'elevenlabs' | 'openai' | 'free' | null (legacy)
+  voice_tier: string | null;  // 'plus3' | 'plus2' | 'plus1' | 'base' | null (legacy)
   created_at: string;
   updated_at: string;
 }
@@ -479,25 +479,28 @@ export async function getAllRatingsForPaper(db: D1Database, paperId: string): Pr
 
 /**
  * Determine the best voice tier for a paper based on its narration versions.
- * Returns 'elevenlabs', 'openai', 'free' (improved script), or 'base' (default narration).
+ * Returns 'plus3' (elevenlabs), 'plus2' (openai), 'plus1' (upgraded script, free voice), or 'base' (default narration).
  */
 export async function getBestVoiceTier(db: D1Database, paperId: string): Promise<string> {
-  // Check the best_version_id first
+  // Check the best_version_id first — narration_tier is stored directly
   const paper = await getPaper(db, paperId);
   if (paper?.best_version_id) {
-    const version = await getVersionById(db, paper.best_version_id, paperId);
-    if (version?.tts_provider === "elevenlabs") return "elevenlabs";
-    if (version?.tts_provider === "openai") return "openai";
-    if (version && version.script_type === "premium") return "free"; // premium script, free voice
+    const result = await db
+      .prepare("SELECT narration_tier FROM narration_versions WHERE id = ? AND paper_id = ?")
+      .bind(paper.best_version_id, paperId)
+      .first<{ narration_tier: string }>();
+    if (result?.narration_tier) return result.narration_tier;
   }
-  // Fallback: check all versions for this paper
-  const versions = await getNarrationVersions(db, paperId);
-  const tierOrder = ["elevenlabs", "openai"];
-  for (const tier of tierOrder) {
-    if (versions.some((v) => v.tts_provider === tier)) return tier;
-  }
-  if (versions.some((v) => v.script_type === "premium")) return "free";
-  return "base"; // default narration, no upgrades
+  // Fallback: highest tier across all versions for this paper
+  const result = await db
+    .prepare(
+      `SELECT narration_tier FROM narration_versions
+       WHERE paper_id = ? AND narration_tier != 'base'
+       ORDER BY quality_rank DESC LIMIT 1`
+    )
+    .bind(paperId)
+    .first<{ narration_tier: string }>();
+  return result?.narration_tier ?? "base";
 }
 
 /** Clear all ratings for a paper and reset denormalized columns. */
@@ -881,9 +884,9 @@ export async function insertNarrationVersion(
   db: D1Database,
   v: {
     paper_id: string;
-    version_type: "free" | "premium";
+    narration_tier: "base" | "plus1" | "plus2" | "plus3";
     quality_rank: number;
-    script_type: "free" | "premium";
+    script_type: "base" | "upgraded";
     tts_provider?: string | null;
     tts_model?: string | null;
     llm_provider?: string | null;
@@ -899,7 +902,7 @@ export async function insertNarrationVersion(
   const result = await db
     .prepare(
       `INSERT INTO narration_versions
-         (paper_id, version_type, quality_rank, script_type,
+         (paper_id, narration_tier, quality_rank, script_type,
           tts_provider, tts_model, llm_provider, llm_model,
           audio_r2_key, transcript_r2_key, duration_seconds,
           actual_cost, llm_cost, tts_cost)
@@ -908,7 +911,7 @@ export async function insertNarrationVersion(
     )
     .bind(
       v.paper_id,
-      v.version_type,
+      v.narration_tier,
       v.quality_rank,
       v.script_type,
       v.tts_provider ?? null,
@@ -971,7 +974,7 @@ export async function findExistingPremiumScript(db: D1Database, paperId: string)
   const result = await db
     .prepare(
       `SELECT transcript_r2_key FROM narration_versions
-       WHERE paper_id = ? AND script_type = 'premium' AND transcript_r2_key IS NOT NULL
+       WHERE paper_id = ? AND script_type = 'upgraded' AND transcript_r2_key IS NOT NULL
        ORDER BY created_at DESC LIMIT 1`
     )
     .bind(paperId)

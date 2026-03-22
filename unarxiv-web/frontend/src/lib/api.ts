@@ -243,7 +243,7 @@ export interface Rating {
   paper_id: string;
   stars: number;
   comment: string;
-  voice_tier: string | null;  // 'elevenlabs' | 'openai' | 'free' | null (legacy)
+  voice_tier: string | null;  // 'plus3' | 'plus2' | 'plus1' | null (legacy)
   created_at: string;
   updated_at: string;
 }
@@ -288,7 +288,7 @@ export interface PaperWithRating extends Paper {
 export interface AdminRating {
   stars: number;
   comment: string;
-  voice_tier: string | null;  // 'elevenlabs' | 'openai' | 'free' | null (legacy)
+  voice_tier: string | null;  // 'plus3' | 'plus2' | 'plus1' | null (legacy)
   created_at: string;
 }
 
@@ -532,7 +532,7 @@ export function extractArxivId(input: string): string | null {
 // --- Premium Narration ---
 
 export interface PremiumOptionEstimate {
-  option_id: string;          // e.g. "openai", "elevenlabs", "free"
+  option_id: string;          // e.g. "plus2", "plus3", "plus1"
   display_name: string;       // e.g. "OpenAI TTS"
   tagline: string;            // one-liner
   estimated_cost_usd: number; // total cost for this paper
@@ -550,9 +550,9 @@ export interface PremiumEstimateResponse {
 
 /** Map a TTS provider from the raw API to the simplified tier ID used by the modal. */
 function ttsProviderToTierId(ttsProvider: string | null): string {
-  if (!ttsProvider || ttsProvider === "free") return "free";
-  if (ttsProvider === "elevenlabs") return "elevenlabs";
-  if (ttsProvider === "openai") return "openai";
+  if (!ttsProvider || ttsProvider === "free") return "plus1";
+  if (ttsProvider === "elevenlabs") return "plus3";
+  if (ttsProvider === "openai") return "plus2";
   if (ttsProvider === "google") return "google";
   return ttsProvider;
 }
@@ -615,14 +615,14 @@ export async function requestPremiumNarration(
   let body: Record<string, string | undefined>;
   const optionId = config.option_id;
 
-  if (optionId === "openai") {
+  if (optionId === "plus2") {
     // OpenAI uses a unified key for both LLM and TTS
     body = {
       type: "unified",
       provider: "openai",
       encrypted_key: config.encrypted_keys["openai"],
     };
-  } else if (optionId === "elevenlabs") {
+  } else if (optionId === "plus3") {
     // ElevenLabs needs a separate TTS key + LLM provider key
     const llmProv = config.llm_provider ?? "openai";
     body = {
@@ -633,7 +633,7 @@ export async function requestPremiumNarration(
       encrypted_llm_key: config.encrypted_keys[llmProv],
     };
   } else {
-    // free voice: just needs LLM key for script improvement
+    // plus1 voice: just needs LLM key for script improvement
     const llmProv = config.llm_provider ?? "openai";
     body = {
       type: "free_voice",
@@ -694,7 +694,7 @@ export async function validateKey(
 
 export interface PaperVersion {
   id: number;
-  version_type: string;    // "free" | "premium"
+  narration_tier: string;  // "base" | "plus1" | "plus2" | "plus3"
   quality_rank: number;    // higher = better quality
   tts_provider: string | null;
   tts_model: string | null;

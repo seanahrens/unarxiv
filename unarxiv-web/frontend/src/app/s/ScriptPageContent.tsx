@@ -5,12 +5,13 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { fetchPaper, transcriptUrl, getPaperVersions, type Paper, type PaperVersion } from "@/lib/api";
 import { getTierFromProvider } from "@/lib/voiceTiers";
+import { getUpgradedVersions } from "@/lib/versionUtils";
 import { ScriptPageSkeleton } from "@/components/Skeleton";
 
 interface TranscriptData {
   text: string;
   date: string | null; // formatted date+time in user's local timezone
-  scriptType: "free" | "premium";
+  scriptType: "base" | "upgraded";
   versionId: number | null;
 }
 
@@ -40,7 +41,7 @@ export default function ScriptPageContent() {
         }
       }
       const text = await res.text();
-      return { text, date, scriptType: versionId ? "premium" : "free", versionId: versionId ?? null };
+      return { text, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null };
     } catch {
       return null;
     }
@@ -77,16 +78,14 @@ export default function ScriptPageContent() {
         }
 
         // Fetch premium version transcripts
-        const premiumVersions = allVersions
-          .filter(v => v.version_type === "premium" || (v.quality_rank > 0))
-          .sort((a, b) => b.quality_rank - a.quality_rank);
+        const premiumVersions = getUpgradedVersions(allVersions);
 
         for (const v of premiumVersions) {
           const tx = await fetchTranscript(id, v.id);
           if (tx) {
-            tx.scriptType = "premium";
+            tx.scriptType = "upgraded";
             const tier = getTierFromProvider(v.tts_provider);
-            txMap.set(`v${v.id}`, { ...tx, scriptType: "premium" });
+            txMap.set(`v${v.id}`, { ...tx, scriptType: "upgraded" });
           }
         }
 
@@ -149,7 +148,7 @@ export default function ScriptPageContent() {
       {activeTranscript && (
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-stone-400">
-            {activeTranscript.scriptType === "premium" ? "AI-Generated" : "Programmatically-Generated"} Narration Script
+            {activeTranscript.scriptType === "upgraded" ? "AI-Generated" : "Programmatically-Generated"} Narration Script
           </p>
           {activeTranscript.date && (
             <p className="text-xs text-stone-400">

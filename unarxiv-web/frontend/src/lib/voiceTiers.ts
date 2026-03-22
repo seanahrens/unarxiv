@@ -1,13 +1,15 @@
 /**
  * Voice quality tier definitions — shared across the app.
  *
- * Each tier maps to a TTS provider (or "free" for the improved-script upgrade,
- * or "base" for the default narration).
+ * Tier IDs use the plus-count convention (base, plus1, plus2, plus3) for
+ * structural identity. Voice names (Aria, Eric, Onyx, Will) are internal-only
+ * and can change independently. Provider names map to TTS API providers.
+ *
  * Used in the upgrade modal, rating modal, admin panel, play button, etc.
  */
 
 export interface VoiceTier {
-  /** Identifier matching option_id / tts_provider values */
+  /** Structural tier identifier: "base" | "plus1" | "plus2" | "plus3" */
   id: string;
   /** User-facing label (e.g. "Most Lifelike Voice") */
   label: string;
@@ -15,6 +17,8 @@ export interface VoiceTier {
   description: string;
   /** TTS provider display name */
   providerName: string;
+  /** Internal voice persona name (not user-facing) */
+  voiceName: string;
   /** Quality rank for ordering (higher = better) */
   rank: number;
   /** Number of plus icons (0 = base, 1–3 = upgrade tiers) */
@@ -22,27 +26,30 @@ export interface VoiceTier {
 }
 
 export const VOICE_TIERS: Record<string, VoiceTier> = {
-  elevenlabs: {
-    id: "elevenlabs",
+  plus3: {
+    id: "plus3",
     label: "Most Lifelike Voice",
     description: "Most Lifelike Voice. Nearly human.",
     providerName: "ElevenLabs",
+    voiceName: "Will",
     rank: 4,
     plusCount: 3,
   },
-  openai: {
-    id: "openai",
+  plus2: {
+    id: "plus2",
     label: "Polished Voice",
     description: "Polished Voice. Expressive. Pleasant.",
     providerName: "OpenAI",
+    voiceName: "Onyx",
     rank: 3,
     plusCount: 2,
   },
-  free: {
-    id: "free",
+  plus1: {
+    id: "plus1",
     label: "Basic Voice",
     description: "Basic Voice. Decent. A tinge botty.",
     providerName: "Microsoft",
+    voiceName: "Eric",
     rank: 2,
     plusCount: 1,
   },
@@ -51,6 +58,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     label: "Basic Voice",
     description: "Basic Voice. The default narration with no upgrades applied.",
     providerName: "Microsoft",
+    voiceName: "Aria",
     rank: 1,
     plusCount: 0,
   },
@@ -58,23 +66,36 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
 
 /** Ordered tiers from best to worst */
 export const VOICE_TIERS_ORDERED: VoiceTier[] = [
-  VOICE_TIERS.elevenlabs,
-  VOICE_TIERS.openai,
-  VOICE_TIERS.free,
+  VOICE_TIERS.plus3,
+  VOICE_TIERS.plus2,
+  VOICE_TIERS.plus1,
   VOICE_TIERS.base,
 ];
+
+/**
+ * Map from TTS provider name (as stored in DB tts_provider column) to tier ID.
+ * The DB stores provider names; we translate to structural tier IDs.
+ */
+const PROVIDER_TO_TIER: Record<string, string> = {
+  elevenlabs: "plus3",
+  openai: "plus2",
+  free: "plus1",
+};
 
 /**
  * Resolve a voice tier from a tts_provider string.
  * Falls back to the "base" tier for null/unknown providers.
  */
 export function getTierFromProvider(ttsProvider: string | null): VoiceTier {
-  if (ttsProvider && VOICE_TIERS[ttsProvider]) return VOICE_TIERS[ttsProvider];
+  if (ttsProvider) {
+    const tierId = PROVIDER_TO_TIER[ttsProvider];
+    if (tierId) return VOICE_TIERS[tierId];
+  }
   return VOICE_TIERS.base;
 }
 
 /**
- * Resolve a voice tier from a voice_tier string stored in the DB.
+ * Resolve a voice tier from a tier ID string (e.g. from DB voice_tier column).
  * Falls back to "base" for null/unknown.
  */
 export function getTierFromId(tierId: string | null): VoiceTier {
@@ -87,12 +108,12 @@ export function getTierFromId(tierId: string | null): VoiceTier {
  * Returns the "base" tier if no upgraded versions exist.
  */
 export function getBestTierFromVersions(
-  versions: { tts_provider: string | null; version_type: string; quality_rank: number }[]
+  versions: { narration_tier: string; quality_rank: number }[]
 ): VoiceTier {
   let best: VoiceTier = VOICE_TIERS.base;
   for (const v of versions) {
-    if (v.version_type === "free" && v.quality_rank === 0) continue; // base narration
-    const tier = getTierFromProvider(v.tts_provider);
+    if (v.narration_tier === "base") continue; // skip base narrations
+    const tier = VOICE_TIERS[v.narration_tier] ?? VOICE_TIERS.base;
     if (tier.rank > best.rank) {
       best = tier;
     }

@@ -5,6 +5,7 @@ import { markAsRead } from "@/lib/readStatus";
 import { removeFromPlaylist, getPlaylist } from "@/lib/playlist";
 import { fetchPaper, audioUrl, getPaperVersions, savePlaybackPositionApi, getPlaybackPositionsApi, type PaperVersion } from "@/lib/api";
 import { track } from "@/lib/analytics";
+import { isUpgradedVersion } from "@/lib/versionUtils";
 
 function getStorageKey(paperId: string) {
   return `pos-${paperId}`;
@@ -333,7 +334,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         .then((resp) => {
           if (resp.best_version && resp.best_version.audio_url && paperIdRef.current === newPaperId) {
             const bestSrc = resp.best_version.audio_url;
-            if (resp.best_version.quality_rank > 1 && bestSrc !== audio.src) {
+            if (isUpgradedVersion(resp.best_version) && bestSrc !== audio.src) {
               const wasPlaying = !audio.paused;
               const savedTime = audio.currentTime;
               setSrc(bestSrc);
@@ -354,7 +355,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
                 audio.removeEventListener("loadedmetadata", onUpgrade);
               };
               audio.addEventListener("loadedmetadata", onUpgrade);
-            } else if (resp.best_version.quality_rank <= 1) {
+            } else if (!isUpgradedVersion(resp.best_version)) {
               setCurrentVersion(null);
             } else {
               setCurrentVersion(resp.best_version);

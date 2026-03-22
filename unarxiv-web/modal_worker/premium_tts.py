@@ -54,7 +54,7 @@ _AZURE_COST_PER_CHAR = 16.0 / 1_000_000          # $16 / 1M chars (neural)
 # Default voices (narrator-style, clear, professional)
 # ---------------------------------------------------------------------------
 
-_ELEVENLABS_DEFAULT_VOICE = "Adam"           # ElevenLabs built-in narrator preset
+_ELEVENLABS_DEFAULT_VOICE = "Will"           # ElevenLabs built-in narrator preset
 _OPENAI_TTS_DEFAULT_VOICE = "onyx"          # Deep, authoritative narrator
 _GOOGLE_TTS_DEFAULT_VOICE = "en-US-Neural2-D"  # US English male Neural2
 _POLLY_DEFAULT_VOICE = "Matthew"            # Amazon Polly neural narrator
@@ -378,7 +378,7 @@ class FreeTTSProvider:
     """edge-tts (Microsoft Edge TTS) — free, uses the existing pipeline."""
 
     def __init__(self, voice: str | None = None):
-        self._voice = voice or "en-US-JennyNeural"
+        self._voice = voice or "en-US-EricNeural"
 
     def synthesize(self, text: str) -> TTSResult:
         import sys  # noqa: PLC0415

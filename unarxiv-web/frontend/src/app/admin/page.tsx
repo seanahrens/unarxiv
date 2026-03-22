@@ -25,7 +25,7 @@ import FileIcon from "@/components/FileIcon";
 
 import { Skeleton } from "@/components/Skeleton";
 import PlusIcons from "@/components/PlusIcons";
-import { VOICE_TIERS } from "@/lib/voiceTiers";
+import { VOICE_TIERS, getTierFromProvider } from "@/lib/voiceTiers";
 
 const PAGE_SIZE = 30;
 
@@ -139,7 +139,7 @@ function RatingsModal({
                     </svg>
                   ))}
                   {r.voice_tier && (() => {
-                    const tier = VOICE_TIERS[r.voice_tier];
+                    const tier = VOICE_TIERS[r.voice_tier] ?? getTierFromProvider(r.voice_tier);
                     return (
                       <span className="ml-1.5 inline-flex items-center gap-1 text-[10px] text-stone-500">
                         {tier && <PlusIcons count={tier.plusCount} size={9} className="text-stone-600" gap="gap-px" />}

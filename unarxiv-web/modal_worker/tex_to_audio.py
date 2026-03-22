@@ -42,11 +42,11 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 #: Default edge-tts voice used when no voice is specified.
-DEFAULT_VOICE = "en-US-JennyNeural"
+DEFAULT_VOICE = "en-US-AriaNeural"
 
 #: Short alias keys → full edge-tts BCP-47 voice names.
 VOICE_PRESETS: dict[str, str] = {
-    "en":    "en-US-JennyNeural",
+    "en":    "en-US-AriaNeural",
     "en-gb": "en-GB-RyanNeural",
     "en-au": "en-AU-NatashaNeural",
 }

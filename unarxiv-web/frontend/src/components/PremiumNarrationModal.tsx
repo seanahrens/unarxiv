@@ -21,6 +21,7 @@ import {
 } from "@/lib/premiumKeys";
 import { track } from "@/lib/analytics";
 import { VOICE_TIERS } from "@/lib/voiceTiers";
+import { getHighestCompletedTierRank } from "@/lib/versionUtils";
 import { useAudio } from "@/contexts/AudioContext";
 import PlusIcons from "@/components/PlusIcons";
 
@@ -34,9 +35,9 @@ function ceilCents(usd: number): string {
 }
 
 const SAMPLE_URLS: Record<string, string> = {
-  elevenlabs: "/samples/elevenlabs-sample.mp3",
-  openai: "/samples/openai-sample.mp3",
-  free: "/samples/free-sample.mp3",
+  plus3: "/samples/elevenlabs-sample.mp3",
+  plus2: "/samples/openai-sample.mp3",
+  plus1: "/samples/free-sample.mp3",
 };
 
 // ---------------------------------------------------------------------------
@@ -67,7 +68,7 @@ interface OptionConfig {
 // Providers that use a single key covering both scripting and voice
 const UNIFIED_KEY_OPTIONS: OptionConfig[] = [
   {
-    id: "openai",
+    id: "plus2",
     provider: "openai",
     needsLlmKey: false,
     unifiedKey: true,
@@ -79,7 +80,7 @@ const UNIFIED_KEY_OPTIONS: OptionConfig[] = [
 // Providers that need a TTS key + separate LLM provider
 const DUAL_KEY_OPTIONS: OptionConfig[] = [
   {
-    id: "elevenlabs",
+    id: "plus3",
     provider: "elevenlabs",
     needsLlmKey: true,
     unifiedKey: false,
@@ -90,7 +91,7 @@ const DUAL_KEY_OPTIONS: OptionConfig[] = [
 
 // unarXiv Voice — free TTS, just needs LLM key
 const FREE_OPTION: OptionConfig = {
-  id: "free",
+  id: "plus1",
   provider: "free",
   needsLlmKey: true,
   unifiedKey: false,
@@ -419,14 +420,7 @@ export default function PremiumNarrationModal({
 
   // Determine the highest completed tier rank (for cascading disable logic)
   // If elevenlabs (rank 4) purchased → all disabled. openai (rank 3) → openai+free disabled. etc.
-  let highestCompletedRank = 0;
-  for (const v of existingVersions) {
-    if (v.version_type === "free" && v.quality_rank === 0) continue; // base narration
-    const tierId = v.tts_provider === "elevenlabs" ? "elevenlabs"
-      : v.tts_provider === "openai" ? "openai" : "free";
-    const rank = VOICE_TIERS[tierId]?.rank ?? 0;
-    if (rank > highestCompletedRank) highestCompletedRank = rank;
-  }
+  const highestCompletedRank = getHighestCompletedTierRank(existingVersions);
   const isFullyUpgraded = highestCompletedRank >= 4;
 
   // Load estimates + existing versions on mount
@@ -468,7 +462,7 @@ export default function PremiumNarrationModal({
     const withKey = available.find((e) => {
       const c = cfg(e.option_id);
       if (!c) return false;
-      if (c.id === "free") return hasLlm; // needs an LLM key
+      if (c.id === "plus1") return hasLlm; // needs an LLM key
       if (c.unifiedKey) return hasKeyForProvider(c.provider);
       return hasKeyForProvider(c.provider) && hasLlm;
     });
@@ -495,7 +489,7 @@ export default function PremiumNarrationModal({
 
   // Determine if we can skip step 2 (returning user with stored keys)
   const canSkipKeys = (() => {
-    if (selectedConfig.id === "free") {
+    if (selectedConfig.id === "plus1") {
       return hasLlmKeyStored(llmProvider);
     }
     if (selectedConfig.unifiedKey) {
@@ -551,7 +545,7 @@ export default function PremiumNarrationModal({
       setSubmitError("Please provide an API key.");
       return;
     }
-    if (selectedConfig.id === "free" && !llmKeyRaw.trim() && !hasLlmKeyStored(llmProvider)) {
+    if (selectedConfig.id === "plus1" && !llmKeyRaw.trim() && !hasLlmKeyStored(llmProvider)) {
       setSubmitError("Please provide an LLM API key.");
       return;
     }
@@ -661,7 +655,7 @@ export default function PremiumNarrationModal({
                     if (!cfg) return null;
                     const isSupported = cfg.unifiedKey
                       ? hasKeyForProvider(cfg.provider)
-                      : cfg.id === "free"
+                      : cfg.id === "plus1"
                       ? hasLlmKeyStored(llmProvider)
                       : hasKeyForProvider(cfg.provider);
                     const isDisabled = (VOICE_TIERS[est.option_id]?.rank ?? 0) <= highestCompletedRank;
@@ -697,7 +691,7 @@ export default function PremiumNarrationModal({
               </p>
 
               {/* TTS key — shown for non-free options when not already saved */}
-              {selectedConfig.id !== "free" && (
+              {selectedConfig.id !== "plus1" && (
                 hasTtsKey ? (
                   <div className="flex items-center gap-2 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -857,7 +851,7 @@ export default function PremiumNarrationModal({
                 type="button"
                 onClick={handleStep2Next}
                 disabled={
-                  (selectedConfig.id !== "free" && ttsTestState !== "ok" && !hasTtsKey) ||
+                  (selectedConfig.id !== "plus1" && ttsTestState !== "ok" && !hasTtsKey) ||
                   (selectedConfig.needsLlmKey && llmTestState !== "ok" && !hasLlmKeyStored(llmProvider))
                 }
                 className="px-5 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

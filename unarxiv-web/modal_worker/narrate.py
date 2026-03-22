@@ -41,6 +41,7 @@ image = (
     .add_local_file("tex_to_audio_legacy.py", "/app/tex_to_audio_legacy.py", copy=True)
     # Active parser_v2 modules
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py", copy=True)
+    .add_local_file("source_download.py", "/app/source_download.py", copy=True)
     .add_local_dir("parser_v2", "/app/parser_v2", copy=True, ignore=["test_data/*", "__pycache__/*"])
 )
 
@@ -288,68 +289,16 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                         speech = _process_legacy_latex(resp.content, resp.headers.get("content-type", ""))
             else:
                 # ---- parser_v2 path (default) ----
-                # Download both sources so parser_v2 can try priority then fallback
-                latex_path = None
-                pdf_local_path = None
-
-                if source_priority == "pdf":
-                    # Download PDF first
-                    print(f"Source priority: PDF. Downloading {pdf_url}...")
-                    try:
-                        resp = _download(pdf_url)
-                        print(f"Downloaded PDF: {len(resp.content)} bytes")
-                        pdf_local_path = _save_source(resp.content, f"{arxiv_id}.pdf")
-                    except Exception as e:
-                        print(f"PDF download failed: {e}")
-
-                    # Also try to get LaTeX as fallback
-                    try:
-                        resp = _download(tex_source_url)
-                        latex_path = _save_source(resp.content, f"{arxiv_id}.tar.gz")
-                        if tex_to_audio.is_pdf_file(latex_path):
-                            # /src/ endpoint returned a PDF (no LaTeX available)
-                            if not pdf_local_path:
-                                pdf_local_path = latex_path
-                            latex_path = None
-                    except Exception:
-                        pass
-
-                    # Route to parser_v2
-                    if pdf_local_path:
-                        speech = _process_v2(
-                            source_path=pdf_local_path,
-                            pdf_path=pdf_local_path,
-                        )
-                    elif latex_path:
-                        speech = _process_v2(source_path=latex_path)
-                    else:
-                        raise RuntimeError("Both PDF and LaTeX downloads failed")
-
-                else:
-                    # LaTeX-first (default)
-                    print(f"Source priority: LaTeX. Downloading {tex_source_url}...")
-                    resp = _download(tex_source_url)
-                    print(f"Downloaded {len(resp.content)} bytes")
-                    latex_path = _save_source(resp.content, f"{arxiv_id}.tar.gz")
-
-                    is_pdf = tex_to_audio.is_pdf_file(latex_path)
-
-                    if is_pdf:
-                        print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
-                        pdf_local_path = latex_path
-                        latex_path = None
-                    else:
-                        # Also try downloading PDF as fallback for parser_v2
-                        try:
-                            pdf_resp = _download(pdf_url)
-                            pdf_local_path = _save_source(pdf_resp.content, f"{arxiv_id}.pdf")
-                        except Exception:
-                            pass  # PDF fallback is optional
-
-                    speech = _process_v2(
-                        source_path=latex_path or pdf_local_path,
-                        pdf_path=pdf_local_path,
-                    )
+                from source_download import download_and_parse
+                parsed = download_and_parse(
+                    arxiv_id=arxiv_id,
+                    tex_source_url=tex_source_url,
+                    paper_title=paper_title,
+                    paper_author=paper_author,
+                    paper_date=paper_date,
+                    source_priority=source_priority,
+                )
+                speech = parsed.speech_text
 
             print(f"Generated speech text ({parser_label}): {len(speech):,} chars")
 
@@ -367,6 +316,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 callback_url, secret, arxiv_id,
                 status="narrated",
                 progress_detail="Script regenerated",
+                narration_tier="base",
             )
             print(f"Script-only done: {arxiv_id}")
             return
@@ -462,6 +412,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             audio_r2_key=r2_key,
             audio_size_bytes=file_size,
             duration_seconds=duration_seconds,
+            narration_tier="base",
         )
         print(f"Done: {arxiv_id}")
 
@@ -471,6 +422,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             callback_url, secret, arxiv_id,
             status="failed",
             error_message=str(e)[:500],
+            narration_tier="base",
         )
         raise
 
@@ -568,42 +520,24 @@ def narrate_paper_premium(
     sys.path.insert(0, "/app")
 
     import tex_to_audio
-    import httpx
     from llm_scripting import get_llm_provider
     from premium_tts import get_tts_provider
     from parser_v2.script_builder import _build_header, _build_footer, _format_date
+    from source_download import download_and_parse
+    import re
 
     secret = os.environ.get("CALLBACK_SECRET", "")
 
     if not version_id:
         version_id = uuid.uuid4().hex[:12]
 
-    work_dir = tempfile.mkdtemp()
-    tar_path = os.path.join(work_dir, f"{arxiv_id}.tar.gz")
+    # Resolve the narration tier from the TTS provider
+    _PROVIDER_TO_TIER = {"elevenlabs": "plus3", "openai": "plus2"}
+    narration_tier = _PROVIDER_TO_TIER.get(tts_provider, "plus1")
 
     # Versioned R2 keys
     audio_r2_key = f"audio/{arxiv_id}/v{version_id}.mp3"
     transcript_r2_key = f"transcripts/{arxiv_id}/v{version_id}.txt"
-
-    # Quality rank: 1–5 where 5 = LLM-improved + premium TTS
-    _premium_tts = tts_provider not in ("free",)
-    _has_llm = bool(llm_api_key)
-    quality_rank = (3 if _premium_tts else 1) + (2 if _has_llm else 0)
-    quality_rank = min(quality_rank, 5)
-
-    def _download(url: str) -> httpx.Response:
-        with httpx.Client(timeout=120, follow_redirects=True) as client:
-            r = client.get(url, headers={"User-Agent": "unarXiv/1.0"})
-            r.raise_for_status()
-            return r
-
-    def _save_source(data: bytes, filename: str) -> str:
-        path = os.path.join(work_dir, filename)
-        with open(path, "wb") as f:
-            f.write(data)
-        return path
-
-    authors_list = [a.strip() for a in paper_author.split(",")] if paper_author else []
 
     try:
         # ---------------------------------------------------------------
@@ -617,115 +551,23 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 2: Download + parse source with parser_v2
         # ---------------------------------------------------------------
-        pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
-        latex_path: str | None = None
-        pdf_local_path: str | None = None
-        raw_source_text: str | None = None  # passed to LLM for context
-
-        if source_priority == "pdf":
-            try:
-                resp = _download(pdf_url)
-                pdf_local_path = _save_source(resp.content, f"{arxiv_id}.pdf")
-                print(f"Downloaded PDF: {len(resp.content):,} bytes")
-            except Exception as e:
-                print(f"PDF download failed ({e}), trying LaTeX fallback...")
-
-            try:
-                resp = _download(tex_source_url)
-                lp = _save_source(resp.content, f"{arxiv_id}.tar.gz")
-                if tex_to_audio.is_pdf_file(lp):
-                    if not pdf_local_path:
-                        pdf_local_path = lp
-                else:
-                    latex_path = lp
-            except Exception as e:
-                print(f"LaTeX download failed ({e})")
-
-            source_path = pdf_local_path or latex_path
-            if source_path is None:
-                raise RuntimeError("Both PDF and LaTeX downloads failed")
-        else:
-            # LaTeX-first (default)
-            resp = _download(tex_source_url)
-            print(f"Downloaded source: {len(resp.content):,} bytes")
-            lp = _save_source(resp.content, f"{arxiv_id}.tar.gz")
-            if tex_to_audio.is_pdf_file(lp):
-                pdf_local_path = lp
-            else:
-                latex_path = lp
-                # Also grab PDF as fallback for parser_v2
-                try:
-                    pdf_resp = _download(pdf_url)
-                    pdf_local_path = _save_source(pdf_resp.content, f"{arxiv_id}.pdf")
-                except Exception:
-                    pass
-            source_path = latex_path or pdf_local_path
-
-        # If we have a LaTeX source, read it for the LLM context pass
-        if latex_path:
-            try:
-                import tarfile as _tarfile
-                extract_dir = os.path.join(work_dir, "src")
-                os.makedirs(extract_dir, exist_ok=True)
-                with _tarfile.open(latex_path, "r:*") as tf:
-                    _safe_extractall(tf, extract_dir)
-                # Collect all .tex files (up to 200 KB total to keep prompt sane)
-                tex_parts: list[str] = []
-                total = 0
-                for root, _, files in os.walk(extract_dir):
-                    for fname in sorted(files):
-                        if fname.endswith(".tex"):
-                            fpath = os.path.join(root, fname)
-                            try:
-                                with open(fpath, encoding="utf-8", errors="replace") as fh:
-                                    content = fh.read(200_000 - total)
-                                    tex_parts.append(content)
-                                    total += len(content)
-                                    if total >= 200_000:
-                                        break
-                            except Exception:
-                                pass
-                    if total >= 200_000:
-                        break
-                raw_source_text = "\n\n".join(tex_parts) if tex_parts else None
-            except Exception as e:
-                print(f"Warning: could not extract LaTeX for LLM context: {e}")
-
-        # Fallback: extract PDF text if no LaTeX source available
-        if not raw_source_text and pdf_local_path:
-            try:
-                import fitz  # pymupdf
-                doc = fitz.open(pdf_local_path)
-                pdf_parts: list[str] = []
-                total_chars = 0
-                for page in doc:
-                    text = page.get_text()
-                    pdf_parts.append(text)
-                    total_chars += len(text)
-                    if total_chars >= 200_000:
-                        break
-                doc.close()
-                raw_source_text = "\n\n".join(pdf_parts) if pdf_parts else None
-                if raw_source_text:
-                    print(f"Using PDF text for LLM context: {len(raw_source_text):,} chars")
-            except Exception as e:
-                print(f"Warning: could not extract PDF text for LLM context: {e}")
-
-        # Parse with parser_v2
         send_status(callback_url, secret, arxiv_id,
                     status="narrating",
                     progress_detail="Parsing source...",
                     version_id=version_id)
-        from parser_v2 import parse_paper  # noqa: PLC0415
-        import re
-        speech = parse_paper(
-            source_path=source_path,
+
+        parsed = download_and_parse(
+            arxiv_id=arxiv_id,
+            tex_source_url=tex_source_url,
+            paper_title=paper_title,
+            paper_author=paper_author,
+            paper_date=paper_date,
             source_priority=source_priority,
-            fallback_title=paper_title,
-            fallback_authors=authors_list,
-            fallback_date=paper_date,
-            pdf_path=pdf_local_path,
+            extract_raw_source=True,  # needed for LLM context
         )
+        speech = parsed.speech_text
+        raw_source_text = parsed.raw_source_text
+        work_dir = parsed.work_dir
         print(f"Free-tier script: {len(speech):,} chars")
 
         # Strip version tag before passing to LLM / TTS
@@ -812,22 +654,18 @@ def narrate_paper_premium(
             send_status(
                 callback_url, secret, arxiv_id,
                 status="script_ready",
+                narration_tier=narration_tier,
                 version_id=version_id,
-                script_r2_key=transcript_r2_key,
+                transcript_r2_key=transcript_r2_key,
                 error_message=f"TTS failed: {str(tts_err)[:300]}",
-                costs={
-                    "llm_input_tokens": llm_result.input_tokens if llm_result else 0,
-                    "llm_output_tokens": llm_result.output_tokens if llm_result else 0,
-                    "llm_cost_usd": llm_cost,
-                    "tts_cost_usd": 0.0,
-                    "total_cost_usd": llm_cost,
-                },
-                providers={
-                    "llm": llm_provider if llm_result else None,
-                    "llm_model": llm_result.model if llm_result else None,
-                    "tts": tts_provider,
-                },
-                quality_rank=max(quality_rank - 2, 1),  # penalise for missing audio
+                # Flat provider metadata
+                tts_provider=tts_provider,
+                llm_provider=llm_provider if llm_result else None,
+                llm_model=llm_result.model if llm_result else None,
+                # Flat cost breakdown
+                actual_cost=llm_cost,
+                llm_cost=llm_cost,
+                tts_cost=0.0,
             )
             return
 
@@ -859,26 +697,23 @@ def narrate_paper_premium(
             callback_url, secret, arxiv_id,
             status="narrated",
             eta_seconds=0,
+            narration_tier=narration_tier,
             version_id=version_id,
             audio_r2_key=audio_r2_key,
-            script_r2_key=transcript_r2_key,
+            transcript_r2_key=transcript_r2_key,
             audio_size_bytes=file_size,
             duration_seconds=int(tts_result.duration_seconds),
-            quality_rank=quality_rank,
-            providers={
-                "llm": llm_provider if llm_result else None,
-                "llm_model": llm_result.model if llm_result else None,
-                "tts": tts_result.provider,
-                "tts_voice": tts_result.voice,
-            },
-            costs={
-                "llm_input_tokens": llm_result.input_tokens if llm_result else 0,
-                "llm_output_tokens": llm_result.output_tokens if llm_result else 0,
-                "llm_cost_usd": llm_cost,
-                "tts_char_count": tts_result.char_count,
-                "tts_cost_usd": tts_result.cost_usd,
-                "total_cost_usd": round(total_cost, 6),
-            },
+            # Flat provider metadata (Worker computes quality_rank from these)
+            tts_provider=tts_result.provider,
+            tts_model=tts_result.voice,
+            llm_provider=llm_provider if llm_result else None,
+            llm_model=llm_result.model if llm_result else None,
+            # Flat cost breakdown
+            actual_cost=round(total_cost, 6),
+            llm_cost=llm_cost,
+            tts_cost=tts_result.cost_usd,
+            tts_char_count=tts_result.char_count,
+            script_char_count=len(tts_text),
         )
         print(f"Premium narration done: {arxiv_id} (v{version_id}), total cost ${total_cost:.4f}")
 
@@ -887,6 +722,7 @@ def narrate_paper_premium(
         send_status(
             callback_url, secret, arxiv_id,
             status="failed",
+            narration_tier=narration_tier,
             version_id=version_id,
             error_message=str(e)[:500],
         )

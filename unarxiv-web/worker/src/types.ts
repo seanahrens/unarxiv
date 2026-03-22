@@ -17,9 +17,9 @@ export interface Env {
 export interface NarrationVersion {
   id: number;
   paper_id: string;
-  version_type: "free" | "premium";
+  narration_tier: "base" | "plus1" | "plus2" | "plus3";
   quality_rank: number;
-  script_type: "free" | "premium";
+  script_type: "base" | "upgraded";
   tts_provider: string | null;
   tts_model: string | null;
   llm_provider: string | null;
