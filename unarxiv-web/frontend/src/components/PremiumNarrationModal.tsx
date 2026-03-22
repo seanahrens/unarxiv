@@ -28,6 +28,11 @@ import PlusIcons from "@/components/PlusIcons";
 // Voice sample audio URLs (static files in public/samples/)
 // ---------------------------------------------------------------------------
 
+/** Round up to the nearest cent so sub-penny costs don't display as $0.00. */
+function ceilCents(usd: number): string {
+  return (Math.ceil(usd * 100) / 100).toFixed(2);
+}
+
 const SAMPLE_URLS: Record<string, string> = {
   elevenlabs: "/samples/elevenlabs-sample.mp3",
   openai: "/samples/openai-sample.mp3",
@@ -213,7 +218,7 @@ function OptionCard({
             )}
             <div className="text-right flex flex-col items-end">
               <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
-                {estimate.estimated_cost_usd === 0 ? "Free" : `~$${estimate.estimated_cost_usd.toFixed(2)}`}
+                {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
               </span>
               {estimate.estimated_cost_usd > 0 && (
                 <p className="text-[10px] text-stone-400">for this paper</p>
@@ -784,7 +789,7 @@ export default function PremiumNarrationModal({
                 <div className="flex items-center justify-between pt-1 border-t border-stone-200 mt-1">
                   <span className="text-xs text-stone-500">Estimated cost</span>
                   <span className="text-sm font-semibold text-stone-700">
-                    {totalCost === 0 ? "Free" : `~$${totalCost?.toFixed(2)}`}
+                    {totalCost === 0 ? "Free" : `~$${ceilCents(totalCost ?? 0)}`}
                   </span>
                 </div>
               </div>

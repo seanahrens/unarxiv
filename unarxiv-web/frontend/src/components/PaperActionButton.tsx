@@ -19,16 +19,20 @@ const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?
 
 const PlayIcon = ({ size = 14, enhanced = false }: { size?: number; enhanced?: boolean }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    {enhanced && (
-      <polygon
-        points="4,0 24,12 4,24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
+    {enhanced ? (
+      <>
+        <polygon
+          points="2,0 22,12 2,24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinejoin="round"
+        />
+        <polygon points="8,5 18,12 8,19" />
+      </>
+    ) : (
+      <polygon points="7,3 21,12 7,21" />
     )}
-    <polygon points="7,3 21,12 7,21" />
   </svg>
 );
 
@@ -152,12 +156,12 @@ export default function PaperActionButton({
   const [upgradePlus, setUpgradePlus] = useState(0);
   const [versions, setVersions] = useState<PaperVersion[]>([]);
   useEffect(() => {
-    if (paper.status !== "narrated" || compact) return;
+    if (paper.status !== "narrated") return;
     if (paper.best_version_id == null) { setUpgradePlus(0); setVersions([]); return; }
     getPaperVersions(paper.id)
       .then((resp) => {
         setUpgradePlus(getUpgradePlusCount(resp.versions));
-        setVersions(resp.versions);
+        if (!compact) setVersions(resp.versions);
       })
       .catch(() => {});
   }, [paper.id, paper.status, paper.best_version_id, compact]);
@@ -182,7 +186,7 @@ export default function PaperActionButton({
               onClick={handlePlay}
               className={`${btnBase} ${compact ? "" : "min-w-[140px] flex-1 md:flex-initial"} gap-2 ${colors} rounded-l-xl rounded-r-none`}
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon enhanced={isEnhanced} />}
+              {isPlaying ? <PauseIcon /> : <PlayIcon enhanced={upgradePlus > 0} />}
               {!compact && (
                 <>
                   <span className="inline-block text-center" style={{ minWidth: "3.2em" }}>{isPlaying ? "Pause" : "Play"}</span>
