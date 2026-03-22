@@ -66,6 +66,7 @@ function arxivResultToPaper(result: ArxivSearchResult): Paper {
     duration_seconds: null,
     created_at: "",
     completed_at: null,
+    best_version_id: null,
   };
 }
 
