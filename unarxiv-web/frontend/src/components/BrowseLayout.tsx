@@ -225,7 +225,7 @@ export default function BrowseLayout({
           {loading ? (
             <BrowseLayoutPapersSkeleton />
           ) : paginatedPapers.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-10">
               <p className="text-stone-400 text-sm">
                 {isNewlyAdded ? "No papers yet." : "This collection is empty."}
               </p>
