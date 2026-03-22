@@ -1889,13 +1889,25 @@ async function handleGetAudio(env: Env, id: string, url: URL): Promise<Response>
   return new Response(object.body, { headers });
 }
 
-async function handleGetTranscript(env: Env, id: string): Promise<Response> {
+async function handleGetTranscript(env: Env, id: string, url: URL): Promise<Response> {
   const paper = await getPaper(env.DB, id);
   if (!paper || !["narrating", "narrated"].includes(paper.status)) {
     return json({ error: "Transcript not available" }, 404);
   }
 
-  const r2Key = `transcripts/${id}.txt`;
+  // Support ?version=<id> for version-specific transcripts
+  let r2Key = `transcripts/${id}.txt`;
+  const versionParam = url.searchParams.get("version");
+  if (versionParam) {
+    const versionId = parseInt(versionParam, 10);
+    if (!isNaN(versionId)) {
+      const version = await getVersionById(env.DB, versionId, id);
+      if (version?.transcript_r2_key) {
+        r2Key = version.transcript_r2_key;
+      }
+    }
+  }
+
   const object = await env.AUDIO_BUCKET.get(r2Key);
   if (!object) {
     return json({ error: "Transcript file not found" }, 404);
@@ -1908,7 +1920,6 @@ async function handleGetTranscript(env: Env, id: string): Promise<Response> {
     "Content-Disposition",
     `inline; filename="${encodeURIComponent(paper.title)} - Transcript.txt"`
   );
-  // Expose upload date so frontend can show "Script written on ..."
   if (object.uploaded) {
     headers.set("Last-Modified", object.uploaded.toUTCString());
   }

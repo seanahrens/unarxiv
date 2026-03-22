@@ -339,8 +339,9 @@ export function audioUrl(id: string): string {
   return `${API_BASE}/api/papers/${id}/audio`;
 }
 
-export function transcriptUrl(id: string): string {
-  return `${API_BASE}/api/papers/${id}/transcript`;
+export function transcriptUrl(id: string, versionId?: number): string {
+  const base = `${API_BASE}/api/papers/${id}/transcript`;
+  return versionId != null ? `${base}?version=${versionId}` : base;
 }
 
 export function formatDuration(seconds: number | null): string {
