@@ -34,8 +34,12 @@ test.describe("Ratings", () => {
     await expect(submitBtn).toBeEnabled({ timeout: 2000 });
     await submitBtn.click();
 
-    // Modal should close (allow extra time for API round-trip from CI)
-    await expect(ratingModal.first()).not.toBeVisible({ timeout: 10000 });
+    // Modal transitions to a thank-you view — wait for it, then dismiss
+    await expect(page.locator("text=Thanks for your feedback!")).toBeVisible({ timeout: 10000 });
+    await page.locator('button:has-text("Done")').click();
+
+    // Modal should now close
+    await expect(ratingModal.first()).not.toBeVisible({ timeout: 5000 });
 
     // Step 4: Verify rating persists after reload
     await page.reload();
