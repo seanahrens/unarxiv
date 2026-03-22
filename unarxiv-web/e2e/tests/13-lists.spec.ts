@@ -150,7 +150,8 @@ test.describe("Lists Frontend", () => {
 
     try {
       await page.goto(`/l/${list.id}`, { waitUntil: "domcontentloaded" });
-      await expect(page).toHaveURL(new RegExp(`/l/\\??id=${list.id}`));
+      // Redirect lands on /l?id=<id> or /l/?id=<id> (Cloudflare may strip trailing slash)
+      await expect(page).toHaveURL(new RegExp(`/l/?\\?id=${list.id}`));
     } finally {
       await fetch(`${API_BASE}/api/lists/${list.id}`, {
         method: "DELETE",
