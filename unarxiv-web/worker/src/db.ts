@@ -963,6 +963,22 @@ export async function updateBestVersionId(db: D1Database, paperId: string, newVe
     .run();
 }
 
+/**
+ * Find the most recent premium script R2 key for a paper.
+ * Returns the transcript_r2_key if a premium script exists, null otherwise.
+ */
+export async function findExistingPremiumScript(db: D1Database, paperId: string): Promise<string | null> {
+  const result = await db
+    .prepare(
+      `SELECT transcript_r2_key FROM narration_versions
+       WHERE paper_id = ? AND script_type = 'premium' AND transcript_r2_key IS NOT NULL
+       ORDER BY created_at DESC LIMIT 1`
+    )
+    .bind(paperId)
+    .first<{ transcript_r2_key: string }>();
+  return result?.transcript_r2_key ?? null;
+}
+
 /** Update script_char_count on a paper (from eager script generation). */
 export async function updateScriptCharCount(db: D1Database, paperId: string, charCount: number): Promise<void> {
   await db

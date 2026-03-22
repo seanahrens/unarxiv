@@ -222,6 +222,17 @@ export async function deletePaperApi(id: string, password: string): Promise<void
   }
 }
 
+export async function clearPremiumVersionsApi(id: string, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/admin/papers/${id}/premium-versions`, {
+    method: "DELETE",
+    headers: { "X-Admin-Password": password },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(data.error || `API error: ${res.status}`);
+  }
+}
+
 export async function recordVisit(id: string): Promise<void> {
   fetch(`${API_BASE}/api/papers/${id}/visit`, { method: "POST", headers: userHeaders() }).catch(() => {});
 }
@@ -534,6 +545,7 @@ export interface PremiumEstimateResponse {
   paper_id: string;
   word_count: number;
   options: PremiumOptionEstimate[];
+  has_existing_script: boolean;
 }
 
 /** Map a TTS provider from the raw API to the simplified tier ID used by the modal. */
@@ -554,6 +566,7 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
   const raw = await res.json() as {
     estimated: boolean;
     script_char_count: number;
+    has_existing_script?: boolean;
     options: { id: string; tts_provider: string | null; total_cost: number; llm_cost: number; tts_cost: number; quality_rank: number }[];
   };
 
@@ -583,7 +596,7 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
   // Sort: highest quality tier first
   options.sort((a, b) => (VOICE_TIERS[b.option_id]?.rank ?? 0) - (VOICE_TIERS[a.option_id]?.rank ?? 0));
 
-  return { paper_id: paperId, word_count: raw.script_char_count, options };
+  return { paper_id: paperId, word_count: raw.script_char_count, options, has_existing_script: !!raw.has_existing_script };
 }
 
 export interface PremiumNarrationConfig {

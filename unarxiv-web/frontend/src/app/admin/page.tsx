@@ -8,6 +8,7 @@ import {
   fetchPapersForCurate,
   deletePaperApi,
   reprocessPaperApi,
+  clearPremiumVersionsApi,
   fetchPaperRatings,
   clearPaperRatings,
   formatDurationShort,
@@ -496,6 +497,24 @@ export default function AdminPage() {
     if (failed.length > 0) setActionError(`Failed to reprocess ${failed.length} paper(s)`);
   }, [password, selected]);
 
+  const handleBulkClearPremium = useCallback(async () => {
+    if (!password || selected.size === 0) return;
+    if (!confirm(`Clear premium narrations for ${selected.size} paper${selected.size > 1 ? "s" : ""}? This deletes upgraded audio, scripts, and R2 files.`)) return;
+    setActionError("");
+    const ids = [...selected];
+    setProcessing(new Set(ids));
+    const failed: string[] = [];
+    for (const id of ids) {
+      try {
+        await clearPremiumVersionsApi(id, password);
+        setPapers((prev) => prev.map((p) => (p.id === id ? { ...p, best_version_id: null } : p)));
+      } catch { failed.push(id); }
+    }
+    setSelected(new Set());
+    setProcessing(new Set());
+    if (failed.length > 0) setActionError(`Failed to clear premium for ${failed.length} paper(s)`);
+  }, [password, selected]);
+
   const handleBulkClearReviews = useCallback(async () => {
     if (!password || selected.size === 0) return;
     if (!confirm(`Clear all reviews for ${selected.size} paper${selected.size > 1 ? "s" : ""}?`)) return;
@@ -658,8 +677,11 @@ export default function AdminPage() {
                 <button onClick={() => handleBulkReprocess("script_only")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 rounded-t-lg">
                   Script only
                 </button>
-                <button onClick={() => handleBulkReprocess("narration_only")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 rounded-b-lg border-t border-stone-100">
+                <button onClick={() => handleBulkReprocess("narration_only")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 border-t border-stone-100">
                   Narration only
+                </button>
+                <button onClick={() => { setReprocessMenuOpen(false); handleBulkClearPremium(); }} className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-b-lg border-t border-stone-100">
+                  Clear Premium
                 </button>
               </div>
             )}

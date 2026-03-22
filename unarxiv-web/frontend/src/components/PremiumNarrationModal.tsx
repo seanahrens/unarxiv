@@ -407,6 +407,9 @@ export default function PremiumNarrationModal({
   // Existing versions (to show completed badges)
   const [existingVersions, setExistingVersions] = useState<PaperVersion[]>([]);
 
+  // Whether a premium LLM script already exists (no LLM cost for subsequent narrations)
+  const [hasExistingScript, setHasExistingScript] = useState(false);
+
   // Step 3 / submission
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -434,6 +437,7 @@ export default function PremiumNarrationModal({
       .then((resp) => {
         const opts = (resp.options ?? []).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
         setEstimates(opts);
+        setHasExistingScript(resp.has_existing_script);
         setLoading(false);
       })
       .catch(() => {
@@ -639,7 +643,9 @@ export default function PremiumNarrationModal({
           {step === 1 && (
             <>
               <p className="text-xs text-stone-500 leading-snug">
-                Every voice upgrade includes an improved script with AI narrations of figures, graphs, and math equations.
+                {hasExistingScript
+                  ? "An improved script already exists for this paper — only TTS cost applies."
+                  : "Every voice upgrade includes an improved script with AI narrations of figures, graphs, and math equations."}
               </p>
 
               {loading ? (

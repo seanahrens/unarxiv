@@ -63,6 +63,7 @@ import {
   updateBestVersionId,
   updateScriptCharCount,
   getBestVoiceTier,
+  findExistingPremiumScript,
 } from "./db";
 
 export default {
@@ -917,6 +918,16 @@ async function handleNarratePremium(
       return;
     }
     try {
+      // Check if a premium LLM script already exists — reuse it to skip LLM cost
+      let existingScript: string | null = null;
+      const scriptR2Key = await findExistingPremiumScript(env.DB, id);
+      if (scriptR2Key) {
+        try {
+          const obj = await env.AUDIO_BUCKET.get(scriptR2Key);
+          if (obj) existingScript = await obj.text();
+        } catch {}
+      }
+
       const payload: Record<string, string | null> = {
         arxiv_id: id,
         tex_source_url: arxivSrcUrl(id),
@@ -932,6 +943,7 @@ async function handleNarratePremium(
         tts_api_key: ttsApiKey,
         tts_model: ttsModel,
         source_preference: "tex",
+        existing_script: existingScript,
         _secret: env.MODAL_WEBHOOK_SECRET,
       };
       // Use dedicated premium endpoint — derive from standard URL if not set
@@ -973,9 +985,23 @@ async function handleEstimate(env: Env, id: string): Promise<Response> {
     return json({ estimated: false, message: "Script not yet generated; estimates unavailable" });
   }
 
-  // script_char_count reflects the base narration script. AI-generated scripts from
-  // LaTeX are typically ~33% longer due to added narrations of figures, graphs, and equations.
-  const charCount = Math.ceil(rawCharCount * 1.33);
+  // Check if a premium LLM script already exists — use its actual length for TTS estimates
+  const scriptR2Key = await findExistingPremiumScript(env.DB, id);
+  const hasExistingScript = !!scriptR2Key;
+  let charCount: number;
+  if (scriptR2Key) {
+    // Use actual script character count for accurate TTS cost
+    try {
+      const obj = await env.AUDIO_BUCKET.get(scriptR2Key);
+      const text = obj ? await obj.text() : null;
+      charCount = text ? text.length : Math.ceil(rawCharCount * 1.33);
+    } catch {
+      charCount = Math.ceil(rawCharCount * 1.33);
+    }
+  } else {
+    // Estimate: AI-generated scripts from LaTeX are typically ~33% longer
+    charCount = Math.ceil(rawCharCount * 1.33);
+  }
 
   // Build options matrix: all meaningful provider/model combinations
   const options: {
@@ -1009,6 +1035,11 @@ async function handleEstimate(env: Env, id: string): Promise<Response> {
   for (const llm of llmOptions) {
     for (const tts of ttsOptions) {
       const costs = estimateCost(llm.provider, llm.model, tts.provider, tts.model, charCount);
+      // If a premium script already exists, LLM generation is skipped — zero out LLM cost
+      if (hasExistingScript) {
+        costs.total_cost -= costs.llm_cost;
+        costs.llm_cost = 0;
+      }
       const quality_rank = computeQualityRank(tts.provider, tts.model);
       options.push({
         id: `${llm.provider}/${llm.model}+${tts.provider ?? "free"}/${tts.model ?? "free"}`,
@@ -1026,7 +1057,7 @@ async function handleEstimate(env: Env, id: string): Promise<Response> {
   // Sort best quality first
   options.sort((a, b) => b.quality_rank - a.quality_rank || a.total_cost - b.total_cost);
 
-  return json({ estimated: true, script_char_count: charCount, options });
+  return json({ estimated: true, script_char_count: charCount, has_existing_script: hasExistingScript, options });
 }
 
 /** GET /api/papers/:id/versions */
@@ -2073,6 +2104,23 @@ async function handleDeletePremiumVersions(request: Request, env: Env, paperId: 
   const denied = requireAdmin(request, env);
   if (denied) return denied;
 
+  // Collect R2 keys for premium versions before deleting DB rows
+  const versions = await env.DB
+    .prepare("SELECT audio_r2_key, transcript_r2_key FROM narration_versions WHERE paper_id = ? AND quality_rank > 0")
+    .bind(paperId)
+    .all<{ audio_r2_key: string | null; transcript_r2_key: string | null }>();
+
+  // Delete R2 objects (audio MP3s and LLM scripts)
+  for (const v of versions.results) {
+    if (v.audio_r2_key) {
+      try { await env.AUDIO_BUCKET.delete(v.audio_r2_key); } catch {}
+    }
+    if (v.transcript_r2_key) {
+      try { await env.AUDIO_BUCKET.delete(v.transcript_r2_key); } catch {}
+    }
+  }
+
+  // Delete DB rows
   await env.DB.prepare("DELETE FROM narration_versions WHERE paper_id = ? AND quality_rank > 0")
     .bind(paperId)
     .run();
@@ -2081,7 +2129,7 @@ async function handleDeletePremiumVersions(request: Request, env: Env, paperId: 
     .bind(`audio/${paperId}.mp3`, paperId)
     .run();
 
-  return json({ ok: true });
+  return json({ ok: true, deleted_versions: versions.results.length });
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

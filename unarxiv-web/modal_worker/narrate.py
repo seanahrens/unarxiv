@@ -544,6 +544,7 @@ def narrate_paper_premium(
     tts_provider: str = "elevenlabs",
     tts_api_key: str = "",
     version_id: str = "",
+    existing_script: str = "",
 ):
     """Premium narration pipeline: source → LLM script improvement → premium TTS → R2.
 
@@ -730,10 +731,13 @@ def narrate_paper_premium(
         tts_text = re.sub(r"\n\n%%%+ .+ %%%+\s*$", "", speech)
 
         # ---------------------------------------------------------------
-        # Stage 3: LLM script improvement
+        # Stage 3: LLM script improvement (skipped if existing_script provided)
         # ---------------------------------------------------------------
         llm_result = None
-        if llm_api_key:
+        if existing_script:
+            print(f"Reusing existing LLM script ({len(existing_script):,} chars) — skipping LLM generation")
+            tts_text = existing_script
+        elif llm_api_key:
             send_status(callback_url, secret, arxiv_id,
                         status="narrating",
                         progress_detail="Improving script with LLM...",
@@ -939,6 +943,7 @@ def trigger_premium_narration(request: dict):
         tts_provider=tts_provider,
         tts_api_key=tts_api_key,
         version_id=version_id,
+        existing_script=request.get("existing_script", ""),
     )
 
     return {
