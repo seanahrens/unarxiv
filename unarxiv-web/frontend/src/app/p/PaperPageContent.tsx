@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, getPaperVersions, type Paper, type Rating, type PaperVersion } from "@/lib/api";
-import { VOICE_TIERS, getBestTierFromVersions, type VoiceTier } from "@/lib/voiceTiers";
+import { VOICE_TIERS, getBestTierFromVersions, getTierFromProvider, type VoiceTier } from "@/lib/voiceTiers";
 import PlusIcons from "@/components/PlusIcons";
 import { PaperDetailSkeleton, Skeleton } from "@/components/Skeleton";
 import { track } from "@/lib/analytics";
@@ -324,9 +324,10 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
   const [view, setView] = useState<"abstract" | "script">("abstract");
-  const [script, setScript] = useState<string | null>(null);
-  const [scriptDate, setScriptDate] = useState<string | null>(null);
+  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "free" | "premium" }[]>([]);
+  const [activeScriptTab, setActiveScriptTab] = useState<string>("base");
   const [scriptLoading, setScriptLoading] = useState(false);
+  const scriptsFetched = useRef(false);
   const [showCaptchaModal, setShowCaptchaModal] = useState(false);
   const { addToPlaylist, removeFromPlaylist, isInPlaylist } = usePlaylist();
   const handleAddToPlaylist = (rect?: DOMRect) => {
@@ -393,28 +394,58 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     return () => window.removeEventListener("paper-status-changed", handler);
   }, [id]);
 
-  // Lazy-fetch transcript when switching to script view
+  // Lazy-fetch transcripts (base + premium versions) when switching to script view
   useEffect(() => {
-    if (view !== "script" || script !== null || !paper) return;
-    const canShow = paper.status === "narrated";
-    if (!canShow) return;
+    if (view !== "script" || scriptsFetched.current || !paper) return;
+    if (!["narrated", "narrating"].includes(paper.status)) return;
+    scriptsFetched.current = true;
     setScriptLoading(true);
-    fetch(transcriptUrl(paper.id))
-      .then((res) => {
-        if (!res.ok) throw new Error("not found");
+
+    const fetchTx = async (url: string): Promise<{ text: string; date: string | null } | null> => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
         const lastMod = res.headers.get("Last-Modified");
+        let date: string | null = null;
         if (lastMod) {
           const d = new Date(lastMod);
           if (!isNaN(d.getTime())) {
-            setScriptDate(d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }));
+            date = d.toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
           }
         }
-        return res.text();
-      })
-      .then(setScript)
-      .catch(() => setScript("Script not available."))
-      .finally(() => setScriptLoading(false));
-  }, [view, script, paper]);
+        return { text: await res.text(), date };
+      } catch { return null; }
+    };
+
+    (async () => {
+      const tabs: typeof scriptTabs = [];
+
+      // Fetch base transcript
+      const base = await fetchTx(transcriptUrl(paper.id));
+      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "free" });
+
+      // Fetch premium version transcripts
+      try {
+        const resp = await getPaperVersions(paper.id);
+        const premium = resp.versions
+          .filter(v => v.version_type === "premium" || v.quality_rank > 0)
+          .sort((a, b) => b.quality_rank - a.quality_rank);
+        for (const v of premium) {
+          const tx = await fetchTx(transcriptUrl(paper.id, v.id));
+          if (tx) {
+            const tier = getTierFromProvider(v.tts_provider);
+            tabs.push({ key: `v${v.id}`, label: `AI Script (${tier.providerName})`, text: tx.text, date: tx.date, type: "premium" });
+          }
+        }
+      } catch {}
+
+      setScriptTabs(tabs);
+      // Default to highest quality (AI) tab if available
+      const aiTab = tabs.find(t => t.type === "premium");
+      setActiveScriptTab(aiTab?.key ?? tabs[0]?.key ?? "base");
+      setScriptLoading(false);
+    })();
+  }, [view, paper]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleComplete = useCallback((updatedPaper: Paper) => {
     setPaper(updatedPaper);
@@ -571,18 +602,45 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
               <Skeleton className="mb-2" width="80%" height="12px" />
               <Skeleton width="60%" height="12px" />
             </div>
-          ) : (
-            <>
-              <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
-                <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
-                  {script}
-                </pre>
-              </div>
-              {scriptDate && (
-                <p className="text-xs text-stone-400 mt-2 text-right">Script written on {scriptDate}</p>
-              )}
-            </>
-          )}
+          ) : (() => {
+            const active = scriptTabs.find(t => t.key === activeScriptTab) ?? scriptTabs[0];
+            return (
+              <>
+                {/* Metadata + date */}
+                {active && (
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-stone-400">
+                      {active.type === "premium" ? "AI-Generated" : "Programmatically-Generated"} Script
+                    </p>
+                    {active.date && <p className="text-xs text-stone-400">{active.date}</p>}
+                  </div>
+                )}
+                {/* Tabs */}
+                {scriptTabs.length > 1 && (
+                  <div className="flex gap-1 mb-2 border-b border-stone-200">
+                    {scriptTabs.map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveScriptTab(tab.key)}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors border-b-2 -mb-px ${
+                          activeScriptTab === tab.key
+                            ? "border-stone-700 text-stone-800"
+                            : "border-transparent text-stone-400 hover:text-stone-600"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
+                  <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
+                    {active?.text ?? "Script not available."}
+                  </pre>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 

@@ -197,53 +197,10 @@ export default function PaperActionsMenu({
         {inPlaylist ? "In Playlist" : "Add to Playlist"}
       </button>
 
-      {/* Play Other Narration — submenu showing all tiers */}
-      {hasAudio && versions && versions.length > 0 && onPlayVersion && (() => {
-        // Build a map of available versions by tier id
-        const versionByTier = new Map<string, PaperVersion>();
-        for (const v of versions) {
-          if (!v.audio_url) continue;
-          const tier = getTierFromProvider(v.tts_provider);
-          const existing = versionByTier.get(tier.id);
-          if (!existing || v.quality_rank > existing.quality_rank) {
-            versionByTier.set(tier.id, v);
-          }
-        }
-        // All tiers to show (excluding the best version's tier — that's the main play button)
-        const bestVersion = versions.find(v => v.is_best);
-        const bestTierId = bestVersion ? getTierFromProvider(bestVersion.tts_provider).id : null;
-        const tiersToShow = VOICE_TIERS_ORDERED.filter(t => t.id !== bestTierId);
-        if (tiersToShow.length === 0) return null;
-        // Only show if at least one non-best tier has audio
-        if (!tiersToShow.some(t => versionByTier.has(t.id))) return null;
-
-        return (
-          <>
-            <div className={DIVIDER} />
-            <div className="px-3 py-1 text-[10px] font-medium text-stone-400 uppercase tracking-wide">Play Other Narration</div>
-            {tiersToShow.map(tier => {
-              const v = versionByTier.get(tier.id);
-              const available = !!v;
-              return (
-                <button
-                  key={tier.id}
-                  onClick={available ? () => { onPlayVersion(v!); onClose(); } : undefined}
-                  disabled={!available}
-                  className={`${MENU_ITEM} ${!available ? "opacity-30 cursor-not-allowed" : ""}`}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="7,3 21,12 7,21" />
-                  </svg>
-                  <span className="flex items-center gap-1.5">
-                    {tier.label}
-                    {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={8} className="text-stone-500" gap="gap-px" />}
-                  </span>
-                </button>
-              );
-            })}
-          </>
-        );
-      })()}
+      {/* Play Other Narration — expandable submenu with all tiers */}
+      {hasAudio && versions && versions.length > 0 && onPlayVersion && (
+        <NarrationVersionSubmenu versions={versions} onPlayVersion={onPlayVersion} onClose={onClose} />
+      )}
 
       {/* Upgrade Narration — only when has audio and not fully upgraded */}
       {hasAudio && !hideUpgradeNarration && (
@@ -343,5 +300,62 @@ export default function PaperActionsMenu({
       <div className={DIVIDER} />
       <ListSubmenu paperId={paper.id} onClose={onClose} onEnsureImported={onEnsureImported} />
     </div>
+  );
+}
+
+/** Expandable submenu for playing specific narration versions */
+function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
+  versions: PaperVersion[];
+  onPlayVersion: (v: PaperVersion) => void;
+  onClose: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Map of best version per tier
+  const versionByTier = new Map<string, PaperVersion>();
+  for (const v of versions) {
+    if (!v.audio_url) continue;
+    const tier = getTierFromProvider(v.tts_provider);
+    const existing = versionByTier.get(tier.id);
+    if (!existing || v.quality_rank > existing.quality_rank) {
+      versionByTier.set(tier.id, v);
+    }
+  }
+
+  return (
+    <>
+      <div className={DIVIDER} />
+      <button onClick={() => setOpen(!open)} className={MENU_ITEM}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="7,3 21,12 7,21" />
+        </svg>
+        <span className="flex-1">Play Other Narration</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+          className={`transition-transform ${open ? "rotate-180" : ""}`}>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="bg-stone-50/50">
+          {VOICE_TIERS_ORDERED.map(tier => {
+            const v = versionByTier.get(tier.id);
+            const available = !!v;
+            return (
+              <button
+                key={tier.id}
+                onClick={available ? () => { onPlayVersion(v!); onClose(); } : undefined}
+                disabled={!available}
+                className={`${MENU_ITEM} pl-8 ${!available ? "opacity-30 cursor-not-allowed" : ""}`}
+              >
+                <span className="flex items-center gap-1.5">
+                  {tier.label}
+                  {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={8} className="text-stone-500" gap="gap-px" />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
