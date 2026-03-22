@@ -734,15 +734,30 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 3: LLM script improvement (skipped if existing_script provided)
         # ---------------------------------------------------------------
+        # Estimate total remaining time: LLM + TTS
+        chunks_est = len(tex_to_audio._split_into_chunks(tts_text))
+        tts_secs_per_chunk = 3 if tts_provider != "free" else 5
+        tts_time_est = chunks_est * tts_secs_per_chunk
+
         llm_result = None
         if existing_script:
             print(f"Reusing existing LLM script ({len(existing_script):,} chars) — skipping LLM generation")
             tts_text = existing_script
+            # Send ETA for TTS-only since LLM is skipped
+            send_status(callback_url, secret, arxiv_id,
+                        status="narrating",
+                        progress_detail="Script ready, synthesising audio...",
+                        eta_seconds=tts_time_est,
+                        version_id=version_id)
         elif llm_api_key:
+            # Estimate LLM time: ~1 token per 4 chars output, ~20 tokens/sec throughput
+            llm_output_tokens_est = len(tts_text) / 4
+            llm_time_est = max(30, int(llm_output_tokens_est / 20))
+            total_est = llm_time_est + tts_time_est
             send_status(callback_url, secret, arxiv_id,
                         status="narrating",
                         progress_detail="Improving script with LLM...",
-                        eta_seconds=120,  # rough: 30s LLM + rest for TTS
+                        eta_seconds=total_est,
                         version_id=version_id)
             has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
             print(f"Running LLM script generation ({llm_provider}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
@@ -774,13 +789,12 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 4: Premium TTS synthesis
         # ---------------------------------------------------------------
-        chunks_count = len(tex_to_audio._split_into_chunks(tts_text))
-        EST_SECS_PER_CHUNK = 3 if tts_provider != "free" else 5
-        tts_eta = chunks_count * EST_SECS_PER_CHUNK
+        final_chunks_count = len(tex_to_audio._split_into_chunks(tts_text))
+        final_tts_eta = final_chunks_count * tts_secs_per_chunk
         send_status(callback_url, secret, arxiv_id,
                     status="narrating",
                     progress_detail=f"Synthesising audio ({tts_provider})...",
-                    eta_seconds=tts_eta,
+                    eta_seconds=final_tts_eta,
                     version_id=version_id)
 
         try:
