@@ -191,7 +191,7 @@ function OptionCard({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Voice sample play button */}
-            {!disabled && SAMPLE_URLS[option.id] && (
+            {SAMPLE_URLS[option.id] && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onToggleSample(); }}
