@@ -129,8 +129,7 @@ export default function ScriptPageContent() {
     const vId = parseInt(key.slice(1));
     const v = versions.find(ver => ver.id === vId);
     if (!v) return "AI Script";
-    const tier = getTierFromProvider(v.tts_provider);
-    return `AI Script (${tier.providerName})`;
+    return "AI Script";
   };
 
   return (

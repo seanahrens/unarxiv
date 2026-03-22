@@ -571,6 +571,7 @@ def narrate_paper_premium(
     import httpx
     from llm_scripting import get_llm_provider
     from premium_tts import get_tts_provider
+    from parser_v2.script_builder import _build_header, _build_footer, _format_date
 
     secret = os.environ.get("CALLBACK_SECRET", "")
 
@@ -754,6 +755,13 @@ def narrate_paper_premium(
             )
         else:
             print("No LLM api_key provided — skipping LLM improvement")
+
+        # Wrap with standard header/footer (LLM output is body-only)
+        authors_list_parsed = [a.strip() for a in paper_author.split(",") if a.strip()] if paper_author else []
+        formatted_date = _format_date(paper_date)
+        header = _build_header(paper_title or "Untitled", formatted_date, authors_list_parsed)
+        footer = _build_footer(paper_title or "Untitled", formatted_date, authors_list_parsed)
+        tts_text = header + "\n" + tts_text.strip() + footer
 
         # Save improved (or base) script to R2 immediately so partial success
         # can preserve it even if TTS subsequently fails.
