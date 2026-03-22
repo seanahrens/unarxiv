@@ -139,6 +139,27 @@ test.describe.serial("Lists API", () => {
 });
 
 test.describe("Lists Frontend", () => {
+  test("/l/<list_id> short URL redirects to /l/?id=<list_id>", async ({ page }) => {
+    // Create a list to get a valid ID, then verify the short URL redirects correctly
+    const res = await fetch(`${API_BASE}/api/lists`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Short URL Test" }),
+    });
+    const { list, owner_token } = await res.json();
+
+    try {
+      await page.goto(`/l/${list.id}`, { waitUntil: "domcontentloaded" });
+      // Redirect lands on /l?id=<id> or /l/?id=<id> (Cloudflare may strip trailing slash)
+      await expect(page).toHaveURL(new RegExp(`/l/?\\?id=${list.id}`));
+    } finally {
+      await fetch(`${API_BASE}/api/lists/${list.id}`, {
+        method: "DELETE",
+        headers: { "X-List-Token": owner_token },
+      });
+    }
+  });
+
   test("collections section visible on playlist page", async ({ page }) => {
     await page.goto("/my-papers");
     await expect(page.locator("h1:has-text('My Collections')")).toBeVisible({ timeout: 5000 });

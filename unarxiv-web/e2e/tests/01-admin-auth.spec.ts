@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { adminVerify, adminDeletePaper } from "../helpers/api";
+import { ADMIN_PASSWORD } from "../helpers/fixtures";
 
 test.describe("Admin Auth", () => {
   test("admin page shows password prompt without auth", async ({ page }) => {
@@ -40,5 +41,18 @@ test.describe("Admin Auth", () => {
   test("API: delete endpoint rejects wrong password", async () => {
     const res = await adminDeletePaper("fake-id-12345", "wrong-password-123");
     expect(res.status).toBe(401);
+  });
+
+  test("correct password grants access to admin dashboard", async ({ page }) => {
+    test.skip(!ADMIN_PASSWORD, "ADMIN_PASSWORD env not set");
+    await page.goto("/admin");
+    await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
+    await page.locator('button:has-text("Continue")').click();
+    // Dashboard content (Top Contributors) should be visible after auth
+    await expect(page.locator("text=Top Contributors")).toBeVisible({ timeout: 10000 });
+    // Error should NOT be shown
+    await expect(
+      page.locator('[data-testid="admin-auth-error"], .text-red-600')
+    ).not.toBeVisible();
   });
 });

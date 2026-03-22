@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 import { knownCompleteId, PLAYER_SPEED } from "../helpers/fixtures";
 import { startAudioPlayback } from "../helpers/page-actions";
 
+// Active (non-fixme) tests — use beforeEach to start audio playback once per test
 test.describe("Global Media Player", () => {
-  // All tests in this suite need audio playing; startAudioPlayback handles navigation + play
   test.beforeEach(async ({ page }) => {
     await startAudioPlayback(page, knownCompleteId());
   });
@@ -14,11 +14,29 @@ test.describe("Global Media Player", () => {
     await expect(speedBtn).toBeVisible({ timeout: 5000 });
   });
 
-  // Audio playback is unreliable in headless CI — these tests depend on
-  // the audio element actually starting playback which requires network
-  // streaming of an MP3 file. They pass locally but flake in CI.
+  test("speed button cycles playback rate", async ({ page }) => {
+    const speedBtn = page.locator(PLAYER_SPEED).first();
+    await expect(speedBtn).toBeVisible({ timeout: 5000 });
+
+    // Verify it shows 1x before clicking
+    const initialText = await speedBtn.textContent();
+    expect(initialText?.trim()).toBe("1x");
+
+    await speedBtn.click();
+
+    // After clicking, should show 1.25x
+    await expect(speedBtn).toHaveText("1.25x", { timeout: 2000 });
+  });
+});
+
+// These tests are unreliable in headless CI because they depend on the audio element
+// actually streaming audio from the network. They are marked fixme and kept in a
+// separate describe block so they do NOT trigger the beforeEach audio startup above.
+test.describe("Global Media Player (headless-unreliable)", () => {
   test.fixme("pause and resume works", async ({ page }) => {
-    test.slow(); // audio may take longer to start in headless CI
+    test.slow();
+    await startAudioPlayback(page, knownCompleteId());
+
     // Find pause button (title switches to "Pause" while playing)
     const pauseBtn = page.locator('button[title="Pause"]').first();
     await expect(pauseBtn).toBeVisible({ timeout: 10000 });
@@ -40,6 +58,8 @@ test.describe("Global Media Player", () => {
 
   test.fixme("skip back decreases currentTime", async ({ page }) => {
     test.slow();
+    await startAudioPlayback(page, knownCompleteId());
+
     // Seek to 30s first so skip back has room
     await page.evaluate(() => {
       (document.querySelector("audio") as HTMLAudioElement).currentTime = 30;
@@ -65,6 +85,8 @@ test.describe("Global Media Player", () => {
 
   test.fixme("skip forward increases currentTime", async ({ page }) => {
     test.slow();
+    await startAudioPlayback(page, knownCompleteId());
+
     const timeBefore = await page.evaluate(
       () => (document.querySelector("audio") as HTMLAudioElement)?.currentTime
     );
@@ -78,23 +100,11 @@ test.describe("Global Media Player", () => {
     expect(timeAfter).toBeGreaterThan(timeBefore!);
   });
 
-  test("speed button cycles playback rate", async ({ page }) => {
-    const speedBtn = page.locator(PLAYER_SPEED).first();
-    await expect(speedBtn).toBeVisible({ timeout: 5000 });
-
-    // Verify it shows 1x before clicking
-    const initialText = await speedBtn.textContent();
-    expect(initialText?.trim()).toBe("1x");
-
-    await speedBtn.click();
-
-    // After clicking, should show 1.25x
-    await expect(speedBtn).toHaveText("1.25x", { timeout: 2000 });
-  });
-
   test.fixme("paper link in player bar navigates to paper page", async ({ page }) => {
     test.slow();
     const id = knownCompleteId();
+    await startAudioPlayback(page, id);
+
     // The PlayerBar has a link to the paper page
     const paperLink = page.locator(`a[href="/p?id=${id}"], a[href*="${id}"]`).first();
     await expect(paperLink).toBeVisible({ timeout: 10000 });

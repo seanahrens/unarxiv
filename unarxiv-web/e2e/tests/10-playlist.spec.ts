@@ -1,23 +1,18 @@
 import { test, expect } from "@playwright/test";
-import { knownCompleteId } from "../helpers/fixtures";
+import { knownCompleteId, ADD_TO_PLAYLIST, REMOVE_FROM_PLAYLIST } from "../helpers/fixtures";
 import { openDropdown } from "../helpers/page-actions";
-
-/**
- * Selectors — prefer data-testid (deployed), fall back to text for pre-deploy runs.
- */
-const ADD_TO_PLAYLIST = '[data-testid="add-to-playlist"], button:has-text("Add to Playlist")';
-const REMOVE_FROM_PLAYLIST = '[data-testid="remove-from-playlist"], button:has-text("In Playlist")';
 
 test.describe("Playlist", () => {
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage to start fresh
-    await page.goto("/");
+    // Clear localStorage before each test — navigate to the domain first so storage is accessible
+    await page.goto(`/p?id=${knownCompleteId()}`);
     await page.evaluate(() => localStorage.clear());
   });
 
   test("add to playlist via dropdown menu", async ({ page }) => {
     const id = knownCompleteId();
-    await page.goto(`/p?id=${id}`);
+    // Page is already loaded from beforeEach; reload after clear to get fresh state
+    await page.reload();
     await page.locator("h1").waitFor({ timeout: 10000 });
 
     // Open the split-button dropdown
@@ -37,8 +32,7 @@ test.describe("Playlist", () => {
   test("remove from playlist via dropdown menu", async ({ page }) => {
     const id = knownCompleteId();
 
-    // Pre-populate playlist via localStorage so we don't need to add first
-    await page.goto("/");
+    // Pre-populate playlist via localStorage (already on the paper page from beforeEach)
     await page.evaluate(
       (paperId) => {
         const entry = { paperId, addedAt: new Date().toISOString() };
@@ -47,7 +41,7 @@ test.describe("Playlist", () => {
       id
     );
 
-    await page.goto(`/p?id=${id}`);
+    await page.reload();
     await page.locator("h1").waitFor({ timeout: 10000 });
 
     // Open the dropdown — should show "In Playlist"
@@ -62,5 +56,26 @@ test.describe("Playlist", () => {
     await openDropdown(page);
     const addBtn = page.locator(ADD_TO_PLAYLIST).first();
     await expect(addBtn).toBeVisible({ timeout: 3000 });
+  });
+
+  test("playlist state persists across page reload", async ({ page }) => {
+    const id = knownCompleteId();
+    await page.reload();
+    await page.locator("h1").waitFor({ timeout: 10000 });
+
+    // Add to playlist
+    await openDropdown(page);
+    const addBtn = page.locator(ADD_TO_PLAYLIST).first();
+    await expect(addBtn).toBeVisible({ timeout: 3000 });
+    await addBtn.click();
+
+    // Reload the page
+    await page.reload();
+    await page.locator("h1").waitFor({ timeout: 10000 });
+
+    // Dropdown should still show "In Playlist" after reload
+    await openDropdown(page);
+    const inPlaylistBtn = page.locator(REMOVE_FROM_PLAYLIST).first();
+    await expect(inPlaylistBtn).toBeVisible({ timeout: 3000 });
   });
 });

@@ -9,6 +9,7 @@
 
 - [ ] Visiting /admin without password shows password prompt, not dashboard
 - [ ] Submitting wrong password on /admin is rejected with error
+- [ ] Correct password grants access to the dashboard (skipped without ADMIN_PASSWORD)
 - [ ] API: POST /api/admin/verify with no password returns 401
 - [ ] API: POST /api/admin/verify with wrong password returns 401
 - [ ] API: DELETE /api/papers/:id with no admin header returns 401
@@ -49,10 +50,10 @@
 ## 7. Global Media Player [07-media-player.spec.ts]
 
 - [ ] PlayerBar appears (speed button visible) after starting playback
+- [ ] Speed button cycles from 1x to 1.25x
 - [ ] Pause/resume toggle works (audio pauses and resumes) [FIXME: headless CI unreliable]
 - [ ] Skip back 10s decreases currentTime [FIXME: headless CI unreliable]
 - [ ] Skip forward 10s increases currentTime [FIXME: headless CI unreliable]
-- [ ] Speed button cycles from 1x to 1.25x
 - [ ] Paper link in player bar points to paper page [FIXME: headless CI unreliable]
 
 ## 8. Downloads [08-downloads.spec.ts]
@@ -68,6 +69,7 @@
 
 - [ ] Add to playlist via actions dropdown → menu shows "In Playlist" after adding
 - [ ] Remove from playlist via actions dropdown → menu shows "Add to Playlist" after removing
+- [ ] Playlist state persists across page reload (localStorage-backed)
 
 ## 11. Narration Generation [11-narration-gen.spec.ts] (SLOW — full suite only)
 
@@ -81,6 +83,7 @@
 
 - [ ] API: create list, get (public), add items, update metadata, auth required for mutations
 - [ ] API: reorder items, remove item, my-lists returns owned lists, delete list
+- [ ] Frontend: /l/<list_id> short URL redirects to /l/?id=<list_id>
 - [ ] Frontend: My Collections heading visible on /my-papers
 - [ ] Frontend: create via API + store token → collection appears in My Collections → view at /l?id=
 - [ ] Admin: can see all lists with tokens (skipped if no ADMIN_PASSWORD)
