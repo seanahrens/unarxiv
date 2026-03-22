@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """generate_voice_samples.py — Generate voice sample MP3s for the upgrade modal.
 
-Reads API keys from frontend/.env.test.local and produces one MP3 per tier
-into frontend/public/samples/. Rerun whenever you change the sample text.
+Reads tier labels/providers from frontend/src/lib/voiceTiers.ts and API keys
+from frontend/.env.test.local. Produces one MP3 per tier into
+frontend/public/samples/. Rerun whenever you change the sample text or tiers.
 
 Usage:
     cd unarxiv-web
@@ -12,34 +13,22 @@ Usage:
 from __future__ import annotations
 
 import asyncio
-import os
-import sys
+import re
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Sample text per tier — edit these and rerun to regenerate
+# Sample text template — {label} and {provider} are filled from voiceTiers.ts
 # ---------------------------------------------------------------------------
 
-SAMPLE_TEXTS = {
-    "elevenlabs": (
-        "You're listening to a sample of the Most Lifelike Voice "
-        "on unarchive.org, powered by ElevenLabs. "
-        "This is how your papers will sound — from complex equations "
-        "and inline math to dense theoretical discussions."
-    ),
-    "openai": (
-        "You're listening to a sample of the Polished Voice "
-        "on unarchive.org, powered by OpenAI. "
-        "This is how your papers will sound — from complex equations "
-        "and inline math to dense theoretical discussions."
-    ),
-    "free": (
-        "You're listening to a sample of the Base Voice "
-        "on unarchive.org, powered by Microsoft. "
-        "This is how your papers will sound — from complex equations "
-        "and inline math to dense theoretical discussions."
-    ),
-}
+SAMPLE_TEMPLATE = (
+    "You're listening to a sample of the {label} "
+    "on unarchive.org, powered by {provider}. "
+    "This is how your papers will sound — from complex equations "
+    "and inline math to dense theoretical discussions."
+)
+
+# Which tier IDs to generate samples for
+TIER_IDS = ["elevenlabs", "openai", "free"]
 
 # ---------------------------------------------------------------------------
 # Config
@@ -47,6 +36,7 @@ SAMPLE_TEXTS = {
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent  # unarxiv-web/
+VOICE_TIERS_FILE = PROJECT_ROOT / "frontend" / "src" / "lib" / "voiceTiers.ts"
 ENV_FILE = PROJECT_ROOT / "frontend" / ".env.test.local"
 OUTPUT_DIR = PROJECT_ROOT / "frontend" / "public" / "samples"
 
@@ -54,6 +44,30 @@ OUTPUT_DIR = PROJECT_ROOT / "frontend" / "public" / "samples"
 ELEVENLABS_VOICE = "pNInz6obpgDQGcFmaJgB"  # "Adam" pre-made voice ID
 OPENAI_VOICE = "onyx"
 FREE_VOICE = "en-US-JennyNeural"
+
+
+def parse_voice_tiers(path: Path) -> dict[str, dict[str, str]]:
+    """Parse voiceTiers.ts to extract label and providerName per tier ID."""
+    content = path.read_text()
+    tiers: dict[str, dict[str, str]] = {}
+
+    # Match each tier block:  tierId: { ... }
+    block_re = re.compile(
+        r'(\w+):\s*\{[^}]*'
+        r'label:\s*"([^"]+)"[^}]*'
+        r'providerName:\s*"([^"]+)"',
+        re.DOTALL,
+    )
+    for m in block_re.finditer(content):
+        tier_id, label, provider = m.group(1), m.group(2), m.group(3)
+        tiers[tier_id] = {"label": label, "providerName": provider}
+
+    return tiers
+
+
+def build_sample_text(label: str, provider: str) -> str:
+    """Build sample text from template with lowercase label."""
+    return SAMPLE_TEMPLATE.format(label=label.lower(), provider=provider)
 
 
 def load_env(path: Path) -> dict[str, str]:
@@ -117,6 +131,25 @@ async def generate_free(text: str, output: Path) -> None:
 
 
 def main() -> None:
+    # Parse tier info from voiceTiers.ts
+    print("Reading tier definitions from", VOICE_TIERS_FILE)
+    tiers = parse_voice_tiers(VOICE_TIERS_FILE)
+    print(f"  Found tiers: {list(tiers.keys())}\n")
+
+    # Build sample texts from template + tier data
+    sample_texts: dict[str, str] = {}
+    for tier_id in TIER_IDS:
+        tier = tiers.get(tier_id)
+        if not tier:
+            print(f"  WARNING: tier '{tier_id}' not found in voiceTiers.ts, skipping")
+            continue
+        text = build_sample_text(tier["label"], tier["providerName"])
+        sample_texts[tier_id] = text
+        print(f"  {tier_id}: \"{text}\"")
+
+    print()
+
+    # Load API keys
     print("Loading API keys from", ENV_FILE)
     env = load_env(ENV_FILE)
 
@@ -124,18 +157,18 @@ def main() -> None:
     elevenlabs_key = env.get("TEST_ELEVENLABS_KEY", "")
 
     if not openai_key:
-        print("WARNING: TEST_OPENAI_KEY not found, skipping OpenAI sample")
+        print("  WARNING: TEST_OPENAI_KEY not found, skipping OpenAI sample")
     if not elevenlabs_key:
-        print("WARNING: TEST_ELEVENLABS_KEY not found, skipping ElevenLabs sample")
+        print("  WARNING: TEST_ELEVENLABS_KEY not found, skipping ElevenLabs sample")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Output directory: {OUTPUT_DIR}\n")
+    print(f"\nOutput directory: {OUTPUT_DIR}\n")
 
     # ElevenLabs
-    if elevenlabs_key:
+    if elevenlabs_key and "elevenlabs" in sample_texts:
         try:
             generate_elevenlabs(
-                SAMPLE_TEXTS["elevenlabs"],
+                sample_texts["elevenlabs"],
                 elevenlabs_key,
                 OUTPUT_DIR / "elevenlabs-sample.mp3",
             )
@@ -143,10 +176,10 @@ def main() -> None:
             print(f"  ERROR generating ElevenLabs sample: {e}")
 
     # OpenAI
-    if openai_key:
+    if openai_key and "openai" in sample_texts:
         try:
             generate_openai(
-                SAMPLE_TEXTS["openai"],
+                sample_texts["openai"],
                 openai_key,
                 OUTPUT_DIR / "openai-sample.mp3",
             )
@@ -154,15 +187,16 @@ def main() -> None:
             print(f"  ERROR generating OpenAI sample: {e}")
 
     # Free (edge-tts) — no API key needed
-    try:
-        asyncio.run(
-            generate_free(
-                SAMPLE_TEXTS["free"],
-                OUTPUT_DIR / "free-sample.mp3",
+    if "free" in sample_texts:
+        try:
+            asyncio.run(
+                generate_free(
+                    sample_texts["free"],
+                    OUTPUT_DIR / "free-sample.mp3",
+                )
             )
-        )
-    except Exception as e:
-        print(f"  ERROR generating free/edge-tts sample: {e}")
+        except Exception as e:
+            print(f"  ERROR generating free/edge-tts sample: {e}")
 
     print("\nDone! Sample files are in", OUTPUT_DIR)
 

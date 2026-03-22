@@ -114,6 +114,7 @@ function OptionCard({
   onClick,
   isPlayingSample,
   onToggleSample,
+  hasSample,
 }: {
   option: OptionConfig;
   estimate: PremiumOptionEstimate;
@@ -123,6 +124,7 @@ function OptionCard({
   onClick: () => void;
   isPlayingSample: boolean;
   onToggleSample: () => void;
+  hasSample: boolean;
 }) {
   const tier = VOICE_TIERS[estimate.option_id];
   const description = tier?.description ?? `${estimate.display_name}. ${estimate.tagline}`;
@@ -191,7 +193,7 @@ function OptionCard({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Voice sample play button */}
-            {SAMPLE_URLS[option.id] && (
+            {hasSample && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onToggleSample(); }}
@@ -242,7 +244,7 @@ function KeyInputRow({
   onChange: (v: string) => void;
   providerLink: { label: string; url: string };
   onTest: () => void;
-  testState: "idle" | "testing" | "ok" | "fail";
+  testState: "idle" | "testing" | "ok" | "fail" | "needs-credits";
   placeholder?: string;
 }) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -251,7 +253,7 @@ function KeyInputRow({
   const prevLenRef = useRef(0);
   useEffect(() => {
     if (!value.trim()) return;
-    if (testState === "testing" || testState === "ok") return;
+    if (testState === "testing" || testState === "ok" || testState === "needs-credits") return;
     // If value length jumped by 10+ chars, likely a paste — test immediately
     const isPaste = value.length - prevLenRef.current >= 10;
     prevLenRef.current = value.length;
@@ -263,12 +265,15 @@ function KeyInputRow({
   const statusText = testState === "testing" ? "Checking…"
     : testState === "ok" ? "✓ Valid"
     : testState === "fail" ? "✗ Invalid"
+    : testState === "needs-credits" ? "⚠ Valid key — needs credits"
     : null;
 
   const statusClass = testState === "ok"
     ? "text-emerald-600"
     : testState === "fail"
     ? "text-red-500"
+    : testState === "needs-credits"
+    ? "text-amber-500"
     : "text-stone-400";
 
   return (
@@ -327,7 +332,22 @@ export default function PremiumNarrationModal({
   // Voice sample playback (independent of global media player)
   const sampleAudioRef = useRef<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+  const [availableSamples, setAvailableSamples] = useState<Set<string>>(new Set());
   const { actions: audioActions } = useAudio();
+
+  // Check which sample MP3 files actually exist on mount
+  useEffect(() => {
+    const entries = Object.entries(SAMPLE_URLS);
+    Promise.all(
+      entries.map(([id, url]) =>
+        fetch(url, { method: "HEAD" })
+          .then((r) => (r.ok ? id : null))
+          .catch(() => null)
+      )
+    ).then((results) => {
+      setAvailableSamples(new Set(results.filter(Boolean) as string[]));
+    });
+  }, []);
 
   const stopSample = useCallback(() => {
     if (sampleAudioRef.current) {
@@ -374,10 +394,10 @@ export default function PremiumNarrationModal({
 
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");
-  const [ttsTestState, setTtsTestState] = useState<"idle" | "testing" | "ok" | "fail">("idle");
+  const [ttsTestState, setTtsTestState] = useState<"idle" | "testing" | "ok" | "fail" | "needs-credits">("idle");
   const [llmProvider, setLlmProvider] = useState<string>(LLM_PROVIDERS[0].id);
   const [llmKeyRaw, setLlmKeyRaw] = useState("");
-  const [llmTestState, setLlmTestState] = useState<"idle" | "testing" | "ok" | "fail">("idle");
+  const [llmTestState, setLlmTestState] = useState<"idle" | "testing" | "ok" | "fail" | "needs-credits">("idle");
 
   // Existing versions (to show completed badges)
   const [existingVersions, setExistingVersions] = useState<PaperVersion[]>([]);
@@ -495,7 +515,11 @@ export default function PremiumNarrationModal({
     try {
       const encrypted = await encryptKey(provider, rawKey);
       const result = await validateKey(provider, encrypted.encrypted_key);
-      setState(result.valid ? "ok" : "fail");
+      if (result.valid && result.info?.includes("needs credits")) {
+        setState("needs-credits");
+      } else {
+        setState(result.valid ? "ok" : "fail");
+      }
     } catch {
       setState("fail");
     }
@@ -641,6 +665,7 @@ export default function PremiumNarrationModal({
                         onClick={() => { if (!isDisabled) setSelectedOptionId(est.option_id); }}
                         isPlayingSample={playingSampleId === est.option_id}
                         onToggleSample={() => toggleSample(est.option_id)}
+                        hasSample={availableSamples.has(est.option_id)}
                       />
                     );
                   })}
