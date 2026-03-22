@@ -40,8 +40,8 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
   },
   free: {
     id: "free",
-    label: "Same Voice",
-    description: "Same Voice. Decent. A tinge botty.",
+    label: "Basic Voice",
+    description: "Basic Voice. Decent. A tinge botty.",
     providerName: "Microsoft",
     rank: 2,
     plusCount: 1,
