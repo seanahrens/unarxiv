@@ -724,12 +724,18 @@ async function validateProviderKey(
     }
 
     if (provider === "elevenlabs") {
-      // Use /v1/voices — works with TTS-restricted keys (unlike /v1/user)
-      const resp = await fetch("https://api.elevenlabs.io/v1/voices", {
-        headers: { "xi-api-key": apiKey },
+      // TTS-scoped keys can't list voices or user info — validate via the
+      // TTS endpoint with a minimal request. 200/402 = valid key (402 = needs credits).
+      const resp = await fetch("https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM", {
+        method: "POST",
+        headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "test", model_id: "eleven_flash_v2_5" }),
       });
       if (resp.status === 401) return { valid: false, error: "Invalid API key" };
-      if (resp.ok || resp.status === 403) return { valid: true, info: "ElevenLabs key valid" };
+      // 200 = valid with credits, 402 = valid but needs credits, 403 = valid but restricted
+      if (resp.ok || resp.status === 402 || resp.status === 403) {
+        return { valid: true, info: resp.status === 402 ? "Key valid (needs credits)" : "ElevenLabs key valid" };
+      }
       return { valid: false, error: `ElevenLabs returned ${resp.status}` };
     }
 
