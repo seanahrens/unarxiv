@@ -303,7 +303,7 @@ export default function PaperActionsMenu({
   );
 }
 
-/** Expandable submenu for playing specific narration versions */
+/** Side-panel submenu for playing specific narration versions (matches Add to Collection pattern) */
 function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
   versions: PaperVersion[];
   onPlayVersion: (v: PaperVersion) => void;
@@ -323,20 +323,24 @@ function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
   }
 
   return (
-    <>
-      <div className={DIVIDER} />
-      <button onClick={() => setOpen(!open)} className={MENU_ITEM}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="7,3 21,12 7,21" />
-        </svg>
-        <span className="flex-1">Play Other Narration</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-          className={`transition-transform ${open ? "rotate-180" : ""}`}>
-          <path d="m6 9 6 6 6-6" />
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-xs text-stone-700 hover:bg-stone-100 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="7,3 21,12 7,21" />
+          </svg>
+          Play Other Narration
+        </span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
+
       {open && (
-        <div className="bg-stone-50/50">
+        <div className="absolute right-full top-0 bg-surface border border-stone-300 rounded-xl shadow-lg z-50 min-w-[180px] py-1">
           {VOICE_TIERS_ORDERED.map(tier => {
             const v = versionByTier.get(tier.id);
             const available = !!v;
@@ -345,17 +349,19 @@ function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
                 key={tier.id}
                 onClick={available ? () => { onPlayVersion(v!); onClose(); } : undefined}
                 disabled={!available}
-                className={`${MENU_ITEM} pl-8 ${!available ? "opacity-30 cursor-not-allowed" : ""}`}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-xs hover:bg-stone-100 transition-colors ${
+                  available ? "text-stone-700" : "text-stone-300 cursor-not-allowed"
+                }`}
               >
                 <span className="flex items-center gap-1.5">
                   {tier.label}
-                  {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={8} className="text-stone-500" gap="gap-px" />}
+                  {tier.plusCount > 0 && <PlusIcons count={tier.plusCount} size={8} className={available ? "text-stone-500" : "text-stone-300"} gap="gap-px" />}
                 </span>
               </button>
             );
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

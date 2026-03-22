@@ -575,56 +575,70 @@ export default function PremiumNarrationModal({
                 </a>
               </p>
 
-              {/* TTS key — shown for non-free options */}
+              {/* TTS key — shown for non-free options when not already saved */}
               {selectedConfig.id !== "free" && (
-                <KeyInputRow
-                  label={selectedConfig.keyLabel}
-                  value={ttsKeyRaw}
-                  onChange={(v) => { setTtsKeyRaw(v); setTtsTestState("idle"); }}
-                  providerLink={selectedConfig.providerLink}
-                  onTest={() => handleTestKey("tts", ttsKeyRaw, selectedConfig.provider)}
-                  testState={ttsTestState}
-                />
+                hasTtsKey ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    <span className="text-xs text-stone-500">{selectedConfig.keyLabel} saved</span>
+                  </div>
+                ) : (
+                  <KeyInputRow
+                    label={selectedConfig.keyLabel}
+                    value={ttsKeyRaw}
+                    onChange={(v) => { setTtsKeyRaw(v); setTtsTestState("idle"); }}
+                    providerLink={selectedConfig.providerLink}
+                    onTest={() => handleTestKey("tts", ttsKeyRaw, selectedConfig.provider)}
+                    testState={ttsTestState}
+                  />
+                )
               )}
 
-              {/* LLM key — shown for free + dual-key options */}
+              {/* LLM key — shown for free + dual-key options when not already saved */}
               {selectedConfig.needsLlmKey && (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-stone-700">
-                      LLM Provider{" "}
-                      <span className="text-stone-400 font-normal">(for AI scripting)</span>
-                    </label>
-                    <div className="flex gap-2 flex-wrap">
-                      {LLM_PROVIDERS.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => { setLlmProvider(p.id); setLlmTestState("idle"); }}
-                          className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                            llmProvider === p.id
-                              ? "border-stone-700 bg-stone-100 text-stone-800 font-medium"
-                              : "border-stone-200 text-stone-600 hover:border-stone-400"
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
+                hasLlmKeyStored(llmProvider) ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    <span className="text-xs text-stone-500">{LLM_PROVIDERS.find((p) => p.id === llmProvider)?.label ?? "LLM"} API Key saved</span>
                   </div>
+                ) : (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-stone-700">
+                        LLM Provider{" "}
+                        <span className="text-stone-400 font-normal">(for AI scripting)</span>
+                      </label>
+                      <div className="flex gap-2 flex-wrap">
+                        {LLM_PROVIDERS.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => { setLlmProvider(p.id); setLlmTestState("idle"); }}
+                            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                              llmProvider === p.id
+                                ? "border-stone-700 bg-stone-100 text-stone-800 font-medium"
+                                : "border-stone-200 text-stone-600 hover:border-stone-400"
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                  <KeyInputRow
-                    label={`${LLM_PROVIDERS.find((p) => p.id === llmProvider)?.label ?? "LLM"} API Key`}
-                    value={llmKeyRaw}
-                    onChange={(v) => { setLlmKeyRaw(v); setLlmTestState("idle"); }}
-                    providerLink={{
-                      label: "Get API Key →",
-                      url: LLM_PROVIDERS.find((p) => p.id === llmProvider)?.link ?? "",
-                    }}
-                    onTest={() => handleTestKey("llm", llmKeyRaw, llmProvider)}
-                    testState={llmTestState}
-                  />
-                </>
+                    <KeyInputRow
+                      label={`${LLM_PROVIDERS.find((p) => p.id === llmProvider)?.label ?? "LLM"} API Key`}
+                      value={llmKeyRaw}
+                      onChange={(v) => { setLlmKeyRaw(v); setLlmTestState("idle"); }}
+                      providerLink={{
+                        label: "Get API Key →",
+                        url: LLM_PROVIDERS.find((p) => p.id === llmProvider)?.link ?? "",
+                      }}
+                      onTest={() => handleTestKey("llm", llmKeyRaw, llmProvider)}
+                      testState={llmTestState}
+                    />
+                  </>
+                )
               )}
 
 

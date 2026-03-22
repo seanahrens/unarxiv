@@ -724,14 +724,13 @@ async function validateProviderKey(
     }
 
     if (provider === "elevenlabs") {
-      const resp = await fetch("https://api.elevenlabs.io/v1/user", {
+      // Use /v1/voices — works with TTS-restricted keys (unlike /v1/user)
+      const resp = await fetch("https://api.elevenlabs.io/v1/voices", {
         headers: { "xi-api-key": apiKey },
       });
       if (resp.status === 401) return { valid: false, error: "Invalid API key" };
-      if (!resp.ok) return { valid: false, error: `ElevenLabs returned ${resp.status}` };
-      const data = await resp.json<{ subscription?: { character_limit?: number } }>();
-      const limit = data?.subscription?.character_limit;
-      return { valid: true, info: limit != null ? `${limit.toLocaleString()} char limit` : "ElevenLabs key valid" };
+      if (resp.ok || resp.status === 403) return { valid: true, info: "ElevenLabs key valid" };
+      return { valid: false, error: `ElevenLabs returned ${resp.status}` };
     }
 
     if (provider === "google") {
