@@ -574,7 +574,7 @@ export async function encryptKey(provider: string, rawKey: string): Promise<Encr
   const res = await fetch(`${API_BASE}/api/keys/encrypt`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, raw_key: rawKey }),
+    body: JSON.stringify({ provider, key: rawKey }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));

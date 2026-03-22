@@ -75,22 +75,6 @@ const DUAL_KEY_OPTIONS: OptionConfig[] = [
     keyLabel: "ElevenLabs API Key",
     providerLink: { label: "Get ElevenLabs API Key →", url: "https://elevenlabs.io/app/settings/api-keys" },
   },
-  {
-    id: "polly",
-    provider: "polly",
-    needsLlmKey: true,
-    unifiedKey: false,
-    keyLabel: "AWS Access Key / Secret",
-    providerLink: { label: "Get AWS Credentials →", url: "https://console.aws.amazon.com/iam/home#/users" },
-  },
-  {
-    id: "azure",
-    provider: "azure",
-    needsLlmKey: true,
-    unifiedKey: false,
-    keyLabel: "Azure Speech API Key",
-    providerLink: { label: "Get Azure Speech Key →", url: "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices" },
-  },
 ];
 
 // unarXiv Voice — free TTS, just needs LLM key
@@ -301,7 +285,7 @@ export default function PremiumNarrationModal({
 
   // Step 1 selection
   const lastOption = getLastOption();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "openai");
+  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "");
 
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");
@@ -328,7 +312,7 @@ export default function PremiumNarrationModal({
     setEstimateError(false);
     getPremiumEstimate(paper.id)
       .then((resp) => {
-        setEstimates(resp.options);
+        setEstimates(resp.options ?? buildFallbackEstimates());
         setLoading(false);
       })
       .catch(() => {
@@ -750,13 +734,13 @@ export default function PremiumNarrationModal({
 function buildFallbackEstimates(): PremiumOptionEstimate[] {
   return [
     {
-      option_id: "free",
-      display_name: "unarXiv Voice",
-      stars: 3,
-      tagline: "Same voice, smarter script.",
-      estimated_cost_usd: 0.04,
+      option_id: "elevenlabs",
+      display_name: "ElevenLabs",
+      stars: 5,
+      tagline: "Near-human voice quality. Best for long papers.",
+      estimated_cost_usd: 0.55,
       llm_cost_usd: 0.04,
-      tts_cost_usd: 0,
+      tts_cost_usd: 0.51,
       available: true,
     },
     {
@@ -780,33 +764,13 @@ function buildFallbackEstimates(): PremiumOptionEstimate[] {
       available: true,
     },
     {
-      option_id: "elevenlabs",
-      display_name: "ElevenLabs",
-      stars: 5,
-      tagline: "Near-human voice quality. Best for long papers.",
-      estimated_cost_usd: 0.55,
+      option_id: "free",
+      display_name: "Microsoft Edge TTS",
+      stars: 3,
+      tagline: "Jenny Neural — free, AI-enhanced scripting.",
+      estimated_cost_usd: 0.04,
       llm_cost_usd: 0.04,
-      tts_cost_usd: 0.51,
-      available: true,
-    },
-    {
-      option_id: "polly",
-      display_name: "Amazon Polly",
-      stars: 4,
-      tagline: "Reliable, low-latency AWS voice synthesis.",
-      estimated_cost_usd: 0.1,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.06,
-      available: true,
-    },
-    {
-      option_id: "azure",
-      display_name: "Azure Speech",
-      stars: 4,
-      tagline: "Crisp neural voices from Microsoft Azure.",
-      estimated_cost_usd: 0.14,
-      llm_cost_usd: 0.04,
-      tts_cost_usd: 0.10,
+      tts_cost_usd: 0,
       available: true,
     },
   ];
