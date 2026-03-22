@@ -285,7 +285,7 @@ export default function PremiumNarrationModal({
 
   // Step 1 selection
   const lastOption = getLastOption();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "openai");
+  const [selectedOptionId, setSelectedOptionId] = useState<string>(lastOption || "");
 
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");

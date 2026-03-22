@@ -7,6 +7,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { audioUrl, formatDuration, isInProgress, type Paper } from "@/lib/api";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
+import PremiumNarrationModal from "@/components/PremiumNarrationModal";
 
 const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -81,6 +82,7 @@ export default function PaperActionButton({
   const { state, actions } = useAudio();
   const { addOrMoveToTop } = usePlaylist();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = (open: boolean) => {
@@ -167,6 +169,13 @@ export default function PaperActionButton({
             onEnsureImported={onEnsureImported}
             onToggleScript={onToggleScript}
             currentView={currentView}
+            onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
+          />
+        )}
+        {showPremiumModal && (
+          <PremiumNarrationModal
+            paper={paper}
+            onClose={() => setShowPremiumModal(false)}
           />
         )}
       </div>
@@ -205,6 +214,13 @@ export default function PaperActionButton({
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
             onEnsureImported={onEnsureImported}
+            onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
+          />
+        )}
+        {showPremiumModal && (
+          <PremiumNarrationModal
+            paper={paper}
+            onClose={() => setShowPremiumModal(false)}
           />
         )}
       </div>
@@ -243,6 +259,13 @@ export default function PaperActionButton({
             onClose={() => toggleMenu(false)}
             containerRef={menuRef}
             onEnsureImported={onEnsureImported}
+            onOpenPremiumModal={() => { setShowPremiumModal(true); toggleMenu(false); }}
+          />
+        )}
+        {showPremiumModal && (
+          <PremiumNarrationModal
+            paper={paper}
+            onClose={() => setShowPremiumModal(false)}
           />
         )}
       </div>
