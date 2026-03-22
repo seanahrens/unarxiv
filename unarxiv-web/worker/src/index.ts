@@ -1968,6 +1968,7 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     llm_provider?: string;
     llm_model?: string;
     transcript_r2_key?: string;
+    script_r2_key?: string; // Modal sends this instead of transcript_r2_key
     actual_cost?: number;
     llm_cost?: number;
     tts_cost?: number;
@@ -1994,6 +1995,10 @@ async function handleModalWebhook(request: Request, env: Env): Promise<Response>
     if (body.actual_cost == null && body.costs.total_cost_usd != null) body.actual_cost = body.costs.total_cost_usd;
     if (body.llm_cost == null && body.costs.llm_cost_usd != null) body.llm_cost = body.costs.llm_cost_usd;
     if (body.tts_cost == null && body.costs.tts_cost_usd != null) body.tts_cost = body.costs.tts_cost_usd;
+  }
+  // Modal sends script_r2_key; we use transcript_r2_key
+  if (!body.transcript_r2_key && body.script_r2_key) {
+    body.transcript_r2_key = body.script_r2_key;
   }
   // If Modal sent a quality_rank and version metadata, it's a premium narration
   if (body.quality_rank != null && body.quality_rank > 0 && !body.version_type) {
