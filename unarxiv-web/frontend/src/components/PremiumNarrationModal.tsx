@@ -20,7 +20,7 @@ import {
   type PremiumProvider,
 } from "@/lib/premiumKeys";
 import { track } from "@/lib/analytics";
-import { VOICE_TIERS } from "@/lib/voiceTiers";
+import { VOICE_TIERS, estimateProcessingSeconds, formatProcessingTime } from "@/lib/voiceTiers";
 import { getHighestCompletedTierRank } from "@/lib/versionUtils";
 import { useAudio } from "@/contexts/AudioContext";
 import PlusIcons from "@/components/PlusIcons";
@@ -121,6 +121,8 @@ function OptionCard({
   isPlayingSample,
   onToggleSample,
   hasSample,
+  scriptCharCount,
+  hasExistingScript,
 }: {
   option: OptionConfig;
   estimate: PremiumOptionEstimate;
@@ -131,6 +133,8 @@ function OptionCard({
   isPlayingSample: boolean;
   onToggleSample: () => void;
   hasSample: boolean;
+  scriptCharCount: number;
+  hasExistingScript: boolean;
 }) {
   const tier = VOICE_TIERS[estimate.option_id];
   const description = tier?.description ?? `${estimate.display_name}. ${estimate.tagline}`;
@@ -193,38 +197,38 @@ function OptionCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0 px-3 py-2.5 flex items-center justify-between gap-2">
+          {/* Voice sample play button — left of text */}
+          {hasSample && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleSample(); }}
+              className="w-7 h-7 flex items-center justify-center rounded-full border border-stone-300 hover:border-stone-500 hover:bg-stone-100 transition-colors shrink-0"
+              title={isPlayingSample ? "Stop sample" : "Play voice sample"}
+            >
+              {isPlayingSample ? (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-stone-600">
+                  <rect x="1" y="1" width="8" height="8" rx="1" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-stone-600 ml-0.5">
+                  <polygon points="1,0 10,5 1,10" />
+                </svg>
+              )}
+            </button>
+          )}
           <div className="flex-1 min-w-0 whitespace-nowrap">
             <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{leadPhrase}</p>
             {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Voice sample play button */}
-            {hasSample && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onToggleSample(); }}
-                className="w-7 h-7 flex items-center justify-center rounded-full border border-stone-300 hover:border-stone-500 hover:bg-stone-100 transition-colors"
-                title={isPlayingSample ? "Stop sample" : "Play voice sample"}
-              >
-                {isPlayingSample ? (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-stone-600">
-                    <rect x="1" y="1" width="8" height="8" rx="1" />
-                  </svg>
-                ) : (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-stone-600 ml-0.5">
-                    <polygon points="1,0 10,5 1,10" />
-                  </svg>
-                )}
-              </button>
+          <div className="text-right flex flex-col items-end shrink-0">
+            <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
+              {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
+            </span>
+            {tier && scriptCharCount > 0 && (
+              <p className="text-[10px] text-stone-400">
+                {formatProcessingTime(estimateProcessingSeconds(tier, scriptCharCount, hasExistingScript))} processing
+              </p>
             )}
-            <div className="text-right flex flex-col items-end">
-              <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
-                {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
-              </span>
-              {estimate.estimated_cost_usd > 0 && (
-                <p className="text-[10px] text-stone-400">for this paper</p>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -334,6 +338,7 @@ export default function PremiumNarrationModal({
   const [loading, setLoading] = useState(true);
   const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>([]);
   const [estimateError, setEstimateError] = useState(false);
+  const [scriptCharCount, setScriptCharCount] = useState(0);
 
   // Voice sample playback (independent of global media player)
   const sampleAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -432,6 +437,7 @@ export default function PremiumNarrationModal({
         const opts = (resp.options ?? []).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
         setEstimates(opts);
         setHasExistingScript(resp.has_existing_script);
+        setScriptCharCount(resp.word_count || 0);
         setLoading(false);
       })
       .catch(() => {
@@ -671,6 +677,8 @@ export default function PremiumNarrationModal({
                         isPlayingSample={playingSampleId === est.option_id}
                         onToggleSample={() => toggleSample(est.option_id)}
                         hasSample={availableSamples.has(est.option_id)}
+                        scriptCharCount={scriptCharCount}
+                        hasExistingScript={hasExistingScript}
                       />
                     );
                   })}

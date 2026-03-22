@@ -23,6 +23,8 @@ export interface VoiceTier {
   rank: number;
   /** Number of plus icons (0 = base, 1–3 = upgrade tiers) */
   plusCount: 0 | 1 | 2 | 3;
+  /** Estimated TTS processing seconds per 1K characters (for time estimates in UI) */
+  secsPerKChar: number;
 }
 
 export const VOICE_TIERS: Record<string, VoiceTier> = {
@@ -34,6 +36,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     voiceName: "Will",
     rank: 4,
     plusCount: 3,
+    secsPerKChar: 3.0,    // 15s per 5000-char chunk
   },
   plus2: {
     id: "plus2",
@@ -43,6 +46,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     voiceName: "Onyx",
     rank: 3,
     plusCount: 2,
+    secsPerKChar: 10.0,   // 20s per 2000-char chunk
   },
   plus1: {
     id: "plus1",
@@ -52,6 +56,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     voiceName: "Eric",
     rank: 2,
     plusCount: 1,
+    secsPerKChar: 1.25,   // 5s per 4000-char chunk
   },
   base: {
     id: "base",
@@ -61,6 +66,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     voiceName: "Aria",
     rank: 1,
     plusCount: 0,
+    secsPerKChar: 1.25,
   },
 };
 
@@ -127,4 +133,35 @@ export function getBestTierFromVersions(
  */
 export function formatTierForReview(tier: VoiceTier): string {
   return `${tier.label} (${tier.providerName})`;
+}
+
+/**
+ * Estimate total processing time for a premium narration.
+ * Includes LLM script generation (~4s per 1K chars) + TTS synthesis.
+ * LLM typically expands script by ~33%, so TTS gets ~1.33x the char count.
+ *
+ * Returns seconds. Pass `hasExistingScript=true` to skip LLM time.
+ */
+export function estimateProcessingSeconds(
+  tier: VoiceTier,
+  scriptCharCount: number,
+  hasExistingScript: boolean = false,
+): number {
+  const LLM_SECS_PER_K_CHAR = 4; // ~1 token per 4 chars, ~60 tok/s
+  const LLM_EXPANSION = 1.33;    // LLM scripts are ~33% longer
+
+  const llmTime = hasExistingScript ? 0 : scriptCharCount * LLM_SECS_PER_K_CHAR / 1000;
+  const ttsCharCount = scriptCharCount * LLM_EXPANSION;
+  const ttsTime = ttsCharCount * tier.secsPerKChar / 1000;
+  return Math.round(llmTime + ttsTime);
+}
+
+/**
+ * Format seconds as "~Xm Ys" for display.
+ */
+export function formatProcessingTime(seconds: number): string {
+  if (seconds < 60) return `~${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `~${m}m${s}s` : `~${m}m`;
 }
