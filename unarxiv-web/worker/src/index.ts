@@ -939,13 +939,16 @@ async function handleNarratePremium(
         llm_provider: llmProvider,
         llm_api_key: llmApiKey,
         llm_model: llmModel,
-        tts_provider: ttsProvider,
-        tts_api_key: ttsApiKey,
-        tts_model: ttsModel,
+        tts_provider: ttsProvider ?? "free",
+        tts_api_key: ttsApiKey ?? "",
+        tts_model: ttsModel ?? "",
         source_preference: "tex",
-        existing_script: existingScript,
         _secret: env.MODAL_WEBHOOK_SECRET,
       };
+      // Only include existing_script when we actually have one (avoids sending null)
+      if (existingScript) {
+        payload.existing_script = existingScript;
+      }
       // Use dedicated premium endpoint — derive from standard URL if not set
       const premiumUrl = env.MODAL_PREMIUM_FUNCTION_URL
         || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
