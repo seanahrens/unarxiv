@@ -1,12 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { knownCompleteId, API_BASE } from "../helpers/fixtures";
+import { knownCompleteId, API_BASE, DOWNLOAD_PDF, DOWNLOAD_AUDIO } from "../helpers/fixtures";
 import { openDropdown } from "../helpers/page-actions";
-
-/**
- * Selectors — prefer data-testid (deployed), fall back to text for pre-deploy runs.
- */
-const DOWNLOAD_PDF = '[data-testid="download-pdf"], button:has-text("Download PDF")';
-const DOWNLOAD_AUDIO = '[data-testid="download-audio"], button:has-text("Download Audio")';
 
 test.describe("Downloads", () => {
   test("download dropdown shows PDF and audio options", async ({ page }) => {
