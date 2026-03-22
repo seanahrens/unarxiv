@@ -639,27 +639,33 @@ export default function PremiumNarrationModal({
               <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 space-y-2">
                 {(() => {
                   const t = VOICE_TIERS[selectedEstimate.option_id];
+                  const desc = t?.description ?? selectedEstimate.display_name;
+                  const dotIdx = desc.indexOf(".");
+                  const leadPhrase = dotIdx >= 0 ? desc.slice(0, dotIdx + 1) : desc;
+                  const rest = dotIdx >= 0 ? desc.slice(dotIdx + 1).trim() : "";
                   return (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <PlusIcons count={t?.plusCount ?? 0} size={12} />
-                        <span className="text-sm font-semibold text-stone-800">{t?.label ?? selectedEstimate.display_name}</span>
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <PlusIcons count={t?.plusCount ?? 0} size={12} />
+                          <span className="text-sm font-semibold text-stone-800">{leadPhrase}</span>
+                        </div>
+                        <span className="text-xs text-stone-400">{t?.providerName ?? ""}</span>
                       </div>
-                      <span className="text-xs text-stone-400">{t?.providerName ?? ""}</span>
-                    </div>
+                      {rest && <p className="text-xs text-stone-500">{rest}</p>}
+                    </>
                   );
                 })()}
-                <p className="text-xs text-stone-500">{selectedEstimate.tagline}</p>
                 <div className="flex items-center justify-between pt-1 border-t border-stone-200 mt-1">
                   <span className="text-xs text-stone-500">Estimated cost</span>
                   <span className="text-sm font-semibold text-stone-700">
                     {totalCost === 0 ? "Free" : `~$${totalCost?.toFixed(2)}`}
                   </span>
                 </div>
-                <p className="text-[10px] text-stone-400 text-center mt-1">
-                  Estimates are approximate — actual costs depend on the AI-generated script length.
-                </p>
               </div>
+              <p className="text-[10px] text-stone-400 text-center italic">
+                Estimates are approximate — actual costs depend on the AI-generated script length.
+              </p>
 
               <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
                 <p className="text-xs text-stone-500 leading-snug">
@@ -747,7 +753,7 @@ export default function PremiumNarrationModal({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                 )}
-                Start Upgrade Narration
+                Start Narration Upgrade
               </button>
             </>
           )}
