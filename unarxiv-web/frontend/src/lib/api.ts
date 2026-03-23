@@ -570,6 +570,10 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
     options: { id: string; tts_provider: string | null; total_cost: number; llm_cost: number; tts_cost: number; quality_rank: number }[];
   };
 
+  if (!raw.estimated || !raw.options) {
+    return { paper_id: paperId, word_count: 0, options: [], has_existing_script: false };
+  }
+
   // Aggregate raw options by TTS provider tier, picking cheapest LLM for each
   const byTier = new Map<string, { total: number; llm: number; tts: number }>();
   for (const opt of raw.options) {
