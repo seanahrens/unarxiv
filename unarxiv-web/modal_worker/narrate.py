@@ -901,6 +901,7 @@ _training_image = (
     secrets=[modal.Secret.from_name("unarxiv-secrets")],
     schedule=modal.Cron("0 9 * * 1"),  # Every Monday at 9am UTC
     timeout=300,
+    retries=2,
 )
 def train_cost_model():
     """Weekly cost model training: fetches narration data from D1, trains
