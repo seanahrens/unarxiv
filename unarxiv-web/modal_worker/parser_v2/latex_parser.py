@@ -78,6 +78,7 @@ def _process_latex(latex: str, source_stem: str = "") -> tuple[str, dict]:
     latex = _expand_simple_macros(latex)
     meta = _extract_metadata(latex, source_stem)
     body = _extract_body(latex)
+    body = _strip_pre_abstract_content(body)
     body = _strip_non_prose(body)
     body = _convert_structure_to_speech(body)
     body = _normalize_paragraphs(body)
@@ -287,6 +288,30 @@ def _extract_body(latex: str) -> str:
     return body.group(1) if body else latex
 
 
+def _strip_pre_abstract_content(body: str) -> str:
+    """Strip boilerplate that appears before the abstract or first section.
+
+    Many papers include copyright notices, permission blocks, or institutional
+    headers in a \\begin{center}...\\end{center} block between \\maketitle and
+    \\begin{abstract}.  These are not part of the paper body and should be
+    excluded from narration.
+    """
+    # Find the start of the abstract or first section — whichever comes first
+    abstract_m = re.search(r"\\begin\{abstract\}", body)
+    section_m = re.search(r"\\(?:sub)*section\*?\{", body)
+
+    first_body = None
+    if abstract_m:
+        first_body = abstract_m.start()
+    if section_m and (first_body is None or section_m.start() < first_body):
+        first_body = section_m.start()
+
+    # Only strip if there is substantial pre-content (>50 chars) to remove
+    if first_body is not None and first_body > 50:
+        return body[first_body:]
+    return body
+
+
 # ---------------------------------------------------------------------------
 # Non-prose stripping (figures, tables, bibliography, etc.)
 # ---------------------------------------------------------------------------
@@ -405,6 +430,11 @@ def _strip_non_prose(text: str) -> str:
         r"columnwidth|textwidth|linewidth)[^\n]*\n?",
         "", text,
     )
+    # Remove table-of-contents and list-of-figures update commands
+    # (e.g. \addtocontents{toc}{...} — first arg "toc"/"lof" would otherwise leak)
+    text = re.sub(r"\\addtocontents\{[^}]*\}\{[^}]*\}", "", text)
+    text = re.sub(r"\\addcontentsline\{[^}]*\}\{[^}]*\}\{[^}]*\}", "", text)
+    text = re.sub(r"\\contentsline\{[^}]*\}\{[^}]*\}\{[^}]*\}", "", text)
 
     return text
 
@@ -703,6 +733,8 @@ def _normalize_text(text: str) -> str:
     # Clean up orphaned reference phrases pointing at nothing
     # "as shown in." → "as shown."
     text = re.sub(r"\b(shown|depicted|illustrated|described|defined|discussed|presented|listed|given|reported|displayed|summarized|outlined)\s+in\s*([.,;)])", r"\1\2", text)
+    # "As shown, the model..." where the figure was stripped — drop the dangling opener
+    text = re.sub(r"\b[Aa]s (shown|depicted|illustrated|detailed),\s+", "", text)
     text = re.sub(r"\bsee\s*\.", ".", text)
     text = re.sub(r"\(see\s*\)", "", text)
     text = re.sub(r"such as\s*\.", ".", text)

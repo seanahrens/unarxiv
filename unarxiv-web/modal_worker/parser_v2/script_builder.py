@@ -59,14 +59,18 @@ def _ensure_period(s: str) -> str:
 
 
 def _format_authors(authors: list[str]) -> str:
+    # Strip trailing periods from author names to prevent double-period ("et al..")
+    def _clean(name: str) -> str:
+        return name.rstrip(".")
+
     if len(authors) == 1:
-        return f"By {authors[0]}."
+        return f"By {_clean(authors[0])}."
     elif len(authors) == 2:
-        return f"By {authors[0]} and {authors[1]}."
+        return f"By {_clean(authors[0])} and {_clean(authors[1])}."
     elif len(authors) == 3:
-        return f"By {authors[0]}, {authors[1]}, and {authors[2]}."
+        return f"By {_clean(authors[0])}, {_clean(authors[1])}, and {_clean(authors[2])}."
     else:
-        first_three = f"{authors[0]}, {authors[1]}, {authors[2]}"
+        first_three = f"{_clean(authors[0])}, {_clean(authors[1])}, {_clean(authors[2])}"
         remaining = len(authors) - 3
         return f"By {first_three}, and {remaining} more author{'s' if remaining != 1 else ''}."
 

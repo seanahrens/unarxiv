@@ -1,0 +1,154 @@
+HiMu: Hierarchical Multimodal Frame Selection for Long Video Question Answering.
+
+By Authors.
+
+Published on March 24, 2026.
+
+Abstract.
+
+Long-form video question answering requires reasoning over extended temporal contexts, making frame selection critical for large vision-language models (LVLMs) bound by finite context windows. Existing methods face a sharp trade-off: similarity-based selectors are fast but collapse compositional queries into a single dense vector, losing sub-event ordering and cross-modal bindings; agent-based methods recover this structure through iterative LVLM inference, but at prohibitive cost. We introduce HiMu, a training-free framework that bridges this gap. A single text-only LLM call decomposes the query into a hierarchical logic tree whose leaves are atomic predicates, each routed to a lightweight expert spanning vision (CLIP, open-vocabulary detection, OCR) and audio (ASR, CLAP). The resulting signals are normalized, temporally smoothed to align different modalities, and composed bottom-up through fuzzy-logic operators that enforce temporal sequencing and adjacency, producing a continuous satisfaction curve. Evaluations on Video-MME, LongVideoBench and HERBench-Lite show that HiMu advances the efficiency–accuracy Pareto front: at 16 frames with Qwen3-VL 8B it outperforms all competing selectors, and with GPT-4o it surpasses agentic systems operating at 32–512 frames while requiring roughly 10× fewer FLOPs.
+
+toc 
+
+Introduction.
+
+Long-form video question answering (VideoQA) requires reasoning over extended temporal horizons. Due to the finite context windows of current large vision-language models (LVLMs) , processing entire videos at native frame rates is computationally infeasible. Consequently, frame selection becomes a critical bottleneck: a model, regardless of its expressiveness, can only answer correctly if it is provided with the relevant visual evidence.
+
+Existing frame selection strategies face a sharp trade-off between efficiency and reasoning depth (Fig , Fig , Left and Right). Similarity-based approaches typically score frames against the query using a frozen vision-language encoder . While computationally lightweight, these methods collapse long and compositional queries into a single dense vector, forcing distinct temporal and semantic constraints to be evaluated through a single global similarity score. For instance, answering "After the narrator mentions the chemical reaction, what happens to the beaker on the left?" inherently requires reasoning across both the audio track (the narration) and the visual track (the beaker's state). By definition, a single-modality vision-language encoder is blind to auditory events, making it fundamentally impossible to capture such cross-modal temporal dependencies within a monolithic similarity score.
+
+Conversely, agent-based methods and per-frame scoring techniques achieve compositional understanding through iterative search and multi-round LVLM inference. However, this accuracy comes at a prohibitive computational cost, often incurring latencies 10-100 times higher than similarity-based selectors . This dichotomy suggests that sophisticated compositional reasoning is intrinsically linked to expensive iterative inference.
+
+We challenge this assumption with HiMu (Hierarchical Multimodal Frame Selection), a framework demonstrating that compositional structure can be resolved efficiently prior to any LVLM evaluation (Fig , center). The core insight is that complex natural language queries inherently decompose into structured logical trees. HiMu leverages a single, text-only LLM call to parse the input query into a hierarchical tree of atomic predicates. Each leaf node is routed to a lightweight, modality-specific expert. These localized signals are then evaluated over the video timeline and composed bottom-up using continuous fuzzy-logic operators, yielding a per-frame satisfaction curve T(t) .
+
+HiMu is a training-free framework and can be seamlessly integrated as a plug-and-play module for any LVLM. By caching expert features per video, the per-query overhead is reduced to a lightweight tree evaluation and subsequent signal post-processing, entirely eliminating the need for iterative visual token processing during selection. Consequently, as shown, HiMu redefines the efficiency-accuracy Pareto front on Video-MME. It achieves 78.18 percent accuracy, getting closer to the performance of state-of-the-art agentic models while requiring approximately 10 times fewer FLOPs, and consistently outperforms similarity-based selectors with only a modest increase in computational cost.
+
+A neuro-symbolic framework that decomposes video queries into hierarchical logic trees, routing atomic predicates to modality-specific experts and composing their signals via fuzzy-logic operators for precise temporal grounding. A training-free, single-shot pipeline that replaces iterative LVLM calls with a single text-only LLM planning step and cached expert evaluation, yielding negligible per-query latency. A redefined efficiency-accuracy Pareto front on Video-MME , LongVideoBench , and HERBench , demonstrating that HiMu comprehensively bridges the gap between fast similarity methods and expensive agentic approaches under constrained frame budgets.
+
+Related Work.
+
+Frame selection methods for long-video QA span a spectrum from fast but shallow similarity scoring to accurate but expensive multi-call reasoning. We organize prior work along this efficiency to reasoning axis, and separately review token-compression methods that address a complementary bottleneck.
+
+Similarity-based frame selection. 
+The most efficient selectors score each frame against the query through a frozen vision-language encoder. BOLT pairs query-frame similarity (for example, CLIP / SigLIP ) with inverse-transform sampling to prioritize relevant frames while preserving selection diversity; AKS recursively splits the timeline, allocating more keyframes to high-scoring segments; and MDP cubed formulates selection as a determinantal point process solved via dynamic programming, capturing relevance, diversity, and sequentiality. These methods add minimal overhead, yet they collapse multi-clause queries into a single dense representation, offering limited capacity to preserve sub-event ordering or cross-modal bindings, for example, a query like "What does the chef add right after mentioning the secret spice?" requires distinguishing a spoken reference from a visual action and enforcing their temporal adjacency, which can be largely lost in a single embedding. Learning-based variants (for example, Frame-Voyager , FFS , MLLM-FS , VidF4 ) train scoring or policy modules for richer signals, but require task-specific supervision. Most selectors in this family compute scores from visual-only features; audio, when available, is typically consumed downstream rather than used to drive selection.
+
+Structured and logic-based selection. 
+A second line of work injects explicit relational or logical operators into selection. T* (detector-based variant) casts temporal search as spatial search, using YOLO-World to iteratively zoom into relevant frames; VSLS defines four logical dependencies (spatial co-occurrence, temporal proximity, attribute dependency, causal order) and iteratively refines sampling; and NeuS-QA translates queries into a temporal-logic specification and constructs a video automaton by scoring atomic propositions at the frame level with a VLM, which can be costly on long videos due to dense proposition grounding. These are meaningful steps toward compositional reasoning, yet VSLS uses four predefined relations rather than a general nested temporal-logic language, limiting expressivity for interleaved constraints ( (A after B) AND (C during A)); T* performs iterative zooming but does not offer a general compositional program over sub-events; and NeuS-QA's dense grounding cost can approach that of multi-call methods. HiMu instead supports nested structure via a hierarchical tree and grounds leaves through cached lightweight experts (for example, ASR, CLAP, object detector), avoiding LVLM calls during selection.
+
+Multi-call reasoning. 
+Multi-call systems trade compute for depth, either through LLM-agent planners that iteratively call tools, or LVLM-in-the-loop selectors that repeatedly score within the selection loop. VideoAgent constructs a structured unified memory with tool calls for segment localization; LVAgent coordinates MLLMs through multi-round discussion; LongVideoAgent trains a master LLM with reinforcement learning for multi-step evidence gathering; and VideoTree builds a query-adaptive segment tree via coarse-to-fine keyframe extraction. VideoZoomer performs multi-turn temporal zooming via iterative tool calling, and SeViLA and A.I.R. invoke a strong VLM within the selection loop for localization and iterative refinement, at substantially higher cost . These approaches fundamentally couple compositional reasoning to iterative LVLM inference.
+
+Token compression and pruning. 
+Orthogonal to frame selection, token-reduction methods decrease visual tokens per frame: LongVU applies spatiotemporal compression, while FastV prunes redundant tokens in intermediate LLM layers. These are complementary - they decide how many tokens each frame contributes, whereas HiMu decides which frames to include - and can in principle be combined to extend the effective frame budget under the same context length.
+
+HiMu addresses this gap by factoring compositional reasoning into a one-shot text-only LLM planning step and a bank of cached lightweight experts, enabling structured selection without LVLM calls during selection. Audio is comparatively underexplored as explicit selection evidence in query-aware long-video QA pipelines, which rely primarily on visual to text cues; HiMu incorporates non-speech audio via audio to text alignment signals (CLAP ) as a first-class selection modality. summarizes these distinctions.
+
+Method.
+
+Given a video V equals sub 1,v sub T sampled at a fixed rate ( 1,fps) with its audio track, a natural-language question Q (optionally with answer options), and a frame budget K , HiMu selects the K most question-relevant frames for a single downstream LVLM call. The pipeline proceeds in four stages: (i) a text-only LLM decomposes Q into a hierarchical logic tree T (Sec. ); (ii) each leaf is scored by a modality-specific expert, and the resulting signals are lightly post-processed (Sec. ); (iii) signals are composed bottom-up via fuzzy-logic operators into a per-frame satisfaction curve; and (iv) the top- K frames are selected via PASS (Sec. ). Crucially, the entire selection requires a single text-only LLM call to construct the logic tree, without incurring the latency of iterative LVLM inference calls.
+
+Neuro-Symbolic Query Decomposition.
+
+A single text-only LLM call receives Q (with answer options, if multiple-choice) and outputs a hierarchical logic tree T in structured JSON. The tree generation is a text-, text-out forward pass. The exact system prompt and the JSON schema constraint will be provided in the supplementary. The tree has two node types:
+
+Leaf nodes. 
+Each leaf specifies a modality-specific expert and a text query: equals ( expert, query) , where expert in clip, ovd, ocr, asr, clap and query is a natural-language atomic predicate ( ovd ("red car") or asr ("reaction")). The LLM routes each predicate to the best-suited expert: actions, scenes, and abstract visual concepts to clip; physical objects and people to ovd; on-screen text to ocr; spoken content to asr; environmental sounds to clap. Routing rules and worked examples are provided in the system prompt; no training is required.
+
+Internal nodes. 
+Each internal node applies a logical or temporal operator to its children. Four operators are available: And to co-occurrence: all children must be active simultaneously. Or to disjunction: at least one child must be active. Seq to temporal sequence: children are ordered chronologically. RightAfter to tight temporal adjacency: the effect immediately follows the cause.
+
+MCQ tree pattern. 
+For multiple-choice questions, the tree typically follows And( shared sub context,; Or( option sub 1, option sub n)) , factoring elements common to all options out of the Or. Each option branch is itself decomposed into expert-specific atomic predicates (see for worked examples).
+
+Multimodal Expert Signals Extraction and Processing.
+
+Leaf nodes are grouped by expert type for efficient batched inference. Each expert produces a per-frame raw relevance signal u sub i(t) in R for leaf i at every timestamp t in 1,T . Five experts span two modality categories; to our knowledge, no prior frame selector leverages audio experts, and we show their inclusion is critical for key-moment discovery.
+
+CLIP computes cosine similarity between frame and text-query embeddings, mapped to ; frame embeddings are extracted once and shared across all clip leaves. OVD runs open-vocabulary object detection, returning the maximum detection confidence for the queried class per frame; query variations (singular/plural, with/without adjectives) are generated for robust matching. OCR performs on-screen text recognition with substring and Levenshtein-distance fuzzy matching.
+
+ASR transcribes the audio track once into timestamped word segments; queries are matched via exact substring matching (score equals 1.0 ) or, failing that, semantic similarity via a sentence-embedding model, with segment scores mapped to frames by temporal-overlap weighting. CLAP computes cosine similarity between frame-aligned audio chunks and the text query for non-speech sounds (environmental sounds, effects, music).
+
+CLIP, ASR, CLAP, and OCR features are query-independent and cached per video; only OVD is query-conditioned and re-run per query. Unused experts are skipped entirely.
+
+Normalization. 
+Raw expert scores live on incomparable scales: CLIP cosine similarities, OVD confidences, and binary ASR matches, each occupy different ranges with different noise profiles. Each signal u sub i is mapped to (0,1) via:
+
+where med( times ) and MAD( times ) denote the median and Median Absolute Deviation, sigma ( times ) is the sigmoid, gamma controls sharpness, and delta is a small stabilizer. Median/MAD provides robustness to the heavy-tailed score distributions typical of detection and retrieval models, and the sigmoid yields a smooth mapping compatible with fuzzy logic. When multiple leaves share the same expert, statistics are computed jointly from the concatenation of all their signals, preserving relative magnitude differences—otherwise, independent normalization would stretch both a high-confidence detection (for example, 0.9 for 'Man') and a low-confidence one (0.2 for 'Car') to , falsely implying equal relevance and undermining the AND operator's ability to down-weight weakly supported predicates.
+
+Bandwidth-matched smoothing. 
+After normalization, each signal is convolved with a modality-specific Gaussian kernel:
+
+where G( Delta ; sigma ) equals 1the square root of 2 pi, sigma e to the power of of ! minus Delta squared/2 sigma squared and m equals expert sub i . Visual signals (CLIP, OVD, OCR) are frame-precise and receive narrow kernels; ASR and CLAP have coarser temporal resolution and receive wider kernels. This resolves cross-modal asynchrony by ensuring that peaks from different modalities overlap temporally, preventing missed conjunctions at the composition stage.
+
+Fuzzy Logic Composition.
+
+Bottom-up tree evaluation. 
+The logic tree T is evaluated bottom-up: leaf nodes return their processed signals u sub i(t) ; internal nodes apply continuous fuzzy-logic operators.
+
+ And requires all children to be simultaneously active; Or is satisfied when at least one child is active.
+
+Given children (u sub 1,u sub L) in chronological order, this operator verifies that the events occur in the specified sequence and selects frames from every step:
+
+where H sub j(t) equals max of sub s less than t, u sub j(s) is the has-occurred signal (running max up to t ) and F sub j(t) equals max of sub s greater than t, u sub j(s) is the yet-to-occur signal (running max after t ). Intuitively, a step can only activate at time t if every earlier step has already peaked and every later step will still peak in the future. The outer max lets each step contribute its own peak, so frames from all events are selected to not just the final one.
+
+For cause to effect pairs that should happen close together in time, this operator scores a frame highly when the other event occurred nearby, with the score decaying exponentially with temporal distance (controlled by kappa ):
+
+The two terms ensure frames are selected from both the cause and the effect side: S_ effect scores effect frames weighted by how recently the cause fired, while S_ cause does the reverse.
+
+The root of T produces the satisfaction curve T(t) , a per-frame composite score reflecting how well the entire logic tree is satisfied at each timestamp.
+
+PASS: Peak-And-Spread Selection. 
+Naïvely selecting the top- K frames of T(t) often over-concentrates on a single high-scoring segment, missing other relevant events and providing little short-term motion context. We therefore introduce PASS (Peak-And-Spread Selection), a peaked selection strategy with local temporal spread. We first select N sub p local maxima of T(t) , enforcing a minimum inter-peak distance of Delta . This prevents redundant peaks while avoiding an artificial requirement to "cover" the full video timeline, which could otherwise force selecting peaks in low-satisfaction regions. Each peak is then augmented with its N sub n highest-scoring neighboring frames within a local temporal window of size w centered at the peak. This captures short-term motion around each event while scaling the local context with the available budget. Finally, the remaining budget is filled greedily by selecting the highest-scoring frames from T(t) among those not yet selected, allowing additional allocation to the most relevant peaks when warranted. Each selected frame v sub t star carries its per-leaf scores u sub i(t star) , providing an interpretable trace of which experts and predicates drove its selection.
+
+Experiments.
+
+We evaluate HiMu through the following research questions: (Q1) Does HiMu yield higher accuracy than existing similarity-based and iterative selectors when strictly constrained to the same minimal frame budget? (Q2) Can HiMu generalize as a plug-and-play module to improve diverse LVLMs, and how does its low-frame regime (16 frames) compare to multi-round methods processing heavily expanded contexts? (Q3) What is the contribution of each component of HiMu to the hierarchical composition and individual expert modalities? (Q4) How does HiMu scale with the frame budget? (Q5) What is HiMu's computational efficiency relative to existing methods?
+
+Setup.
+
+We evaluate HiMu on three benchmarks spanning distinct modality regimes and report accuracy, component ablations, and efficiency.
+
+Benchmarks. 
+We evaluated HiMu on three complementary benchmarks that cover audio, subtitles-as-speech, and visual-only settings. Video-MME : 900 videos with 2,700 expert-annotated multiple-choice questions spanning 6 visual domains and 30 subfields, with durations from 11,s to 1,h split into Short ( less than 2,min), Medium (4 to 15,min), and Long (30 to 60,min) subsets. Its audio tracks and explicit duration splits make it ideal for systematically evaluating HiMu's multimodal expert pathways across temporal scales. LongVideoBench _ val : the validation split ( .17ex approximately 1.3K questions) of LongVideoBench, spanning 17 categories. Each question includes a referring query that targets specific moments, making it well-suited for evaluating moment-level retrieval and cross-modal reasoning. Videos are accompanied by subtitles (original or Whisper-transcribed), which we treat as a proxy for speech content when evaluating speech-driven selection. HERBench-Lite : a 2K-question subset of HERBench-Lite spanning 12 highly compositional tasks that enforce multi-evidence integration ( m greater than or equal to 3 non-overlapping cues), selected for its challenging reasoning demands. HERBench-Lite contains neither audio nor subtitles, providing a purely visual evaluation setting.
+
+Implementation details. 
+All experiments are conducted on 8 times NVIDIA RTX Pro 6000 GPUs. Unless stated otherwise, we select K equals 16 frames at 1,fps sampling. HiMu is entirely training-free: the logic tree is constructed by the same LLM that serves as the downstream answering model. The default expert backbones are CLIP-dfn , YOLO-World v2 (OVD), docTR (OCR), faster-whisper large-v3-turbo (ASR), and LAION CLAP ; features (except OVD) are extracted once per video and cached. The PASS selection strategy (Sec. ) partitions the budget between peak-centered clusters that enforce temporal diversity and greedy satisfaction-based filling for the most relevant events. All hyperparameter values ( gamma , kappa , per-modality smoothing bandwidths sigma ), exact PASS parameters, and a sensitivity analysis are provided in the supplementary material.
+
+Baselines. 
+We compare HiMu against two classes of baselines to evaluate both its direct algorithmic advantage and its standing in the broader literature. First, for a strictly controlled apples-to-apples comparison, we fix the backbone (Qwen3-VL-8B ) and the frame budget ( K equals 16 ). Here, we compare against Uniform Sampling (the default strategy of most LVLMs) and three state-of-the-art selectors: two efficient similarity-based methods (BOLT and AKS ), and an iterative detector-based approach (T* ). Because many questions in Video-MME and LongVideoBench _ val require audio to be solvable, every method in this controlled group feeds its K selected frames together with the full video subtitles, the question, and the candidates to the same LVLM, ensuring the selection strategy is the only variable. Second, to contextualize HiMu against computationally heavy systems, we compare against the published performance of state-of-the-art agentic and multi-round methods (VideoZoomer , VideoChat-A1 , and VSLS ) paired with comparable backbones (Qwen2.5-VL 7B and GPT-4o ). Crucially, this places HiMu at a severe numerical disadvantage: while we restrict HiMu to its standard 16 frames, these baselines consume anywhere from 32 to 512 frames per query.
+
+Main Results.
+
+To evaluate effectiveness against frame selection baselines and generalization across LVLMs, reports accuracy on Video-MME , LongVideoBench _ val , and HERBench-Lite .
+
+(Q1) Controlled baseline comparison. Under the strict K equals 16 budget with Qwen3-VL-8B, HiMu outperforms all competing selection strategies across every benchmark. The advantage is most pronounced on LongVideoBench (+6.70pp over T*), where resolving moment-level, cross-modal referring queries directly exposes the limits of flat similarity scoring. On Video-MME, HiMu maintains robust performance across all duration splits. On HERBench-Lite, while absolute margins are compressed by the inherent "fusion deficit" of current LVLMs - an inability to integrate multiple non-overlapping evidence cues even under oracle conditions - HiMu still establishes a new state-of-the-art (43.22 percent), proving that precise evidence retrieval remains valuable even when downstream reasoning is bottlenecked.
+
+(Q2) Generalization and asymmetric budget comparisons. HiMu acts as a universal plug-and-play enhancer, consistently improving over uniform sampling across six diverse LVLMs without any model-specific tuning. More importantly, HiMu achieves these gains while operating under a severe frame-budget handicap compared to existing literature. When paired with Qwen2.5-VL 7B, HiMu at just 16 frames (69.70 percent) comfortably outperforms both VideoZoomer operating at 128 frames (62.57 percent) and VideoChat-A1 at 512 frames (65.20 percent). We observe an even starker contrast with GPT-4o: HiMu using 16 frames reaches 78.18 percent on Video-MME, surpassing VSLS (67.09 percent with 32 frames) and VideoChat-A1 (62.99 percent with 384 frames). This performance difference suggests a key takeaway: retrieving a small number of precisely localized, compositionally verified frames can be more effective than expanding the LVLM context window with hundreds of densely sampled frames.
+
+Component Analysis and Frame Budget.
+
+To isolate the sources of HiMu's gains, we ablate both the composition mechanism and individual expert modalities on Video-MME ( Left).
+
+We first replace the hierarchical logic-tree composition with a Flat Fusion baseline that sums leaf scores without tree structure or fuzzy-logic operators, directly isolating the contribution of compositional structure over multi-signal aggregation alone. We then conduct a leave-one-out study, removing each expert in turn.
+
+Compositional structure is the single largest contributor to HiMu's accuracy. Replacing the logic tree with Flat Fusion yields the steepest overall drop ( minus 5.49 pp), larger than removing any individual expert—demonstrating that how signals are composed matters more than which signals are present. Among individual experts, removing ASR causes the largest overall degradation ( minus 1.99 pp), followed by CLIP ( minus 1.43 pp)—a result that directly validates our claim that audio is a first-class selection modality, not merely a downstream supplement. Notably, ASR and CLIP together account for the dominant share of per-expert gains, with ASR's effect concentrated on Short videos where spoken cues are densely informative. CLAP, OVD, and OCR contribute smaller but consistent improvements ( minus 1.00 , minus 0.76 , and minus 1.04 pp respectively), confirming that each modality covers a distinct slice of query-relevant evidence.
+
+In the supplementary material, we provide a sensitivity analysis that independently isolates three factors: hyperparameter values, the choice of expert backbone (swapping each expert's underlying model separately), and the backbone LLM used for tree parsing — evaluating the effect of each on downstream VideoQA accuracy.
+
+We vary K in 8, 16, 32, 64 for both HiMu and uniform sampling ( Right). HiMu consistently outperforms uniform sampling at every budget level, with the gap peaking at K equals 8 to precisely where the cost of selecting uninformative frames is highest. Most strikingly, HiMu at K equals 16 exceeds uniform sampling at K equals 64 , a 4 times reduction in the required frame budget for comparable accuracy. This result directly quantifies the waste in uniform sampling: the majority of its frames fall in query-irrelevant segments that HiMu's compositional selection avoids entirely. The gap remains substantial even at K equals 64 , confirming that query-aware selection continues to add value well beyond tight-budget regimes.
+
+Efficiency Analysis.
+
+While HiMu requires significantly fewer frames to reach high accuracy, this advantage is only meaningful if the selection process itself is computationally lightweight. maps the accuracy-compute Pareto front on Video-MME, revealing a sharp trade-off in prior work. Similarity-based selectors operate with minimal overhead but typically plateau at lower accuracies. Conversely, agentic and per-frame methods achieve strong performance but incur substantial latency (often 3 - 100 times higher) due to their reliance on iterative LVLM calls.
+
+HiMu advances this Pareto front by decoupling compositional reasoning from LVLM inference. While evaluating an initial query incurs a modest cost to extract expert signals, this processing is performed only once per video. Crucially, because these features are cached, the selection latency for any subsequent query drops to a mere fraction of the initial overhead. This substantial reduction in amortized cost makes HiMu highly practical for real-world, multi-query applications. We provide a comprehensive, quantitative breakdown of these end-to-end execution times in the supplementary material. Ultimately, HiMu demonstrates that effective frame selection does not necessitate costly agentic loops.
+
+Discussion.
+
+HiMu demonstrates that compositional frame selection need not require iterative LVLM inference. By decomposing queries into hierarchical logic trees evaluated by modality-specific experts - including, for the first time, audio - it identifies the most informative frames in a single shot, outperforming similarity-based selectors and matching or exceeding agent-based systems at a fraction of their cost across all three benchmarks.
+
+The ablations pinpoint why existing selectors fall short. Replacing the logic tree with a flat signal sum produces the largest accuracy drop, confirming that compositional structure is the missing capability. The frame-budget analysis reinforces this: HiMu at K equals 16 exceeds uniform sampling at K equals 64 , implying that most uniformly sampled frames land in query-irrelevant segments. The bottleneck in frame selection, then, lies more in how queries are represented, rather than in how many model calls are made.
+
+Limitations. 
+Despite its unique capabilities, HiMu has several limitations. First, it introduces higher latency than similarity-based methods due to the expert extraction stage, although amortization over multiple queries substantially mitigates this cost. Second, the pipeline heavily relies on the LLM parser producing faithful decompositions; malformed or overly shallow trees can misroute predicates and degrade selection quality. Finally, the ASR expert is bounded by the language coverage of the underlying speech model, limiting effectiveness on multilingual or low-resource audio tracks.
+
+Thanks for listening. This has been an audio narration of HiMu: Hierarchical Multimodal Frame Selection for Long Video Question Answering. By Authors. Published on March 24, 2026. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
