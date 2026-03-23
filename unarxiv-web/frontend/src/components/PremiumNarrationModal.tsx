@@ -381,10 +381,14 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
     setDrafts((d) => { const n = { ...d }; delete n[provider]; return n; });
     setModified((m) => { const s = new Set(m); s.delete(provider); return s; });
     setTestStates((s) => { const n = { ...s }; delete n[provider]; return n; });
-    // If this was the default scripting provider, clear it
+    // If this was the default scripting provider, reassign to next available
     if (defaultProv === provider) {
-      setDefaultProv(null);
-      setDefaultScriptingProvider(null);
+      const fallback = KEY_MGMT_PROVIDERS.find(
+        (p) => p.isScriptingCapable && p.id !== provider && hasKeyForProvider(p.id)
+      );
+      const next = fallback?.id ?? null;
+      setDefaultProv(next);
+      setDefaultScriptingProvider(next);
     }
   };
 
@@ -423,6 +427,17 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
         failed.push(KEY_MGMT_PROVIDERS.find((p) => p.id === provider)?.label ?? provider);
       }
     }
+    // If the current scripting default no longer has a valid stored key, reassign
+    const currentDefault = getDefaultScriptingProvider();
+    if (currentDefault && !hasKeyForProvider(currentDefault as PremiumProvider)) {
+      const fallback = KEY_MGMT_PROVIDERS.find(
+        (p) => p.isScriptingCapable && hasKeyForProvider(p.id)
+      );
+      const next = fallback?.id ?? null;
+      setDefaultProv(next);
+      setDefaultScriptingProvider(next);
+    }
+
     setSaving(false);
     if (failed.length > 0) {
       setSaveError(`Invalid key for ${failed.join(", ")} — existing key unchanged.`);
@@ -454,16 +469,20 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
             <div className="flex items-center justify-between pr-7">
               <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-stone-700">{prov.label}</label>
-                {prov.isScriptingCapable && (hasKey || (isModified && draft) || defaultProv === prov.id) && (
+                {prov.isScriptingCapable && (
                   <button
                     type="button"
                     onClick={() => handleDefaultChange(prov.id)}
                     title="Choose which AI provider generates the narration script (the transcript fed to text-to-speech)"
+                    disabled={!hasKey && !(isModified && draft) && defaultProv !== prov.id}
                     className={`flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 border transition-colors ${
-                      defaultProv === prov.id
+                      !(hasKey || (isModified && draft) || defaultProv === prov.id)
+                        ? "border-transparent text-transparent pointer-events-none"
+                        : defaultProv === prov.id
                         ? "border-stone-600 bg-stone-100 text-stone-700 font-medium"
                         : "border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-600"
                     }`}
+                    aria-hidden={!(hasKey || (isModified && draft) || defaultProv === prov.id)}
                   >
                     {defaultProv === prov.id ? "✓ Scripting Default" : "Make Scripting Default"}
                   </button>
