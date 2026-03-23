@@ -221,13 +221,19 @@ function OptionCard({
             {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
           </div>
           <div className="text-right flex flex-col items-end shrink-0">
-            <span className={`text-sm font-semibold ${disabled ? "text-stone-400" : "text-stone-700"}`}>
-              {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
-            </span>
-            {tier && scriptCharCount > 0 && (
-              <p className="text-[11px] text-stone-500">
-                {formatProcessingTime(estimateProcessingSeconds(tier, scriptCharCount, hasExistingScript))} to process
-              </p>
+            {disabled ? (
+              <span className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Unlocked</span>
+            ) : (
+              <>
+                <span className="text-sm font-semibold text-stone-700">
+                  {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
+                </span>
+                {tier && scriptCharCount > 0 && (
+                  <p className="text-[11px] text-stone-500">
+                    {formatProcessingTime(estimateProcessingSeconds(tier, scriptCharCount, hasExistingScript))} to process
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
