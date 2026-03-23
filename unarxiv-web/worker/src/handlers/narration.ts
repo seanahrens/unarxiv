@@ -60,7 +60,7 @@ export async function handleNarratePaper(
     // Dispatch to Modal after responding
     const dispatch = getPaper(env.DB, id).then((p) => {
       if (p && p.status === "narrating") {
-        return dispatchToModal(env, p, "https://api.unarxiv.org");
+        return dispatchToModal(env, p, baseUrl);
       }
     });
     if (ctx) ctx.waitUntil(dispatch);
@@ -152,10 +152,9 @@ export async function recoverStalePapers(env: Env): Promise<void> {
 // ─── Narration Check ─────────────────────────────────────────────────────────
 
 export async function handleNarrationCheck(
-  request: Request,
-  env: Env
+  _request: Request,
+  _env: Env
 ): Promise<Response> {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   // Turnstile captcha disabled for now
   return json({ captcha_required: false });
 }
