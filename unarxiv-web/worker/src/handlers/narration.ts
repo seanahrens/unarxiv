@@ -19,6 +19,7 @@ import {
   updateScriptCharCount,
   insertNarrationVersion,
   updateBestVersionId,
+  updatePaperSourceStats,
 } from "../db";
 import { arxivSrcUrl, scrapeArxivMetadata } from "../arxiv";
 import { json, requireAdmin } from "./helpers";
@@ -422,6 +423,14 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     llm_cost?: number;
     tts_cost?: number;
     script_char_count?: number;
+    // Track 1: source stats for cost estimation
+    tar_bytes?: number;
+    latex_char_count?: number;
+    figure_count?: number;
+    // Track 2: actual LLM token counts for ML model training
+    actual_input_tokens?: number;
+    actual_output_tokens?: number;
+    provider_model?: string;
     // Modal sends nested objects for premium narration callbacks
     providers?: { llm?: string; llm_model?: string; tts?: string; tts_voice?: string };
     costs?: { llm_cost_usd?: number; tts_cost_usd?: number; total_cost_usd?: number };
@@ -464,6 +473,16 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     await updateScriptCharCount(env.DB, body.arxiv_id, body.script_char_count);
   }
 
+  // Persist source stats if provided (Track 1 — free and premium narrations)
+  if (body.tar_bytes != null && body.tar_bytes > 0) {
+    await updatePaperSourceStats(
+      env.DB, body.arxiv_id,
+      body.tar_bytes,
+      body.latex_char_count ?? 0,
+      body.figure_count ?? 0,
+    );
+  }
+
   // script_ready = LLM script is done, TTS still running. Record a partial
   // narration_version with the transcript so the frontend can show it, but
   // do NOT change the paper's status — it stays "narrating".
@@ -488,6 +507,9 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       actual_cost: null,
       llm_cost: body.llm_cost ?? null,
       tts_cost: null,
+      actual_input_tokens: body.actual_input_tokens ?? null,
+      actual_output_tokens: body.actual_output_tokens ?? null,
+      provider_model: body.provider_model ?? null,
     });
     return json({ ok: true });
   }
@@ -539,6 +561,9 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       actual_cost: body.actual_cost ?? null,
       llm_cost: body.llm_cost ?? null,
       tts_cost: body.tts_cost ?? null,
+      actual_input_tokens: body.actual_input_tokens ?? null,
+      actual_output_tokens: body.actual_output_tokens ?? null,
+      provider_model: body.provider_model ?? null,
     });
 
     // Atomically upgrade best_version_id if this version is better

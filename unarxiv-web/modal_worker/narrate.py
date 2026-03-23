@@ -165,6 +165,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
     try:
         speech = None
+        _source_stats: dict = {}  # populated below when using parser_v2
 
         if mode == "narration_only":
             # --- Download existing transcript from R2 ---
@@ -299,6 +300,11 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                     source_priority=source_priority,
                 )
                 speech = parsed.speech_text
+                _source_stats = dict(
+                    tar_bytes=parsed.tar_bytes,
+                    latex_char_count=parsed.latex_char_count,
+                    figure_count=parsed.figure_count,
+                )
 
             print(f"Generated speech text ({parser_label}): {len(speech):,} chars")
 
@@ -413,6 +419,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             audio_size_bytes=file_size,
             duration_seconds=duration_seconds,
             narration_tier="base",
+            **_source_stats,
         )
         print(f"Done: {arxiv_id}")
 
@@ -646,7 +653,15 @@ def narrate_paper_premium(
                     tts_provider=tts_provider,
                     llm_provider=llm_provider if llm_result else None,
                     llm_model=llm_result.model if llm_result else None,
-                    llm_cost=llm_result.cost_usd if llm_result else 0.0)
+                    llm_cost=llm_result.cost_usd if llm_result else 0.0,
+                    # Track 1: source stats
+                    tar_bytes=parsed.tar_bytes,
+                    latex_char_count=parsed.latex_char_count,
+                    figure_count=parsed.figure_count,
+                    # Track 2: actual LLM token usage
+                    actual_input_tokens=llm_result.input_tokens if llm_result else 0,
+                    actual_output_tokens=llm_result.output_tokens if llm_result else 0,
+                    provider_model=f"{llm_result.provider}:{llm_result.model}" if llm_result else None)
 
         # ---------------------------------------------------------------
         # Stage 4: Premium TTS synthesis
@@ -697,6 +712,13 @@ def narrate_paper_premium(
                 actual_cost=llm_cost,
                 llm_cost=llm_cost,
                 tts_cost=0.0,
+                # Track 1+2
+                tar_bytes=parsed.tar_bytes,
+                latex_char_count=parsed.latex_char_count,
+                figure_count=parsed.figure_count,
+                actual_input_tokens=llm_result.input_tokens if llm_result else 0,
+                actual_output_tokens=llm_result.output_tokens if llm_result else 0,
+                provider_model=f"{llm_result.provider}:{llm_result.model}" if llm_result else None,
             )
             return
 
@@ -745,6 +767,14 @@ def narrate_paper_premium(
             tts_cost=tts_result.cost_usd,
             tts_char_count=tts_result.char_count,
             script_char_count=len(tts_text),
+            # Track 1: source stats for cost estimation
+            tar_bytes=parsed.tar_bytes,
+            latex_char_count=parsed.latex_char_count,
+            figure_count=parsed.figure_count,
+            # Track 2: actual LLM token usage for ML model training
+            actual_input_tokens=llm_result.input_tokens if llm_result else 0,
+            actual_output_tokens=llm_result.output_tokens if llm_result else 0,
+            provider_model=f"{llm_result.provider}:{llm_result.model}" if llm_result else None,
         )
         print(f"Premium narration done: {arxiv_id} (v{version_id}), total cost ${total_cost:.4f}")
 
@@ -847,3 +877,50 @@ def trigger_premium_narration(request: dict):
         "source_priority": source_priority,
         "version_id": version_id or "(auto)",
     }
+
+
+# ---------------------------------------------------------------------------
+# Cost model training — runs weekly on Modal
+# ---------------------------------------------------------------------------
+
+# The training image only needs scikit-learn + numpy (no TTS/LLM deps needed)
+_training_image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .pip_install("scikit-learn>=1.4", "numpy>=1.26")
+    # Include the training script so it can be imported/run directly
+    .add_local_file(
+        os.path.join(os.path.dirname(__file__), "../../evals/cost_model/train.py"),
+        "/app/train.py",
+        copy=True,
+    )
+)
+
+
+@app.function(
+    image=_training_image,
+    secrets=[modal.Secret.from_name("unarxiv-secrets")],
+    schedule=modal.Cron("0 9 * * 1"),  # Every Monday at 9am UTC
+    timeout=300,
+)
+def train_cost_model():
+    """Weekly cost model training: fetches narration data from D1, trains
+    per-provider linear regression models, and deploys coefficients to the
+    Worker API if they beat the current proxy formula.
+
+    Requires UNARXIV_ADMIN_PASSWORD in the unarxiv-secrets Modal secret.
+    """
+    import subprocess
+    import sys
+
+    admin_password = os.environ.get("UNARXIV_ADMIN_PASSWORD", "")
+    if not admin_password:
+        print("WARNING: UNARXIV_ADMIN_PASSWORD not set in unarxiv-secrets — skipping training")
+        return
+
+    result = subprocess.run(
+        [sys.executable, "/app/train.py", "--deploy"],
+        capture_output=False,  # let stdout/stderr flow to Modal logs
+        env={**os.environ, "UNARXIV_ADMIN_PASSWORD": admin_password},
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"train.py exited with code {result.returncode}")

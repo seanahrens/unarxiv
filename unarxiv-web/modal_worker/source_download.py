@@ -41,6 +41,18 @@ class ParseResult:
     work_dir: str = ""
     """Temporary working directory (caller should clean up)."""
 
+    # ── Source stats for cost estimation ─────────────────────────────────────
+    tar_bytes: int = 0
+    """Compressed size of the downloaded LaTeX archive in bytes."""
+
+    latex_char_count: int = 0
+    """Total character count across all .tex files in the archive.
+    Used as a proxy for LLM text-input token count (≈ chars / 4)."""
+
+    figure_count: int = 0
+    """Number of image files (PNG, JPG, PDF, EPS, SVG, etc.) in the archive.
+    Used to estimate image-input tokens for multimodal LLM calls."""
+
 
 def _safe_extractall(tf: tarfile.TarFile, path: str) -> None:
     """Extract tar archive with path traversal protection (zip slip fix)."""
@@ -86,6 +98,39 @@ def _extract_source_archive(latex_path: str, work_dir: str) -> str | None:
     except Exception as e:
         print(f"Warning: could not extract LaTeX archive: {e}")
         return None
+
+
+_FIGURE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".eps", ".svg"}
+
+
+def _collect_source_stats(latex_path: str, work_dir: str) -> tuple[int, int, int]:
+    """Return (tar_bytes, latex_char_count, figure_count) for a LaTeX archive.
+
+    - tar_bytes: compressed archive size on disk
+    - latex_char_count: sum of byte sizes of all .tex files (≈ char count for ASCII)
+    - figure_count: number of image files in the archive
+    """
+    tar_bytes = os.path.getsize(latex_path)
+    latex_char_count = 0
+    figure_count = 0
+
+    extract_dir = _extract_source_archive(latex_path, work_dir)
+    if not extract_dir:
+        return tar_bytes, 0, 0
+
+    for root, _, files in os.walk(extract_dir):
+        for fname in files:
+            ext = os.path.splitext(fname)[1].lower()
+            fpath = os.path.join(root, fname)
+            if ext == ".tex":
+                try:
+                    latex_char_count += os.path.getsize(fpath)
+                except Exception:
+                    pass
+            elif ext in _FIGURE_EXTENSIONS:
+                figure_count += 1
+
+    return tar_bytes, latex_char_count, figure_count
 
 
 def _extract_raw_latex_text(latex_path: str, work_dir: str, max_chars: int = 200_000) -> str | None:
@@ -222,6 +267,14 @@ def download_and_parse(
 
         source_path = latex_path or pdf_local_path
 
+    # Collect source stats for cost estimation (always, when LaTeX available — cheap).
+    tar_bytes = 0
+    latex_char_count = 0
+    figure_count = 0
+    if latex_path:
+        tar_bytes, latex_char_count, figure_count = _collect_source_stats(latex_path, work_dir)
+        print(f"Source stats: {tar_bytes:,} tar bytes, {latex_char_count:,} latex chars, {figure_count} figures")
+
     # Extract raw source text for LLM context (premium only).
     # Also extract the source archive to expose figures_dir for multimodal LLM calls.
     raw_source_text: str | None = None
@@ -254,4 +307,7 @@ def download_and_parse(
         raw_source_text=raw_source_text,
         figures_dir=figures_dir,
         work_dir=work_dir,
+        tar_bytes=tar_bytes,
+        latex_char_count=latex_char_count,
+        figure_count=figure_count,
     )

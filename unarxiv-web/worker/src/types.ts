@@ -30,6 +30,10 @@ export interface NarrationVersion {
   actual_cost: number | null;
   llm_cost: number | null;
   tts_cost: number | null;
+  // Track 2: actual token counts for ML cost model training
+  actual_input_tokens: number | null;
+  actual_output_tokens: number | null;
+  provider_model: string | null; // e.g. "anthropic:claude-sonnet-4-6"
   created_at: string;
 }
 
@@ -57,6 +61,10 @@ export interface Paper {
   has_low_rating: boolean;
   best_version_id: number | null;
   script_char_count: number | null;
+  // Track 1: source stats for cost estimation (populated on first narration)
+  tar_bytes: number | null;
+  latex_char_count: number | null;
+  figure_count: number | null;
   created_at: string;
   completed_at: string | null;
   updated_at: string;

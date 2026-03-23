@@ -69,6 +69,8 @@ import {
   handleAdminClearRatings,
   handleAdminHasLowRatings,
   handleAdminLists,
+  handleAdminCostTrainingData,
+  handleAdminStoreModelCoefficients,
 } from "./handlers/admin";
 import { cleanup } from "./db";
 import { curateHuggingFaceTopPapers } from "./handlers/curation";
@@ -206,6 +208,16 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "GET",
       pattern: /^\/api\/admin\/lists$/,
       handler: (req, env) => handleAdminLists(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/cost-training-data$/,
+      handler: (req, env) => handleAdminCostTrainingData(req, env),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/admin\/model-coefficients$/,
+      handler: (req, env) => handleAdminStoreModelCoefficients(req, env),
     },
     {
       method: "DELETE",

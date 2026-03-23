@@ -98,3 +98,107 @@ export async function handleAdminLists(request: Request, env: Env): Promise<Resp
     })),
   });
 }
+
+// ─── Cost model training endpoints ───────────────────────────────────────────
+
+/** GET /api/admin/cost-training-data
+ * Returns narration_versions rows joined with papers source stats.
+ * Used by the Modal cost model training function to fetch training data.
+ */
+export async function handleAdminCostTrainingData(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+
+  const rows = await env.DB
+    .prepare(`
+      SELECT
+        nv.id, nv.paper_id, nv.provider_model,
+        nv.actual_input_tokens, nv.actual_output_tokens,
+        nv.actual_cost, nv.llm_cost, nv.created_at,
+        p.latex_char_count, p.figure_count, p.tar_bytes,
+        p.script_char_count
+      FROM narration_versions nv
+      JOIN papers p ON p.id = nv.paper_id
+      WHERE nv.actual_input_tokens IS NOT NULL
+        AND nv.actual_output_tokens IS NOT NULL
+        AND nv.provider_model IS NOT NULL
+        AND p.latex_char_count IS NOT NULL
+      ORDER BY nv.created_at DESC
+    `)
+    .all<{
+      id: number; paper_id: string; provider_model: string;
+      actual_input_tokens: number; actual_output_tokens: number;
+      actual_cost: number | null; llm_cost: number | null; created_at: string;
+      latex_char_count: number; figure_count: number; tar_bytes: number;
+      script_char_count: number | null;
+    }>();
+
+  return json({ rows: rows.results, count: rows.results.length });
+}
+
+/** POST /api/admin/model-coefficients
+ * Stores trained linear regression coefficients from the Modal training function.
+ * Expects JSON body matching the model_coefficients table schema.
+ */
+export async function handleAdminStoreModelCoefficients(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+
+  let body: {
+    provider_model: string;
+    input_token_coeffs: number[];
+    input_token_intercept: number;
+    output_token_coeffs: number[];
+    output_token_intercept: number;
+    input_rmse: number;
+    output_rmse: number;
+    proxy_input_rmse: number;
+    proxy_output_rmse: number;
+    sample_count: number;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON" }, 400);
+  }
+
+  if (!body.provider_model || !Array.isArray(body.input_token_coeffs)) {
+    return json({ error: "Missing required fields" }, 400);
+  }
+
+  await env.DB
+    .prepare(`
+      INSERT INTO model_coefficients
+        (provider_model, input_token_coeffs, input_token_intercept,
+         output_token_coeffs, output_token_intercept,
+         input_rmse, output_rmse, proxy_input_rmse, proxy_output_rmse,
+         sample_count, trained_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(provider_model) DO UPDATE SET
+        input_token_coeffs     = excluded.input_token_coeffs,
+        input_token_intercept  = excluded.input_token_intercept,
+        output_token_coeffs    = excluded.output_token_coeffs,
+        output_token_intercept = excluded.output_token_intercept,
+        input_rmse             = excluded.input_rmse,
+        output_rmse            = excluded.output_rmse,
+        proxy_input_rmse       = excluded.proxy_input_rmse,
+        proxy_output_rmse      = excluded.proxy_output_rmse,
+        sample_count           = excluded.sample_count,
+        trained_at             = datetime('now')
+    `)
+    .bind(
+      body.provider_model,
+      JSON.stringify(body.input_token_coeffs),
+      body.input_token_intercept,
+      JSON.stringify(body.output_token_coeffs),
+      body.output_token_intercept,
+      body.input_rmse,
+      body.output_rmse,
+      body.proxy_input_rmse,
+      body.proxy_output_rmse,
+      body.sample_count,
+    )
+    .run();
+
+  return json({ ok: true, provider_model: body.provider_model });
+}

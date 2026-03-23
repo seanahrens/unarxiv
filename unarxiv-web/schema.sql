@@ -38,6 +38,11 @@ CREATE TABLE IF NOT EXISTS papers (
     best_version_id  INTEGER,              -- FK to narration_versions (set after migration 004)
     script_char_count INTEGER,             -- cached char count for cost estimation
 
+    -- Source stats for cost estimation (populated during narration, migration 009)
+    tar_bytes         INTEGER,             -- compressed source archive size
+    latex_char_count  INTEGER,             -- total chars across all .tex files
+    figure_count      INTEGER,             -- number of image files in source
+
     -- Timestamps
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     completed_at    TEXT,
@@ -184,8 +189,28 @@ CREATE TABLE IF NOT EXISTS narration_versions (
     actual_cost       REAL,     -- total USD spent (llm_cost + tts_cost)
     llm_cost          REAL,
     tts_cost          REAL,
+    -- LLM token tracking for cost model training (migration 009)
+    actual_input_tokens  INTEGER,  -- actual LLM input tokens consumed
+    actual_output_tokens INTEGER,  -- actual LLM output tokens consumed
+    provider_model       TEXT,     -- e.g. "anthropic:claude-sonnet-4-6"
     created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_nv_paper ON narration_versions(paper_id);
 CREATE INDEX IF NOT EXISTS idx_nv_quality ON narration_versions(paper_id, quality_rank DESC);
+
+-- ML cost model coefficients (migration 009)
+-- Trained by evals/cost_model/train.py and deployed via POST /api/admin/model-coefficients
+CREATE TABLE IF NOT EXISTS model_coefficients (
+    provider_model         TEXT PRIMARY KEY,  -- e.g. "anthropic:claude-sonnet-4-6"
+    input_token_coeffs     TEXT NOT NULL,     -- JSON array: [latex_chars, figures, tar_bytes, script_chars]
+    input_token_intercept  REAL NOT NULL,
+    output_token_coeffs    TEXT NOT NULL,     -- JSON array: same feature order
+    output_token_intercept REAL NOT NULL,
+    input_rmse             REAL NOT NULL,     -- ML RMSE on test set (input tokens)
+    output_rmse            REAL NOT NULL,     -- ML RMSE on test set (output tokens)
+    proxy_input_rmse       REAL NOT NULL,     -- proxy formula RMSE (for comparison)
+    proxy_output_rmse      REAL NOT NULL,
+    sample_count           INTEGER NOT NULL,  -- number of training samples
+    trained_at             TEXT NOT NULL DEFAULT (datetime('now'))
+);

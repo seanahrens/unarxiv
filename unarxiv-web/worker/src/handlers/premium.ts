@@ -116,19 +116,42 @@ export async function aesDecrypt(ciphertextB64: string, key: CryptoKey): Promise
   return new TextDecoder().decode(plaintext);
 }
 
-/** Estimate cost for one (provider, model) combination from script char count. */
+// Flat image-input token cost per figure (vision LLM, per provider)
+const IMAGE_TOKENS_PER_FIGURE: Record<string, number> = {
+  openai: 85,       // detail:low is a flat 85 tokens per image
+  anthropic: 700,   // ~150 DPI typical arXiv figure
+  gemini: 550,
+};
+
+/** Estimate cost for one (provider, model) combination.
+ *
+ * When latexCharCount > 0 (collected during free-tier narration), the estimate
+ * uses per-paper stats for a much more accurate input-token count.
+ * Otherwise falls back to the old outputTokens * 3.0 heuristic.
+ *
+ * Returns predicted token counts alongside costs so the ML model path can
+ * supply its own token predictions instead.
+ */
 export function estimateCost(
   llmProvider: string,
   llmModel: string,
   ttsProvider: string | null,
   ttsModel: string | null,
-  scriptCharCount: number
-): { llm_cost: number; tts_cost: number; total_cost: number } {
-  // Rough token estimate: 1 token ≈ 4 chars. Output tokens ≈ script chars / 4.
-  // Input tokens ≈ 3x output: the LLM receives raw LaTeX (typically 3-5x the
-  // narration length) plus the system prompt per chunk.
+  scriptCharCount: number,
+  latexCharCount: number = 0,
+  figureCount: number = 0,
+): { llm_input_tokens: number; llm_output_tokens: number; llm_cost: number; tts_cost: number; total_cost: number } {
   const outputTokens = scriptCharCount / 4;
-  const inputTokens = outputTokens * 3.0;
+
+  let inputTokens: number;
+  if (latexCharCount > 0) {
+    const textTokens = latexCharCount / 4;
+    const imgTokens = figureCount * (IMAGE_TOKENS_PER_FIGURE[llmProvider] ?? 300);
+    inputTokens = textTokens + imgTokens;
+  } else {
+    // Fallback: LaTeX input is typically ~3-5x the narration output
+    inputTokens = outputTokens * 3.0;
+  }
 
   const llmPrices = (PRICING.llm as any)[llmProvider]?.[llmModel];
   const llm_cost = llmPrices
@@ -138,7 +161,26 @@ export function estimateCost(
   const ttsPrices = ttsProvider ? (PRICING.tts as any)[ttsProvider]?.[ttsModel ?? ""] : null;
   const tts_cost = ttsPrices ? (scriptCharCount * ttsPrices.per_1m_chars) / 1_000_000 : 0;
 
-  return { llm_cost, tts_cost, total_cost: llm_cost + tts_cost };
+  return { llm_input_tokens: inputTokens, llm_output_tokens: outputTokens, llm_cost, tts_cost, total_cost: llm_cost + tts_cost };
+}
+
+/** Apply pricing to ML-predicted token counts. */
+function costFromTokens(
+  inputTokens: number,
+  outputTokens: number,
+  llmProvider: string,
+  llmModel: string,
+  ttsProvider: string | null,
+  ttsModel: string | null,
+  scriptCharCount: number,
+): { llm_input_tokens: number; llm_output_tokens: number; llm_cost: number; tts_cost: number; total_cost: number } {
+  const llmPrices = (PRICING.llm as any)[llmProvider]?.[llmModel];
+  const llm_cost = llmPrices
+    ? (inputTokens * llmPrices.input_per_1m_tokens + outputTokens * llmPrices.output_per_1m_tokens) / 1_000_000
+    : 0;
+  const ttsPrices = ttsProvider ? (PRICING.tts as any)[ttsProvider]?.[ttsModel ?? ""] : null;
+  const tts_cost = ttsPrices ? (scriptCharCount * ttsPrices.per_1m_chars) / 1_000_000 : 0;
+  return { llm_input_tokens: inputTokens, llm_output_tokens: outputTokens, llm_cost, tts_cost, total_cost: llm_cost + tts_cost };
 }
 
 /** Make a lightweight test call to verify an API key. Returns { valid, info? }. */
@@ -436,6 +478,24 @@ export async function handleNarratePremium(
   return json(paperToResponse(updated!, baseUrl));
 }
 
+interface ModelCoeffRow {
+  provider_model: string;
+  input_token_coeffs: string;   // JSON: [c0, c1, c2, c3] for [latex_chars, figure_count, tar_bytes, script_chars]
+  input_token_intercept: number;
+  output_token_coeffs: string;
+  output_token_intercept: number;
+  input_rmse: number;
+  output_rmse: number;
+  proxy_input_rmse: number;
+  proxy_output_rmse: number;
+  sample_count: number;
+  trained_at: string;
+}
+
+function dotProduct(coeffs: number[], features: number[]): number {
+  return coeffs.reduce((sum, c, i) => sum + c * (features[i] ?? 0), 0);
+}
+
 /** GET /api/papers/:id/estimate */
 export async function handleEstimate(env: Env, id: string): Promise<Response> {
   const paper = await getPaper(env.DB, id);
@@ -464,6 +524,19 @@ export async function handleEstimate(env: Env, id: string): Promise<Response> {
     charCount = Math.ceil(rawCharCount * 1.33);
   }
 
+  // Per-paper source stats for improved proxy formula
+  const latexCharCount = paper.latex_char_count ?? 0;
+  const figureCount = paper.figure_count ?? 0;
+  const tarBytes = paper.tar_bytes ?? 0;
+
+  // Load any trained ML model coefficients (Track 2)
+  const mlRows = await env.DB
+    .prepare("SELECT * FROM model_coefficients")
+    .all<ModelCoeffRow>()
+    .then(r => r.results)
+    .catch(() => [] as ModelCoeffRow[]);
+  const mlByProviderModel = new Map(mlRows.map(r => [r.provider_model, r]));
+
   // Build options matrix: all meaningful provider/model combinations
   const options: {
     id: string;
@@ -476,6 +549,7 @@ export async function handleEstimate(env: Env, id: string): Promise<Response> {
     llm_cost: number;
     tts_cost: number;
     total_cost: number;
+    estimate_source: "ml" | "proxy";
   }[] = [];
 
   const llmOptions = [
@@ -493,9 +567,34 @@ export async function handleEstimate(env: Env, id: string): Promise<Response> {
     { provider: "google",     model: "wavenet",                  label: "Google WaveNet" },
   ];
 
+  // ML feature vector: [latex_char_count, figure_count, tar_bytes, script_char_count]
+  const mlFeatures = [latexCharCount, figureCount, tarBytes, charCount];
+
   for (const llm of llmOptions) {
     for (const tts of ttsOptions) {
-      const costs = estimateCost(llm.provider, llm.model, tts.provider, tts.model, charCount);
+      const providerModel = `${llm.provider}:${llm.model}`;
+      const mlRow = mlByProviderModel.get(providerModel);
+
+      let costs: { llm_input_tokens: number; llm_output_tokens: number; llm_cost: number; tts_cost: number; total_cost: number };
+      let estimateSource: "ml" | "proxy" = "proxy";
+
+      if (
+        mlRow &&
+        mlRow.sample_count >= 5 &&
+        mlRow.input_rmse < mlRow.proxy_input_rmse &&
+        mlRow.output_rmse < mlRow.proxy_output_rmse
+      ) {
+        // Use ML-predicted token counts, apply current pricing
+        const inCoeffs = JSON.parse(mlRow.input_token_coeffs) as number[];
+        const outCoeffs = JSON.parse(mlRow.output_token_coeffs) as number[];
+        const predInputTokens = Math.max(0, dotProduct(inCoeffs, mlFeatures) + mlRow.input_token_intercept);
+        const predOutputTokens = Math.max(0, dotProduct(outCoeffs, mlFeatures) + mlRow.output_token_intercept);
+        costs = costFromTokens(predInputTokens, predOutputTokens, llm.provider, llm.model, tts.provider, tts.model, charCount);
+        estimateSource = "ml";
+      } else {
+        costs = estimateCost(llm.provider, llm.model, tts.provider, tts.model, charCount, latexCharCount, figureCount);
+      }
+
       // If a premium script already exists, LLM generation is skipped — zero out LLM cost
       if (hasExistingScript) {
         costs.total_cost -= costs.llm_cost;
@@ -510,7 +609,10 @@ export async function handleEstimate(env: Env, id: string): Promise<Response> {
         tts_provider: tts.provider,
         tts_model: tts.model,
         quality_rank,
-        ...costs,
+        llm_cost: costs.llm_cost,
+        tts_cost: costs.tts_cost,
+        total_cost: costs.total_cost,
+        estimate_source: estimateSource,
       });
     }
   }

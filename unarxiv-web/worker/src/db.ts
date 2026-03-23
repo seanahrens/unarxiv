@@ -896,6 +896,9 @@ export async function insertNarrationVersion(
     actual_cost?: number | null;
     llm_cost?: number | null;
     tts_cost?: number | null;
+    actual_input_tokens?: number | null;
+    actual_output_tokens?: number | null;
+    provider_model?: string | null;
   }
 ): Promise<NarrationVersion> {
   const result = await db
@@ -904,8 +907,9 @@ export async function insertNarrationVersion(
          (paper_id, narration_tier, quality_rank,
           tts_provider, tts_model, llm_provider, llm_model,
           audio_r2_key, transcript_r2_key, duration_seconds,
-          actual_cost, llm_cost, tts_cost)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          actual_cost, llm_cost, tts_cost,
+          actual_input_tokens, actual_output_tokens, provider_model)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
     .bind(
@@ -921,10 +925,30 @@ export async function insertNarrationVersion(
       v.duration_seconds ?? null,
       v.actual_cost ?? null,
       v.llm_cost ?? null,
-      v.tts_cost ?? null
+      v.tts_cost ?? null,
+      v.actual_input_tokens ?? null,
+      v.actual_output_tokens ?? null,
+      v.provider_model ?? null,
     )
     .first<NarrationVersion>();
   return result!;
+}
+
+/** Persist source archive stats on the papers row for cost estimation. */
+export async function updatePaperSourceStats(
+  db: D1Database,
+  paperId: string,
+  tarBytes: number,
+  latexCharCount: number,
+  figureCount: number,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE papers SET tar_bytes = ?, latex_char_count = ?, figure_count = ?
+       WHERE id = ? AND (tar_bytes IS NULL OR tar_bytes = 0)`
+    )
+    .bind(tarBytes, latexCharCount, figureCount, paperId)
+    .run();
 }
 
 /** Get a specific narration version by ID and paper ID. */

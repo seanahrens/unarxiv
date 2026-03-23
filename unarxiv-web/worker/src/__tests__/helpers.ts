@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS papers (
   submitted_by_city    TEXT,
   best_version_id  INTEGER,
   script_char_count INTEGER,
+  tar_bytes         INTEGER,
+  latex_char_count  INTEGER,
+  figure_count      INTEGER,
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   completed_at    TEXT,
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
@@ -37,9 +40,8 @@ CREATE TABLE IF NOT EXISTS papers (
 CREATE TABLE IF NOT EXISTS narration_versions (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   paper_id          TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
-  version_type      TEXT NOT NULL CHECK(version_type IN ('free', 'premium')),
+  narration_tier    TEXT NOT NULL CHECK(narration_tier IN ('base', 'plus1', 'plus2', 'plus3')),
   quality_rank      INTEGER NOT NULL DEFAULT 0,
-  script_type       TEXT NOT NULL CHECK(script_type IN ('free', 'premium')),
   tts_provider      TEXT,
   tts_model         TEXT,
   llm_provider      TEXT,
@@ -50,7 +52,23 @@ CREATE TABLE IF NOT EXISTS narration_versions (
   actual_cost       REAL,
   llm_cost          REAL,
   tts_cost          REAL,
+  actual_input_tokens  INTEGER,
+  actual_output_tokens INTEGER,
+  provider_model       TEXT,
   created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS model_coefficients (
+  provider_model         TEXT PRIMARY KEY,
+  input_token_coeffs     TEXT NOT NULL,
+  input_token_intercept  REAL NOT NULL,
+  output_token_coeffs    TEXT NOT NULL,
+  output_token_intercept REAL NOT NULL,
+  input_rmse             REAL NOT NULL,
+  output_rmse            REAL NOT NULL,
+  proxy_input_rmse       REAL NOT NULL,
+  proxy_output_rmse      REAL NOT NULL,
+  sample_count           INTEGER NOT NULL,
+  trained_at             TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS submissions (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,6 +90,7 @@ CREATE TABLE IF NOT EXISTS ratings (
   rater_token TEXT,
   stars       INTEGER NOT NULL CHECK(stars BETWEEN 1 AND 5),
   comment     TEXT NOT NULL DEFAULT '',
+  voice_tier  TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
