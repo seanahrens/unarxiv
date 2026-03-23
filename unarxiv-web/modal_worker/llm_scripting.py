@@ -70,8 +70,17 @@ Guidelines:
    \\icmlauthor{}, \\icmlaffiliation{}, \\maketitle, \\begin{document}, ORCID
    links, and similar preamble content — the title, authors, and date are
    handled by a separate system, do NOT narrate them again.
-   Render URLs naturally without saying "dot" or "slash": e.g., the command
-   \\href{https://example.org/foo}{example.org/foo} becomes "example.org/foo".
+   Render URLs naturally: for simple domain URLs like "https://example.org/foo",
+   say "example.org/foo". Do NOT say "dot" or "slash" between URL components.
+   For URLs with mixed-case path components (e.g., GitHub repo URLs like
+   "https://github.com/NBISweden/MrBayes"), speak path components as words —
+   say "github.com/NBISweden/MrBayes", NOT "N-B-I-Sweden" or "M-r-B-a-y-e-s"
+   letter-by-letter. Only spell out letters when a path segment is a genuine
+   acronym already read as letters (e.g., "API", "ORCID").
+   Also skip visual formatting attributes of document elements: font size,
+   font color, bold/italic style, background color, and similar visual design
+   properties are invisible to listeners. E.g., if a LaTeX heading is formatted
+   in large green bold text, narrate only the heading text, not the formatting.
 5. Natural speech: Write as if narrating to a listener. Use spoken transitions
    like "Moving on to...", "Next, the authors examine...", "This brings us to..."
    to bridge within-section topic shifts. Do NOT add "Welcome to this section",
@@ -91,9 +100,14 @@ Guidelines:
    them from available text. Use the \\caption{} text, data values mentioned in
    adjacent paragraphs, axis labels, and any numbers the authors attribute to the
    figure. Never say "I cannot display the figure." Always produce a concrete
-   description. If the caption is the only available information, describe the
-   figure type and what a listener would expect to see based on that caption and
-   the surrounding discussion.
+   description. Never hedge with "is likely showing" — produce a confident
+   description based on available information.
+   For structured figures (tables, flowcharts, multi-level diagrams): infer the
+   structure from context and describe it explicitly. For example: "Figure 2 is a
+   table with 6 rows, one per level labeled L0 through L5. Each row defines..." or
+   "Figure 1 shows a three-stage flowchart with arrows connecting..." Use the
+   surrounding text, caption, and level/column/row labels visible in the LaTeX
+   source to reconstruct what the figure contains. Do not just restate the caption.
 8. All content covered: Narrate ALL content in the section — every paragraph,
    every result, every finding, every discussion point. If a paragraph discusses
    three findings, narrate all three. Do not condense multiple sentences into one.
@@ -135,7 +149,11 @@ Guidelines:
 3. Equations: Rewrite any remaining symbolic or LaTeX notation into plain spoken
    English (e.g., "x squared plus y squared equals r squared").
 4. Remove citation markers like [1], [2,3], footnote references. Render URLs
-   naturally without "dot" or "slash", e.g. "democracylevels.org/system-card".
+   naturally: say "democracylevels.org/system-card", not "democracylevels dot org
+   slash system-card". For URLs with mixed-case path components (e.g.,
+   "github.com/NBISweden/MrBayes"), speak path components as words — do NOT
+   spell letters individually. Also skip visual formatting attributes: font size,
+   font color, bold/italic descriptions of document elements are not spoken.
    Remove any section heading labels (e.g., "Section: Introduction" or "End of
    Section: X") if they appear as standalone lines in the draft.
    Skip all document metadata if present: author lists with affiliations, email
@@ -151,7 +169,10 @@ Guidelines:
    whatever input you receive.
 7. Figures: If the draft says a figure is "shown" without describing it, add a
    description based on what the surrounding text says about the figure. Never
-   say you "cannot display" the figure.
+   say you "cannot display" the figure. For structured figures (tables, flowcharts,
+   multi-level diagrams) infer the structure from surrounding text and describe
+   it: "Figure 2 is a table with 6 rows..." rather than restating the caption.
+   Never hedge with "is likely showing" — produce a confident description.
 8. Your output must be at least as long as the input. You are enhancing, not
    condensing. Do not summarize.
 9. Preserve all technical accuracy.
