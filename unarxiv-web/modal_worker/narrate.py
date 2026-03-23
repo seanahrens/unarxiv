@@ -627,12 +627,22 @@ def narrate_paper_premium(
         else:
             print("No LLM api_key provided — skipping LLM improvement")
 
-        # Wrap with standard header/footer (LLM output is body-only)
+        # Wrap with standard header/footer only when the LLM ran and produced
+        # body-only output.  The free-tier programmatic script (parsed.speech_text)
+        # and any existing_script transcript already contain header+footer, so
+        # re-wrapping them would produce double titles and double sign-offs.
         authors_list_parsed = [a.strip() for a in paper_author.split(",") if a.strip()] if paper_author else []
         formatted_date = _format_date(paper_date)
         header = _build_header(paper_title or "Untitled", formatted_date, authors_list_parsed)
         footer = _build_footer(paper_title or "Untitled", formatted_date, authors_list_parsed)
-        tts_text = header + "\n" + tts_text.strip() + footer
+        if llm_result is not None:
+            # LLM generated fresh body-only content — wrap it now.
+            # Defensively strip footer in case the fallback-script path let it through.
+            body = tts_text.strip()
+            if body.endswith(footer.strip()):
+                body = body[: -len(footer.strip())].strip()
+            tts_text = header + "\n" + body + footer
+        # else: tts_text already has header+footer (free-tier script or existing_script)
 
         # Save improved (or base) script to R2 immediately so partial success
         # can preserve it even if TTS subsequently fails.
