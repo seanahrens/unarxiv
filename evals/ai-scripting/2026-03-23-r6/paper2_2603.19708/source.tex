@@ -1,0 +1,121 @@
+\documentclass[runningheads]{llncs}
+
+% --------------------------------------------------------------- 
+\usepackage[mobile]{eccv}
+
+
+% ---------------------------------------------------------------
+% Other packages
+\newcommand{\ours}{WorldAgents}
+% Commonly used abbreviations (\eg, \ie, \etc, \cf, \etal, etc.)
+\usepackage{eccvabbrv}
+
+% Include other packages here, before hyperref.
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+% The "axessiblity" package can be found at: https://ctan.org/pkg/axessibility?lang=en
+\usepackage[accsupp]{axessibility}  % Improves PDF readability for those with disabilities.
+
+% Reduce spacing around floats (ECCV-safe)
+\setlength{\textfloatsep}{4pt}     % Space between floats and text
+\setlength{\abovecaptionskip}{4pt} % Space above caption
+\setlength{\belowcaptionskip}{4pt} % Space below caption
+\setlength{\floatsep}{4pt}
+\setlength{\intextsep}{4pt}
+% for equations
+\setlength{\abovedisplayskip}{6pt}
+\setlength{\belowdisplayskip}{6pt}
+\setlength{\abovedisplayshortskip}{4pt}
+\setlength{\belowdisplayshortskip}{4pt}
+\usepackage{inconsolata} % Adds a highly readable monospace font
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Define a clean style for your markdown/text listing
+\lstdefinestyle{mdStyle}{
+    backgroundcolor=\color{gray!5},   % light gray background
+    basicstyle=\ttfamily\scriptsize,  % Use a smaller monospace font to save space
+    breakatwhitespace=false,         
+    breaklines=true,                  % Automatically wrap long lines
+    captionpos=b,                     % Position caption at the bottom
+    keepspaces=true,                 
+    numbers=none,                     % No line numbers (change to 'left' if you want them)
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    frame=single,                     % Adds a border around the text
+    rulecolor=\color{gray!40},         % Color of the border
+    breakindent=0pt,                  % <--- FIX: Removes the 20pt indent for wrapped lines
+    breakautoindent=false,            % <--- FIX: Stops it from copying the previous line's indent
+}
+
+% ---------------------------------------------------------------
+% Hyperref package
+
+\usepackage{hyperref}
+
+% Support for ORCID icon
+\usepackage{orcidlink}
+
+
+
+\begin{document}
+
+% ---------------------------------------------------------------
+% TODO REVIEW: Replace with your title
+\title{\ours{}: Can Foundation Image Models be Agents for 3D World Models?\vspace{-10px}} 
+
+% TODO REVIEW: If the paper title is too long for the running head, you can set
+% an abbreviated paper title here. If not, comment out.
+\titlerunning{\ours{}}
+
+% TODO FINAL: Replace with your author list. 
+% Include the authors' OCRID for the camera-ready version, if at all possible.
+\author{Ziya Erko\c{c} \and
+Angela Dai \and
+Matthias Nie{\ss}ner \vspace{-5px}}
+
+% TODO FINAL: Replace with an abbreviated list of authors.
+\authorrunning{Z.~Erko\c{c} et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+
+% TODO FINAL: Replace with your institution list.
+\institute{Technical University of Munich \\ \vspace{5px}
+\url{https://ziyaerkoc.com/worldagents} \vspace{-5px}}
+
+\maketitle
+\begin{figure}
+    \centering
+    \scalebox{1.0}{%
+        % The minipage groups the image and caption into one block
+        \begin{minipage}{0.88\textwidth}
+    \includegraphics[width=\linewidth]{figures/3DAgent_Teaser.pdf}
+    \caption{\textbf{\ours} employs 2D foundation models as agents in an iterative process to extract realistic, coherent 3D scenes from their learned distributions. 
+    The scene generation process is orchestrated by a VLM agent (director) that generates prompts for new views to synthesize, fulfilled by an image generation model that creates these views, and verified by a VLM agent that assesses both 2D and 3D consistency of the new synthesized image(s).
+    The output is a sci-fi lab. scene reconstructed with 3DGS, and can be visualized from novel views for exploration.}
+    \vspace{-15px}
+    \label{fig:teaser}
+    \end{minipage}
+    }
+\end{figure}
+\input{sections/0_abstract}
+\input{sections/1_intro}
+\input{sections/2_related}
+\input{sections/3_method}
+\input{sections/4_experiments}
+\input{sections/5_conclusion}
+
+
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+\bibliographystyle{splncs04}
+\bibliography{main}
+\clearpage
+\input{sections/6_supp}
+
+\end{document}

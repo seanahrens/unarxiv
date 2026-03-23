@@ -56,6 +56,11 @@ Guidelines:
    to spoken English, and (c) describing figures and tables verbally. Every
    sentence in the source must produce a corresponding spoken sentence in the
    output. A listener should hear the paper as the authors wrote it.
+   CRITICAL: Narrate ALL content including the abstract as the authors' own words.
+   Do NOT describe or summarize content in third person. Do NOT say "The abstract
+   begins with...", "The authors state that...", "The section describes...", or
+   similar meta-descriptions. If the chunk begins with \begin{abstract}, read the
+   abstract text as if you are reading it aloud — not summarizing it from outside.
 2. Figures and tables: Describe them with enough detail that a listener who
    cannot see them still understands ~75% of the meaning. Requirements:
    - Name specific data values, percentages, and numbers visible in the figure.
@@ -85,20 +90,29 @@ Guidelines:
    - RIGHT: "v-hat sub theta equals f sub theta of y sub t, z, and C."
    Every equation environment (`\begin{equation}`, `\begin{align}`, etc.) must be
    converted to a spoken sentence — never passed through as LaTeX.
-4. Clean output: Remove all LaTeX formatting commands. Custom macros (commands
-   like \\benchname, \\myterm, \\algname) must be replaced: look for their
-   \\newcommand definition in the document and substitute the expansion (e.g.,
-   \\benchname defined as VTC-Bench → replace all \\benchname with "VTC-Bench").
-   If no definition is found, remove the backslash and use the macro name as a
-   readable word. Also remove: citation markers [1], [2,3], \\cite{}, \\citep{},
+4. Clean output: Remove all LaTeX formatting commands. If a "Macro definitions"
+   block appears at the start of this chunk, use those definitions to expand all
+   occurrences of each macro in the text before narrating (e.g., if the block
+   says `\ours = BEAVER`, replace every `\ours` with "BEAVER"). Custom macros
+   not listed in the block must still be expanded: remove the backslash and use
+   the macro name as a readable word (e.g., `\benchname` → "benchname").
+   CRITICAL: NEVER output a backslash-prefixed macro name literally (e.g., NEVER
+   write `\ours`, `\benchname`, `\algname` in the output — always substitute the
+   expansion or the plain word).
+   Also remove: citation markers [1], [2,3], \\cite{}, \\citep{},
    \\citealt{}; footnote reference commands; \\label{} commands; \\ref{}
-   commands (replace with the nearby name if available, else omit); section
-   heading commands (\\section{}, \\subsection{}, etc.) — do NOT output the
-   heading as a standalone line or label. Also remove or skip all document
-   metadata: \\title{}, \\author{}, \\affiliation{}, \\institute{}, \\email{},
+   commands (omit entirely — do NOT output tilde-separated ref names like
+   "~ref~ablation_qual" or "Figure~ref~foo"); section heading commands
+   (\\section{}, \\subsection{}, etc.) — do NOT output the heading as a
+   standalone line or label. Also remove or skip all document metadata:
+   \\title{}, \\author{}, \\affiliation{}, \\institute{}, \\email{},
    \\icmlauthor{}, \\icmlaffiliation{}, \\maketitle, \\begin{document}, ORCID
    links, and similar preamble content — the title, authors, and date are
    handled by a separate system, do NOT narrate them again.
+   Also skip obvious LaTeX template placeholder content: if you see text that
+   appears to be a template example rather than the actual paper (e.g., sample
+   citations, example text in multiple languages labeled as examples, placeholder
+   instructions like "please see the general instructions"), skip it entirely.
    Render URLs naturally: for simple domain URLs like "https://example.org/foo",
    say "example.org/foo". Do NOT say "dot" or "slash" between URL components.
    For URLs with mixed-case path components (e.g., GitHub repo URLs like
@@ -113,9 +127,16 @@ Guidelines:
 5. Natural speech: Write as if narrating to a listener. Use spoken transitions
    like "Moving on to...", "Next, the authors examine...", "This brings us to..."
    to bridge within-section topic shifts. Do NOT add "Welcome to this section",
-   "Welcome to a narrated presentation of...", "Today we will discuss...", or
-   "This concludes the section" framing — your output will be concatenated
-   with other sections into one continuous narration. Begin narrating directly.
+   "Welcome to a narrated presentation of...", or "Today we will discuss..."
+   framing. Your output will be concatenated with other sections into one
+   continuous narration. Begin narrating directly.
+   CRITICAL — NO SECTION OUTROS: NEVER write any sentence that marks or
+   announces the end of a section, topic, or description. This includes ALL
+   variants: "This concludes...", "This ends...", "This wraps up...", "This
+   brings us to the end of...", "That concludes...", or any phrase beginning
+   with "This concludes". Do not end a chunk with a closing summary sentence
+   that is not in the source text. Endings that sound like wrap-ups corrupt
+   the continuous narration.
    Never add editorial adjectives like "fascinating", "insightful", or
    "interesting" unless those exact words appear in the source text. Your voice
    is the paper's voice, not a commentator's.
@@ -206,10 +227,14 @@ Guidelines:
    Skip all document metadata if present: author lists with affiliations, email
    addresses, title re-introductions. Those belong only in the header.
 5. Natural transitions: Add spoken transitions like "Moving on to..." between
-   topic shifts, but do NOT add "Welcome to this section", "Today we will
-   discuss...", or "This concludes the section" framing. Your output will be
-   concatenated with other sections. Never add editorial adjectives like
-   "fascinating" or "insightful" unless they appear in the original source.
+   topic shifts, but do NOT add "Welcome to this section" or "Today we will
+   discuss..." framing. Your output will be concatenated with other sections.
+   CRITICAL — NO SECTION OUTROS: NEVER write any sentence that marks or announces
+   the end of a section or topic. This includes ALL variants: "This concludes...",
+   "This ends...", "This wraps up...", "That concludes...", or any phrase beginning
+   with "This concludes". Do not end a chunk with a closing summary sentence that
+   is not in the source. Never add editorial adjectives like "fascinating" or
+   "insightful" unless they appear in the original source.
 6. Never refuse or add meta-commentary: You are a narration engine. NEVER write
    phrases like "Unfortunately I cannot", "Please provide more content", "While
    I cannot visually display the figure", or any chatbot-style response. Process
@@ -356,12 +381,69 @@ def _images_for_chunk(chunk: str, figure_map: dict[str, str]) -> list[tuple[str,
 # Section splitting
 # ---------------------------------------------------------------------------
 
+def _extract_macro_definitions(latex: str) -> str:
+    """Extract \\newcommand / \\renewcommand / \\def definitions from LaTeX source.
+
+    Returns a formatted string suitable for injection into the LLM user message
+    so the model can expand macros even after the preamble has been stripped.
+    Only includes macros that expand to plain readable text (no complex commands).
+    """
+    # Match \newcommand{\name}[optargs]{definition} and \renewcommand variants
+    pattern = re.compile(
+        r'\\(?:newcommand|renewcommand|providecommand)\*?\{\\([A-Za-z]+)\}'
+        r'(?:\[\d+\])?'
+        r'\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}'
+    )
+    macros: list[str] = []
+    seen: set[str] = set()
+    for m in pattern.finditer(latex):
+        name = m.group(1)
+        defn = m.group(2).strip()
+        if name in seen:
+            continue
+        seen.add(name)
+        # Strip common LaTeX wrappers to get readable text
+        clean = defn
+        clean = re.sub(r'\\text(?:bf|it|rm|sf|tt)?\{([^}]+)\}', r'\1', clean)
+        clean = re.sub(r'\\textsc\{([^}]+)\}', r'\1', clean)
+        clean = re.sub(r'\\xspace\b', '', clean).strip()
+        clean = re.sub(r'\\ensuremath\{([^}]+)\}', r'\1', clean).strip()
+        # Only include if the result is plain readable text (no remaining backslash cmds)
+        if clean and not re.search(r'\\[a-zA-Z]', clean):
+            macros.append(f"\\{name} = {clean}")
+    if not macros:
+        return ""
+    return (
+        "Macro definitions (expand these wherever encountered — e.g. if you see "
+        "\\ours in the text, replace it with the value shown below):\n"
+        + "\n".join(macros)
+        + "\n\n"
+    )
+
+
+def _strip_latex_document_tail(latex: str) -> str:
+    """Strip everything after \\end{document} to remove template boilerplate.
+
+    LaTeX templates (ACL, ICML, NeurIPS, etc.) often include sample/example
+    content after the main paper body in the template file. This tail content
+    should not be narrated.
+    """
+    end_doc = latex.find(r'\end{document}')
+    if end_doc != -1:
+        return latex[:end_doc]
+    return latex
+
+
 def _strip_latex_preamble(latex: str) -> str:
     """Strip LaTeX document preamble to avoid narrating author/title metadata.
 
     Removes everything before \\begin{abstract} or the first \\section{}.
-    If neither is found, returns the original text unchanged.
+    Also strips anything after \\end{document} (template boilerplate).
+    If neither start boundary is found, returns the original text unchanged.
     """
+    # Strip document tail first (template boilerplate after \end{document})
+    latex = _strip_latex_document_tail(latex)
+
     # Try to find \begin{abstract} first (most papers have one)
     abstract_match = re.search(r'\\begin\{abstract\}', latex)
     if abstract_match:
@@ -378,13 +460,13 @@ def _strip_latex_preamble(latex: str) -> str:
     return latex
 
 
-def _strip_latex_math_delimiters(text: str) -> str:
-    """Post-processing safety net: strip LaTeX math delimiters from LLM output.
+def _strip_latex_artifacts(text: str) -> str:
+    """Post-processing safety net: strip LaTeX artifacts from LLM output.
 
-    Removes inline math markers \\( ... \\) and display math markers \\[ ... \\]
-    as well as equation/align/gather environments, leaving the inner content.
-    This catches cases where the LLM passes through LaTeX despite being instructed
-    not to, so the TTS engine doesn't read the raw delimiter characters.
+    Handles:
+    - Math delimiters: \\( \\) \\[ \\] and equation environments
+    - Cross-reference artifacts: \\ref{...} and ~ref~ passthrough
+    - Backslash macro names: \\ours, \\benchname, etc.
     """
     # Strip \( ... \) inline math delimiters (keep inner content)
     text = re.sub(r'\\\(|\\\)', '', text)
@@ -399,9 +481,21 @@ def _strip_latex_math_delimiters(text: str) -> str:
         r'\\end\{(?:equation|align|gather|multline|eqnarray)\*?\}',
         '', text
     )
+    # Strip \ref{...} commands entirely (they produce unreadable ref names)
+    text = re.sub(r'\\ref\{[^}]*\}', '', text)
+    # Strip tilde-separated ref artifacts: e.g. ~ref~ablation_qual or Figure~ref~foo
+    text = re.sub(r'~ref~\S*', '', text)
+    # Strip backslash macros that leaked through (e.g. \ours, \benchname)
+    # Replace \macroname with just "macroname" (the plain word, better than "backslash macroname")
+    text = re.sub(r'\\([A-Za-z]+)\b', r'\1', text)
     # Normalize whitespace after stripping
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
+
+
+def _strip_latex_math_delimiters(text: str) -> str:
+    """Kept for backward compatibility — delegates to _strip_latex_artifacts."""
+    return _strip_latex_artifacts(text)
 
 
 def _split_latex_into_sections(latex: str) -> list[str]:
@@ -762,6 +856,14 @@ def generate_from_source(
     has_latex = bool(raw_source and ("\\section" in raw_source or "\\begin{document}" in raw_source))
     has_source = bool(raw_source and len(raw_source.strip()) > 100)
 
+    # Extract macro definitions from the full source BEFORE preamble stripping,
+    # so the LLM can expand custom \newcommand macros in every chunk.
+    macro_prefix = ""
+    if has_latex and raw_source:
+        macro_prefix = _extract_macro_definitions(raw_source)
+        if macro_prefix:
+            print(f"[llm] Extracted macro definitions ({len(macro_prefix)} chars) for injection")
+
     if has_latex:
         chunks = _split_latex_into_sections(raw_source)
         is_latex = True
@@ -797,13 +899,15 @@ def generate_from_source(
     result_model = ""
 
     for i, chunk in enumerate(chunks):
+        # Prepend macro definitions so the LLM can expand \newcommand macros
+        chunk_with_macros = macro_prefix + chunk if macro_prefix else chunk
         images = _images_for_chunk(chunk, figure_map) if figure_map else []
         img_note = f", {len(images)} image(s)" if images else ""
         print(f"[llm] Processing chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars{img_note})...")
-        result = provider.generate_script(chunk, is_latex=is_latex, images=images or None)
-        cleaned = _strip_latex_math_delimiters(result.improved_script)
+        result = provider.generate_script(chunk_with_macros, is_latex=is_latex, images=images or None)
+        cleaned = _strip_latex_artifacts(result.improved_script)
         if cleaned != result.improved_script:
-            print(f"[llm] WARNING: chunk {i + 1} contained raw LaTeX math delimiters — stripped")
+            print(f"[llm] WARNING: chunk {i + 1} contained LaTeX artifacts — stripped")
         script_parts.append(cleaned)
         total_in_tok += result.input_tokens
         total_out_tok += result.output_tokens
