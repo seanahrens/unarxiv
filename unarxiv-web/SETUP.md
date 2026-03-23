@@ -100,7 +100,7 @@ Worker API runs on `http://localhost:8787`, frontend on `http://localhost:3000`.
 - **D1 database** — local SQLite via wrangler, seeded with sample papers in various statuses
 - **R2 bucket** — local emulation via wrangler (empty, but UI renders correctly without audio files)
 - **Admin access** — password is `localdev` (set in `worker/.dev.vars`)
-- **No Modal dependency** — narration dispatch is skipped when `MODAL_WEBHOOK_SECRET` is not set to a real secret; papers stay in "preparing" status
+- **No Modal dependency** — narration dispatch is skipped when `MODAL_WEBHOOK_SECRET` is not set to a real secret; papers stay in "narrating" status until manually completed via webhook
 
 ### Simulating Narration Completion
 
@@ -109,7 +109,7 @@ Since Modal isn't running locally, simulate a webhook callback to complete a pap
 ```bash
 curl -X POST http://localhost:8787/api/webhooks/modal \
   -H 'Content-Type: application/json' \
-  -d '{"arxiv_id":"2005.14165","status":"complete","duration_seconds":600}'
+  -d '{"arxiv_id":"2005.14165","status":"narrated","duration_seconds":600,"eta_seconds":0}'
 ```
 
 ### Database Management
