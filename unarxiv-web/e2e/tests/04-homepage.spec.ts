@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { API_BASE, PAPER_CARD, NEWLY_ADDED_NAV } from "../helpers/fixtures";
 
+// BrowseLayout renders two "Newly Added" buttons (mobile pill + desktop sidebar).
+// On desktop viewport the mobile button is display:none, so we must use :visible.
+const NEWLY_ADDED_VISIBLE = `[data-testid="newly-added-nav"]:visible, button:has-text("Newly Added"):visible`;
+
 test.describe("Homepage", () => {
   test("homepage loads and shows paper cards", async ({ page }) => {
     await page.goto("/");
@@ -25,7 +29,7 @@ test.describe("Homepage", () => {
 
   test("Newly Added navigation button is visible on homepage", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(NEWLY_ADDED_NAV).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(NEWLY_ADDED_VISIBLE).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("clicking Newly Added from a collection page navigates back to /", async ({
@@ -45,13 +49,16 @@ test.describe("Homepage", () => {
       await page.locator("h1").waitFor({ timeout: 10000 });
       await expect(page).toHaveURL(/\/l/);
 
-      // Click "Newly Added" — should navigate to / via router.push
-      const newlyAddedBtn = page.locator(NEWLY_ADDED_NAV).first();
+      // Click "Newly Added" — should navigate to / via router.push (fix from 45a57c5)
+      const newlyAddedBtn = page.locator(NEWLY_ADDED_VISIBLE).first();
       await expect(newlyAddedBtn).toBeVisible({ timeout: 5000 });
       await newlyAddedBtn.click();
 
-      // Should land on homepage
-      await expect(page).toHaveURL(/^\/?$|^\/$/, { timeout: 10000 });
+      // Should land on homepage (path becomes just "/")
+      await expect(async () => {
+        const pathname = new URL(page.url()).pathname;
+        expect(pathname).toBe("/");
+      }).toPass({ timeout: 10000 });
       // Papers should be visible on homepage
       await expect(page.locator(PAPER_CARD).first()).toBeVisible({ timeout: 10000 });
     } finally {
