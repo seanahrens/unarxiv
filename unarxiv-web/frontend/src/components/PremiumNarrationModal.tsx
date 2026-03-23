@@ -394,8 +394,13 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
     setDefaultScriptingProvider(next);
   };
 
+  // Save error message (shown when any key fails validation)
+  const [saveError, setSaveError] = useState("");
+
   const handleSave = async () => {
     setSaving(true);
+    setSaveError("");
+    const failed: string[] = [];
     // Only encrypt + store providers that were actually modified
     for (const provider of modified) {
       const raw = drafts[provider]?.trim();
@@ -406,16 +411,25 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
         if (result.valid) {
           storeEncryptedKey(provider, resp.encrypted_key);
           setTestStates((s) => ({ ...s, [provider]: "ok" }));
+          // Clear draft so it shows as stored masked key
+          setDrafts((d) => { const n = { ...d }; delete n[provider]; return n; });
+          setModified((m) => { const s = new Set(m); s.delete(provider); return s; });
         } else {
           setTestStates((s) => ({ ...s, [provider]: "fail" }));
+          failed.push(KEY_MGMT_PROVIDERS.find((p) => p.id === provider)?.label ?? provider);
         }
       } catch {
         setTestStates((s) => ({ ...s, [provider]: "fail" }));
+        failed.push(KEY_MGMT_PROVIDERS.find((p) => p.id === provider)?.label ?? provider);
       }
     }
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (failed.length > 0) {
+      setSaveError(`Invalid key for ${failed.join(", ")} — existing key unchanged.`);
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
   };
 
   const hasChanges = modified.size > 0 && [...modified].some((p) => (drafts[p]?.trim() ?? "").length > 0);
@@ -432,9 +446,12 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
         const draft = drafts[prov.id] ?? "";
         const testState = testStates[prov.id];
 
+        // Placeholder-length masked value so it fills the field like a real key
+        const MASKED_VALUE = "••••••••••••••••••••••••••••••••••••••••";
+
         return (
           <div key={prov.id} className="space-y-1.5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pr-7">
               <div className="flex items-center gap-2">
                 <label className="text-xs font-medium text-stone-700">{prov.label}</label>
                 {prov.isScriptingCapable && (hasKey || (isModified && draft) || defaultProv === prov.id) && (
@@ -456,7 +473,7 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
                 href={prov.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-stone-400 hover:text-stone-600 underline"
+                className="text-[10px] text-stone-400 hover:text-stone-600 underline shrink-0"
               >
                 Get Key →
               </a>
@@ -464,39 +481,54 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-2">
               <input
                 type="password"
-                value={isModified ? draft : (hasKey ? "••••••••••••••••" : "")}
+                value={isModified ? draft : (hasKey ? MASKED_VALUE : "")}
                 onChange={(e) => handleChange(prov.id, e.target.value)}
-                onFocus={(e) => {
-                  // If showing masked dots (not yet modified), clear on focus so user can type fresh
+                onFocus={() => {
+                  // Clear masked dots on focus so user can type a new key
                   if (hasKey && !isModified) {
                     handleChange(prov.id, "");
-                    // Move cursor to start after state update
-                    setTimeout(() => e.target.setSelectionRange(0, 0), 0);
+                  }
+                }}
+                onBlur={() => {
+                  // If user focused then left without typing, restore unmodified state
+                  if (isModified && !draft) {
+                    setDrafts((d) => { const n = { ...d }; delete n[prov.id]; return n; });
+                    setModified((m) => { const s = new Set(m); s.delete(prov.id); return s; });
                   }
                 }}
                 placeholder={prov.placeholder}
                 className="flex-1 border border-stone-300 rounded-lg px-3 py-1.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono"
               />
-              {hasKey && !isModified && (
-                <button
-                  type="button"
-                  onClick={() => handleClear(prov.id)}
-                  title="Remove key"
-                  className="text-stone-300 hover:text-red-400 transition-colors shrink-0"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              )}
-              {testState === "ok" && <span className="text-xs text-emerald-600 font-medium shrink-0">✓</span>}
-              {testState === "fail" && <span className="text-xs text-red-500 font-medium shrink-0">✗</span>}
-              {testState === "testing" && <span className="text-xs text-stone-400 font-medium shrink-0">…</span>}
+              {/* Fixed-width status column so inputs never shift */}
+              <span className="w-5 text-center text-xs font-medium shrink-0">
+                {hasKey && !isModified ? (
+                  <button
+                    type="button"
+                    onClick={() => handleClear(prov.id)}
+                    title="Remove key"
+                    className="text-stone-300 hover:text-red-400 transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                ) : testState === "ok" ? (
+                  <span className="text-emerald-600">✓</span>
+                ) : testState === "fail" ? (
+                  <span className="text-red-500">✗</span>
+                ) : testState === "testing" ? (
+                  <span className="text-stone-400">…</span>
+                ) : null}
+              </span>
             </div>
           </div>
         );
       })}
+
+      {saveError && (
+        <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{saveError}</p>
+      )}
 
       <div className="flex items-center justify-between pt-2 border-t border-stone-100">
         <button
