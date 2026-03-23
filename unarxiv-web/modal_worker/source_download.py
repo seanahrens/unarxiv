@@ -34,6 +34,10 @@ class ParseResult:
     raw_source_text: str | None = None
     """Raw source text (LaTeX or PDF) for LLM context. Up to 200K chars."""
 
+    figures_dir: str | None = None
+    """Directory containing extracted figure image files (PNG, JPG, PDF, EPS, etc.)
+    from the LaTeX source archive. Used for multimodal LLM figure descriptions."""
+
     work_dir: str = ""
     """Temporary working directory (caller should clean up)."""
 
@@ -65,13 +69,31 @@ def _save_to_dir(data: bytes, work_dir: str, filename: str) -> str:
     return path
 
 
-def _extract_raw_latex_text(latex_path: str, work_dir: str, max_chars: int = 200_000) -> str | None:
-    """Extract raw .tex content from a LaTeX tar archive for LLM context."""
+def _extract_source_archive(latex_path: str, work_dir: str) -> str | None:
+    """Extract a LaTeX tar archive into work_dir/src/ and return the directory path.
+
+    Returns the extraction directory on success, None on failure.
+    Idempotent: if already extracted, returns the existing directory.
+    """
+    extract_dir = os.path.join(work_dir, "src")
+    if os.path.isdir(extract_dir):
+        return extract_dir
     try:
-        extract_dir = os.path.join(work_dir, "src")
         os.makedirs(extract_dir, exist_ok=True)
         with tarfile.open(latex_path, "r:*") as tf:
             _safe_extractall(tf, extract_dir)
+        return extract_dir
+    except Exception as e:
+        print(f"Warning: could not extract LaTeX archive: {e}")
+        return None
+
+
+def _extract_raw_latex_text(latex_path: str, work_dir: str, max_chars: int = 200_000) -> str | None:
+    """Extract raw .tex content from a LaTeX tar archive for LLM context."""
+    try:
+        extract_dir = _extract_source_archive(latex_path, work_dir)
+        if not extract_dir:
+            return None
 
         tex_parts: list[str] = []
         total = 0
@@ -200,11 +222,15 @@ def download_and_parse(
 
         source_path = latex_path or pdf_local_path
 
-    # Extract raw source text for LLM context (premium only)
+    # Extract raw source text for LLM context (premium only).
+    # Also extract the source archive to expose figures_dir for multimodal LLM calls.
     raw_source_text: str | None = None
+    figures_dir: str | None = None
     if extract_raw_source:
         if latex_path:
             raw_source_text = _extract_raw_latex_text(latex_path, work_dir)
+            # figures_dir is the extracted archive directory — contains all image files
+            figures_dir = os.path.join(work_dir, "src") if os.path.isdir(os.path.join(work_dir, "src")) else None
         if not raw_source_text and pdf_local_path:
             raw_source_text = _extract_raw_pdf_text(pdf_local_path)
 
@@ -226,5 +252,6 @@ def download_and_parse(
         latex_path=latex_path,
         pdf_path=pdf_local_path,
         raw_source_text=raw_source_text,
+        figures_dir=figures_dir,
         work_dir=work_dir,
     )

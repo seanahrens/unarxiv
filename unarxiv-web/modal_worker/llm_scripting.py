@@ -17,9 +17,27 @@ Supported LLM providers:
 
 from __future__ import annotations
 
+import base64
+import os
 import re
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
+
+# Image types we can send directly to vision LLMs
+_IMAGE_MEDIA_TYPES: dict[str, str] = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+# Types we can convert to PNG via pymupdf before sending
+_CONVERTIBLE_EXTENSIONS = {".pdf", ".eps"}
+
+# Max bytes per image (5 MB — lowest common denominator across all providers)
+_MAX_IMAGE_BYTES = 5 * 1024 * 1024
+# Max images to attach per LLM chunk (keep cost/latency bounded)
+_MAX_IMAGES_PER_CHUNK = 5
 
 
 # ---------------------------------------------------------------------------
@@ -96,18 +114,21 @@ Guidelines:
    "Please provide more content", "Sorry, I can only...", "While I cannot
    visually display the figure", or any similar chatbot-style response. Process
    whatever input you receive.
-7. Figures without visual access: You cannot see figures, but you can describe
-   them from available text. Use the \\caption{} text, data values mentioned in
-   adjacent paragraphs, axis labels, and any numbers the authors attribute to the
-   figure. Never say "I cannot display the figure." Always produce a concrete
-   description. Never hedge with "is likely showing" — produce a confident
-   description based on available information.
-   For structured figures (tables, flowcharts, multi-level diagrams): infer the
-   structure from context and describe it explicitly. For example: "Figure 2 is a
-   table with 6 rows, one per level labeled L0 through L5. Each row defines..." or
-   "Figure 1 shows a three-stage flowchart with arrows connecting..." Use the
-   surrounding text, caption, and level/column/row labels visible in the LaTeX
-   source to reconstruct what the figure contains. Do not just restate the caption.
+7. Figures — visual and text-based descriptions:
+   When figure images are provided alongside this chunk (as vision inputs), describe
+   them based on what you actually see: chart type, axes and their ranges, specific
+   data values and bars/lines/points, colour coding, labels, legends, and the main
+   visual takeaway. Go beyond the caption — tell the listener what the figure looks
+   like and what stands out visually.
+   When no image is provided for a figure, describe it from the available text:
+   use the \\caption{} text, data values in adjacent paragraphs, axis labels, and
+   any numbers the authors attribute to the figure. For structured figures (tables,
+   flowcharts, multi-level diagrams) infer the structure explicitly — e.g. "Figure 2
+   is a table with 6 rows, one per level labeled L0 through L5. Each row defines..."
+   or "Figure 1 shows a three-stage flowchart with arrows connecting..."
+   In both cases: never say "I cannot display the figure", never hedge with "is
+   likely showing", and never just restate the caption. Always produce a concrete,
+   confident description.
 8. All content covered: Narrate ALL content in the section — every paragraph,
    every result, every finding, every discussion point. If a paragraph discusses
    three findings, narrate all three. Do not condense multiple sentences into one.
@@ -167,12 +188,13 @@ Guidelines:
    phrases like "Unfortunately I cannot", "Please provide more content", "While
    I cannot visually display the figure", or any chatbot-style response. Process
    whatever input you receive.
-7. Figures: If the draft says a figure is "shown" without describing it, add a
-   description based on what the surrounding text says about the figure. Never
-   say you "cannot display" the figure. For structured figures (tables, flowcharts,
-   multi-level diagrams) infer the structure from surrounding text and describe
-   it: "Figure 2 is a table with 6 rows..." rather than restating the caption.
-   Never hedge with "is likely showing" — produce a confident description.
+7. Figures: When figure images are provided as vision inputs, describe what you
+   actually see — chart type, axes, data values, labels, colour coding, and the
+   main visual takeaway. When no image is provided, describe from surrounding text
+   and context. For structured figures (tables, flowcharts, diagrams) infer the
+   structure: "Figure 2 is a table with 6 rows..." rather than restating the
+   caption. Never say you "cannot display" the figure, never hedge with "is likely
+   showing" — always produce a concrete, confident description.
 8. Your output must be at least as long as the input. You are enhancing, not
    condensing. Do not summarize.
 9. Preserve all technical accuracy.
@@ -192,6 +214,111 @@ Improve this section for audio narration. Cover ALL content — do not shorten.\
 
 # Maximum chars per chunk sent to the LLM
 _MAX_CHUNK_CHARS = 50_000
+
+
+# ---------------------------------------------------------------------------
+# Figure image helpers
+# ---------------------------------------------------------------------------
+
+def _build_figure_map(figures_dir: str) -> dict[str, str]:
+    """Scan an extracted LaTeX source directory and return a mapping of
+    figure reference names → absolute file paths.
+
+    Maps both the bare stem (e.g. "fig1") and relative paths without
+    extension (e.g. "figures/fig1") so that \includegraphics{figures/fig1}
+    and \includegraphics{fig1} both resolve correctly.
+    """
+    figure_map: dict[str, str] = {}
+    all_exts = set(_IMAGE_MEDIA_TYPES) | _CONVERTIBLE_EXTENSIONS
+    for root, _, files in os.walk(figures_dir):
+        for fname in files:
+            stem, ext = os.path.splitext(fname)
+            if ext.lower() not in all_exts:
+                continue
+            full_path = os.path.join(root, fname)
+            # Map by bare stem
+            figure_map[stem] = full_path
+            # Map by relative path without extension (e.g. "figures/fig1")
+            rel_no_ext = os.path.splitext(os.path.relpath(full_path, figures_dir))[0]
+            figure_map[rel_no_ext] = full_path
+    return figure_map
+
+
+def _find_figure_refs(chunk: str) -> list[str]:
+    """Extract figure filename references from \\includegraphics commands in a LaTeX chunk.
+
+    Handles both \includegraphics{name} and \includegraphics[opts]{name}.
+    Returns candidate lookup keys (with and without extension).
+    """
+    pattern = re.compile(r'\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}')
+    refs: list[str] = []
+    seen: set[str] = set()
+    for m in pattern.finditer(chunk):
+        ref = m.group(1).strip()
+        for key in (ref, os.path.splitext(ref)[0]):
+            if key not in seen:
+                refs.append(key)
+                seen.add(key)
+    return refs
+
+
+def _load_image(path: str) -> tuple[str, str] | None:
+    """Load an image file and return (media_type, base64_data), or None on failure.
+
+    Directly encodes PNG/JPG/GIF/WEBP. Converts single-page PDF/EPS to PNG
+    via pymupdf if available. Skips files exceeding _MAX_IMAGE_BYTES.
+    """
+    ext = os.path.splitext(path)[1].lower()
+
+    if ext in _IMAGE_MEDIA_TYPES:
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+            if len(data) > _MAX_IMAGE_BYTES:
+                print(f"[llm] Skipping oversized image ({len(data):,} bytes): {path}")
+                return None
+            return _IMAGE_MEDIA_TYPES[ext], base64.b64encode(data).decode()
+        except Exception as e:
+            print(f"[llm] Could not load image {path}: {e}")
+            return None
+
+    if ext in _CONVERTIBLE_EXTENSIONS:
+        try:
+            import fitz  # pymupdf
+            doc = fitz.open(path)
+            if not doc:
+                return None
+            page = doc[0]
+            # 150 DPI — good quality / size balance for LLM vision
+            pix = page.get_pixmap(matrix=fitz.Matrix(150 / 72, 150 / 72))
+            png_bytes = pix.tobytes("png")
+            doc.close()
+            if len(png_bytes) > _MAX_IMAGE_BYTES:
+                print(f"[llm] Skipping oversized converted image ({len(png_bytes):,} bytes): {path}")
+                return None
+            return "image/png", base64.b64encode(png_bytes).decode()
+        except Exception as e:
+            print(f"[llm] Could not convert {path} to PNG: {e}")
+            return None
+
+    return None
+
+
+def _images_for_chunk(chunk: str, figure_map: dict[str, str]) -> list[tuple[str, str]]:
+    """Return (media_type, base64_data) pairs for figures referenced in a LaTeX chunk."""
+    images: list[tuple[str, str]] = []
+    seen_paths: set[str] = set()
+    for ref in _find_figure_refs(chunk):
+        path = figure_map.get(ref)
+        if not path or path in seen_paths:
+            continue
+        seen_paths.add(path)
+        img = _load_image(path)
+        if img:
+            images.append(img)
+            if len(images) >= _MAX_IMAGES_PER_CHUNK:
+                break
+    return images
 
 
 # ---------------------------------------------------------------------------
@@ -333,12 +460,25 @@ class LLMResult:
 
 @runtime_checkable
 class LLMProvider(Protocol):
-    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
-        """Generate a narration script from source (LaTeX or free-tier script)."""
+    def generate_script(
+        self,
+        source: str,
+        is_latex: bool = True,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
+        """Generate a narration script from source (LaTeX or free-tier script).
+
+        images: optional list of (media_type, base64_data) pairs for figures
+        referenced in this chunk, used for multimodal vision descriptions.
+        """
         ...
 
-    # Keep backward compat alias
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def improve_script(
+        self,
+        script: str,
+        raw_source: str | None = None,
+        figures_dir: str | None = None,
+    ) -> LLMResult:
         ...
 
 
@@ -357,15 +497,33 @@ class AnthropicProvider:
         self._api_key = api_key
         self._model = model or self.DEFAULT_MODEL
 
-    def _call_llm(self, system: str, user: str, max_tokens: int) -> LLMResult:
+    def _call_llm(
+        self,
+        system: str,
+        user: str,
+        max_tokens: int,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
         import anthropic  # noqa: PLC0415
 
         client = anthropic.Anthropic(api_key=self._api_key)
+        # Build user content: images first, then text
+        if images:
+            content: list = [
+                {
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": mt, "data": b64},
+                }
+                for mt, b64 in images
+            ]
+            content.append({"type": "text", "text": user})
+        else:
+            content = user  # type: ignore[assignment]
         message = client.messages.create(
             model=self._model,
             max_tokens=max_tokens,
             system=system,
-            messages=[{"role": "user", "content": user}],
+            messages=[{"role": "user", "content": content}],
         )
         improved = message.content[0].text
         in_tok = message.usage.input_tokens
@@ -373,16 +531,26 @@ class AnthropicProvider:
         cost = round(in_tok * _ANTHROPIC_COST_IN + out_tok * _ANTHROPIC_COST_OUT, 6)
         return LLMResult(improved, in_tok, out_tok, cost, "anthropic", self._model)
 
-    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+    def generate_script(
+        self,
+        source: str,
+        is_latex: bool = True,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
         sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
         user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
         user_msg = user_tmpl.format(source=source)
         max_tok = _compute_max_tokens(len(source))
-        return self._call_llm(sys_prompt, user_msg, max_tok)
+        return self._call_llm(sys_prompt, user_msg, max_tok, images=images)
 
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def improve_script(
+        self,
+        script: str,
+        raw_source: str | None = None,
+        figures_dir: str | None = None,
+    ) -> LLMResult:
         if raw_source:
-            return generate_from_source(self, raw_source, fallback_script=script)
+            return generate_from_source(self, raw_source, fallback_script=script, figures_dir=figures_dir)
         return self.generate_script(script, is_latex=False)
 
 
@@ -393,16 +561,37 @@ class OpenAIProvider:
         self._api_key = api_key
         self._model = model or self.DEFAULT_MODEL
 
-    def _call_llm(self, system: str, user: str, max_tokens: int) -> LLMResult:
+    def _call_llm(
+        self,
+        system: str,
+        user: str,
+        max_tokens: int,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
         from openai import OpenAI  # noqa: PLC0415
 
         client = OpenAI(api_key=self._api_key)
+        # Build user content: images first, then text
+        if images:
+            user_content: list = [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{mt};base64,{b64}",
+                        "detail": "low",
+                    },
+                }
+                for mt, b64 in images
+            ]
+            user_content.append({"type": "text", "text": user})
+        else:
+            user_content = user  # type: ignore[assignment]
         response = client.chat.completions.create(
             model=self._model,
             max_tokens=max_tokens,
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": user},
+                {"role": "user", "content": user_content},
             ],
         )
         improved = response.choices[0].message.content or ""
@@ -411,16 +600,26 @@ class OpenAIProvider:
         cost = round(in_tok * _OPENAI_COST_IN + out_tok * _OPENAI_COST_OUT, 6)
         return LLMResult(improved, in_tok, out_tok, cost, "openai", self._model)
 
-    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+    def generate_script(
+        self,
+        source: str,
+        is_latex: bool = True,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
         sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
         user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
         user_msg = user_tmpl.format(source=source)
         max_tok = _compute_max_tokens(len(source))
-        return self._call_llm(sys_prompt, user_msg, max_tok)
+        return self._call_llm(sys_prompt, user_msg, max_tok, images=images)
 
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def improve_script(
+        self,
+        script: str,
+        raw_source: str | None = None,
+        figures_dir: str | None = None,
+    ) -> LLMResult:
         if raw_source:
-            return generate_from_source(self, raw_source, fallback_script=script)
+            return generate_from_source(self, raw_source, fallback_script=script, figures_dir=figures_dir)
         return self.generate_script(script, is_latex=False)
 
 
@@ -431,12 +630,26 @@ class GeminiProvider:
         self._api_key = api_key
         self._model = model or self.DEFAULT_MODEL
 
-    def _call_llm(self, system: str, user: str, _max_tokens: int) -> LLMResult:
+    def _call_llm(
+        self,
+        system: str,
+        user: str,
+        _max_tokens: int,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
         import google.generativeai as genai  # noqa: PLC0415
 
         genai.configure(api_key=self._api_key)
         model = genai.GenerativeModel(self._model, system_instruction=system)
-        response = model.generate_content(user)
+        if images:
+            parts: list = [
+                {"inline_data": {"mime_type": mt, "data": b64}}
+                for mt, b64 in images
+            ]
+            parts.append(user)
+            response = model.generate_content(parts)
+        else:
+            response = model.generate_content(user)
         improved = response.text
         usage = response.usage_metadata
         in_tok = usage.prompt_token_count
@@ -444,16 +657,26 @@ class GeminiProvider:
         cost = round(in_tok * _GEMINI_COST_IN + out_tok * _GEMINI_COST_OUT, 6)
         return LLMResult(improved, in_tok, out_tok, cost, "gemini", self._model)
 
-    def generate_script(self, source: str, is_latex: bool = True) -> LLMResult:
+    def generate_script(
+        self,
+        source: str,
+        is_latex: bool = True,
+        images: list[tuple[str, str]] | None = None,
+    ) -> LLMResult:
         sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
         user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
         user_msg = user_tmpl.format(source=source)
         max_tok = _compute_max_tokens(len(source))
-        return self._call_llm(sys_prompt, user_msg, max_tok)
+        return self._call_llm(sys_prompt, user_msg, max_tok, images=images)
 
-    def improve_script(self, script: str, raw_source: str | None = None) -> LLMResult:
+    def improve_script(
+        self,
+        script: str,
+        raw_source: str | None = None,
+        figures_dir: str | None = None,
+    ) -> LLMResult:
         if raw_source:
-            return generate_from_source(self, raw_source, fallback_script=script)
+            return generate_from_source(self, raw_source, fallback_script=script, figures_dir=figures_dir)
         return self.generate_script(script, is_latex=False)
 
 
@@ -465,11 +688,16 @@ def generate_from_source(
     provider: LLMProvider,
     raw_source: str,
     fallback_script: str | None = None,
+    figures_dir: str | None = None,
 ) -> LLMResult:
     """Generate a narration script from LaTeX source, chunked by sections.
 
     For papers of any length — splits LaTeX into section-level chunks,
     processes each through the LLM, and concatenates the results.
+
+    If figures_dir is provided, figure images referenced via \\includegraphics
+    in each chunk are loaded and sent to the LLM as vision inputs, enabling
+    concrete visual descriptions instead of caption-only summaries.
 
     Falls back to chunk-processing the free-tier script if no LaTeX source.
     """
@@ -497,6 +725,12 @@ def generate_from_source(
     else:
         raise ValueError("No source material provided for script generation")
 
+    # Build figure map once if a figures directory was provided
+    figure_map: dict[str, str] = {}
+    if figures_dir and is_latex:
+        figure_map = _build_figure_map(figures_dir)
+        print(f"[llm] Figure map: {len(figure_map)} entries from {figures_dir}")
+
     # Process each chunk sequentially
     script_parts: list[str] = []
     total_in_tok = 0
@@ -506,8 +740,10 @@ def generate_from_source(
     result_model = ""
 
     for i, chunk in enumerate(chunks):
-        print(f"[llm] Processing chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars)...")
-        result = provider.generate_script(chunk, is_latex=is_latex)
+        images = _images_for_chunk(chunk, figure_map) if figure_map else []
+        img_note = f", {len(images)} image(s)" if images else ""
+        print(f"[llm] Processing chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars{img_note})...")
+        result = provider.generate_script(chunk, is_latex=is_latex, images=images or None)
         script_parts.append(result.improved_script)
         total_in_tok += result.input_tokens
         total_out_tok += result.output_tokens

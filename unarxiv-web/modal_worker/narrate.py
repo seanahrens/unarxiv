@@ -606,7 +606,7 @@ def narrate_paper_premium(
             has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
             print(f"Running LLM script generation ({llm_provider}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
             provider = get_llm_provider(llm_provider, llm_api_key)
-            llm_result = provider.improve_script(tts_text, raw_source=raw_source_text)
+            llm_result = provider.improve_script(tts_text, raw_source=raw_source_text, figures_dir=parsed.figures_dir)
             tts_text = llm_result.improved_script
             print(
                 f"LLM done: {llm_result.input_tokens} in / {llm_result.output_tokens} out "
