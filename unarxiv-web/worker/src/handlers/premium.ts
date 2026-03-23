@@ -28,6 +28,9 @@ export const PRICING = {
       "gpt-4o-mini": { input_per_1m_tokens: 0.15,  output_per_1m_tokens: 0.60  },
     },
     anthropic: {
+      "claude-haiku-4-5-20251001":  { input_per_1m_tokens: 0.80,  output_per_1m_tokens: 4.00  },
+      "claude-sonnet-4-6":          { input_per_1m_tokens: 3.00,  output_per_1m_tokens: 15.00 },
+      // Legacy IDs kept so historical cost records still look up correctly
       "claude-3-5-haiku-20241022":  { input_per_1m_tokens: 0.80,  output_per_1m_tokens: 4.00  },
       "claude-3-7-sonnet-20250219": { input_per_1m_tokens: 3.00,  output_per_1m_tokens: 15.00 },
     },
@@ -122,9 +125,10 @@ export function estimateCost(
   scriptCharCount: number
 ): { llm_cost: number; tts_cost: number; total_cost: number } {
   // Rough token estimate: 1 token ≈ 4 chars. Output tokens ≈ script chars / 4.
-  // Input tokens ≈ 30% of output (system prompt + abstract context).
+  // Input tokens ≈ 3x output: the LLM receives raw LaTeX (typically 3-5x the
+  // narration length) plus the system prompt per chunk.
   const outputTokens = scriptCharCount / 4;
-  const inputTokens = outputTokens * 0.3;
+  const inputTokens = outputTokens * 3.0;
 
   const llmPrices = (PRICING.llm as any)[llmProvider]?.[llmModel];
   const llm_cost = llmPrices
