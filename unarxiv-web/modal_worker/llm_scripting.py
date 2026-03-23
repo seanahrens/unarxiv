@@ -32,25 +32,74 @@ receive a section of a research paper in LaTeX format. Convert it into a
 natural, spoken narration script suitable for text-to-speech audio.
 
 Guidelines:
-1. Comprehensive coverage: Narrate ALL content in the section — every paragraph,
-   every result, every finding, every discussion point. A listener should learn
-   everything they would from reading this section of the paper.
-2. Figures and tables: Describe what they show verbally. Use phrases like
-   "Figure 3 shows...", "The table compares...", followed by key findings and
-   trends. Extract descriptions from captions, labels, and surrounding text.
+1. Near-verbatim fidelity: Preserve the authors' exact wording wherever possible.
+   Do NOT paraphrase, rewrite, or condense any sentence. The ONLY permitted
+   changes are: (a) removing LaTeX markup and commands, (b) expanding inline math
+   to spoken English, and (c) describing figures and tables verbally. Every
+   sentence in the source must produce a corresponding spoken sentence in the
+   output. A listener should hear the paper as the authors wrote it.
+2. Figures and tables: Describe them with enough detail that a listener who
+   cannot see them still understands ~75% of the meaning. Requirements:
+   - Name specific data values, percentages, and numbers visible in the figure.
+   - Describe the visual layout (e.g., "a horizontal bar chart", "a 3-column
+     table", "a scatter plot with colored clusters").
+   - Highlight relative comparisons (e.g., "X outperforms Y by 8 points", "the
+     top three models are within 5 percent of each other").
+   - Convey the main visual takeaway, not just the caption text.
+   - Example: Instead of "Figure 3 shows model performance", say: "Figure 3 is a
+     bar chart showing performance of 7 models. GPT-4o leads at 74 percent,
+     followed closely by Gemini-Pro at 71 percent, while the remaining five
+     models cluster between 45 and 55 percent. Open-source models consistently
+     trail proprietary ones by about 20 points."
+   - Use captions, axis labels, and surrounding text to infer any data points
+     not explicitly listed in the LaTeX.
 3. Equations: Speak mathematical expressions in plain English. For example,
    "x squared plus y squared equals r squared". Convey the mathematical meaning
    without any symbols or LaTeX notation.
-4. Clean output: Remove all LaTeX formatting commands, citation markers like
-   [1] or \\cite{}, footnote references, raw URLs, and \\label{} commands.
-   Smooth any abrupt transitions.
+4. Clean output: Remove all LaTeX formatting commands. Custom macros (commands
+   like \\benchname, \\myterm, \\algname) must be replaced: look for their
+   \\newcommand definition in the document and substitute the expansion (e.g.,
+   \\benchname defined as VTC-Bench → replace all \\benchname with "VTC-Bench").
+   If no definition is found, remove the backslash and use the macro name as a
+   readable word. Also remove: citation markers [1], [2,3], \\cite{}, \\citep{},
+   \\citealt{}; footnote reference commands; \\label{} commands; \\ref{}
+   commands (replace with the nearby name if available, else omit); section
+   heading commands (\\section{}, \\subsection{}, etc.) — do NOT output the
+   heading as a standalone line or label. Also remove or skip all document
+   metadata: \\title{}, \\author{}, \\affiliation{}, \\institute{}, \\email{},
+   \\icmlauthor{}, \\icmlaffiliation{}, \\maketitle, \\begin{document}, ORCID
+   links, and similar preamble content — the title, authors, and date are
+   handled by a separate system, do NOT narrate them again.
+   Render URLs naturally without saying "dot" or "slash": e.g., the command
+   \\href{https://example.org/foo}{example.org/foo} becomes "example.org/foo".
 5. Natural speech: Write as if narrating to a listener. Use spoken transitions
-   like "Moving on to...", "Next, the authors examine...", "This brings us to...".
-6. Do NOT summarize: Your narration must be comprehensive, not a summary. Cover
-   every point the authors make. If a paragraph discusses three findings, narrate
-   all three — do not condense them into one sentence.
-7. Accuracy: Preserve all technical claims, numbers, method details, and
-   conclusions exactly as presented in the source.
+   like "Moving on to...", "Next, the authors examine...", "This brings us to..."
+   to bridge within-section topic shifts. Do NOT add "Welcome to this section",
+   "Welcome to a narrated presentation of...", "Today we will discuss...", or
+   "This concludes the section" framing — your output will be concatenated
+   with other sections into one continuous narration. Begin narrating directly.
+   Never add editorial adjectives like "fascinating", "insightful", or
+   "interesting" unless those exact words appear in the source text. Your voice
+   is the paper's voice, not a commentator's.
+6. Never refuse or add meta-commentary: You are a narration engine, not a
+   chatbot. If a chunk contains only a section heading or sparse content, narrate
+   whatever is present. NEVER write phrases like "Unfortunately I cannot",
+   "Please provide more content", "Sorry, I can only...", "While I cannot
+   visually display the figure", or any similar chatbot-style response. Process
+   whatever input you receive.
+7. Figures without visual access: You cannot see figures, but you can describe
+   them from available text. Use the \\caption{} text, data values mentioned in
+   adjacent paragraphs, axis labels, and any numbers the authors attribute to the
+   figure. Never say "I cannot display the figure." Always produce a concrete
+   description. If the caption is the only available information, describe the
+   figure type and what a listener would expect to see based on that caption and
+   the surrounding discussion.
+8. All content covered: Narrate ALL content in the section — every paragraph,
+   every result, every finding, every discussion point. If a paragraph discusses
+   three findings, narrate all three. Do not condense multiple sentences into one.
+9. Accuracy: Preserve all technical claims, numbers, method details, and
+   conclusions exactly as presented in the source. Do not invent or infer
+   findings that are not in the text.
 
 Return ONLY the narration script text. No commentary, preamble, or explanation.\
 """
@@ -73,14 +122,39 @@ receive a section of a draft narration script for a research paper. Improve it
 for audio listening while preserving ALL content.
 
 Guidelines:
-1. Preserve ALL content — every paragraph, result, and discussion point.
-2. Figures/tables: Add verbal descriptions where they are mentioned or skipped.
-3. Equations: Rewrite any remaining symbolic notation into plain spoken English.
-4. Remove citation markers like [1], footnote references, raw URLs.
-5. Add natural spoken transitions between topics.
-6. Your output must be at least as long as the input. You are enhancing, not
+1. Near-verbatim fidelity: Preserve the original wording wherever possible.
+   Do NOT paraphrase, rewrite, or condense any sentence. The ONLY permitted
+   changes are: (a) removing remaining markup or citation artifacts, (b)
+   expanding inline math to spoken English, and (c) improving figure/table
+   descriptions. Every sentence in the input must produce a corresponding spoken
+   sentence in the output.
+2. Figures/tables: If a figure is mentioned without a description, add one with
+   enough detail that a listener understands ~75% of the meaning without seeing
+   it. Name specific data values, describe the visual layout, highlight
+   comparisons, and convey the main takeaway. Do not just restate the caption.
+3. Equations: Rewrite any remaining symbolic or LaTeX notation into plain spoken
+   English (e.g., "x squared plus y squared equals r squared").
+4. Remove citation markers like [1], [2,3], footnote references. Render URLs
+   naturally without "dot" or "slash", e.g. "democracylevels.org/system-card".
+   Remove any section heading labels (e.g., "Section: Introduction" or "End of
+   Section: X") if they appear as standalone lines in the draft.
+   Skip all document metadata if present: author lists with affiliations, email
+   addresses, title re-introductions. Those belong only in the header.
+5. Natural transitions: Add spoken transitions like "Moving on to..." between
+   topic shifts, but do NOT add "Welcome to this section", "Today we will
+   discuss...", or "This concludes the section" framing. Your output will be
+   concatenated with other sections. Never add editorial adjectives like
+   "fascinating" or "insightful" unless they appear in the original source.
+6. Never refuse or add meta-commentary: You are a narration engine. NEVER write
+   phrases like "Unfortunately I cannot", "Please provide more content", "While
+   I cannot visually display the figure", or any chatbot-style response. Process
+   whatever input you receive.
+7. Figures: If the draft says a figure is "shown" without describing it, add a
+   description based on what the surrounding text says about the figure. Never
+   say you "cannot display" the figure.
+8. Your output must be at least as long as the input. You are enhancing, not
    condensing. Do not summarize.
-7. Preserve all technical accuracy.
+9. Preserve all technical accuracy.
 
 Return ONLY the improved script text.\
 """
@@ -103,13 +177,39 @@ _MAX_CHUNK_CHARS = 50_000
 # Section splitting
 # ---------------------------------------------------------------------------
 
+def _strip_latex_preamble(latex: str) -> str:
+    """Strip LaTeX document preamble to avoid narrating author/title metadata.
+
+    Removes everything before \\begin{abstract} or the first \\section{}.
+    If neither is found, returns the original text unchanged.
+    """
+    # Try to find \begin{abstract} first (most papers have one)
+    abstract_match = re.search(r'\\begin\{abstract\}', latex)
+    if abstract_match:
+        return latex[abstract_match.start():]
+
+    # Fall back to first \section, \chapter, etc.
+    section_match = re.search(
+        r'\\(?:chapter|section)\*?\{',
+        latex,
+    )
+    if section_match:
+        return latex[section_match.start():]
+
+    return latex
+
+
 def _split_latex_into_sections(latex: str) -> list[str]:
     """Split LaTeX source into section-level chunks.
 
-    Splits on \\section, \\subsection, \\chapter boundaries.
+    Strips the document preamble first (to avoid narrating author/title
+    metadata that script_builder.py already handles), then splits on
+    \\section, \\subsection, \\chapter boundaries.
     If a section exceeds _MAX_CHUNK_CHARS, sub-splits on \\subsection
     or paragraph (blank line) boundaries.
     """
+    latex = _strip_latex_preamble(latex)
+
     # Pattern matches \section{...}, \subsection{...}, \chapter{...} etc.
     section_pattern = re.compile(
         r'(?=\\(?:chapter|section|subsection|subsubsection)\*?\{)',

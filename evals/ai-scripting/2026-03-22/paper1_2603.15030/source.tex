@@ -1,0 +1,1760 @@
+\documentclass[runningheads]{llncs}
+
+% ---------------------------------------------------------------
+% Include basic ECCV package
+ 
+% TODO REVIEW: Insert your submission number below by replacing '*****'
+% TODO FINAL: Comment out the following line for the camera-ready version
+% \usepackage[review,year=2026,ID=7201]{eccv}
+% TODO FINAL: Un-comment the following line for the camera-ready version
+\usepackage{eccv}
+
+% OPTIONAL: Un-comment the following line for a version which is easier to read
+% on small portrait-orientation screens (e.g., mobile phones, or beside other windows)
+%\usepackage[mobile]{eccv}
+
+
+% ---------------------------------------------------------------
+% Other packages
+
+% Commonly used abbreviations (\eg, \ie, \etc, \cf, \etal, etc.)
+\usepackage{eccvabbrv}
+
+% Include other packages here, before hyperref.
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+% The "axessiblity" package can be found at: https://ctan.org/pkg/axessibility?lang=en
+\usepackage[accsupp]{axessibility}  % Improves PDF readability for those with disabilities.
+
+
+% ---------------------------------------------------------------
+% Hyperref package
+
+% It is strongly recommended to use hyperref, especially for the review version.
+% Please disable hyperref *only* if you encounter grave issues.
+% hyperref with option pagebackref eases the reviewers' job, but should be disabled for the final version.
+%
+% If you comment hyperref and then uncomment it, you should delete
+% main.aux before re-running LaTeX.
+% (Or just hit 'q' on the first LaTeX run, let it finish, and you
+%  should be clear).
+
+% TODO FINAL: Comment out the following line for the camera-ready version
+%\usepackage[pagebackref,breaklinks,colorlinks,citecolor=eccvblue]{hyperref}
+% TODO FINAL: Un-comment the following line for the camera-ready version
+\usepackage{hyperref}
+
+% Support for ORCID icon
+\usepackage{orcidlink}
+
+% \usepackage{titlesec}
+\usepackage{booktabs}  % 专业的表格线
+\usepackage{tabularx}  % 自动调整列宽
+\usepackage{multirow}  % 合并单元格
+\usepackage{pifont}       % 引入 pifont 宏包
+\usepackage{xcolor} % 用于区分正负值（可选）
+\usepackage{rotating}
+\usepackage[table]{xcolor} % 提供表格单元格背景色支持
+\usepackage{array}         % 提供列格式控制 >{\bfseries}
+\usepackage{bbm}
+\usepackage[utf8]{inputenc}
+
+\usepackage{enumitem} % 用于优化列表排版对齐
+\usepackage[most]{tcolorbox} % most 包含了 breakable 库
+\tcbuselibrary{skins} % 引入增强皮肤库以支持阴影等高级排版
+
+\usepackage{marvosym} % 用于生成通讯作者的信封图标 \Letter
+
+\definecolor{bluebg}{RGB}{245, 250, 255}
+\definecolor{blueframe}{RGB}{0, 102, 204}
+
+% 如果你想要彩色的勾叉（推荐，视觉效果更好）：
+\newcommand{\greencmark}{\scalebox{1.3}{\textcolor{green!70!black}{\ding{51}}}} % 护眼绿色的勾
+\newcommand{\redxmark}{\scalebox{1.3}{\textcolor{red}{\ding{55}}}}              % 红色的叉
+
+% 定义背景颜色
+\definecolor{highestBase}{HTML}{FFCCCC}  % 浅红色 (Base最高)
+\definecolor{secondBase}{HTML}{CCE5FF}   % 浅蓝色 (Base次高)
+\definecolor{highestDelta}{HTML}{E2F0D9} % 浅绿色 (Delta最高)
+
+\definecolor{hBase}{HTML}{FFCCCC} % 红色：Base最高
+\definecolor{hTool}{HTML}{CCE5FF} % 蓝色：Tool-use最高 (绝对值)
+\definecolor{hDelta}{HTML}{E2F0D9} % 绿色：Delta最高 (相对值)
+
+% 定义颜色
+\definecolor{bgGain}{HTML}{E6FFE6} % 浅绿色：涨点
+\definecolor{bgLoss}{HTML}{FFE6E6} % 浅红色：掉点
+
+% 定义最大值样式：加粗 + 下划线
+\newcommand{\best}[1]{\textbf{\underline{#1}}}
+
+% 定义学术蓝主题色
+% \definecolor{blueframe}{RGB}{31, 119, 180} % 边框与标题栏背景色 (经典学术蓝)
+% \definecolor{bluebg}{RGB}{244, 249, 252}   % 内容区背景色 (极浅的冰蓝色)
+
+\newcommand{\benchname}{VTC-Bench\xspace}
+
+\begin{document}
+
+% ---------------------------------------------------------------
+% TODO REVIEW: Replace with your title
+\title{\benchname: Evaluating Agentic Multimodal Models via Compositional Visual Tool Chaining} 
+
+% TODO REVIEW: If the paper title is too long for the running head, you can set
+% an abbreviated paper title here. If not, comment out.
+\titlerunning{VTC-Bench: VisualToolChain-Bench}
+
+% TODO FINAL: Replace with your author list. 
+% Include the authors' OCRID for the camera-ready version, if at all possible.
+\author{Xuanyu Zhu\inst{1,7} \and
+Yuhao Dong\inst{2}$^\dagger$ \and
+Rundong Wang\inst{3} \and Yang Shi\inst{1} \and Zhipeng Wu\inst{4} \and Yinlun Peng\inst{5} \and YiFan Zhang \inst{6}\and Yihang Lou\inst{1} \and Yuanxing Zhang\inst{1} \and Ziwei Liu\inst{2} \and \\ Yan Bai\inst{7}\textsuperscript{,\Letter} \and Yuan Zhou\textsuperscript{\Letter}}
+
+% TODO FINAL: Replace with an abbreviated list of authors.
+\authorrunning{X. Zhu et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+
+% TODO FINAL: Replace with your institution list.
+% \institute{Peking University \and
+% Nanyang Technological University \and
+% University of Science and Technology of China \and
+%  Chongqing University\and
+% National University of Defense Technology \and
+% CASIA \and Meituan \and AIBD
+% }
+
+\institute{
+$^{1}$PKU \quad
+$^{2}$NTU \quad 
+$^{3}$USTC\quad
+$^{4}$CQU \quad 
+$^{5}$NUDT \quad
+$^{6}$CASIA \quad
+$^{7}$Meituan
+}
+
+\maketitle
+
+
+% --- 开始设置自定义脚注 ---
+\renewcommand{\thefootnote}{$\dagger$} % 强制把脚注符号临时改成剑号
+\footnotetext[1]{Project leader.}      % 此时无论填[1]还是[2]，都会生成剑号
+
+\renewcommand{\thefootnote}{\Letter}   % 强制把脚注符号临时改成信封
+\footnotetext[2]{Corresponding authors.} % 生成信封
+
+\renewcommand{\thefootnote}{\arabic{footnote}} % 恢复默认阿拉伯数字脚注，以免影响正文
+% --- 结束设置自定义脚注 ---
+% \vspace{0.3cm} % 调整与上方作者信息的间距
+\begin{center}
+    \large % 稍微放大字体，与图片效果保持一致
+    \href{https://github.com/zhuzil/VTC-Bench}{\textcolor{magenta}{\texttt{https://github.com/zhuzil/VTC-Bench}}}
+    % 如果之后需要加上 Hugging Face 链接，可以用同样的格式：
+    % \\
+    % \vspace{0.1cm}
+    % \href{https://huggingface.co/datasets/your-repo/VTC-Bench}{\textcolor{magenta}{\texttt{https://huggingface.co/datasets/your-repo/VTC-Bench}}}
+\end{center}
+% \vspace{0.3cm} % 调整与下方摘要的间距
+
+% \begin{abstract}
+%     Multimodal Large Language Models (MLLMs) are evolving from basic tool usage to intrinsic visual understanding, a paradigm shift often described as "Thinking with Images." While this evolution promises agents capable of programmatic visual operations and creative reasoning, current research remains constrained by a narrow scope of visual capabilities—typically confined to simple perception or elementary image manipulations. This limitation fails to challenge the models' ability to orchestrate complex, multi-step solutions and overlooks the vast potential of established computer vision algorithms to expand the boundaries of agentic intelligence. To address this gap, we introduce \benchname, a comprehensive benchmark designed to evaluate the diversity and compositional capabilities of agentic MLLMs. We define 32 atomic visual primitives as foundational building blocks and construct 700 problems across 9 distinct real-world categories. Unlike existing benchmarks, \benchname focuses on the compositional invocation of tools, rigorously assessing how models transition from single-step execution to strategic problem-solving chains. Our benchmark reveals the current limitations in agentic planning and highlights the necessity for smarter, more versatile tool usage in the next generation of MLLMs.
+    
+%   \keywords{First keyword \and Second keyword \and Third keyword}
+% \end{abstract}
+
+% \begin{figure}[h]
+% \vspace{-0.5cm}
+%     \centering
+%     \includegraphics[width=0.7\linewidth]{images/Teaser.pdf}
+%     \caption{Overview of our proposed Tool-Chain Bench (top) and the "Thinking with Image" reasoning process enabled by our toolkit (bottom).}
+%     % Overview of (上图) 我们提出的Tool-Chain Bench and (下图) 基于我们的Toolkit 的 Thinking with image的 reasoning 过程
+%     \label{fig:Teaser}
+%     \vspace{-1cm}
+% \end{figure}
+\begin{abstract}
+% Multimodal Large Language Models (MLLMs) are undergoing a paradigm shift toward "Thinking with Images," where active tool invocation is essential for solving complex visual tasks. 
+% However, current evaluations remain limited by sparse toolsets and single-step execution, failing to capture the intricacies of strategic planning and multi-round tool coordination. 
+% To bridge this gap, we introduce \benchname, a comprehensive framework designed to evaluate the compositional tool-use proficiency of agentic MLLMs. Our benchmark features a diverse library of 32 OpenCV-based visual primitives and 680 expert-curated problems across a nine-category cognitive hierarchy. 
+% Unlike existing works, \benchname emphasizes the orchestration of long-range toolchains, requiring models to transition from passive sensing to active constructive reasoning. 
+% Evaluations of 19 leading MLLMs show that while multi-round composition improves performance, models frequently produce redundant tool calls and fail to optimize their execution paths. Our analysis reveals that even advanced models tend to rely excessively on external tools for tasks that could be resolved through their inherent visual perception. Furthermore, we observe a strong preference for a narrow subset of simple, common tools over more complex, task-appropriate operations. These results identify critical bottlenecks in current agentic planning and provide a rigorous diagnostic for developing more capable visual agents.
+Recent advancements extend Multimodal Large Language Models (MLLMs) beyond standard visual question answering to utilizing external tools for advanced visual tasks. Despite this progress, precisely executing and effectively composing diverse tools for complex tasks remain persistent bottleneck. Constrained by sparse tool-sets and simple tool-use trajectories, existing benchmarks fail to capture complex and diverse tool interactions, falling short in evaluating model performance under practical, real-world conditions. To bridge this gap, we introduce VisualToolChain-Bench~(\benchname), a comprehensive benchmark designed to evaluate tool-use proficiency in MLLMs. To align with realistic computer vision pipelines, our framework features 32 diverse OpenCV-based visual operations. This rich tool-set enables extensive combinations, allowing \benchname to rigorously assess multi-tool composition and long-horizon, multi-step plan execution. For precise evaluation, we provide 680 curated problems structured across a nine-category cognitive hierarchy, each with ground-truth execution trajectories. Extensive experiments on 19 leading MLLMs reveal critical limitations in current models' visual agentic capabilities. Specifically, models struggle to adapt to diverse tool-sets and generalize to unseen operations, with the leading model Gemini-3.0-Pro only achieving 51\% on our benchmark. Furthermore, multi-tool composition remains a persistent challenge. When facing complex tasks, models struggle to formulate efficient execution plans, relying heavily on a narrow, suboptimal subset of familiar functions rather than selecting the optimal tools. By identifying these fundamental challenges, \benchname establishes a rigorous baseline to guide the development of more generalized visual agentic models.
+
+\keywords{Multimodal Agentic Models \and Visual Tool Use Benchmark}
+\end{abstract}
+
+\vspace{-0.7cm}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/Teaser.pdf}
+    % \caption{Overview of our proposed \benchname (top) and the visual agentic model reasoning process enabled by our toolkit (bottom).}
+    \caption{\textbf{Overview of \benchname and the agentic reasoning workflow.} The top panel illustrates the framework architecture, featuring a hierarchical task taxonomy and an MLLM-driven toolkit. The bottom panel exemplifies the multi-stage reasoning trajectory, evolving from visual perception enhancement to compositional reasoning.}
+    % Overview of (上图) 我们提出的Tool-Chain Bench and (下图) 基于我们的Toolkit 的 Thinking with image的 reasoning 过程
+    \label{fig:Teaser}
+    \vspace{-0.5cm}
+\end{figure}
+
+
+
+\section{Introduction}
+The rapid evolution~\cite{gemini-2.5-pro,qwen3-vl,google2025gemini3flash,hurst2024gpt4o,openai2025gpt52,kimiteam2026kimik25visualagentic,glm5team2026glm5vibecodingagentic,zhang2025debiasingmultimodallargelanguage,bytedance2026seed2modelcard,google2026gemini,shi2025mavorsmultigranularityvideorepresentation} of Multimodal Large Language Models (MLLMs) has led to remarkable improvements in foundational capabilities such as visual question answering. Building on this progress, recent advancements have expanded their scope by integrating external tools, transforming these models into active, agentic problem solvers. This tool-use ability empowers MLLMs to move beyond basic image understanding to execute complex visual workflows for enhanced image comprehension. By strategically leveraging specialized external visual tools, MLLMs process information more effectively and complete advanced operations. This integration significantly expands their practical skills, making them substantially more versatile for real-world applications.
+
+To assess these emerging agentic capabilities, several benchmarks~\cite{guo2025beyond, li2025tir, su2026agentvista} have been introduced to evaluate how effectively current MLLMs utilize visual tools. However, existing frameworks~\cite{su2026agentvista,guo2025beyond} typically rely on limited tool-sets and simple invocations, rarely testing the complex combinations required for advanced visual reasoning. Furthermore, in practical applications, visual agents must dynamically adapt to a highly diverse array of available tools, and resolving real-world tasks often demands chaining multiple distinct operations together to form a successful execution plan. Failing to capture this necessary diversity and multi-tool composition, current benchmarks obscure the true operational limits of existing models, and this fundamental gap renders them inadequate for guiding the development of more reliable visual agents.
+
+To bridge this critical gap, we introduce VisualToolChain-Bench~(\benchname), a comprehensive benchmark designed to rigorously evaluate the advanced tool-use proficiency of MLLMs on foundational image-based tools. As shown in Fig.~\ref{fig:Teaser}, to emulate authentic computer vision pipelines, our framework integrates 32 distinct visual operations derived from the OpenCV library. These operations serve as the essential building blocks for solving complex visual tasks. By leveraging this versatile tool-set, our benchmark naturally supports advanced tool combinations and multi-step reasoning strategies that reflect real-world challenges. To guarantee a thorough assessment of these capabilities, we constructed 680 meticulously designed problems organized into a nine-level cognitive hierarchy. Furthermore, every problem is paired with a ground-truth execution trajectory to enable the precise evaluation of both intermediate planning and final outcomes. This ensures models are assessed on their underlying logical reasoning rather than merely their final predictions.
+
+We comprehensively evaluate 19 leading MLLMs on \benchname to assess their visual agentic capabilities. Our extensive experiments underscore the highly challenging nature of this benchmark and reveal critical limitations in current models. The overall performance is consistently low, with the top-tier model, like Gemini-3.0-Pro, achieving only 51.2\% on the benchmark. Furthermore, we observe a distinct divergence in tool utilization. While closed-source models demonstrate substantial improvements when equipped with tools, open-source models exhibit minimal gains and sometimes suffer performance degradation. These results highlight a severe pronounced disparity between the current theoretical capability and actual practical proficiency of state-of-the-art models.
+
+To understand the fundamental limitations of current models, we further conduct detailed analysis experiments. Our evaluations reveal that existing models struggle to adapt to diverse tool-sets and generalize to unseen operations. Furthermore, multi-tool composition remains a highly persistent obstacle. We find that models heavily favor a narrow subset of familiar functions instead of actively selecting the optimal tools for a specific task. This strict reliance on known patterns causes significant operational inefficiencies and ultimately leads to execution failures during multi-step reasoning processes. By systematically exposing these specific challenges, \benchname establishes a rigorous baseline to guide the future development of truly generalized visual agents.
+
+
+
+
+
+\section{Related Work}
+\noindent \textbf{Visual Agentic Model}~
+Recent Multimodal Large Language Models (MLLMs) are evolving from static textual reasoning toward a dynamic visual agentic paradigm. Early tool-driven approaches~\cite{mmreact, zeng2022socratic} coordinate external vision experts or fixed APIs for basic visual analysis. To enhance perception, interactive attention mechanisms, such as active zooming~\cite{shen2025zoomeye, zhang2025adaptive} and visual masking, are employed to refine inputs. Recent reinforcement learning methods~\cite{zheng2025deepeyes, hong2025deepeyesv2, wang2025pixel, su2025openthinkimg, lai2025mini, wang2025monetreasoninglatentvisual,zhou2025reinforced} optimize these strategies for specific toolset orchestration. However, the reliance on fixed collections of visual parsers fundamentally restricts generalizability. This rigid design confines models to predefined visual scenarios, preventing adaptation to unseen structures.
+Programmatic visual manipulation addresses these limitations by utilizing python code as a primitive tool~\cite{gupta2023visual, suris2023vipergpt}. This approach enables on-demand tool construction with complex logic, including loops and conditionals. Advanced frameworks~\cite{hu2024visual, fu2025refocus, vinker2025sketchagent, v-thinker, zhao2025pyvision} dynamically generate code for targeted visual editing, while Thyme~\cite{zhang2025thyme} provides code testing for open-source tool-use models. Leading models, including GPT-o3~\cite{openai2025o3o4mini}, GPT-o4-mini~\cite{openai2025o3o4mini}, and GPT-5.2~\cite{openai2025gpt52}, leverage code execution to construct task-specific tools dynamically. 
+Consequently, as state-of-the-art models increasingly embrace this agentic tool-calling paradigm, there is a critical need for a benchmark equipped with a sufficiently diverse tool library to rigorously evaluate their complex, multi-tool compositional capabilities.
+% Consequently, this progression transforms vision into a manipulable workspace, necessitating a shift in benchmarks from isolated tool evaluation to complex compositional execution.
+
+% This progression transforms vision into a manipulable workspace.
+% This demands shifting benchmarks from isolated tool evaluation to complex compositional execution.
+% This paradigm shift necessitates a corresponding evolution in benchmarking methodologies, transitioning from isolated tool evaluation to the assessment of complex compositional tool execution.
+
+% \paragraph{Thinking with Images}
+% Recent Multimodal Large Language Models (MLLMs) are fundamentally shifting from static, text-centric Chain-of-Thought reasoning to a dynamic \textit{Thinking with images} paradigm. Early tool-driven approaches, such as MM-REACT~\cite{mmreact} and Socratic Models~\cite{zeng2022socratic}, coordinate external vision experts or fixed APIs to perform visual analysis. To enhance perception, methods like ZoomEye~\cite{shen2025zoomeye} and Chain-of-Focus~\cite{zhang2025adaptive} introduce active zooming capabilities , while Instruction-Guided Visual Masking (IVM) and Visual CoT employ masking or highlighting to focus attention. Recent works including DeepEyes~\cite{zheng2025deepeyes}, DeepEyesV2~\cite{hong2025deepeyesv2}, Pixel Reasoner~\cite{wang2025pixel}, OpenThinkIMG~\cite{su2025openthinkimg}, Mini-o3~\cite{lai2025mini}, and REVPT~\cite{zhou2025reinforced} further optimize these policies using reinforcement learning to orchestrate specific toolsets. However, these methods typically rely on fixed collections of external visual parsers, which constrains their generality across diverse tasks. In contrast, programmatic visual manipulation offers significantly greater flexibility by leveraging Python code as a primitive tool. VisProg~\cite{gupta2023visual} and ViperGPT~\cite{suris2023vipergpt} compose visual modules via Python to construct tools on demand, enabling complex logic like loops and conditionals. Advanced frameworks including Visual Sketchpad~\cite{hu2024visual}, ReFocus~\cite{fu2025refocus}, SketchAgent~\cite{vinker2025sketchagent}, Thyme~\cite{zhang2025thyme}, V-Thinker~\cite{v-thinker} and PyVision~\cite{zhao2025pyvision} further utilize MLLMs to dynamically write code for targeted visual editing and sketching. Moreover, state-of-the-art models like GPT-o3\cite{openai2025o3o4mini}, GPT-o4-mini\cite{openai2025o3o4mini}, and GPT-5.2\cite{openai2025gpt52} demonstrate powerful cognitive capabilities by leveraging code execution to construct task-specific tools dynamically, aligning with the \textit{Thinking with images} paradigm by transforming vision into a manipulable workspace.
+
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{10pt} 
+\caption{\textbf{Comparison of \benchname with representative multimodal benchmarks.} Compared to existing benchmarks, our work encompasses 32 diverse tools and supports dual interaction paradigms (Code \& Interface). 
+% Furthermore, it pioneers complex long-horizon tool execution characterized by deep inter-tool dependencies. 
+\textbf{RT}: Reference tool-call trajectory provided for analysis. 
+\textbf{MTC}: Multi-tool composition for a single task. 
+\textbf{LHC}: Long-horizon calling with extended execution steps. Tasks necessitate extensive sequential tool invocations. 
+\textbf{SFD}: Strict Functional Dependency where prior outputs are mandatory inputs for subsequent tools. As exemplified in Fig.~\ref{fig:Bad_Case_1}, pre-processing serves as a mandatory prerequisite for accurate downstream tool execution.
+}
+\label{tab:benchmark_comparison}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{ l c c c c c c c c }
+\toprule
+\textbf{Benchmark} & \textbf{Paradigm} & \textbf{\#QA} & \textbf{\#Tasks} & \textbf{\#Tools} & \textbf{RT} & \textbf{MTC} & \textbf{LHC} & \textbf{SFD} \\
+\midrule
+V* \cite{wu2024v} & Static & 191 & 2 & 0 & \redxmark & \redxmark & \redxmark & \redxmark \\
+HRBench \cite{wang2025divide} & Static & 200 & 6 & 0 & \redxmark & \redxmark & \redxmark & \redxmark \\
+GTA \cite{wang2024gta} & Code & 229 & 3 & 14 & \greencmark & \greencmark & \redxmark & \redxmark \\
+TIR-Bench \cite{li2025tir} & Code & 1.2K & 13 & 1/Code & \redxmark & \redxmark & \redxmark & \redxmark \\
+Agent-X \cite{ashraf2025agentx} & Code & 828 & 5 & 14 & \greencmark & \greencmark & \redxmark & \redxmark \\
+VisualToolBench \cite{guo2025beyond} & Code & 1.2K & 5 & 6 & \greencmark & \greencmark & \redxmark & \redxmark \\
+AgentVista \cite{su2026agentvista} & Code & 209 & 7 & 4 & \redxmark & \greencmark & \greencmark & \redxmark \\
+\midrule
+\rowcolor{gray!15}
+\textbf{Ours} & Code \& Interface & 680 & 9 & 32 & \greencmark & \greencmark & \greencmark & \greencmark \\
+\bottomrule
+\end{tabular}
+}
+\vspace{-0.4cm}
+\end{table*}
+
+% \paragraph{Tool call Benchmark in MLLM Benchmark}
+% Standard evaluations of multimodal large language models primarily focus on static perception and reasoning. Benchmarks such as ScienceQA~\cite{lu2022learn}, MME~\cite{fu2023mme}, MathVista~\cite{lu2023mathvista}, MMBench~\cite{liu2024mmbench}, and MMMU~\cite{yue2024mmmu} test models using closed-ended questions and treat vision as a passive input. For visual agent evaluation, V*~\cite{wu2024v} and HRBench~\cite{wang2025divide} introduce active visual exploration tasks. However, these early benchmarks only examine basic operations like cropping and zooming. Recent works including GTA~\cite{wang2024gta},ToolEmu \cite{ruan2023identifying}, m\&m's~\cite{mms}, Octopus~\cite{guo2025octopus}, TIR-Bench~\cite{li2025tir}, and VisualToolBench~\cite{guo2025beyond} further advance this field. Octopus constructs a six-capability orchestration framework to evaluate multimodal agentic reasoning. TIR-Bench assesses thinking-with-images capabilities across various image processing tasks. VisualToolBench examines open-ended visual tasks by combining multiple tools like image processing and web search. However, these existing benchmarks are typically constrained by high-level capability categorizations or specific limited toolsets. In contrast, our proposed benchmark explicitly targets tool diversity and the complexity of multi-step tool composition. We design 680 problems requiring complex multi-step tool combinations. 
+% The model can flexibly call and combine a rich set of OpenCV~\cite{itseez2014theopencv} tools based on the interface by writing Python code or using our defined toolset.
+% This comprehensively evaluates the ability of models to autonomously synthesize programmatic solutions for deep visual reasoning.
+% A comprehensive comparison between \benchname and existing tool learning benchmarks is presented in Tab~\ref{tab:benchmark_comparison}. 
+\noindent \textbf{Agentic Benchmark in MLLM Benchmark}~
+Standard evaluations of multimodal large language models primarily focus on static perception and reasoning. Previous works~\cite{lu2022learn, fu2023mme, lu2023mathvista, shi2025realunifyunifiedmodelstruly,liu2024mmbench, yue2024mmmu,shi2025mmevideoocrevaluatingocrbasedcapabilities,li2025capgeo} test models using static questions and treat vision as a passive input. 
+For visual agent evaluation, some studies~\cite{wu2024v, wang2025divide} introduce active visual exploration tasks. However, these early evaluations only examine basic operations like cropping and zooming. Recent research~\cite{wang2024gta, guo2025octopus, li2025tir, guo2025beyond,su2026agentvista,ashraf2025agentx} further advances this field. These methods evaluate multimodal agentic reasoning~\cite{guo2025octopus}, assess image processing capabilities~\cite{li2025tir}, and combine multiple tools for open-ended visual tasks~\cite{guo2025beyond}. 
+Despite these advancements, existing benchmarks are inherently constrained by limited tool inventories and lack systematic requirements for compositional multi-tool reasoning, and often fail to capture the nuanced demands of practical, real-world applications.
+In contrast, deeply rooted in authentic real-world tasks, our proposed benchmark explicitly targets tool diversity and the complexity of multi-step tool composition. We design 680 problems requiring complex multi-step tool combinations. Models can flexibly call and combine 32 distinct OpenCV~\cite{itseez2014theopencv} tools. 
+Agents address these tasks by synthesizing Python code or utilizing our predefined interface,
+thereby comprehensively evaluating their ability to generate programmatic solutions for deep visual reasoning. 
+A detailed comparison between \benchname and existing benchmarks is presented in Tab.~\ref{tab:benchmark_comparison} to highlight our unique contributions.
+
+\section{VisualToolChain-Bench}
+This section introduces VisualToolChain-Bench(\benchname), with an overview provided in Fig.~\ref{fig:overview}. We first present the benchmark design in Sec.~\ref{sec:design} by establishing a systematic task taxonomy and corresponding toolset. Building upon this foundation, Sec.~\ref{sec:construction} details the benchmark construction process, encompassing data collection, statistical analysis of the dataset, and evaluation metrics.
+% This section introduces \benchname, with an overview provided in Fig.~\ref{fig:overview}. We first present the Benchmark Design in Sec.~\ref{sec:design} by establishing a systematic task taxonomy and the corresponding toolset. Building upon this foundation, Sec.~\ref{sec:construction} details the Benchmark Construction process, which encompasses data collection, statistical characterization of the dataset, and the formulation of evaluation metrics.
+
+% 在接下来的内容中我们在Sec.~\ref{sec:construction}中介绍了我们benchmark的构造过程包括tool set、task design和data collection。在Sec.~\ref{sec:benchmark_summary}中对数据集进行统计分析。在Sec.~\ref{sec:evaluation_metrics}中介绍了我们对数据集分析时候的评估指标。
+% 
+% In this section, we present the proposed Bench, whose overall architecture is depicted in Fig.~\ref{fig:overview}. While current "Thinking-with-Image" models have demonstrated emerging capabilities, they often suffer from limited tool-use diversity, typically converging on a sparse set of functions. Existing benchmarks fail to adequately assess agentic MLLMs in scenarios requiring complex tool coordination. To bridge this gap, we curate a toolset comprising 32 fundamental computer vision operations from OpenCV and develop 9 task categories inspired by human cognitive hierarchies. Each task is specifically designed to necessitate the synergy of three or more tools.
+% To illustrate the complexity of the tasks in \benchname, Fig.~\ref{fig:Gloden_Case} presents a representative example of a multi-step reasoning process.
+% The resulting benchmark contains 680 high-quality samples, meticulously authored by specialized researchers (M.S. and Ph.D. students) to ensure alignment between visual contexts and toolchains. Beyond mere diversity, our evaluation focuses on the intricate orchestration of tool sequences. Furthermore, we adaptively employ various frameworks to optimize the performance of heterogeneous models, thereby systematically exploring the upper bounds of their agentic capabilities.
+% \subsection{Taxonomy}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/tasks.pdf}
+    \caption{\textbf{Overview of \benchname.} 
+    Our benchmark's progressive design structures 9 VQA tasks into a three-tier cognitive hierarchy, evaluating MLLMs' multi-tool orchestration from basic visual recovery to high-level logical deduction.Each task provides a reference toolchain to enable fine-grained diagnostic analysis.}
+    % Our benchmark features 9 VQA tasks requiring multi-tool orchestration to evaluate MLLMs' compositional capabilities, supported by reference toolchains for diagnostic analysis.}
+    % The overview of our benchmark。包含9类VQA任务，每类任务都需要多个工具组合协作来解决考察了mllm的组合工具调用能力，每个任务也提供了参考工具链用于分析。
+    \label{fig:overview}
+    \vspace{-0.5cm}
+\end{figure*}
+
+\subsection{Benchmark Design}\label{sec:design}
+\noindent \textbf{Tool Set}~
+Due to OpenCV's extensiveness and versatility, we identify OpenCV~\cite{itseez2014theopencv} as our primary tool source to address the sparse tool diversity in the existing benchmarks.
+% We identify OpenCV~\cite{itseez2014theopencv} as our primary tool source to address the sparse tool diversity in the existing benchmarks. 
+We curated 32 tools, aligning our selection with the standard human cognitive pipeline: initial restoration, feature distillation, and verification. These tools are organized into four functional modules: (1) Geometry for spatial transformations (e.g., rotation and image pyramids); (2) Enhancement for signal optimization (e.g., color space conversion and binarization); (3) Feature Extraction for deriving structural and semantic primitives (e.g., edge detection and watershed segmentation); and (4) Drawing for reasoning verification and attribute quantification (e.g., contour visualization and area measurement). This integrated suite enables controlled visual operations for various MLLMs, with a more comprehensive taxonomy and technical definitions detailed in the App.~\ref{app:tool_set}.
+
+\begin{figure}[t]
+  \centering
+  \setlength{\tabcolsep}{0pt} % 去除表格列间距干扰
+  
+  % 第一层：内容层（底部对齐，确保图片和表格底边整齐）
+  \begin{minipage}[b]{0.34\linewidth}
+    \centering
+    \renewcommand{\arraystretch}{1.4}
+    \resizebox{\linewidth}{!}{%
+      % 【核心修改】在此处 tabular 环境声明中加入 [b] 参数
+      \begin{tabular}[b]{@{}l r@{}}
+        \toprule
+        \textbf{Statistic} & \textbf{Number} \\
+        \midrule
+        Total questions & 680 \\
+        Multiple-choice & 538 (79.12\%) \\
+        Open & 142 (20.88\%) \\
+        Questions with image & 680 (100.00\%) \\
+        \midrule
+        Average chain length & 5.04 \\
+        Average unique tools & 4.97 \\
+        Total tool calls & 3{,}428 \\
+        Min chain length & 1 \\
+        Median chain length & 5 \\
+        Max chain length & 10 \\
+        \midrule
+        Average prompt length & 18.52 \\
+        \bottomrule
+      \end{tabular}%
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.55\linewidth}
+    \centering
+    \includegraphics[width=\linewidth, trim=0.5cm 0.2cm 0.3cm 0.2cm, clip]{images/Taxonomy.png}
+  \end{minipage}
+
+  % \vspace{5pt} % 手动控制内容与标题的间距
+
+  % 第二层：标题层（顶部对齐，并强制消除默认间距）
+  \begin{minipage}[t]{0.34\linewidth}
+    \setlength{\abovecaptionskip}{0pt} % 强制消除标题上方间距
+    \setlength{\belowcaptionskip}{0pt} % 强制消除标题下方间距
+    \captionof{table}{\strut Statistical summary of \benchname.} 
+    \label{tab:benchmark_overview}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.64\linewidth}
+    \setlength{\abovecaptionskip}{0pt} % 强制消除标题上方间距
+    \setlength{\belowcaptionskip}{0pt} % 强制消除标题下方间距
+    % \captionof{figure}{\strut Domain distribution (inner) and GT tool-chain lengths (outer). Darker shades denote longer steps.}
+    \captionof{figure}{\strut \textbf{Domain distribution (inner) \& toolchain lengths (outer).} Lengths range from 1-3 to 7+, where darker shades denote longer steps.}
+    \label{fig:Category}
+  \end{minipage}
+  \vspace{-0.5cm}
+\end{figure}
+
+% \begin{figure}[t]
+%     \centering
+%     % 子图a
+%     \begin{subfigure}[b]{0.48\linewidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{images/Taxonomy.png}
+%         \caption{Caption 2}
+%         \label{subfig:a}
+%     \end{subfigure}
+%     \hfill
+%     % 子图b
+%     \begin{subfigure}[b]{0.48\linewidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{images/Taxonomy.png}
+%         \caption{Caption 1}
+%         \label{subfig:b}
+%     \end{subfigure}
+%     \caption{Caption}
+%     \label{fig:taxonomy}
+% \end{figure}
+\noindent \textbf{Task Design}~
+Rather than a fragmented collection of benchmarks, our evaluation suite is structured around a cognitive hierarchy, comprising 9 tasks designed to map the evolution of multimodal agents from passive visual sensing to active constructive reasoning. This hierarchy is organized into three progressive tiers:
+
+% \begin{itemize}
+    % \textit{Visual Perception Enhancement}: This foundational stage includes \textit{Robust OCR, Perceptual Restoration, and Attention Focusing}. These tasks require models to use specialized tools to mitigate environmental interference (e.g., rotation, haze, low light) and recover semantic signals from various degraded images. Specifically, Robust OCR introduces synthetic degradation that remains human-recognizable; Perceptual Restoration focuses on scene analysis under haze or low light; and Attention Focusing emphasizes the fine-grained analysis under complex geometric transformations like rotation or mirroring.
+    \textit{Tier 1: Visual Perception Enhancement.} This foundational stage comprises \textit{Robust OCR, Perceptual Restoration, and Attention Focusing}. These tasks require models to employ specialized tools to mitigate environmental interference (e.g., haze, low light) and rectify geometric distortions (e.g., rotation). Specifically, \textit{Robust OCR} targets text recognition under synthetic degradation that remains human-readable; \textit{Perceptual Restoration} focuses on scene recovery in adverse conditions such as haze or low light; and \textit{Attention Focusing} emphasizes fine-grained analysis under geometric transformations like rotation or flipping.
+    
+    % \textit{Quantitative Visual Estimation}: Building on the first stage, the tasks of \textit{Measurement, Color, and Counting} evaluate the model's ability to perceive and precisely measure physical attributes. Measurement requires quantifying size, position, and shape; Color examines color information distillation; and Counting focuses on scene judgment and the invocation of specialized counting tools rather than the model's intrinsic counting ability.
+    \textit{Tier 2: Quantitative Visual Estimation.} Building upon the foundational stage, the tasks of \textit{Measurement, Color, and Counting} evaluate the model's capacity to perceive and precisely quantify physical attributes. Specifically, \textit{Measurement} requires extracting size, position, and shape; \textit{Color} examines the precise extraction of chromatic information; and \textit{Counting} focuses on scene analysis and the strategic invocation of specialized counting tools, rather than relying on the model's intrinsic counting capabilities.
+    
+    % \textit{Compositional Visual Reasoning}: Finally, the \textit{Chart, Math, and Spatial Reasoning} tasks demand complex logical deduction through multi-step tool orchestration. Chart is a comprehensive task requiring the simultaneous restoration, perception, and inference. Math evaluates geometric auxiliary construction, while Spatial Reasoning tests the deep analysis of spatial relations under various extreme conditions like overexposure or heavy blur.
+    \textit{Tier 3: Compositional Visual Reasoning.} Finally, the \textit{Chart, Math, and Spatial Reasoning} tasks demand complex logical deduction through multi-step tool orchestration. \textit{Chart} is a comprehensive task requiring simultaneous restoration, perception, and inference. \textit{Math} evaluates the construction of auxiliary geometric elements, while \textit{Spatial Reasoning} tests the robust analysis of spatial relations under extreme conditions, such as overexposure or heavy blur.
+% \end{itemize}
+
+
+This hierarchical taxonomy not only ensures comprehensive evaluation dimensions but also reveals the complete cognitive spectrum of multimodal agents, marking a transition from passive visual perception to the sophisticated active constructive capability known as visual agentic model. Consequently, a detailed conceptual overview of the proposed benchmark is illustrated in Fig.~\ref{fig:overview}.
+
+\subsection{Benchmark Construction}\label{sec:construction}
+\noindent \textbf{Data collection}~
+Our data curation pipeline is guided by several core principles to ensure a rigorous evaluation. We combine web-crawled images with the strategic repurposing of open-source datasets to balance contextual breadth and environmental noise. Rather than relying on original annotations, we synthesize novel instructions from a tool-centric perspective to compel the exploration of latent logical reasoning. This approach transforms static samples into dynamic challenges that require multi-hop execution. Furthermore, we introduce controlled visual perturbations, such as geometric distortions and radiometric noise, to evaluate model robustness. These non-ideal conditions necessitate a transition from passive recognition to active toolchain planning for image restoration.
+
+\noindent \textbf{Verification Protocol}~
+\benchname follows a rigorous verification protocol to ensure data integrity. Expert annotators first sanitize images by removing metadata and extracting initial labels. 
+We utilize MLLMs including Gemini-3.0-Pro~\cite{google2026gemini} and GPT-5.2~\cite{openai2025gpt52} strictly to validate these manual annotations. Subsequently, Gemini-3.0-Pro drafts the reference toolchains for all samples. Expert researchers then conduct a secondary manual verification on these generated trajectories to determine the finalized ground truth. Finally, a reciprocal auditing phase achieves consensus on accuracy through mutual cross-verification. This rigorous pipeline ultimately yields 680 high-quality robust samples. A technical summary of the entire data collection process is shown in Tab.~\ref{tab:task_overview}. 
+
+
+\begin{table}[t]
+    \centering
+    \caption{\textbf{Overview of 9 distinct tasks in our benchmark.} All tasks feature human-annotated questions and single-choice answers to ensure rigorous evaluation.}
+    \label{tab:task_overview}
+    \resizebox{\linewidth}{!}{
+    \begin{tabular}{l l c c c}
+        \toprule
+        \textbf{Task Category} & \textbf{Data Source} & \textbf{QA Construction} & \textbf{Samples} & \textbf{Answer Type} \\
+        \midrule
+        Attention Focusing      & HRBench~\cite{wang2025divide} \& Web  & Human-annotated & 45 & Open-ended \\
+        Chart          & ChartQA~\cite{masry2022chartqa} \& Web  & Human-annotated & 100 & Single-choice \\
+        Color          & ColorBench~\cite{liang2025colorbench} \& Web & Human-annotated & 90 & Single-choice \\
+        Counting                & Kaggle \& Web                  & Human-annotated & 85 & Single-choice \\
+        Math                    & Web \& Manual Construction     &
+        % Synthetic \& 
+        Human-annotated & 110 & Single-choice \\
+        Measurement             &  Web & Human-annotated & 105 & Single-choice \\
+        Perceptual Restoration  & Kaggle  \& Web                       & Human-annotated & 50 & Single-choice \\
+        Robust OCR              & OCRBench~\cite{liu2024ocrbench} \& Kaggle & Human-annotated & 50 & Open-ended \\
+        Spatial Reasoning       & Kaggle \& Web                  & Human-annotated & 45 & Single-choice \\
+        \bottomrule
+    \end{tabular}
+    }
+    \vspace{-0.5cm}
+\end{table}
+
+
+\noindent \textbf{Benchmark Statistics}~\label{sec:benchmark_summary}
+As summarized in Tab.~\ref{tab:benchmark_overview}, \benchname\ comprises a diverse set of 680 VQA instances, consisting of 538 multiple-choice and 142 open-ended questions. Each question includes a detailed reference toolchain with an average length of 5.04 steps and 4.97 unique tools, indicating the high complexity of the required operations. Overall, the dataset contains a total of 3,428 tool calls, with chain lengths ranging from 1 to 10 and a median of 5. Furthermore, the average prompt length across all questions is 18.52 words. To better visualize this, Fig.~\ref{fig:Category} illustrates the distribution of each task category, while App.~\ref{app:detaled_task_example} provides representative image and question examples for further clarity.
+
+\subsection{Evaluation Metrics}\label{sec:evaluation_metrics}
+
+We adopt Average Pass Rate (APR) as the primary evaluation metric to represent the proportion of correctly answered questions. 
+To analyze tool-use behavior more granularly, we define the \textit{Effective Toolchain} as the minimal sequence of tool calls to produce the final answer. 
+This sequence is determined through a backtracking process from the final output to the original input image.
+
+We evaluate the models using three additional metrics: Tool Call Rate (TCR), which measures the proportion of tasks where a model invokes at least one tool; Mean Absolute Error (MAE), which quantifies the discrepancy in length between the predicted and ground-truth toolchains; and Tool Usage Efficiency ($Eff_{\text{tool}}$), which assesses the precision and conciseness of the tool-calling sequences by comparing the number of effective steps to the total predicted steps. 
+Mathematically, MAE and $Eff_{\text{tool}}$ are formulated as Eq.~\ref{Eq: Eff_tool}:
+\begin{equation}\label{Eq: Eff_tool}
+ \text{MAE} = \frac{1}{N} \sum |L_{G, i} - L_{T, i}|, \quad Eff_{\text{tool}} =  \frac{\sum L_{e, i}}{ \sum L_{T, i}}
+\end{equation}
+% \begin{equation}\label{Eq: Eff_tool}
+%  \text{TCR} = \frac{|\{i \mid L_{T,i} > 0\}|}{N}, \quad \text{MAE} = \frac{1}{N} \sum |L_{G, i} - L_{T, i}|, \quad Eff_{\text{tool}} =  \frac{\sum L_{e, i}}{ \sum L_{T, i}}
+% \end{equation}
+where $N$ represents the total number of evaluated samples. The variables $L_{\text{G}, i}$, $L_{\text{T}, i}$, and $L_{\text{e}, i}$ denote the length of the ground-truth toolchain, the total toolchain, and the length of the effective toolchain for the $i$-th sample, respectively.
+
+\begin{table*}[htbp]
+  \centering
+  \caption{\textbf{Comprehensive evaluation results.} 
+  \best{Bold and Underlined} indicates the highest value in each column.
+  For Overall and Delta columns: \colorbox{bgGain}{Green} indicates improvement and \colorbox{bgLoss}{Red} indicates degradation compared to base. For subcategories, \colorbox{yellow!40}{Yellow} indicates an improvement of more than 10\% compared to base.}
+  \label{tab:comprehensive_results_final}
+  \setlength{\tabcolsep}{2.0pt}
+  \scriptsize
+  \resizebox{\textwidth}{!}{
+  \renewcommand{\arraystretch}{1.1}
+  \begin{tabular}{lll c c cccccccccc}
+    \toprule
+    \textbf{Model} & \textbf{Size} &\textbf{Setting} & \textbf{Overall} & \textbf{Delta} & \textbf{OCR} & \textbf{Attn.} & \textbf{Rest.} & \textbf{Chart} & \textbf{Meas.} & \textbf{Count.} & \textbf{Math} & \textbf{Spat.} & \textbf{Color} \\
+    \midrule
+    \rowcolor{gray!15} \multicolumn{14}{c}{\textbf{Category 1: Proprietary Tool-use Models}} \\
+    \midrule
+    \textbf{GPT-o3} & --- & Base & 31.91 & & 20.00 & 26.67 & 32.00 & 30.00 & 38.10 & 35.29 & 28.18 & 35.56 & 35.56 \\
+     & & Code & \cellcolor{bgGain}36.62 & \cellcolor{bgGain}+4.71 & 28.00 & 31.11 & 34.00 & 40.00 & 38.10 & 34.12 & 30.91 & \cellcolor{yellow!40}51.11 & 42.22 \\
+    &  & Inter. & \cellcolor{bgGain}36.76 & \cellcolor{bgGain}+4.85 & 28.00 & 24.44 & 34.00 & 39.00 & 35.24 & 40.00 & 34.55 & 44.44 & 44.44 \\
+    \addlinespace
+    \textbf{GPT-o4-mini}& --- & Base & 31.18 & & 18.00 & 13.33 & 30.00 & 29.00 & 33.33 & 44.71 & 30.91 & 42.22 & 30.00 \\
+     & & Code & \cellcolor{bgGain}33.68 & \cellcolor{bgGain}+2.50 & 12.00 & 11.11 & 30.00 & \cellcolor{yellow!40}41.00 & 31.43 & 35.29 & 40.00 & 46.67 & 37.78 \\
+     & & Inter. & \cellcolor{bgGain}32.50 & \cellcolor{bgGain}+1.32 & 24.00 & 13.33 & 28.00 & 30.00 & 33.33 & 40.00 & 33.64 & 46.67 & 35.56 \\
+    \addlinespace
+    \midrule
+    \rowcolor{gray!15} \multicolumn{14}{c}{\textbf{Category 2: Proprietary General-purpose Models}} \\
+    \midrule
+    \textbf{GPT-4o} & --- & Base & 24.26 & & 18.00 & 15.56 & 22.00 & 25.00 & 25.71 & 25.88 & 22.73 & 26.67 & 30.00 \\
+     &  & Code & \cellcolor{bgGain}31.62 & \cellcolor{bgGain}+7.36 & 18.00 & 22.22 & 24.00 & \cellcolor{yellow!40}38.00 & \cellcolor{yellow!40}37.14 & \cellcolor{yellow!40}40.00 & 20.91 & \cellcolor{yellow!40}51.11 & 30.00 \\
+     &  & Inter. & \cellcolor{bgGain}33.82 & \cellcolor{bgGain}\best{+9.56} & 20.00 & 22.22 & \cellcolor{yellow!40}36.00 & 31.00 & \cellcolor{yellow!40}41.90 & \cellcolor{yellow!40}40.00 & 24.55 & \cellcolor{yellow!40}48.89 & 37.78 \\
+    \addlinespace
+    \textbf{Gemini-2.5-Pro} & --- & Base & 38.09 & & 48.00 & 26.67 & 28.00 & 44.00 & 40.95 & 49.41 & 30.00 & 40.00 & 32.22 \\
+     & & Code & \cellcolor{bgLoss}36.03 & \cellcolor{bgLoss}-2.06 & 46.00 & \cellcolor{yellow!40}40.00 & 34.00 & 37.00 & 35.24 & 37.65 & 30.00 & 44.44 & 31.11 \\
+    &  & Inter. & \cellcolor{bgGain}39.85 & \cellcolor{bgGain}+1.76 & \cellcolor{yellow!40}60.00 & \cellcolor{yellow!40}44.44 & \cellcolor{yellow!40}40.00 & 38.00 & 44.76 & 41.18 & 26.36 & 35.56 & 40.00 \\
+    \addlinespace   
+    \textbf{GPT-5.2} & --- & Base & 36.03 & & 24.00 & 24.44 & 30.00 & 43.00 & 35.24 & 43.53 & 33.64 & 46.67 & 35.56 \\
+    &  & Code & \cellcolor{bgGain}44.56 & \cellcolor{bgGain}+8.53 & \cellcolor{yellow!40}36.00 & 31.11 & 26.00 & \cellcolor{yellow!40}56.00 & \cellcolor{yellow!40}50.48 & 44.71 & \cellcolor{yellow!40}\best{45.45} & 51.11 & 42.22 \\
+    &  & Inter. & \cellcolor{bgGain}40.74 & \cellcolor{bgGain}+4.71 & 28.00 & \cellcolor{yellow!40}37.78 & 34.00 & 47.00 & 39.05 & 37.65 & 41.82 & 51.11 & 44.44 \\
+    \addlinespace
+    \textbf{Gemini-3.0-Flash} & --- & Base & 46.47 & & 44.00 & 51.11 & 46.00 & 57.00 & 50.48 & 52.94 & 27.27 & 60.00 & 40.00 \\
+     & & Code & \cellcolor{bgGain}50.59 & \cellcolor{bgGain}+4.12 & \cellcolor{yellow!40}70.00 & 57.78 & 48.00 & 59.00 & 50.48 & 52.94 & 35.45 & 51.11 & 44.44 \\
+     & & Inter. & \cellcolor{bgGain}50.74 & \cellcolor{bgGain}+4.27 & \cellcolor{yellow!40}68.00 & 53.33 & \best{50.00} & \best{61.00} & 44.76 & \best{58.82} & \cellcolor{yellow!40}39.09 & 55.56 & 40.00 \\
+    \addlinespace
+    \textbf{Gemini-3.0-Pro} & --- & Base & 44.41 & & 54.00 & 51.11 & 42.00 & 51.00 & 45.71 & 42.35 & 34.55 & 53.33 & 37.78 \\
+     & & Code & \cellcolor{bgGain}\best{51.18} & \cellcolor{bgGain}+6.77 & \cellcolor{yellow!40}\best{74.00} & \cellcolor{yellow!40}62.22 & 38.00 & 60.00 & \best{54.29} & 36.47 & 41.82 & 55.56 & \cellcolor{yellow!40}\best{50.00} \\
+    &  & Inter. & \cellcolor{bgGain}51.03 & \cellcolor{bgGain}+6.62 & \cellcolor{yellow!40}70.00 & \cellcolor{yellow!40}\best{73.33} & 38.00 & 59.00 & 50.48 & 35.29 & 37.27 & \cellcolor{yellow!40}\best{71.11} & \cellcolor{yellow!40}\best{50.00} \\
+    \addlinespace
+    \midrule
+    \rowcolor{gray!15} \multicolumn{14}{c}{\textbf{Category 3: Open-source Tool-use Models}} \\
+    \midrule
+    \textbf{V-Thinker} & 7B & Base & 22.06 & & 8.00 & 11.11 & 22.00 & 27.00 & 23.81 & 27.06 & 18.18 & 28.89 & 24.44 \\
+     & & Code & \cellcolor{bgGain}23.82 & \cellcolor{bgGain}+1.76 & 10.00 & 8.89 & 24.00 & 21.00 & 23.81 & \cellcolor{yellow!40}43.53 & 17.27 & \cellcolor{yellow!40}42.22 & 22.22 \\
+     & & Inter. & \cellcolor{bgGain}24.41 & \cellcolor{bgGain}+2.35 & 16.00 & 8.89 & \cellcolor{yellow!40}34.00 & 23.00 & 21.90 & 34.12 & 17.27 & \cellcolor{yellow!40}44.44 & 25.56 \\
+    \addlinespace
+    \textbf{DeepEyes-v2} & 7B & Base & 24.85 & & 22.00 & 11.11 & 18.00 & 27.00 & 38.10 & 21.18 & 20.00 & 28.89 & 26.67 \\
+     & & Code & \cellcolor{bgGain}30.00 & \cellcolor{bgGain}+5.15 & 20.00 & 8.89 & 20.00 & 30.00 & 44.76 & \cellcolor{yellow!40}32.94 & 28.18 & \cellcolor{yellow!40}44.44 & 26.67 \\
+     & & Inter. & \cellcolor{bgLoss}23.38 & \cellcolor{bgLoss}-1.47 & 18.00 & 6.67 & 28.00 & 16.00 & 28.57 & 30.59 & 18.18 & 35.56 & 27.78 \\
+    \addlinespace
+    \textbf{DeepEyes} & 7B & Base & 26.47 & & 12.00 & 8.89 & 28.00 & 34.00 & 33.33 & 27.06 & 17.27 & 44.44 & 27.78 \\
+     & & Code & \cellcolor{bgGain}27.06 & \cellcolor{bgGain}+0.59 & 22.00 & 8.89 & 28.00 & 30.00 & 32.38 & 36.47 & 17.27 & 40.00 & 25.56 \\
+     & & Inter. & \cellcolor{bgGain}29.26 & \cellcolor{bgGain}+2.79 & 22.00 & 6.67 & 28.00 & 29.00 & \cellcolor{yellow!40}43.81 & \cellcolor{yellow!40}37.65 & 11.82 & 46.67 & 33.33 \\
+    \addlinespace
+    \textbf{Thyme} & 7B & Base & 27.35 & & 8.00 & 8.89 & 34.00 & 29.00 & 41.90 & 35.29 & 18.18 & 35.56 & 24.44 \\
+     & & Code & \cellcolor{bgGain}28.82 & \cellcolor{bgGain}+1.47 & 18.00 & 2.22 & 24.00 & 35.00 & 40.00 & 38.82 & 20.91 & 33.33 & 28.89 \\
+     & & Inter. & \cellcolor{bgLoss}27.06 & \cellcolor{bgLoss}-0.29 & 14.00 & 4.44 & 24.00 & 33.00 & 33.33 & 34.12 & 20.00 & 40.00 & 28.89 \\
+    \addlinespace
+    \midrule
+    \rowcolor{gray!15}\multicolumn{14}{c}{\textbf{Category 4: Open-source General-purpose Models}} \\
+    \midrule
+    \textbf{Qwen3-VL-Instruct} & 8B & Base & 30.74 & & 32.00 & 11.11 & 28.00 & 27.00 & 31.43 & 38.82 & 31.82 & 35.56 & 33.33 \\
+     & & Code & \cellcolor{bgLoss}28.24 & \cellcolor{bgLoss}-2.50 & 26.00 & 17.78 & 20.00 & 27.00 & 39.05 & 29.41 & 23.64 & 17.78 & 37.78 \\
+     & & Inter. & \cellcolor{bgLoss}28.68 & \cellcolor{bgLoss}-2.06 & 30.00 & 17.78 & 34.00 & 20.00 & 30.48 & 42.35 & 24.55 & 26.67 & 31.11 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Thinking} & 8B & Base & 30.29 & & 20.00 & 11.11 & 24.00 & 33.00 & 40.00 & 35.29 & 29.09 & 35.56 & 28.89 \\
+    &  & Code & \cellcolor{bgLoss}26.32 & \cellcolor{bgLoss}-3.97 & 12.00 & 6.67 & 22.00 & 29.00 & 32.38 & 36.47 & 22.73 & 20.00 & 34.44 \\
+    &  & Inter. & \cellcolor{bgLoss}29.41 & \cellcolor{bgLoss}-0.88 & 20.00 & 15.56 & 22.00 & 34.00 & 32.38 & 37.65 & 24.55 & 28.89 & 35.56 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Instruct} & 32B & Base & 32.79 & & 28.00 & 8.89 & 26.00 & 37.00 & 31.43 & 48.24 & 27.27 & 44.44 & 34.44 \\
+     & & Code & \cellcolor{bgLoss}30.59 & \cellcolor{bgLoss}-2.20 & 28.00 & 15.56 & 20.00 & 32.00 & 31.43 & 34.12 & 33.64 & 31.11 & 35.56 \\
+     & & Inter. & \cellcolor{bgGain}33.09 & \cellcolor{bgGain}+0.30 & 34.00 & 13.33 & 16.00 & 21.00 & 37.14 & 51.76 & 29.09 & 51.11 & 38.89 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Thinking} & 32B & Base & 32.94 & & 20.00 & 4.44 & 28.00 & 32.00 & 40.95 & 43.53 & 34.55 & 42.22 & 32.22 \\
+     & & Code & \cellcolor{bgGain}33.09 & \cellcolor{bgGain}+0.15 & 22.00 & 8.89 & 26.00 & 41.00 & 35.24 & 43.53 & 31.82 & 33.33 & 35.56 \\
+     & & Inter. & \cellcolor{bgGain}33.97 & \cellcolor{bgGain}+1.03 & 30.00 & \cellcolor{yellow!40}17.78 & 28.00 & 32.00 & 35.24 & 44.71 & 31.82 & 40.00 & 37.78 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Instruct} & 30B-A3B & Base & 33.09 & & 42.00 & 15.56 & 22.00 & 23.00 & 41.90 & 41.18 & 32.73 & 42.22 & 32.22 \\
+     & & Code & \cellcolor{bgLoss}31.03 & \cellcolor{bgLoss}-2.06 & 42.00 & 22.22 & 32.00 & 31.00 & 31.43 & 36.47 & 23.64 & 37.78 & 28.89 \\
+     & & Inter. & \cellcolor{bgLoss}31.91 & \cellcolor{bgLoss}-1.18 & 40.00 & 24.44 & 28.00 & 25.00 & 37.14 & 40.00 & 28.18 & 44.44 & 25.56 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Thinking} & 30B-A3B & Base & 29.56 & & 16.00 & 8.89 & 22.00 & 31.00 & 30.48 & 44.71 & 24.55 & 46.67 & 32.22 \\
+    &  & Code & \cellcolor{bgLoss}28.24 & \cellcolor{bgLoss}-1.32 & 18.00 & 13.33 & 22.00 & 35.00 & 36.19 & 23.53 & 27.27 & 40.00 & 27.78 \\
+    &  & Inter. & \cellcolor{bgGain}33.24 & \cellcolor{bgGain}+3.68 & \cellcolor{yellow!40}28.00 & 15.56 & 24.00 & 29.00 & 39.05 & 43.53 & 30.00 & 48.89 & \cellcolor{yellow!40}34.44 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Instruct} & 235B & Base & 36.32 & & 42.00 & 11.11 & 28.00 & 33.00 & 40.95 & 48.24 & 35.45 & 35.56 & 38.89 \\
+    &  & Code & \cellcolor{bgLoss}33.68 & \cellcolor{bgLoss}-2.64 & 36.00 & 15.56 & 28.00 & 26.00 & 40.00 & 42.35 & 30.00 & \cellcolor{yellow!40}46.67 & 35.56 \\
+    &  & Inter. & \cellcolor{bgLoss}34.85 & \cellcolor{bgLoss}-1.47 & 40.00 & \cellcolor{yellow!40}22.22 & 20.00 & 32.00 & 38.10 & 48.24 & 27.27 & 37.78 & 41.11 \\
+    \addlinespace
+    \textbf{Qwen3-VL-Thinking} & 235B & Base & 35.15 & & 34.00 & 8.89 & 24.00 & 38.00 & 39.05 & 45.88 & 32.73 & 37.78 & 38.89 \\
+    &  & Code & \cellcolor{bgLoss}34.41 & \cellcolor{bgLoss}-0.74 & 36.00 & \cellcolor{yellow!40}22.22 & 26.00 & 37.00 & 36.19 & 35.29 & 34.55 & 37.78 & 36.67 \\
+    &  & Inter. & \cellcolor{bgGain}38.09 & \cellcolor{bgGain}+2.94 & 40.00 & \cellcolor{yellow!40}24.44 & \cellcolor{yellow!40}38.00 & 35.00 & 32.38 & 52.94 & 34.55 & \cellcolor{yellow!40}48.89 & 38.89 \\
+    \addlinespace
+    \bottomrule
+  \end{tabular}
+  }
+\end{table*}
+
+% \begin{table*}[htbp]
+%   \centering
+%   \caption{\textbf{Comprehensive evaluation results.} 
+%   \best{Bold and Underlined} indicates the highest value in each column.
+%   For Overall and Delta columns: \colorbox{bgGain}{Green} indicates improvement and \colorbox{bgLoss}{Red} indicates degradation compared to Base.}
+%   \label{tab:comprehensive_results_final_v2}
+%   \setlength{\tabcolsep}{2.0pt}
+%   \scriptsize
+%   \resizebox{\textwidth}{!}{
+%   \renewcommand{\arraystretch}{1.1}
+%   \begin{tabular}{lll c c cccccccccc}
+%     \toprule
+%     \textbf{Model} & \textbf{Size} &\textbf{Setting} & \textbf{Overall} & \textbf{Delta} & \textbf{Attn.} & \textbf{Color} & \textbf{Count.} & \textbf{Math} & \textbf{Meas.} & \textbf{OCR} & \textbf{Rest.} & \textbf{Spat.} & \textbf{Chart} \\
+%     \midrule
+%     \rowcolor{gray!15} \multicolumn{14}{c}{\textbf{Category 1: Proprietary Tool-use Models}} \\
+%     \midrule
+%     \textbf{GPT-o3} & --- & Base & 31.91 & & 26.67 & 35.56 & 35.29 & 28.18 & 38.10 & 20.00 & 32.00 & 35.56 & 30.00 \\
+%      & & Code & \cellcolor{bgGain}36.62 & \cellcolor{bgGain}+4.71 & 31.11 & 42.22 & 34.12 & 30.91 & 38.10 & 28.00 & 34.00 & 51.11 & 40.00 \\
+%     &  & Inter. & \cellcolor{bgGain}36.76 & \cellcolor{bgGain}+4.85 & 24.44 & 44.44 & 40.00 & 34.55 & 35.24 & 28.00 & 34.00 & 44.44 & 39.00 \\
+%     \addlinespace
+%     \textbf{GPT-o4-mini}& --- & Base & 31.18 & & 13.33 & 30.00 & 44.71 & 30.91 & 33.33 & 18.00 & 30.00 & 42.22 & 29.00 \\
+%      & & Code & \cellcolor{bgGain}33.68 & \cellcolor{bgGain}+2.50 & 11.11 & 37.78 & 35.29 & 40.00 & 31.43 & 12.00 & 30.00 & 46.67 & 41.00 \\
+%      & & Inter. & \cellcolor{bgGain}32.50 & \cellcolor{bgGain}+1.32 & 13.33 & 35.56 & 40.00 & 33.64 & 33.33 & 24.00 & 28.00 & 46.67 & 30.00 \\
+%     \addlinespace
+%     \midrule
+%     \rowcolor{gray!15} \multicolumn{14}{c}{\textbf{Category 2: Proprietary General-purpose Models}} \\
+%     \midrule
+%     \textbf{GPT-4o} & --- & Base & 24.26 & & 15.56 & 30.00 & 25.88 & 22.73 & 25.71 & 18.00 & 22.00 & 26.67 & 25.00 \\
+%      &  & Code & \cellcolor{bgGain}31.62 & \cellcolor{bgGain}+7.36 & 22.22 & 30.00 & 40.00 & 20.91 & 37.14 & 18.00 & 24.00 & 51.11 & 38.00 \\
+%      &  & Inter. & \cellcolor{bgGain}33.82 & \cellcolor{bgGain}\best{+9.56} & 22.22 & 37.78 & 40.00 & 24.55 & 41.90 & 20.00 & 36.00 & 48.89 & 31.00 \\
+%     \addlinespace
+%     \textbf{Gemini-2.5-Pro} & --- & Base & 38.09 & & 26.67 & 32.22 & 49.41 & 30.00 & 40.95 & 48.00 & 28.00 & 40.00 & 44.00 \\
+%      & & Code & \cellcolor{bgLoss}36.03 & \cellcolor{bgLoss}-2.06 & 40.00 & 31.11 & 37.65 & 30.00 & 35.24 & 46.00 & 34.00 & 44.44 & 37.00 \\
+%     &  & Inter. & \cellcolor{bgGain}39.85 & \cellcolor{bgGain}+1.76 & 44.44 & 40.00 & 41.18 & 26.36 & 44.76 & 60.00 & 40.00 & 35.56 & 38.00 \\
+%     \addlinespace   
+%     \textbf{GPT-5.2} & --- & Base & 36.03 & & 24.44 & 35.56 & 43.53 & 33.64 & 35.24 & 24.00 & 30.00 & 46.67 & 43.00 \\
+%     &  & Code & \cellcolor{bgGain}44.56 & \cellcolor{bgGain}+8.53 & 31.11 & 42.22 & 44.71 & \best{45.45} & 50.48 & 36.00 & 26.00 & 51.11 & 56.00 \\
+%     &  & Inter. & \cellcolor{bgGain}40.74 & \cellcolor{bgGain}+4.71 & 37.78 & 44.44 & 37.65 & 41.82 & 39.05 & 28.00 & 34.00 & 51.11 & 47.00 \\
+%     \addlinespace
+%     \textbf{Gemini-3.0-Flash} & --- & Base & 46.47 & & 51.11 & 40.00 & 52.94 & 27.27 & 50.48 & 44.00 & 46.00 & 60.00 & 57.00 \\
+%      & & Code & \cellcolor{bgGain}50.59 & \cellcolor{bgGain}+4.12 & 57.78 & 44.44 & 52.94 & 35.45 & 50.48 & 70.00 & 48.00 & 51.11 & 59.00 \\
+%      & & Inter. & \cellcolor{bgGain}50.74 & \cellcolor{bgGain}+4.27 & 53.33 & 40.00 & \best{58.82} & 39.09 & 44.76 & 68.00 & \best{50.00} & 55.56 & \best{61.00} \\
+%     \addlinespace
+%     \textbf{Gemini-3.0-Pro} & --- & Base & 44.41 & & 51.11 & 37.78 & 42.35 & 34.55 & 45.71 & 54.00 & 42.00 & 53.33 & 51.00 \\
+%      & & Code & \cellcolor{bgGain}\best{51.18} & \cellcolor{bgGain}+6.77 & 62.22 & \best{50.00} & 36.47 & 41.82 & \best{54.29} & \best{74.00} & 38.00 & 55.56 & 60.00 \\
+%     &  & Inter. & \cellcolor{bgGain}51.03 & \cellcolor{bgGain}+6.62 & \best{73.33} & \best{50.00} & 35.29 & 37.27 & 50.48 & 70.00 & 38.00 & \best{71.11} & 59.00 \\
+%     \addlinespace
+%     \midrule
+%     \rowcolor{gray!15} \multicolumn{14}{c}{\textbf{Category 3: Open-source Tool-use Models}} \\
+%     \midrule
+%     \textbf{V-Thinker} & 7B & Base & 22.06 & & 11.11 & 24.44 & 27.06 & 18.18 & 23.81 & 8.00 & 22.00 & 28.89 & 27.00 \\
+%      & & Code & \cellcolor{bgGain}23.82 & \cellcolor{bgGain}+1.76 & 8.89 & 22.22 & 43.53 & 17.27 & 23.81 & 10.00 & 24.00 & 42.22 & 21.00 \\
+%      & & Inter. & \cellcolor{bgGain}24.41 & \cellcolor{bgGain}+2.35 & 8.89 & 25.56 & 34.12 & 17.27 & 21.90 & 16.00 & 34.00 & 44.44 & 23.00 \\
+%     \addlinespace
+%     \textbf{DeepEyes-v2} & 7B & Base & 24.85 & & 11.11 & 26.67 & 21.18 & 20.00 & 38.10 & 22.00 & 18.00 & 28.89 & 27.00 \\
+%      & & Code & \cellcolor{bgGain}30.00 & \cellcolor{bgGain}+5.15 & 8.89 & 26.67 & 32.94 & 28.18 & 44.76 & 20.00 & 20.00 & 44.44 & 30.00 \\
+%      & & Inter. & \cellcolor{bgLoss}23.38 & \cellcolor{bgLoss}-1.47 & 6.67 & 27.78 & 30.59 & 18.18 & 28.57 & 18.00 & 28.00 & 35.56 & 16.00 \\
+%     \addlinespace
+%     \textbf{DeepEyes} & 7B & Base & 26.47 & & 8.89 & 27.78 & 27.06 & 17.27 & 33.33 & 12.00 & 28.00 & 44.44 & 34.00 \\
+%      & & Code & \cellcolor{bgGain}27.06 & \cellcolor{bgGain}+0.59 & 8.89 & 25.56 & 36.47 & 17.27 & 32.38 & 22.00 & 28.00 & 40.00 & 30.00 \\
+%      & & Inter. & \cellcolor{bgGain}29.26 & \cellcolor{bgGain}+2.79 & 6.67 & 33.33 & 37.65 & 11.82 & 43.81 & 22.00 & 28.00 & 46.67 & 29.00 \\
+%     \addlinespace
+%     \textbf{Thyme} & 7B & Base & 27.35 & & 8.89 & 24.44 & 35.29 & 18.18 & 41.90 & 8.00 & 34.00 & 35.56 & 29.00 \\
+%      & & Code & \cellcolor{bgGain}28.82 & \cellcolor{bgGain}+1.47 & 2.22 & 28.89 & 38.82 & 20.91 & 40.00 & 18.00 & 24.00 & 33.33 & 35.00 \\
+%      & & Inter. & \cellcolor{bgLoss}27.06 & \cellcolor{bgLoss}-0.29 & 4.44 & 28.89 & 34.12 & 20.00 & 33.33 & 14.00 & 24.00 & 40.00 & 33.00 \\
+%     \addlinespace
+%     \midrule
+%     \rowcolor{gray!15}\multicolumn{14}{c}{\textbf{Category 4: Open-source General-purpose Models}} \\
+%     \midrule
+%     \textbf{Qwen3-VL-Instruct} & 8B & Base & 30.74 & & 11.11 & 33.33 & 38.82 & 31.82 & 31.43 & 32.00 & 28.00 & 35.56 & 27.00 \\
+%      & & Code & \cellcolor{bgLoss}28.24 & \cellcolor{bgLoss}-2.50 & 17.78 & 37.78 & 29.41 & 23.64 & 39.05 & 26.00 & 20.00 & 17.78 & 27.00 \\
+%      & & Inter. & \cellcolor{bgLoss}28.68 & \cellcolor{bgLoss}-2.06 & 17.78 & 31.11 & 42.35 & 24.55 & 30.48 & 30.00 & 34.00 & 26.67 & 20.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Thinking} & 8B & Base & 30.29 & & 11.11 & 28.89 & 35.29 & 29.09 & 40.00 & 20.00 & 24.00 & 35.56 & 33.00 \\
+%     &  & Code & \cellcolor{bgLoss}26.32 & \cellcolor{bgLoss}-3.97 & 6.67 & 34.44 & 36.47 & 22.73 & 32.38 & 12.00 & 22.00 & 20.00 & 29.00 \\
+%     &  & Inter. & \cellcolor{bgLoss}29.41 & \cellcolor{bgLoss}-0.88 & 15.56 & 35.56 & 37.65 & 24.55 & 32.38 & 20.00 & 22.00 & 28.89 & 34.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Instruct} & 32B & Base & 32.79 & & 8.89 & 34.44 & 48.24 & 27.27 & 31.43 & 28.00 & 26.00 & 44.44 & 37.00 \\
+%      & & Code & \cellcolor{bgLoss}30.59 & \cellcolor{bgLoss}-2.20 & 15.56 & 35.56 & 34.12 & 33.64 & 31.43 & 28.00 & 20.00 & 31.11 & 32.00 \\
+%      & & Inter. & \cellcolor{bgGain}33.09 & \cellcolor{bgGain}+0.30 & 13.33 & 38.89 & 51.76 & 29.09 & 37.14 & 34.00 & 16.00 & 51.11 & 21.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Thinking} & 32B & Base & 32.94 & & 4.44 & 32.22 & 43.53 & 34.55 & 40.95 & 20.00 & 28.00 & 42.22 & 32.00 \\
+%      & & Code & \cellcolor{bgGain}33.09 & \cellcolor{bgGain}+0.15 & 8.89 & 35.56 & 43.53 & 31.82 & 35.24 & 22.00 & 26.00 & 33.33 & 41.00 \\
+%      & & Inter. & \cellcolor{bgGain}33.97 & \cellcolor{bgGain}+1.03 & 17.78 & 37.78 & 44.71 & 31.82 & 35.24 & 30.00 & 28.00 & 40.00 & 32.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Instruct} & 30B-A3B & Base & 33.09 & & 15.56 & 32.22 & 41.18 & 32.73 & 41.90 & 42.00 & 22.00 & 42.22 & 23.00 \\
+%      & & Code & \cellcolor{bgLoss}31.03 & \cellcolor{bgLoss}-2.06 & 22.22 & 28.89 & 36.47 & 23.64 & 31.43 & 42.00 & 32.00 & 37.78 & 31.00 \\
+%      & & Inter. & \cellcolor{bgLoss}31.91 & \cellcolor{bgLoss}-1.18 & 24.44 & 25.56 & 40.00 & 28.18 & 37.14 & 40.00 & 28.00 & 44.44 & 25.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Thinking} & 30B-A3B & Base & 29.56 & & 8.89 & 32.22 & 44.71 & 24.55 & 30.48 & 16.00 & 22.00 & 46.67 & 31.00 \\
+%     &  & Code & \cellcolor{bgLoss}28.24 & \cellcolor{bgLoss}-1.32 & 13.33 & 27.78 & 23.53 & 27.27 & 36.19 & 18.00 & 22.00 & 40.00 & 35.00 \\
+%     &  & Inter. & \cellcolor{bgGain}33.24 & \cellcolor{bgGain}+3.68 & 15.56 & 34.44 & 43.53 & 30.00 & 39.05 & 28.00 & 24.00 & 48.89 & 29.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Instruct} & 235B & Base & 36.32 & & 11.11 & 38.89 & 48.24 & 35.45 & 40.95 & 42.00 & 28.00 & 35.56 & 33.00 \\
+%     &  & Code & \cellcolor{bgLoss}33.68 & \cellcolor{bgLoss}-2.64 & 15.56 & 35.56 & 42.35 & 30.00 & 40.00 & 36.00 & 28.00 & 46.67 & 26.00 \\
+%     &  & Inter. & \cellcolor{bgLoss}34.85 & \cellcolor{bgLoss}-1.47 & 22.22 & 41.11 & 48.24 & 27.27 & 38.10 & 40.00 & 20.00 & 37.78 & 32.00 \\
+%     \addlinespace
+%     \textbf{Qwen3-VL-Thinking} & 235B & Base & 35.15 & & 8.89 & 38.89 & 45.88 & 32.73 & 39.05 & 34.00 & 24.00 & 37.78 & 38.00 \\
+%     &  & Code & \cellcolor{bgLoss}34.41 & \cellcolor{bgLoss}-0.74 & 22.22 & 36.67 & 35.29 & 34.55 & 36.19 & 36.00 & 26.00 & 37.78 & 37.00 \\
+%     &  & Inter. & \cellcolor{bgGain}38.09 & \cellcolor{bgGain}+2.94 & 24.44 & 38.89 & 52.94 & 34.55 & 32.38 & 40.00 & 38.00 & 48.89 & 35.00 \\
+%     \addlinespace
+%     \bottomrule
+%   \end{tabular}
+%   }
+% \end{table*}
+
+
+\section{Experiment}
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/workflow.pdf}
+    \caption{\textbf{Overview of workflows for two tool-use protocols of LLM agents during evaluation.} The agent iteratively interacts with tools within the Max Round constraint, ultimately synthesizing tool execution results to generate the final answer.}
+    % Overview of 评测过程中模型Agent两种工具调用方式的workflow
+    % Agent 在 规定的Max Round的条件下，不断与工具进行交互使用，并最后整合工具调用结果得到答案
+    \label{fig:WorkFlow}
+    \vspace{-0.3cm}
+\end{figure}
+
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{images/golden_case.pdf}
+%     \caption{A qualitative visualization of multi-step reasoning. The agent leverages a suite of tools to iteratively process images, effectively embodying the "Thinking-with-image" paradigm.}
+%     % Agent 通过提供的工具对图像进行处理，实现Thinking-with-image的过程
+%     \label{fig:Gloden_Case}
+% \end{figure}
+
+% In our experiments, we emphasize the importance of tool-use proficiency, hypothesizing that models with superior tool-invocation capabilities will show more significant performance gains. We evaluated 19 mainstream MLLMs, including both proprietary and open-source models, covering those with and without explicit tool-use training.
+% Each model is evaluated under two settings: Direct Answering and Tool-Augmented Reasoning. 
+% We anticipate that tool integration will significantly enhance performance. 
+% Furthermore, to investigate the impact of programming proficiency, we compare two interaction paradigms: invoking tools through a predefined Interface versus generating Executable Code for tool orchestration.
+
+% We evaluate 19 mainstream MLLMs, encompassing both proprietary and open-source models with diverse tool-use training backgrounds. 
+% To validate the hypothesis that superior tool-invocation capabilities yield significant performance gains, we assess models under both Direct Answering and Tool-Augmented Reasoning settings while comparing interface-driven and code-driven paradigms to determine the impact of programming proficiency on tool orchestration.
+
+% Our study hypothesizes that models with superior tool-invocation capabilities will achieve more significant performance improvements. 
+% Each model is assessed under Direct Answering and Tool-Augmented Reasoning settings to verify the benefits of tool integration. Furthermore, we compare interface-based and code-based interaction paradigms to investigate the influence of programming proficiency on tool orchestration.
+% Section~\ref{sec:experiment_setup} outlines the experimental setup, encompassing model selection and evaluation frameworks. Section~\ref{sec:result} presents the primary experimental results. Section~\ref{sec:tool_use_analysis} analyzes tool-invocation patterns observed during the evaluation. Section~\ref{sec:case_study} explores factors contributing to incorrect predictions through qualitative analysis. Section~\ref{sec:ablation_study} assesses the impact of tool-use protocols and prompts.
+% 在Sec.~\ref{sec:experiment_setup}中介绍了实验设置包括模型选择、评估框架、部署细节。在Sec.~\ref{sec:result}中展示了主要的实验结果。在Sec.~\ref{sec:tool_use_analysis}中对结果过程中模型工具调用的情况进行了分析。在Sec.~\ref{sec:case_study}中探索了模型做错题目的因素。在Sec.~\ref{sec:ablation_study}中分析了Tool-Use Protocols 和 Prompt的影响。
+% We assess 19 MLLMs encompassing proprietary and open-source models with varied tool-use backgrounds. We hypothesize that superior tool-invocation capabilities yield more significant performance improvements. Each model is evaluated in Direct Answering and Tool-Augmented Reasoning settings to quantify tool-use benefits. Additionally, we compare interface-driven and code-driven paradigms to investigate the role of programming proficiency in tool orchestration.
+
+\subsection{Experiment Setup}\label{sec:experiment_setup}
+\noindent \textbf{Model Selection}~
+We evaluate 19 mainstream MLLMs, encompassing both proprietary and open-source models with diverse tool-use training backgrounds. We stratified these evaluated models into four distinct categories. The first category comprises proprietary tool-use models, featuring closed-source systems with robust native capabilities like GPT-o3~\cite{openai2025o3o4mini} and GPT-o4-mini~\cite{openai2025o3o4mini}. The second category incorporates leading proprietary general-purpose models, such as GPT-5.2~\cite{openai2025gpt52}, Gemini-3.0-Pro~\cite{google2026gemini}, Gemini-3.0-Flash~\cite{google2025gemini3flash}, Gemini-2.5-Pro~\cite{gemini-2.5-pro}, and GPT-4o~\cite{openai2025o3o4mini}. Transitioning to the open-source domain, the third group consists of dedicated open-source tool-use models, including specialized architectures such as DeepEyes~\cite{zheng2025deepeyes}, Thyme~\cite{zhang2025thyme}, DeepEyesV2~\cite{hong2025deepeyesv2}, and V-Thinker~\cite{v-thinker}. Finally, for open-source general-purpose models, we evaluate both the Instruct and Thinking variants of Qwen3-VL~\cite{qwen3-vl} across parameter scales ranging from 8B to 235B.
+
+
+\noindent \textbf{Evaluation Framework}~
+To measure the benefits of tool invocation, we compare direct answering baselines against tool-augmented reasoning across both interface-driven and code-driven paradigms.
+This comparison reveals how a model's programming proficiency influences overall orchestration success. 
+The evaluation workflow is illustrated in Fig.~\ref{fig:WorkFlow}.
+% We ensure a consistent environment by accessing all models through standardized APIs; 
+% however, to maintain fairness, we adapt our orchestration strategy based on each model's inherent capabilities.  Specifically,
+We utilize the Qwen-Agent~\cite{qwen_agent} framework to manage both code and interface implementations for models with robust native tool-calling support. 
+Conversely, we employ the Thyme~\cite{zhang2025thyme} framework for models with limited native tool-calling proficiency, applying this approach primarily to open-source tool-use models to facilitate code generation. 
+To facilitate this process, we provide detailed tool descriptions that explicitly outline usage instructions and parameter specifications, ensuring that even models lacking specialized OpenCV training can comprehend and invoke the available interfaces. 
+Finally, we implement a comprehensive dual-stream evaluation protocol, integrating deterministic rule-based matching with a GPT-4o~\cite{hurst2024gpt4o} LLM-as-a-Judge paradigm. 
+Detailed prompt templates are provided in the App.~\ref{app:prompts}.
+% To measure the benefits of tool invocation, we compare direct answering with tool-augmented reasoning across both interface and code-driven paradigms. 
+% This approach allows us to determine how programming proficiency influences orchestration success.
+% As show in Fig.~\ref{fig:WorkFlow}. To ensure a fair evaluation, we adapt our orchestration strategy based on each model's inherent capabilities. 
+% Our evaluation utilizes two frameworks: Qwen-Agent~\cite{qwen_agent}, which supports native tool calling, and Thyme~\cite{zhang2025thyme}, which is more accommodating to models with weaker native tool-use capabilities.
+% We employ the Thyme framework for models with limited native tool-calling proficiency. This approach is primarily applied to open-source tool-use models to facilitate code generation. All models are accessed through standardized APIs to ensure a consistent evaluation environment. 
+% Conversely, for models with robust native tool-calling support, we utilize the Qwen-Agent~\cite{qwen_agent} framework open-sourced by the Qwen team, which provides a comprehensive workflow to implement diverse tool-use patterns across different architectures.
+% Specifically, Qwen-Agent~\cite{qwen_agent} manages both code and interface implementations for all models except those using the Thyme~\cite{zhang2025thyme} framework. This ensures a unified execution environment for the majority of our evaluated models.
+% Default parameters are used unless otherwise specified; further details are provided in the Appendix.
+% Such a configuration ensures that each model’s potential is elicited to the greatest extent while reflecting its inherent characteristics, thereby maintaining the fairness of our evaluation. The framework parameters are set to their default values, and further technical details are provided in the Appendix.
+
+
+% We conducted our evaluation using \textit{VLMEvalKit}. This framework allows us to rigorously quantify tool-use performance. Since our dataset consists of single-choice and Open-ended tasks, we implemented a dual-stream evaluation protocol. The first stream applies a deterministic rule-based method. We use regular expressions to extract the output for comparison against the Ground Truth. This process utilizes both Exact Match and Math Verify to ensure accuracy. The second stream employs an LLM-as-a-Judge paradigm using GPT-4o-mini. Here, GPT-4o-mini is tasked with extracting the answer and assessing its semantic validity. We synthesized the scores from these two distinct methods to form our comprehensive final metric.
+
+\subsection{Main Result}\label{sec:result}
+% 实验的结果如表\ref{tab:resulte}所示，我们在表中展示了不同模型分别直接回答、基于code和基于interface的工具调用的结果，我们的发现有一下几点：
+% Table \ref{tab:comprehensive_results} summarizes our experimental results across direct response, code-based, and interface-based tool-use settings. We observe several key findings from these evaluations.
+
+% \textbf{Our benchmark presents a significant challenge to existing large multi-modal models.} Most models score approximately 30 points during evaluation. Even the top-performing models achieve only 50 points when utilizing their tool-use capabilities.
+
+% \textbf{Simple interfaces outperform complex code generation for models with limited tool-calling proficiency.} Many open-source and proprietary models achieve lower accuracy when they write code compared to direct answering. These models typically yield better results through simpler interface-based interactions.
+
+% \textbf{Specialized open-source models demonstrate superior performance when using code-based execution.} These models achieve higher scores through code generation because their training primarily focuses on code-centric tool usage. Their performance with code consistently exceeds that of interface-based methods.
+
+% \textbf{The proposed set of 32 tools provides comprehensive coverage for diverse visual scenarios.} Both open-source and proprietary models achieve superior or comparable performance when using the interface-based approach. This finding suggests that our toolset effectively supports various task requirements across different architectures.
+
+% Table \ref{tab:comprehensive_results} summarizes our experimental results across direct response, code-based, and interface-based tool-use settings. We observe several key findings from these evaluations.
+
+\noindent \textbf{The benchmark presents a significant challenge to current MLLMs.} Performance in the base setting remains relatively low, with scores ranging from 22.06\% to 46.47\%. Gemini-3.0-Flash~\cite{google2025gemini3flash} achieves the highest base score of 46.47\%.
+% and reaches 50.74 \% when utilizing the interface-based protocol. 
+Most models cluster around the 30\% mark.
+% , which clearly indicates substantial room for further improvement in complex tool-augmented reasoning.
+Notably, simply scaling up model parameters does not inherently solve this critical bottleneck; for instance, Qwen3-VL-235B-A22B~\cite{qwen3-vl} achieves a performance improvement from 30.74 to 36.32\% compared to Qwen3-VL-8B; however, it still struggles to surpass 40\% even with tool augmentation.
+This universal performance ceiling underscores that transitioning from passive visual perception to active, multi-step tool orchestration remains an unsolved frontier, even for advanced industry-leading architectures.
+
+% 针对模型分析：闭源模型的表现显著优于开源模型，强调闭原模型调用工具带来较大幅度提升
+\noindent \textbf{Proprietary models significantly outperform open-source models.}
+As illustrated in Tab.~\ref{tab:comprehensive_results_final}, our evaluation reveals a pronounced performance disparity between proprietary and open-source models, particularly concerning their capacity to leverage external tools. 
+Proprietary models not only establish robust baselines but also exhibit substantial performance surges when augmented with tool-use capabilities; 
+notably, GPT-4o achieves a remarkable gain of +9.56\% under the interface setting, while GPT-5.2 realizes an +8.53\% improvement in the code setting. Furthermore, Gemini-3.0-Pro attains the highest overall score of 51.18\% with tools, underscoring the advanced reasoning and execution stability inherent in closed-source paradigms. 
+Conversely, open-source models frequently fail to effectively harness tool integration, often experiencing limited gains when augmented with tool-use capabilities, indicating a considerable gap between open-source and proprietary models in native tool-use capabilities.
+
+% 针对任务分析：按照金字塔分析三大类，哪一类提升，哪一类没有提升，分析为什么提升、为什么没有提升
+\noindent \textbf{Models perform better at coarse-grained tool invocation, and intrinsic perception is the prerequisite for tool use.}
+In visual perception enhancement tasks, models exhibit strong performance, with GPT-4o boosting \textit{Perceptual Restoration} by +14.00\% via interface.
+These tasks require only basic, \textit{coarse-grained} tool operations, such as rotation or mirroring, to achieve significant improvements.
+Conversely, quantitative visual estimation yields bifurcated outcomes, with noticeable degradation in high-precision perception tasks. Because Tier 2 rigorously tests precise tool selection and parameter configuration, it exposes models' inability to execute \textit{fine-grained} tool manipulations.
+Finally, in compositional visual reasoning tasks, models achieve remarkable leaps, highlighted by a +17.78\% improvement in Gemini-3.0-Pro's \textit{Spatial Reasoning} score.
+This resurgence stems from the comprehensive nature of Tier 3, which simultaneously challenges intrinsic perception and tool proficiency.
+Notably, models with stronger foundational perception excel here, underscoring that robust intrinsic perception is an indispensable prerequisite for advanced tool calling.
+% \noindent \textbf{Models perform better at coarse-grained tool invocation, and intrinsic perception is the prerequisite for tool use.}
+% In visual perception enhancement tasks, models exhibit strong performance (e.g., GPT-4o boosting Restoration by +14.00\% via Interface). 
+% These tasks require only basic, \textit{coarse-grained} tool operations (e.g., rotation or mirroring) to achieve significant improvements.
+% Conversely, quantitative visual estimation yields bifurcated outcomes, with noticeable degradation in high-precision perception tasks. Because Tier 2 rigorously tests precise tool selection and exact parameter configuration, it exposes the inability of current models to effectively execute \textit{fine-grained} tool manipulations.
+% Finally, in compositional visual reasoning tasks, models achieve remarkable leaps (e.g., Gemini-3.0-Pro's Spatial score improves by +17.78\%). 
+% This resurgence stems from the comprehensive nature of Tier 3, which simultaneously challenges intrinsic perception and tool proficiency. Notably, models with stronger foundational perception excel here, underscoring that robust intrinsic perception is an indispensable prerequisite for advanced tool calling.
+% \noindent \textbf{Tool augmentation significantly enhances performance in both geometric and fine-grained perception tasks by compensating for the inherent limitations of foundational models.} In spatial reasoning and measurement domains, GPT-4o~\cite{hurst2024gpt4o} achieves a 24.44\% improvement through code execution, and GPT-5.2~\cite{openai2025gpt52} records a 15.24\% increase. Targeted tool invocation similarly facilitates superior results in tasks requiring high visual attention and character recognition. Specifically, Gemini-3.0-Flash~\cite{google2025gemini3flash} records a 26.00\% gain in OCR tasks through code-based tool use, while Gemini-3.0-Pro~\cite{google2026gemini} achieves a 22.22\% increase in attention-related tasks via interface interactions. These improvements suggest that specialized tools enable models to perform precise geometric estimations and focus on critical visual details that are otherwise overlooked during initial processing.
+
+\noindent \noindent \textbf{The proposed toolset provides robust support for complex visual reasoning.} 
+Notably, contrary to the common assumption that code execution is inherently superior, our findings demonstrate that interface-based invocation is comparable to code-based approaches overall. 
+Specifically, among the five proprietary general-purpose models evaluated, three exhibited better performance with interface-based methods. 
+% Specifically, 
+% GPT-5.2~\cite{openai2025gpt52} demonstrated a performance increase of 15.24\% in measurement tasks when utilizing interface-based invocation compared to code-based execution. 
+% Similarly, Gemini-3.0-Flash~\cite{google2025gemini3flash} exhibited a 11.11\% improvement in attention foucsing tasks with interface-based methods. 
+These quantitative results further validate that our structured 32-tool library effectively meets the requirements of visual agents. 
+% These results confirm that our structured 32-tool library effectively addresses the requirements of visual agents.
+% Empirical results demonstrate remarkable gains, with GPT-5.2~\cite{openai2025gpt52} improving by 15.24\% in measurement tasks and Gemini-3.0-Flash~\cite{google2025gemini3flash} reaching 60.00\% in spatial reasoning. Notably, contrary to the assumption that code execution is inherently superior, we find that interface-based invocation proves comparable or even more effective overall. This confirms that our structured 32-tool library successfully addresses the requirements of modern visual agents.
+
+% \noindent \textbf{Interface-based interactions generally outperform code generation for models with limited native tool-calling proficiency.} Many general-purpose models experience performance degradation when forced to generate code. For instance, Qwen3-VL-Thinking-30B-A3B~\cite{qwen3-vl} achieves a 3.68\% gain in the interface setting, yet suffers a 1.32\% decrease when forced to use the code protocol. Similarly, GPT-4o~\cite{hurst2024gpt4o} demonstrates substantial gains of up to 9.56\% when using the interface protocol. By abstracting away low-level programming syntax, predefined interfaces effectively constrain the agentic action space, allowing general-purpose models to focus their limited computational resources on high-level strategic planning rather than debugging complex execution errors or syntax violations. This abstraction layer significantly streamlines reasoning processes across diverse visual tasks.
+
+% \noindent \textbf{Specialized tool-use models exhibit consistent improvements through code-based execution.} Category 1 models generally benefit from both protocols due to their intensive specialized training on structured tool trajectories. For instance, V-Thinker~\cite{v-thinker} achieves a steady gain of 1.76\% with the code protocol and 2.35\% via the interface. Thyme~\cite{zhang2025thyme} also achieves a 1.47\% increase in the code setting, which further confirms the inherent effectiveness of code-centric tool-use for these specialized architectures. This trend suggests that custom optimization for programming syntax allows such models to maintain high reasoning density without sacrificing execution accuracy.
+
+
+
+% 1. 我们的benchmark非常具有挑战。大部分的模型只能拿到30分左右的成绩。最好的模型基于工具调用的情况下也只有50分。
+
+% 2. 工具调用能力弱的模型使用更简单的interface的方式比复杂的写code效果更好。在开源模型和部分闭源模型中，模型如果是写code来使用工具，往往会获得比直接回答更低的分数，大部分情况下基于interface更简单。
+
+% 3. 开源tool-use模型写code更适合。开源tool-use模型由于训练的时候基本上基于写code的方式，所以在我们的任务中也是写code的得分高于interface。
+
+% 4. 
+
+% 5. 我们定义的32个工具基本覆盖大部分场景。 无论是从开源模型还是闭源模型来看，相对于写code基于interface都能够获得优于甚至更高的分数。
+
+
+
+\subsection{Analysis Experiments}\label{sec:tool_use_analysis}
+\noindent \textbf{Analysis of Tool Utilization and Efficiency.} The left panel of Fig.~\ref{fig:tool_performance_analysis} reveals a positive correlation between Tool Call Rate~(TCR) and Average Pass Rate~(APR), validating the utility of active tool invocation. Conversely, the efficiency analysis in the right panel indicates that general-purpose models achieve superior efficiency even with lower TCR. Specialized models cluster in the high-redundancy region at the bottom right. Their specialized training incentivizes frequent tool usage but often causes them to neglect their inherent perceptual capabilities. Consequently, a disconnect exists between perception and tool calling in these architectures. Our results indicate that current specialized models fail to integrate these two abilities effectively.
+
+
+
+% 每一个模型、每一个问题调用了工具来解决的比例
+% 每一个模型、平均每个问题调用工具的数量
+% 每一个模型、最终解决问题时候调用工具的平均数量
+
+\begin{table}[t]
+\centering
+\caption{\textbf{Statistical analysis of tool invocation performance.} Beyond the Tool-calling Rate(TCR) and Average Pass Rate (APR), we provide a fine-grained evaluation categorized by total attempted tool calls (All Calls) and the effective toolchain (Effective Calls). For both categories, we detail the average number of calls (Avg. T.), the number of unique tools used (Uniq. T.), and the Mean Absolute Error (MAE) from the ground-truth length. Finally, the Tool Usage Efficiency  ($Eff_{\text{tool}}$, denoted as Eff.) represents the ratio of effective steps to total attempted steps.}
+\label{tab:tool_analysis}
+\resizebox{\columnwidth}{!}{%
+\setlength{\tabcolsep}{3pt} % 进一步缩小列间距以适应10列数据
+\begin{tabular}{l cc ccc ccc c}
+\toprule
+\multirow{2}{*}{\textbf{Model}} & \multirow{2}{*}{\textbf{TCR (\%)}} & \multirow{2}{*}{\textbf{APR (\%)}} & \multicolumn{3}{c}{\textbf{All Calls}} & \multicolumn{3}{c}{\textbf{Effective Calls}} & \multirow{2}{*}{\textbf{Eff. (\%)}}\\
+\cmidrule(lr){4-6} \cmidrule(lr){7-9}
+& & & Avg. T. & Uniq. T. & MAE & Avg. T. & Uniq. T. & MAE & \\
+\midrule
+DeepEyes         & 66.32 & 29.26 & 1.90  & 1.04 & 4.09 & 1.21 & 0.90 & 3.97 & 63.68 \\
+Qwen3-VL-235B    & 86.62 & 38.09 & 2.19  & 1.77 & 3.02 & 1.51 & 1.47 & 3.36 & 68.95 \\
+GPT-5.2          & 94.26 & 40.74 & 13.23 & 4.08 & 9.96 & 2.22 & 1.97 & 3.01 & 16.78 \\
+GPT-o3           & 93.68 & 36.76 & 9.77  & 3.47 & 6.98 & 1.68 & 1.51 & 3.32 & 17.20 \\
+GPT-o4-mini      & 76.62 & 32.50 & 3.63  & 1.77 & 3.63 & 1.04 & 1.02 & 3.76 & 28.65 \\
+Gemini-3.0-Pro   & 93.97 & 51.03 & 5.04  & 2.72 & 3.87 & 1.84 & 1.76 & 3.19 & 36.51 \\
+GPT-4o           & 65.44 & 33.82 & 2.26  & 1.81 & 3.91 & 1.38 & 1.26 & 3.82 & 61.06 \\
+Gemini-3.0-Flash & 93.24 & 50.74 & 1.89  & 1.38 & 3.26 & 1.20 & 1.19 & 3.64 & 63.49 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/tool_performance_analysis.pdf}
+    \caption{\textbf{Relationships among Tool Call Rate, Tool Call Efficiency, and APR.} The panels illustrate APR vs. Tool Call Rate (left), APR vs. Tool Call Efficiency (middle), and Tool Call Rate vs. Tool Call Efficiency (right).}
+    % Tool Call Rate、Tool Call Efficiency 与 APR 的关系
+    % 左 APR versus Tool Call Rate
+    % 中 APR versus Tool Call  Efficiency
+    % 右 Tool Call Rate versus Tool Call Efficiency
+    \label{fig:tool_performance_analysis}
+    \vspace{-0.5cm}
+\end{figure}
+% 工具调用分布不均匀，聚焦于几类工具：
+% 进一步的，我们对Gemini系列和GPT系列的代表模型中的工具调用进行了分析，图~\ref{fig:tool_call_pie} 中可以发现 有 部分工具占比非常大，例如 Crop、Zoom In、Rotate等，说明这些模型对于工具调用的Diverse能力相对较弱，还是主要集中使用一些简单、常见可能被训练过的工具。表明目前大部分模型diverse工具调用的能力较弱。
+
+\noindent \textbf{Uneven Distribution of Tool Utilization.} Furthermore, we analyze the tool-use distribution within representative models from the Gemini and GPT series. Fig.~\ref{fig:tool_call_pie} reveals that a small number of tools account for a disproportionately large percentage of total calls. For instance, models frequently utilize basic tools such as crop, zoom in, and rotate. This concentration suggests that existing models possess limited diversity in their tool selection. They primarily rely on simple and common operations that were likely heavily emphasized during their training. These empirical results indicate that most current models still lack the capability for diverse and complex tool invocation.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/combined_models_row.pdf}
+    \caption{\textbf{Distribution of tool utilization across different models.} The usage patterns remain largely consistent across models, with the most frequently invoked tools including \textit{Zoom In, Inrange Color, Rotate, Histogram, and Connected Components}.}
+    % 不同模型使用的工具的分布图
+    % 每个模型使用的工具分别基本相同，使用较多的有：Zoom in、Inrange Color、Rotate、Histogram、Connect Components With States
+    \label{fig:tool_call_pie}
+\end{figure}
+
+
+% 组合工具调用可以提高模型表现，但目前模型的多轮工具组合调用的能力上不足
+
+% 为了进一步分析模型工具调用的有效性，我们基于表~\ref{tab:tool_analysis}中表现最好的Gemini-3.0-Flash模型进行了深入讨论，绘制了有效工具链的工具调用数量与正确率的分布图, 工具调用种类数与正确率的分布图~\ref{fig:tool_analysis}，以及 与GT 分布的差异图~\ref{fig:distribution_diff}，并进一步对每一类任务进行分析~\ref{fig:category_tool_distribution}。
+% 从图~\ref{fig:tool_analysis}中可以发现，在使用多轮组合工具的情况下，即工具使用数量大于2的情况下，模型的正确率是高于整体的正确率的，说明多轮组合工具调用是能够提高模型表现的。
+% 但是从图~\ref{fig:distribution_diff}也能看到，尽管表现很好的模型，其对工具的组合调用与GT的工具调用分布差异也很大，说明目前的模型在多轮工具组合调用的能力上不足。
+
+% \textbf{Tool composition enhances performance but remains a bottleneck.} 
+% We conduct an in-depth analysis of the Gemini-3.0-Flash~\cite{google2025gemini3flash} model to investigate tool-calling effectiveness. This model achieved the highest accuracy in Table~\ref{tab:tool_analysis}. Fig.~\ref{fig:tool_analysis} illustrates the distribution of accuracy across varying toolchain lengths and tool variety. We also visualize the distribution discrepancy relative to the ground truth in Fig.~\ref{fig:distribution_diff}. Furthermore, we analyze the tool utilization across specific task categories in Fig.~\ref{fig:category_tool_distribution}.
+% Fig.~\ref{fig:tool_analysis} shows that accuracy increases when models utilize multi-round tool combinations. Specifically, the success rate for toolchains with more than two steps exceeds the overall average. This finding confirms that multi-round tool invocation effectively boosts performance. Nevertheless, Fig.~\ref{fig:distribution_diff} reveals a significant discrepancy between the predicted toolchain distribution and the ground truth. Even high-performing models fail to match the optimal tool-calling patterns. This gap indicates that current models lack sufficient capability in coordinating complex, multi-round tool sequences.
+\noindent \textbf{Tool composition enhances performance but remains a fundamental execution bottleneck.} Visualized in Fig.~\ref{fig:tool_analysis}, multi-round combinations positively correlate with overall performance, with trajectories exceeding two steps consistently surpassing average accuracy. However, distributional discrepancies (Fig.~\ref{fig:distribution_diff} and Fig.~\ref{fig:category_tool_distribution}) alongside the quantitative metrics in Tab.~\ref{tab:tool_analysis} expose a striking inefficiency. Paradoxically, even models with high APR fail to align with optimal, ground-truth tool-calling patterns. For example, despite its advanced reasoning capabilities, GPT-5.2 records a MAE of 9.96 in attempted calls and an Eff. of 16.78\%. Similarly, GPT-o3 and Gemini-3.0-Pro only achieve efficiencies of 17.20\% and 36.51\%, respectively. These pronounced deviations and excessive redundancies demonstrate that instead of executing precise programmatic orchestration, current models resort to suboptimal trial-and-error heuristics, exposing a critical deficit in coordinating complex, multi-step tool sequences.
+% \noindent \textbf{Tool composition enhances performance but remains a bottleneck.} 
+% We analyze Gemini-3.0-Flash~\cite{google2025gemini3flash} to investigate tool-calling efficacy. Fig.~\ref{fig:tool_analysis} plots accuracy against toolchain complexity, while Fig.~\ref{fig:distribution_diff} and Fig.~\ref{fig:category_tool_distribution} highlight distributional discrepancies. 
+% Results show that multi-round combinations positively correlate with performance. 
+% Notably, trajectories exceeding two steps surpass the average accuracy. 
+% Despite these gains, a substantial deviation from ground-truth patterns persists. 
+% Even high-performing models fail to match the optimal tool-calling patterns. This gap indicates that current models lack sufficient capability in coordinating complex, multi-round tool sequences.
+% This misalignment reveals that current models still lack the capability to orchestrate complex multi-step sequences effectively.
+
+
+\begin{figure}[t]
+    \centering
+    % 第一张子图
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/tool_usage_analysis.pdf}
+        \caption{\textbf{Sample distribution vs. Accuracy.}}
+        % \caption{\textbf{Sample distribution vs. Accuracy.} Bars represent the question count while lines denote the APR, grouped by toolchain length (left) and unique tools (right).}
+        \label{fig:tool_analysis}
+    \end{subfigure}
+    \hfill % 插入弹性间距使两图分布在左右两侧
+    % 第二张子图
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/tool_comparison_analysis_final.pdf}
+        \caption{\textbf{Distributional Discrepancy.}}
+        % \caption{\textbf{Distributional Discrepancy.} We compare the frequency of Ground Truth (blue) and Model (red) across toolchain length (left) and unique tools (right), highlighting a complexity gap.}
+        \label{fig:distribution_diff}
+    \end{subfigure}
+    
+    % \caption{Comprehensive analysis for Gemini-3.0-Flash.}
+    \caption{\textbf{Comprehensive analysis for Gemini-3.0-Flash.} \textbf{(a)} Correlation between sample density and APR. \textbf{(b)} Distributional gap between Ground Truth  and Model. Both metrics are stratified by chain length (left) and tool diversity (right).}
+    \label{fig:overall_analysis}
+    \vspace{-0.5cm}
+\end{figure}
+
+
+
+
+
+
+
+% 我们观察了大量样本，发现模型使用工具存在两个最主要的问题。 从 Fig.~\ref{fig:Bad_Case_1} 发现
+% 工具使用错误，包括使用了错误的工具、以及工具的参数使用出错
+% 从 Fig.~\ref{fig:Bad_Case_2} 中可以看到
+% 过于信赖工具给出的结果，没有进一步验证就直接给出答案
+\noindent \textbf{Case Study}~\label{sec:case_study}
+A qualitative analysis of model outputs reveals two primary failure modes in tool utilization. The first mode involves a compounded failure of strategic misselection and operational errors during tool invocation. As Fig.~\ref{fig:Bad_Case_1} illustrates, the model not only selects the \textit{Draw Circle} and \textit{Draw Line} tools—which are fundamentally inappropriate for the given context—but also executes them incorrectly. Specifically, it attempts to apply these tools based solely on its flawed intrinsic perception, entirely bypassing the prerequisite step of extracting accurate spatial coordinates. This highlights a critical deficiency in understanding specific tool functionalities and their proper application contexts. The second mode is an over-reliance on intermediate tool results. Fig.~\ref{fig:Bad_Case_2} demonstrates this behavior, where the model conducts a superficial analysis of the returned output and directly adopts it to form the final answer. By failing to cross-verify these intermediate results with the original visual input, the model completely misses the correct target. This lack of critical verification prevents models from identifying and correcting potential errors generated by the tools.
+% \noindent \textbf{Case Study}~\label{sec:case_study}
+% A qualitative analysis of model outputs reveals two primary failure modes in tool utilization. The first mode involves operational errors during tool invocation. As Fig.~\ref{fig:Bad_Case_1} illustrates, models frequently select inappropriate tools or formulate incorrect parameters. This highlights a critical deficiency in understanding specific tool functionalities and their proper application contexts. The second mode is an over-reliance on intermediate tool results. Fig.~\ref{fig:Bad_Case_2} demonstrates this behavior. Models often adopt tool outputs directly to form the final answer. They fail to cross-verify these intermediate results with the original visual input. This lack of critical verification prevents models from identifying and correcting potential errors generated by the tools.
+\begin{figure}[t]
+    \centering
+    % 左侧图片：工具选择错误
+    \begin{subfigure}{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/bad_case_new_1.pdf}
+        \caption{Tool selection and execution errors.}
+        \label{fig:Bad_Case_1}
+    \end{subfigure}
+    \hfill % 在两张图之间插入弹性间距
+    % 右侧图片：过度依赖工具结果
+    \begin{subfigure}{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/bad_case_new_2.pdf}
+        \caption{Over-reliance on unverified tool outputs.}
+        \label{fig:Bad_Case_2}
+    \end{subfigure}
+    
+    \caption{\textbf{Qualitative analysis of failure modes in tool utilization.} 
+    (a) The agent mistakenly invokes \textit{Draw Circle} and \textit{Draw Line} based on unfounded intuition, leading to a speculative answer. 
+    (b) The agent blindly adopts preliminary tool outputs without visual validation, bypassing essential verification steps.}
+    \label{fig:Error_Analysis_Combined}
+    
+\end{figure}
+
+\noindent \textbf{Prompt Ablation}~\label{sec:ablation_study}
+We evaluate model performance across four distinct settings—direct answer, weak prompt, strong prompt (the default configuration for our main evaluations), and strong prompt augmented with ground-truth (GT) tools—with results detailed in Fig.~\ref{fig:prompt_ablation}. Our evaluations on Gemini-3.0-Flash~\cite{google2025gemini3flash}, Qwen3-VL-30B-A3B~\cite{qwen3-vl}, and DeepEyes~\cite{zheng2025deepeyes} reveal a consistent upward trajectory in performance correlating with prompt comprehensiveness. Notably, the performance improvements observed upon introducing GT tools effectively validate the utility and correctness of our annotated reference toolchains. Nevertheless, the overall gains remain surprisingly bounded even for leading models like Gemini and Qwen, while improvements for DeepEyes are entirely marginal. This performance ceiling suggests that providing the correct toolset is merely half the battle: restricted by their inherent reasoning capacities, current models fundamentally struggle to synthesize the correct multi-step execution logic. This inability to reliably formulate tool trajectories, even with oracle tool knowledge, underscores a profound bottleneck in complex compositional reasoning.
+% \noindent \textbf{Prompt Ablation}~\label{sec:ablation_study}
+% We evaluate the model performance under four experimental settings, with the corresponding results detailed in Fig.~\ref{fig:prompt_ablation}. The specific configurations consist of direct answer, weak prompt, strong prompt, and strong prompt integrated with ground truth tools.
+% We conduct evaluations on Gemini-3.0-Flash~\cite{google2025gemini3flash}, Qwen3-VL-30B-A3B~\cite{qwen3-vl}, and DeepEyes~\cite{zheng2025deepeyes}. 
+% Our findings reveal a consistent upward trend in performance as prompt strength increases. Models generally achieve superior results when provided with more comprehensive instructions. Both Gemini-3.0-Flash~\cite{google2025gemini3flash} and Qwen3-VL~\cite{qwen3-vl} effectively utilize GT tools to enhance their performance. In contrast, the improvement for DeepEyes~\cite{zheng2025deepeyes} remains marginal even when GT tools are provided. This discrepancy suggests that tool-use capability is closely linked to the inherent perceptual strength of the model. Overall, the gains for Gemini and Qwen with GT tools are still relatively limited. This result indicates that current models still have significant room for advancement in complex multi-tool composition.
+% \subsubsection{Ablation Study on Tool-Use Protocols.}
+% % 在实验中我们发现，对于没有针对性训练过code能力的算法，大部分情况下interface的表现都不低于甚至高于code，尤其是在工具调用能力弱的开源模型上尤为显著。
+% % 这说明我们框架中设置的32个interface操作基本覆盖了大部分的使用场景，同时对于小模型使用友好，只需要设置几个参数就可以完成图像编辑的操作。
+% We conducted an ablation study to compare code-based and interface-based tool execution. Our ablation study reveals that the interface-based protocol consistently matches or outperforms code generation, particularly for models lacking specialized programming training. This trend is most pronounced in open-source models with limited tool-calling proficiency. These results indicate that our framework of 32 interface operations effectively covers the majority of practical application scenarios while remaining highly accessible to smaller models. By simplifying complex image editing into basic parameter configurations, the interface approach successfully decouples high-level reasoning from low-level syntactic implementation. This transformation reduces the reasoning burden on the agent by constraining the action space from open-ended coding to discrete selection. Consequently, the interface protocol provides a reliable performance floor, allowing models to focus on strategic planning rather than implementation details.
+
+% \subsubsection{Skills vs Interface}
+% \subsubsection{Ablation Study on Prompt.}
+% 图~\ref{fig:prompt_ablation}中展示了我在4种设置下模型的不同表现。分别是直接回答、Weak Prompt、Strong Prompt和Strong Prompt + GT Tools。
+% 我们在Gemini-3.0-Flash、Qwen3 VL 30B A3B 和 Deepeyes上进行讨论，发现在不同强度设置下的prompt呈现一个上升的趋势。强度越高的prompt模型表现相对也会更好。
+% 在Gemini-3.0-Flash 和 Qwen3 VL模型上，加入GT Tools的时候，模型能够有效利用GT Tools，但是在Deepeyes上，加入GT Tools的收益并不明显，说明工具调用能力也与模型本身的感知能力相关。
+% 但是总的来说，Gemini和Qwen使用了GT Tools的情况下提升也比较有限，表明现在的模型在工具组合调用方面仍然有很大的进步空间。
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/ablation_prompt.pdf}
+    \caption{\textbf{Impact of system prompts and prompt information density on model APR.} We evaluate the performance of three distinct models, under four prompting configurations: Direct, Weak Prompt, Strong Prompt, and Strong Prompt + GT Tools.}
+    % system prompt 和 提示词信息含量 对 模型 APR 的影响。
+    % 比较了三种不同模型：开源专用模型DeepEyes、开源通用模型Qwen3-VL和闭源模型Gemini-3.0-Flash，在四种提示词下的表现：直接回答、Weak Prompt、Strong Prompt、Strong Prompt + GT Tools
+    \label{fig:prompt_ablation}
+    \vspace{-0.5cm}
+\end{figure}
+
+% Fig.~\ref{fig:prompt_ablation} illustrates the performance of models under four experimental settings. These settings comprise Direct Answer, Weak Prompt, Strong Prompt, and Strong Prompt + GT Tools.
+
+
+\section{Conclusion}
+% 在这个工作中，我们提出了Bench，在Thinking with image 的范式下 评估多模态大模型组合工具调用能力。我提供了32个可可选择工具，远大于其他工作的少量工具。在现实世界常见的驱动下，设计了9种任务综合评估分析模型对于多种工具的组合调用能力。
+% 实验结果表明，目前大部分模型在工具组合调用能力上存在欠缺，往往局限于部分工具的使用，导致工具调用的有效性较低，且大部分模型难以正确使用工具或者过于依靠工具而忽略了自身的感知能力。
+% In this work, we propose \textbf{\benchname}, a benchmark designed to evaluate the multi-tool composition capabilities of large multi-modal models. We provide a library of 32 selectable tools, which significantly exceeds the limited toolsets offered by previous benchmarks. Driven by common real-world scenarios, we design nine comprehensive task types to analyze how models coordinate multiple tools in complex trajectories. 
+% Our experimental results indicate that most current models lack sufficient proficiency in multi-tool composition. These models are often restricted to a narrow subset of tools, which leads to low execution efficiency. Furthermore, many models struggle to utilize tools correctly or over-rely on tool outputs while neglecting their intrinsic perceptual capabilities. These findings suggest a significant gap between perception and tool-use in existing multi-modal architectures.
+
+% In this work, we introduce \textbf{\benchname}, a benchmark meticulously designed to evaluate the multi-step tool composition capabilities of Multimodal Large Language Models (MLLMs). We curate a diverse library of 32 tools, substantially surpassing the limited toolsets of prior benchmarks. To analyze how models orchestrate complex tool trajectories, we establish nine distinct task categories grounded in real-world scenarios. 
+%Our experiments reveal that current models exhibit significant deficiencies in multi-tool composition. 
+% They frequently gravitate toward a narrow subset of tools, resulting in suboptimal execution efficacy. Moreover, models often struggle with precise tool invocation or demonstrate an over-reliance on tool outputs, neglecting their intrinsic perceptual capabilities. 
+% These findings underscore a critical disconnect between visual perception and agentic tool utilization in contemporary architectures.
+
+In this paper, we introduced \textbf{\benchname}, a meticulously crafted benchmark designed to evaluate the multi-step tool composition capabilities of MLLMs. 
+By integrating 32 diverse tools across 9 real-world categories, our suite substantially surpasses prior evaluations. 
+Extensive experiments across 19 MLLMs , including both open and proprietary, reveal pronounced deficiencies in current tool orchestration. 
+Models frequently gravitate toward a narrow subset of tools, resulting in suboptimal execution efficacy. Moreover, models often struggle with precise tool invocation or demonstrate an over-reliance on tool outputs, neglecting their intrinsic perceptual capabilities. 
+These findings underscore a critical disconnect between foundational visual perception and active agentic reasoning, illuminating a clear frontier for future MLLM architectures.
+% Crucially, empirical analysis reveals that state-of-the-art models exhibit pronounced deficiencies in tool orchestration. 
+
+% \section*{Acknowledgements}
+% Please insert your acknowledgments here.
+
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+\bibliographystyle{splncs04}
+\bibliography{main}
+
+\newpage
+\appendix
+
+\onecolumn
+% \title{\benchname: Evaluating Agentic Multimodal Models via Compositional Visual Tool Chaining (Supplementary Material)} 
+% \maketitle
+
+\section{Implementation Details}
+% We conduct all evaluations in a zero-shot setting to ensure fair comparison and better generalization. For open-source models, we deploy them on NVIDIA H100 GPUs using the vLLM framework. We also adhere to the official recommended parameters for these API calls. Regarding proprietary models, we access them via their official APIs. Crucially, we enable the High Reasoning mode for all assessments. 
+We conduct all evaluations in a zero-shot setting to ensure fair comparison and better generalization. Open-source models are deployed on NVIDIA H100 GPUs using the \texttt{vLLM} framework, while proprietary models are accessed via their official APIs. The detailed generation hyperparameters are set as follows:
+
+\begin{itemize}
+    \item \textbf{Open-source Instruct Models:} temperature $= 0.7$, top-p $= 0.8$, top-k $= 20$, repetition penalty $= 1.0$, presence penalty $= 1.5$, max tokens $= 16{,}384$, and seed $= 3407$.
+    
+    \item \textbf{Open-source Thinking Models:} temperature $= 0.6$, top-p $= 0.95$, top-k $= 20$, repetition penalty $= 1.0$, presence penalty $= 0$, max tokens $= 40{,}960$, and seed $= 1234$.
+    
+    \item \textbf{Proprietary Models:} We strictly enable the High Reasoning mode for all assessments and set the max new tokens to $65{,}536$.
+\end{itemize}
+
+In Qwen-Agent, we set the maximum number of rounds to 20.
+
+\section{Detailed Tool Set And Data Collection}
+\subsection{Tool Set}\label{app:tool_set}
+% 所有的工具以及其描述都被介绍在表~\ref{tab:tool_taxonomy}.
+All tools and their corresponding descriptions are detailed in Tab.~\ref{tab:tool_taxonomy}.
+\begin{table}[tb]
+    \centering
+    \caption{Detailed taxonomy and definitions of the 35 OpenCV-based tools utilized in our benchmark. The tools are categorized into four logical groups: Geometry, Enhancement, Feature Extraction, and Drawing.}
+    \label{tab:tool_taxonomy}
+    
+    \scriptsize 
+    \renewcommand{\arraystretch}{1.2} 
+    \setlength{\tabcolsep}{6pt} 
+    
+    \begin{tabularx}{\textwidth}{>{\bfseries}l X} 
+        \toprule
+        \rowcolor{white}
+        Tool Name & \textbf{Description} \\
+        \midrule
+        
+        % --- Geometry ---
+        \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Geometry}}} \\
+        Resize & Adjusts the image dimensions to a specified size. \\
+        Rotate & Rotates the image by a specified angle. \\
+        Translate & Shifts the image location along the x or y axis. \\
+        Flip & Mirrors the image horizontally, vertically, or both. \\
+        Crop & Extracts a specific rectangular region of interest (ROI). \\
+        Zoom In & Scales up a specific region of the image for detail inspection. \\
+        Pyramid & Performs pyramid upsampling or downsampling. \\
+        
+        % --- Enhancement ---
+        \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Enhancement}}} \\
+        Convert Color & Converts color spaces (e.g., RGB to Gray, HSV, or LAB). \\
+        In-Range Color & Filters pixels within a specific color range (segmentation mask). \\
+        Blur & Smooths image noise using Gaussian, Median, or Bilateral filters. \\
+        Denoise & Applies Non-local Means Denoising to smooth while preserving edges. \\
+        Threshold & Applies binary, Otsu, or adaptive thresholding techniques. \\
+        Morphology & Performs morphological operations (Erosion, Dilation, Open, Close). \\
+        Histogram & Enhances contrast using Histogram Equalization or CLAHE. \\
+        Adjust Brightness & Adjusts brightness using absolute scaling (ConvertScaleAbs). \\
+        Inpaint & Restores damaged or missing areas within an image. \\
+        
+        % --- Feature Extraction ---
+        \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Feature Extraction}}} \\
+        Canny Edge & Identifies edges using the Canny edge detector. \\
+        Compute Gradients & Calculates gradients using Sobel or Laplacian operators. \\
+        Watershed & Segments touching objects based on topographical distance. \\
+        GrabCut & Extracts foreground objects interactively using graph cuts. \\
+        Flood Fill & Fills a connected component starting from a seed point. \\
+        Conn. Components & Computes connected components and their statistics (bounding box, area). \\
+        Keypoint Features & Detects feature points using algorithms like Harris, SIFT, or ORB. \\
+        Hough Lines & Detects straight lines using the Hough Line Transform. \\
+        Hough Circles & Detects circular objects using the Hough Circle Transform. \\
+        Template Match & Locates the area in the image that matches a template. \\
+        DFT & Converts the image to the frequency domain (Discrete Fourier Transform). \\
+        
+        % --- Drawing ---
+        \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Drawing}}} \\
+        Draw Contours & Detects and retrieves contours from the binary image. \\
+        Approx Poly & Approximates a contour shape to a polygon with fewer vertices. \\
+        Draw Line & Annotates the image with straight lines. \\
+        Draw Circle & Annotates the image with circles. \\
+        Contour Area & Calculates the area of a specific contour. \\
+        Arc Length & Computes the perimeter or curve length of a contour. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+% \begin{table}[tb]
+%     \centering
+%     \caption{Detailed taxonomy and definitions of the 32 OpenCV-based tools utilized in our benchmark. The tools are categorized into four logical groups: Geometry, Enhancement, Feature Extraction, and Drawing.}
+%     \label{tab:tool_taxonomy}
+    
+%     \scriptsize 
+%     \renewcommand{\arraystretch}{1.2} 
+%     \setlength{\tabcolsep}{6pt} 
+    
+%     \begin{tabularx}{\textwidth}{>{\bfseries}l X} 
+%         \toprule
+%         \rowcolor{white} % 确保表头不受后续颜色影响
+%         Tool Name & \textbf{Description} \\
+%         \midrule
+        
+%         % --- Geometry ---
+%         % 将 l 改为了 c 实现居中，并加入 \textsc 增加视觉区分度
+%         \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Geometry}}} \\
+%         Rotate & Rotates the image by a specified angle. \\
+%         Crop & Extracts a specific rectangular region of interest (ROI). \\
+%         Resize & Adjusts the image dimensions (upscaling or downscaling). \\
+%         Flip & Corrects mirrored images or reflections (horizontal/vertical). \\
+%         Translate & Shifts the image location along the x or y axis. \\
+%         Image Pyramid & Performs pyramid downsampling or upsampling for multi-scale analysis. \\
+        
+%         % --- Enhancement ---
+%         \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Enhancement}}} \\
+%         Convert Color & Converts color spaces (e.g., RGB to Gray, HSV, or LAB). \\
+%         Adjust Brightness & Modifies image contrast and brightness via linear scaling. \\
+%         Histogram Eq & Applies histogram equalization to fix exposure and contrast issues. \\
+%         Binarize & Converts images to binary masks using thresholding techniques. \\
+%         Morphology & Performs operations like Erosion, Dilation, Opening, or Closing. \\
+%         Blur & Smooths image noise using Gaussian, Median, or Mean filters. \\
+%         Denoise & Applies advanced denoising (e.g., Non-local Means) to preserve edges. \\
+%         Sharpen & Enhances image edges and details using sharpening kernels. \\
+%         Inpaint & Restores damaged or missing areas within an image. \\
+%         Color Filter & Filters and retains pixels within a specific color range (cv2.inRange). \\
+%         Flood Fill & Fills connected components starting from a seed point with a specific color. \\
+        
+%         % --- Feature Extraction ---
+%         \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Feature Extraction}}} \\
+%         Edge Detect & Identifies edges using Canny or Sobel operators. \\
+%         Line Detect & Detects straight lines using the Hough Transform. \\
+%         Circle Detect & Detects circular objects using the Hough Circle Transform. \\
+%         Compute Gradients & Calculates intensity gradients to analyze directional changes. \\
+%         Template Match & Locates the area in the image that matches a template. \\
+%         Watershed & Segments touching or overlapping objects based on topography. \\
+%         GrabCut & Extracts foreground objects interactively using graph cuts. \\
+%         Connected Components & Labels and analyzes distinct connected regions (blobs). \\
+%         Frequency Transform & Converts images to the frequency domain (DFT/FFT) for analysis. \\
+        
+%         % --- Draw ---
+%         \rowcolor{gray!15} \multicolumn{2}{c}{\textbf{\textsc{Drawing}}} \\
+%         Draw Contours & Visualizes the outlines of detected objects. \\
+%         Measure Area & Calculates the area of specific objects or contours. \\
+%         Measure Perimeter & Computes the perimeter length of objects or contours. \\
+%         Approximate Polygon & Approximates a contour shape to a simpler polygon with fewer vertices. \\
+%         Draw Line & Annotates the image with straight lines for visualization. \\
+%         Draw Circle & Annotates the image with circles for visualization or marking. \\
+%         \bottomrule
+%     \end{tabularx}
+% \end{table}
+
+\subsection{Data Collection}\label{app:data_collection}
+% 我们在这里介绍9个任务中数据收集的具体过程
+We describe the specific data collection process for the nine tasks in this section.
+
+\textit{Attention Focusing:} Sourced from HRBench~\cite{wang2025divide} and web-crawled images. We evaluate the agent’s robustness against Geometric Perturbations by applying manual transformations (e.g., rotation, reflection). This requires models to re-orient their "focus" via tool-assisted spatial normalization.
+
+\textit{Chart:} Derived from ChartQA~\cite{masry2022chartqa} and targeted web searches. We implement information sanitization by erasing original ground-truth labels, compelling the agent to utilize Auxiliary Construction for logic and Precision Sampling for element extraction.
+
+\textit{Color:} Based on ColorBench~\cite{liang2025colorbench} and internet data. After subjecting images to radiometric noise (blur, illumination variance), we force the model to bypass raw RGB perception in favor of chromatic space manipulations (HSV/LAB) to quantify color proportions.
+
+\textit{Counting:} Adapted from Kaggle and web sources. We specifically target visual occlusion and density bottlenecks (e.g., overlapping objects) where direct counting is intractable, necessitating a "segment-and-count" pipeline using morphological utilities.
+
+\textit{Math:} A specialized set of web-collected and manually synthesized samples focusing on STEM-oriented Geometric Reasoning. The core challenge lies in constructive logic, where models must identify and draw auxiliary lines to solve complex polygonal problems.
+
+\textit{Measurement:} Sourced from high-fidelity web images with manual calibration. It bridges the gap between vision and Metrology, featuring scenarios like Industrial Component Calibration that require sub-pixel precision through tool-assisted physical dimension estimation.
+
+\textit{Perceptual Restoration:} Leveraging Kaggle open-source data, this task evaluates the agent’s capacity to act as a "pre-processor," effectively neutralizing atmospheric haze and photon noise to recover latent semantic information from degraded scenes.
+
+\textit{Robust OCR:} An integration of OCRBench~\cite{liu2024ocrbench} and Kaggle competition data. Unlike standard OCR, these samples are embedded with compound degradations. Models must exhibit strategic planning by chaining binarization and sharpening tools before attempting text recognition. 
+
+\textit{Spatial Reasoning}: Derived from Kaggle and web sources. This task focuses on the quantification of relative topologies, requiring models to transform qualitative visual cues into precise spatial coordinates to resolve complex positional queries.
+
+\section{More On Analysis Results}
+\subsection{Tool-Use Analysis Results}
+% 我们在更具体的任务级别上对Gemini-3.0-Flash的Distribution difference compared with Ground Truth 进行了可视化。
+% Fig.~\ref{fig:category_tool_distribution} demonstrates a critical mismatch between predicted toolchain depths and ground-truth requirements for Gemini-3.0-Flash across all task categories. The model consistently generates significantly shorter toolchains than those required by expert trajectories. Most predicted sequences peak at lengths of only 1 or 2 steps while the ground truth frequently requires 4 to 6 steps. In categories such as color and measure, the model produces a single-step chain for the vast majority of samples despite the ground truth peaking at 5 steps. This "shortcutting" behavior suggests that the model often terminates its reasoning process prematurely without completing the necessary intermediate steps. Such a depth deficiency identifies a major bottleneck in the planning and orchestration capabilities of current large multi-modal models.
+Figure~\ref{fig:category_tool_distribution} visualizes the distribution difference of toolchain lengths between Gemini-3.0-Flash and the ground truth at a granular task level. The results demonstrate a critical mismatch between predicted toolchain depths and ground-truth requirements across all task categories. The model consistently generates significantly shorter toolchains than those required by expert trajectories. Most predicted sequences peak at only 1 or 2 steps while the ground truth frequently requires 4 to 6 steps. In categories such as color and measure, the model produces a single-step chain for the vast majority of samples despite the ground truth peaking at 5 steps. This "shortcutting" behavior suggests that the model often terminates its reasoning process prematurely without completing the necessary intermediate steps. Such a depth deficiency identifies a major bottleneck in the planning and orchestration capabilities of current large multi-modal models.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/category_tool_distribution.pdf}
+    \caption{Category-level distribution difference compared with ground truth for Gemini-3.0-Flash.}
+    % 任务级别的Distribution difference compared with Ground Truth for Gemini-3.0-Flash
+    \label{fig:category_tool_distribution}
+\end{figure}
+
+\subsection{Evaluation Metrics}\label{app: metrics}
+
+% The formulation of TCR Eq.~\ref{Eq: TCR}:
+% \begin{equation}\label{Eq: TCR}
+%  \text{TCR} = \frac{|\{i \mid L_{T,i} > 0\}|}{N}
+% \end{equation}
+We define the Tool Call Rate (TCR) as Eq~\ref{Eq: TCR}:
+\begin{equation}\label{Eq: TCR}
+ \text{TCR} = \frac{|\{i \mid L_{T,i} > 0\}|}{N},
+\end{equation}
+where $N$ denotes the total number of samples and $L_{T,i}$ represents the toolchain length for the $i$-th sample.
+
+
+
+\clearpage
+\section{Detailed Prompts}\label{app:prompts}
+% 开始定义提示词框
+\begin{tcolorbox}[
+    enhanced,               % 启用增强特性
+    breakable,
+    colback=bluebg,         % 背景颜色
+    colframe=blueframe,     % 边框颜色
+    coltitle=white,         % 标题字体颜色
+    title={System Prompt},  % 标题文本
+    fonttitle=\bfseries\sffamily, % 标题字体加粗，使用无衬线体更显现代
+    fontupper=\footnotesize,
+    arc=2.5mm,              % 柔和的圆角
+    boxrule=1.2pt,          % 边框粗细微调
+    drop fuzzy shadow,      % 添加轻微的投影增加立体感（若不需要可删除此行）
+    left=10pt, right=10pt, top=10pt, bottom=10pt % 调整内部边距，使内容更透气
+]
+
+\noindent\textbf{\textsf{System Prompt (Strong)}}\\
+\vspace{1mm}
+
+\noindent Your role is that of a helpful assistant specialized in solving real-world visual problems using image processing tools. Answer questions about images by combining your visual understanding with the precision of available tools.
+
+\noindent Please follow this structured thinking process and show your work.
+
+\noindent Start an iterative loop for each question:
+
+\noindent - **First, look closely:** Begin with a detailed description of the image in the context of the user's real-life query. List what is immediately visible, and explicitly identify what specific visual details need to be clarified, adjusted, or measured using tools.
+
+\noindent - **Next, apply tools:** Select and invoke just one appropriate function to process the image.
+
+\noindent - **Then, review the findings:** Carefully analyze the tool's output (e.g., the processed image, detected features, or status) and decide on your next action (e.g., did the rotation fix the view? do you need further adjustments?).
+
+\noindent Continue this loop until you have sufficient information.
+
+\noindent To finish, bring everything together in a clear, synthesized answer that fully responds to the user's question.
+
+
+\vspace{2mm}
+\tcbline % 自动生成一条与边框同色的优雅分割线
+\vspace{2mm}
+
+\noindent\textbf{\textsf{System Prompt (Weak)}}\\
+\vspace{1mm}
+
+\noindent Your role is that of a helpful assistant specialized in solving real-world visual problems using image processing tools. 
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,               % 启用增强特性
+    breakable,
+    colback=bluebg,         % 背景颜色
+    colframe=blueframe,     % 边框颜色
+    coltitle=white,         % 标题字体颜色
+    title={User Prompt},  % 标题文本
+    fonttitle=\bfseries\sffamily, % 标题字体加粗，使用无衬线体更显现代
+    fontupper=\footnotesize,
+    arc=2.5mm,              % 柔和的圆角
+    boxrule=1.2pt,          % 边框粗细微调
+    drop fuzzy shadow,      % 添加轻微的投影增加立体感（若不需要可删除此行）
+    left=10pt, right=10pt, top=10pt, bottom=10pt % 调整内部边距，使内容更透气
+]
+
+\noindent\textbf{\textsf{User Prompt without GT Toolchains}}\\
+\vspace{1mm}
+
+\noindent   <image>
+  
+\noindent  \{question\}
+  
+\noindent  \#\#\# User Image Path: \{image\_path\}
+  
+\noindent  \#\#\#  User Image Size: \{image\_size\}
+  
+\noindent  \#\#\#  Output Format (strict adherence required):
+  
+\noindent  <think>Your detailed reasoning process, should go here.</think>
+  
+\noindent  <answer>Your final answer to the user's question goes here.</answer>
+
+\vspace{2mm}
+\tcbline % 自动生成一条与边框同色的优雅分割线
+\vspace{2mm}
+
+\noindent\textbf{\textsf{User Prompt with GT Toolchains}}\\
+\vspace{1mm}
+
+\noindent   <image>
+  
+\noindent  \{question\}
+  
+\noindent  \#\#\# User Image Path: \{image\_path\}
+  
+\noindent  \#\#\#  User Image Size: \{image\_size\}
+  
+
+\noindent \#\#\# \textbf{
+ Here is the **Reference Trajectory**. You can refer to this trajectory to use tools to solve problems :  
+\{reference\_trajectory\}
+}
+
+  
+\noindent  \#\#\#  Output Format (strict adherence required):
+  
+\noindent  <think>Your detailed reasoning process, should go here.</think>
+  
+\noindent  <answer>Your final answer to the user's question goes here.</answer>
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,               
+    breakable,
+    colback=bluebg,         
+    colframe=blueframe,     
+    coltitle=white,         
+    title={Code Interpreter Description},  
+    fontupper=\footnotesize,             % 控制正文字体变小
+    fonttitle=\bfseries\sffamily, 
+    arc=2.5mm,              
+    boxrule=1.2pt,          
+    drop fuzzy shadow,      
+    left=10pt, right=10pt, top=10pt, bottom=10pt 
+]
+
+
+\noindent Executes Python code to handle images based strictly on the allowed capabilities listed below.
+
+\vspace{4mm}
+\noindent CRITICAL INSTRUCTIONS FOR MODEL:
+\begin{enumerate}
+    \item RESTRICTED SCOPE: You are strictly permitted to implement only the specific image handling operations defined in the Allowed Capabilities Reference section below. Do not generate code for operations outside this list.
+    \item NO PRE-DEFINED FUNCTIONS: The list below defines behaviors, NOT callable functions.
+    \begin{itemize}
+        \item INCORRECT: Calling colorspace\_gray(image) or resize(image, param). These functions DO NOT exist.
+        \item CORRECT: You must write the raw Python code using the cv2 library to implement the logic described. For example, to achieve colorspace\_gray, you must write cv2.cvtColor(image, cv2.COLOR\_BGR2GRAY).
+    \end{itemize}
+    \item PARAMETER ADHERENCE: When writing the code, you must strictly follow the parameter logic described in the reference list (e.g., input ranges, default values, and calculation logic).
+\end{enumerate}
+
+\vspace{4mm}
+\tcbline
+\vspace{4mm}
+
+\noindent Allowed Capabilities Reference (Implement these using raw cv2 code)
+
+\vspace{2mm}
+
+\noindent 1. COLOR SPACE CONVERSION TOOLS
+\vspace{2mm}
+
+\noindent \textbf{colorspace\_gray}
+\newline Description: Converts the image to grayscale color space. Useful for enhancing contrast or isolating intensity information.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): Empty parameter object
+\end{itemize}
+
+\noindent \textbf{colorspace\_hsv}
+\newline Description: Converts the image to HSV (Hue, Saturation, Value) color space. Useful for color-based segmentation or isolating specific color channels.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): Empty parameter object
+\end{itemize}
+
+\noindent \textbf{colorspace\_lab}
+\newline Description: Converts the image to LAB color space. Useful for perceptual color operations or isolating specific color channels.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): Empty parameter object
+\end{itemize}
+
+\vspace{4mm}
+\noindent 2. GEOMETRIC TRANSFORMATION TOOLS
+\vspace{2mm}
+
+\noindent \textbf{resize}
+\newline Description: Resizes the image to specified dimensions or by a preset scale (half or double).
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): width (integer), height (integer), preset (string, optional)
+\end{itemize}
+
+\noindent \textbf{rotate}
+\newline Description: Rotates the image by specified angle in degrees (clockwise).
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): angle (number, required)
+\end{itemize}
+
+\noindent \textbf{translate}
+\newline Description: Shifts the image by a specified number of pixels in the specified direction.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): direction (string, optional), distance (integer, optional)
+\end{itemize}
+
+\noindent \textbf{flip}
+\newline Description: Flips the image horizontally or vertically.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): direction (string, optional)
+\end{itemize}
+
+\noindent \textbf{crop}
+\newline Description: Crops a rectangular region from the image.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): x (integer), y (integer), width (integer), height (integer)
+\end{itemize}
+
+\noindent \textbf{zoom\_in}
+\newline Description: Zooms into a specific region of the image by cropping and optionally resizing.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): x, y, width, height, scale, target\_width, target\_height
+\end{itemize}
+
+\vspace{4mm}
+\noindent 3. FILTERING AND SMOOTHING TOOLS
+\vspace{2mm}
+
+\noindent \textbf{blur}
+\newline Description: Applies blurring to reduce noise or smooth the image. Supports average, gaussian, median, and bilateral.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): method (string), ksize (integer), sigma\_x, sigma\_y, d, sigma\_color, sigma\_space
+\end{itemize}
+
+\noindent \textbf{denoise}
+\newline Description: Applies fast non-local means denoising.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): mode, h, h\_color, template\_window, search\_window, channels
+\end{itemize}
+
+\vspace{4mm}
+\noindent 4. THRESHOLDING AND BINARIZATION TOOLS
+\vspace{2mm}
+
+\noindent \textbf{threshold}
+\newline Description: Applies thresholding to create a binary image.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): mode, invert, color\_mode, threshold\_value, adaptive\_block\_size, adaptive\_constant, channels
+\end{itemize}
+
+\noindent \textbf{inrange\_color}
+\newline Description: Creates a mask for pixels within a specified color range.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): colorspace, lower, upper, output\_format
+\end{itemize}
+
+\vspace{4mm}
+\noindent 5. MORPHOLOGICAL OPERATIONS
+\vspace{2mm}
+
+\noindent \textbf{morphology}
+\newline Description: Applies morphological operations (erode, dilate, open, close).
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): op, kernel\_size, iterations, kernel\_shape
+\end{itemize}
+
+\vspace{4mm}
+\noindent 6. EDGE DETECTION TOOLS
+\vspace{2mm}
+
+\noindent \textbf{gradients}
+\newline Description: Computes gradient images using Sobel or Laplacian operator.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): mode (sobel\_x, sobel\_y, laplacian)
+\end{itemize}
+
+\noindent \textbf{canny}
+\newline Description: Detects edges using Canny edge detector.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): preset, threshold\_low, threshold\_high, color\_mode, channels
+\end{itemize}
+
+\noindent \textbf{convertscaleabs}
+\newline Description: Converts image to absolute value and scales it to 0-255 range.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): alpha, beta
+\end{itemize}
+
+\vspace{4mm}
+\noindent 7. CONTOUR DETECTION AND ANALYSIS TOOLS
+\vspace{2mm}
+
+\noindent \textbf{contours}
+\newline Description: Finds contours using Canny edges and returns bounding boxes/areas.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): mode, canny\_low, canny\_high, rank, max\_contours
+\end{itemize}
+
+\noindent \textbf{contour\_area}
+\newline Description: Calculates contour areas using cv2.contourArea.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): mode, canny\_low, canny\_high, rank, max\_contours, color, thickness
+\end{itemize}
+
+\noindent \textbf{arc\_length}
+\newline Description: Computes contour perimeters using cv2.arcLength.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): mode, canny\_low, canny\_high, rank, max\_contours, color, thickness
+\end{itemize}
+
+\noindent \textbf{approx\_poly}
+\newline Description: Approximates contours with fewer points using cv2.approxPolyDP.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): epsilon\_ratio, mode, canny\_low, canny\_high, rank, max\_contours, color, thickness
+\end{itemize}
+
+\noindent \textbf{connected\_components\_with\_stats}
+\newline Description: Finds and analyzes connected components in a binary image.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): threshold\_mode, threshold\_value, connectivity, max\_components
+\end{itemize}
+
+\vspace{4mm}
+\noindent 8. SHAPE DETECTION TOOLS
+\vspace{2mm}
+
+\noindent \textbf{hough\_lines}
+\newline Description: Detects line segments in the image using Hough transform.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): threshold, minLineLength, maxLineGap, canny\_low, canny\_high, max\_lines
+\end{itemize}
+
+\noindent \textbf{hough\_circles}
+\newline Description: Detects circles in the image using Hough transform.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): dp, minDist, param1, param2, minRadius, maxRadius, max\_circles
+\end{itemize}
+
+\vspace{4mm}
+\noindent 9. HISTOGRAM AND CONTRAST ENHANCEMENT
+\vspace{2mm}
+
+\noindent \textbf{histogram}
+\newline Description: Applies histogram equalization or CLAHE to enhance image contrast.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): mode, color\_mode, channels, clip\_limit, tile\_grid\_size
+\end{itemize}
+
+\vspace{4mm}
+\noindent 10. IMAGE SEGMENTATION TOOLS
+\vspace{2mm}
+
+\noindent \textbf{watershed}
+\newline Description: Applies watershed segmentation to separate overlapping objects.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): max\_regions
+\end{itemize}
+
+\noindent \textbf{grabcut}
+\newline Description: Performs foreground/background segmentation using GrabCut algorithm.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): preset (center, tight, loose)
+\end{itemize}
+
+\noindent \textbf{floodfill}
+\newline Description: Performs flood fill operation starting from a seed point.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): x, y, loDiff, upDiff, newVal, flags
+\end{itemize}
+
+\vspace{4mm}
+\noindent 11. ADVANCED OPERATIONS
+\vspace{2mm}
+
+\noindent \textbf{pyramid}
+\newline Description: Applies image pyramid operations (upsample or downsample).
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): mode (pyr\_up, pyr\_down)
+\end{itemize}
+
+\noindent \textbf{dft}
+\newline Description: Computes and visualizes the Discrete Fourier Transform magnitude spectrum.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): Empty parameter object
+\end{itemize}
+
+\noindent \textbf{template\_match}
+\newline Description: Matches a template image within the source image.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): template\_path, method
+\end{itemize}
+
+\noindent \textbf{features}
+\newline Description: Detects and draws keypoints using various feature detection methods.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): method (harris, sift, orb, etc.), max\_points
+\end{itemize}
+
+\noindent \textbf{inpaint}
+\newline Description: Inpaints (fills) regions in the image using automatically generated mask.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): preset, canny\_low, canny\_high, threshold\_value, radius, method
+\end{itemize}
+
+\vspace{4mm}
+\noindent 12. DRAWING TOOLS
+\vspace{2mm}
+
+\noindent \textbf{draw\_line}
+\newline Description: Draws a line segment between two points.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, required): x1, y1, x2, y2, color, thickness
+\end{itemize}
+
+\noindent \textbf{draw\_circle}
+\newline Description: Draws a circle on the image at specified center coordinates.
+\newline Parameters:
+\begin{itemize}
+    \item image (string, required): The input image identifier
+    \item param (object, optional): x, y, radius, color, thickness
+\end{itemize}
+
+
+\end{tcolorbox}
+
+
+\clearpage
+\section{Detailed Task Example}\label{app:detaled_task_example}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_attention.pdf}
+    \caption{Supplementary examples of Attention Focusing tasks.}
+    \label{fig:appendix_attention}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_chart.pdf}
+    \caption{Supplementary examples of Chart tasks.}
+    \label{fig:appendix_chart}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_color.pdf}
+    \caption{Supplementary examples of Color tasks.}
+    \label{fig:appendix_color}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_counting.pdf}
+    \caption{Supplementary examples of Counting tasks.}
+    \label{fig:appendix_counting}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_math.pdf}
+    \caption{Supplementary examples of Math tasks.}
+    \label{fig:appendix_math}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_measure.pdf}
+    \caption{Supplementary examples of Measure tasks.}
+    \label{fig:appendix_measure}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_ocr.pdf}
+    \caption{Supplementary examples of OCR tasks.}
+    \label{fig:appendix_ocr}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_percept.pdf}
+    \caption{Supplementary examples of Perceptual Restoration tasks.}
+    \label{fig:appendix_percept}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/appendix/appendix_spatial.pdf}
+    \caption{Supplementary examples of Spatial Reasoning tasks.}
+    \label{fig:appendix_spatial}
+\end{figure}
+
+\clearpage
+\section{Detailed Model Reasoning  Process}\label{app:detaled_model_response}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/app_case_1.pdf}
+    \caption{A case study of the reasoning process for Perceptual Restoration tasks.}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/app_case_2.pdf}
+    \caption{A case study of the reasoning process for Measure tasks.}
+\end{figure}
+
+\end{document}

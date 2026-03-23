@@ -1,0 +1,439 @@
+Democratic AI is Possible. The Democracy Levels Framework Shows How It Might Work.
+
+By Aviv Ovadya, Kyle Redman, Luke Thorburn, and 11 more authors.
+
+Published on November 14, 2024.
+
+Welcome to a narrated presentation of the research paper titled "Democratic AI is Possible. The Democracy Levels Framework Shows How It Might Work." This paper has been authored by a diverse group of experts from various institutions. Let's begin by listing the contributors: Aviv Ovadya from the AI & Democracy Foundation, Kyle Redman from both the AI & Democracy Foundation and newDemocracy Foundation, Luke Thorburn from AI & Democracy Foundation and King's College London, Quan Ze Chen from the AI & Democracy Foundation and University of Washington, Oliver Smith from AI & Democracy Foundation, Flynn Devine from Boundary Object Studio, Andrew Konya from Remesh and AI & Democracy Foundation, Smitha Milli and Manon Revel from Meta, K. J. Kevin Feng from University of Washington, Amy X. Zhang, also from University of Washington, Bilva Chandra, Michiel A. Bakker from Massachusetts Institute of Technology, and Atoosa Kasirzadeh from Carnegie Mellon University.
+
+These authors are affiliated with esteemed organizations such as the AI & Democracy Foundation, King's College London, newDemocracy Foundation, Boundary Object Studio, Remesh, Massachusetts Institute of Technology, Carnegie Mellon University, and the University of Washington. Aviv Ovadya serves as the corresponding author and can be reached via email at aviv@aidemocracyfoundation.org.
+
+Now turning to the core of this paper, encapsulated in the abstract. The authors assert that in order to truly democratize artificial intelligence, one must focus on implementing democratic governance and aligning AI systems in line with democratic principles. This becomes particularly valuable when it comes to decisions that have systemic societal impacts.
+
+The paper notes that initial steps in this direction, exemplified by Meta's "Community Forums" and Anthropic's "Collective Constitutional AI", illuminate a promising pathway. These initiatives suggest that democratic processes could be successfully leveraged to improve public engagement and build trust in vital decision-making scenarios.
+
+To further examine what an AI infused with democratic principles might entail, the authors present a framework titled "Democracy Levels." This framework, along with its associated tools, serves several purposes. Firstly, it defines milestones that are crucial for achieving what the authors label as meaningfully democratic AI. This is also essential for fostering AI that is pluralistic, human-centered, participatory, and aligned with public interest.
+
+Secondly, the framework aims to assist organizations in enhancing the legitimacy of their decision-making processes concerning challenging AI governance and alignment issues. Lastly, it supports the evaluation of efforts made in this realm.
+
+It's important to note that this framework is not static; it is subject to continuous development by the AI & Democracy Foundation and its associated working groups, which you can learn more about at democracylevels.org.
+
+This concludes our narrated presentation of the abstract section from this insightful research paper. Thank you for listening.
+
+Welcome to the introduction section of the research paper. Here, we begin by delving into an essential question: Who should steer the development of artificial intelligence, or AI? This question is not new, as similar concerns arose with previous technological advances. Existing institutions and power structures will undeniably play a significant role in adjudicating these questions. However, with AI's general-purpose nature, the pace of change, market incentives, geopolitical incentives, and opportunities for jurisdictional arbitrage present unprecedented challenges.
+
+In light of these challenges, there is a beacon of hope found in recent innovations in collective decision-making. These innovations point towards a new generation of processes, infrastructures, and institutions dedicated to navigating these intricate challenges. They propose novel methods for ensuring that AI development remains human-centered. This focus not only pertains to the individual human level but extends to society and even globally. It's not solely by individual governments that this governance occurs, but also through democratic processes initiated by corporations, governments, and multilateral institutions. Building on such democratic innovations, the authors assert their position that democratic AI is not only possible but valuable for steering the systemic societal impacts of AI.
+
+To concretely illustrate the concept of democratizing AI, the authors introduce the "Democracy Levels" framework. This framework has several core objectives. First, it articulates milestones for various iterations of democratic AI, including pluralistic AI, participatory AI, and public AI ecosystems. This rapidly evolving set comprises organizations, institutions, and initiatives keen on assembling the necessary democratic infrastructure to navigate the transition to a world populated with highly-capable AI systems. Next, the framework aims to guide organizations and institutions seeking to bolster the legitimacy of challenging AI governance and alignment decisions. Moreover, it supports evaluation efforts to identify opportunities for enhancing democratic systems and holding AI organizations accountable.
+
+Let us consider Figure 3, a system diagram showcasing how democratic processes could integrate with the AI ecosystem. The figure details the role of democratic infrastructure in facilitating collective decisions regarding AI regulation, organizational governance, and alignment where appropriate. The Democracy Levels Framework introduced can be utilized to evaluate two main aspects: the extent to which democratic systems are employed for decision-making and the quality of those systems along with the infrastructure underpinning them.
+
+This framework has applications in each of the yellow components displayed in Figure 3—specifically, AI systems, AI organizations, and AI regulators, along with the decision-making processes influencing these elements. The ultimate goal is to provide a comprehensive map outlining what is needed to enable meaningful democratic governance and alignment of AI. This map should serve as a valuable resource both internally to organizations making AI-related decisions and externally to those supporting this work and ensuring accountability.
+
+This concludes the introduction section, where we've explored the governance challenges of AI and introduced a framework aimed at integrating democratic processes into its development.
+
+Starting with the section: Why Democratic AI?
+
+The terms democracy and democratization carry significant weight, and this is especially true in the context of artificial intelligence. In this section, the authors use the term democracy to refer to processes and systems that facilitate collective decision-making. These systems are characterized by a certain equality among participants, particularly at essential stages of the decision-making process. This definition is drawn from scholarly work and includes references to specific authors who have contributed to the understanding of democratic processes.
+
+It is also important to acknowledge that democracy often encompasses a bundle of complex concepts. These include human rights, the rule of law, institutional checks and balances, appropriate norms, sanctions, and other features that collectively support the concept of equality within decision-making. 
+
+When the authors refer to Democratic AI, they are talking about AI systems whose development, alignment, and governance were either substantively influenced by democratic systems or directly controlled by them. This is an important distinction as it highlights a difference from the more common use of the term democratization in the AI space. Typically, democratization within AI is understood to mean making AI technologies open and accessible to a wider audience. However, in the context of this paper, Democratic AI has a more specific implication related to democratic governance and influence.
+
+In the subsection titled "The societal challenge," the authors discuss the rapidly advancing field of machine learning research, which is progressing at an unprecedented rate. Today, AI systems are involved in making both explicit and implicit decisions that affect billions of people around the world. These decisions span areas such as financial risk assessments and recommender systems, impacting how decisions are made in multiple sectors.
+
+The authors explain that we are increasingly subject to the decisions made by AI agents and to interactions between these agents. This proliferation of AI is not only happening at an individual level but also at institutional and national levels. Institutional entities and nation-states are swiftly developing AI systems. These systems are being designed with the aim of supplanting human capabilities, and to do so, these entities are amassing significant computational and energy infrastructures.
+
+This direction in technological development introduces several concerning possibilities. One major issue is the concentration of power. There's also the potential for the proliferation of advanced AI capabilities to fall into the hands of malicious actors, making governance difficult. Moreover, there is a risk of the gradual disempowerment of a large portion of the population.
+
+AI systems, along with those who control these systems, have the potential to accumulate unprecedented levels of power. This situation prompts critical questions about the future: Who should wield such power? And more importantly, how should this power be wielded?
+
+The authors raise these questions to highlight the societal challenge posed by the current trajectory of AI and machine learning advancements. The implications are profound, concerning power dynamics and the role of AI in shaping the future of society.
+
+In this section titled "Why Democracy?" the authors explore the role of democracy in the context of societal adaptation to artificial intelligence, often referred to as AI. They begin by highlighting the numerous important decisions we must make about how society will adapt to AI, as well as the significant changes AI could bring to the dynamics and distribution of power. Democracy is introduced as a potential social technology that can help in responsibly making these decisions and managing any shifts in power.
+
+Democracy is justified in three main ways. First, it is seen as a method to legitimize the use of power. This can be achieved through open and free deliberation, collective self-government, public justification, and other similar processes. Secondly, democracy helps to distribute power in a manner that respects intrinsic moral equality and helps prevent domination. Finally, democracy is credited with achieving epistemic benefits, which tend to be more difficult to realize when power is concentrated in the hands of a few rather than distributed among many.
+
+The authors point out that the legitimacy and support that can be generated through democratic processes are becoming increasingly valuable, especially for unilateral actors who are involved in developing and governing AI. This applies across the board, including in corporations, governments, and multilateral non-governmental organizations. For corporations particularly, the authors argue that using democratic systems comes with significant benefits. These systems can reduce costs associated with reactive compliance to regulation, the potential need for reorganization due to antitrust actions, or even a loss of market value that may occur if public trust is eroded. Additionally, democratic systems may help overcome core organizational challenges, such as a tendency towards inaction due to conflicts with internal or external stakeholders. They can also assist in managing controversial decisions that involve sensitive cultural issues, tradeoffs between liberty and safety, or the influential default behaviors of AI systems.
+
+Lastly, the authors propose that democracy serves as an asymmetric enabler, suggesting that greater adoption of democratic processes and systems may relatively benefit good actors and outcomes more than bad ones. Specifically, these processes can facilitate several political strategies that might help mitigate risks associated with race dynamics and unstable multipolar regimes, which could potentially arise as AI technology progresses. For instance, democratic processes can help signal benign intent, show Pareto optimality, identify common ground, institutionalize conflict, provide stability through guaranteed processes, and serve as a source of accountability by highlighting differences between public will and unilateral actions.
+
+Let's explore how democratic AI can work. What might AI democratization look like? There are multiple possible approaches; however, for practical reasons, the examples we discuss here today predominantly draw on contemporary deliberative democratic processes. These processes have the potential to operate effectively within jurisdictions of various sizes, including those with less developed identity infrastructures and even on a global scale. They can complement a wide range of existing political structures, enable informed exchanges that incorporate diverse perspectives and expertise, and help identify common ground around charged issues.
+
+A democratic process of this nature begins with two components: a remit and a constituent population. The output is a decision. The remit acts as a prompt that defines the scope of the decision that needs to be made, and it may also specify the required structure and properties for the outcome. An essential stage in this process involves decisions being made by a representative subset of the constituent population. This subset is typically selected through a process known as sortition. Often, these processes are facilitated by a third-party democratic infrastructure provider, similar to how an election system vendor operates. These providers have expertise in conducting deliberative processes.
+
+Currently, there are early examples of democratic AI experimentation, including initiatives within companies. Many leading AI organizations have started to experiment with democratic processes for making policy or alignment decisions. Examples include Anthropic's Collective Constitutional AI, OpenAI's Democratic Inputs to AI grant program, Meta's Community Forums, and Google DeepMind's STELA project. Moreover, there is growing pressure to utilize such processes for developing international regulation. Although these initial efforts are not without flaws, they are instrumental in building the organizational knowledge and capacity needed for achieving more transformative outcomes. To unlock the full potential of these processes and ensure their credibility, we need a shared language to describe and evaluate progress, which we will delve into further in upcoming sections.
+
+Now, directing our attention to Figure 3. It provides an overview of the Democracy Levels, with each level named in bold text. This figure is used to assess how much decision-making power in a specific domain has been shifted from a unilateral authority to a democratic process. The example column illustrates hypothetical democratic systems operating at each level, specifically focusing on rules regarding the use of AI systems for persuasion. In evaluating the ultimate level of democracy within a system, one must also consider additional dimensions, which will be discussed in later sections.
+
+This section of the research paper introduces the Democracy Levels Framework, which is central to understanding how effective democratic artificial intelligence, or AI, can be achieved. It emphasizes that compatibility is crucial between three key elements: first, the systems that are in place for democratic decision-making; second, the level of power that is granted to these systems; and third, the context in which decisions are made.
+
+The framework consists of several components. Firstly, there is a set of Levels, which are detailed in another section. These Levels capture the degree to which decision-making power has been transferred to a democratic system. Secondly, there is a set of dimensions, again explored in further detail in another section, that describe the qualities of the democratic system in question.
+
+Building on these components, the framework introduces a Levels Decision Tool, which is intended to help inform decisions about how much democracy is appropriate in a given decision-making context. In addition, there is a Democratic System Card that can be used to evaluate a democratic system against the various dimensions outlined.
+
+This comprehensive approach within the Democracy Levels Framework aims to provide a structured way to assess and enhance the effectiveness of democratic AI in various contexts.
+
+In this section, we are discussing important terminology related to governance and decision-making structures.
+
+First, let's look at the "Scope of Authority". This term refers to the range of powers that an authority is granted. It includes a specification of the domains governed by that authority and potentially involves implicit external constraints. For example, consider the scope of authority of a finance committee for the board of directors of a corporation in the United States. This authority is established by corporate charters, bylaws, and board resolutions. It is also constrained by regulations and case law. Additionally, this authority might be limited specifically to financial matters.
+
+Moving on, we have the concept of "Unilateral Authority". Unilateral authority describes an entity that can make decisions without needing meaningful checks on its power, within its given scope of authority. This means no approval is needed for any decisions made within that scope.
+
+Next, we have the term "Democratic Process". This is a form of collective decision-making characterized by what is described as "a kind of equality among the participants at an essential stage of the decision-making process".
+
+Following that, we come to the "Democratic System". This refers to a set of interacting entities and democratic processes, such as systems with checks and balances.
+
+Under these definitions we've outlined, elections, citizen assemblies, and collective dialogue processes fall under what are known as democratic processes. The way these processes interact with unilateral authorities, constituents, stakeholders, and media, among others, constitutes a democratic system. This system is supported through what we call democratic infrastructure. 
+
+A more intricate democratic system might entail an entire constitutional order, where multiple institutions interact with one another through various processes on an ongoing basis. For instance, this could include a repeated collective alignment process that feeds into a model specification. This is managed by a democratic oversight body and all of this is coordinated by providers of democratic infrastructure. Such a system could have a scope of authority over issues like AI model alignment. 
+
+That concludes our discussion of terminology in this section.
+
+In this section, we delve into the concept of "Levels" in democratic systems, particularly in the context of transferring decision-making power from a single, unilateral authority to democratic systems. This transfer can take various forms, and there are specific key points that may necessitate the establishment of new democratic infrastructure as well as other structural changes. To provide a clearer understanding of how these transfers can be implemented, the authors developed what they call "Democracy Levels". These levels are grounded in experience with supporting movement between different levels of democratic authority.
+
+Each level of democratic decision-making is defined based on which of the five roles is undertaken by democratic systems rather than by a unilateral authority. These roles include: first, informing decisions; second, specifying decisions; third, making binding decisions; fourth, the automatic initiation of binding decision-making processes; and finally, metagovernance. Figure 3, referenced in the text, offers definitions for each of these levels, ranging from Level 0 to Level 5. The figure also provides concrete examples of how these levels could be manifested in practice within a decision domain, like developing a set of rules that govern persuasion by an AI system. Such rules could be used directly in model training to align an AI system, or could be applied as policies for an AI organization or regulatory body.
+
+To understand these levels more specifically: at Level 1, the democratic authority provides input that a unilateral authority can interpret in any desired form. At Level 2, decisions must be directly implementable, such as a policy or model specification, but there remains the possibility of veto through a predetermined process. Beginning with Level 3, all decisions are binding within their scope of authority. Level 4 involves a democratic system that automatically starts Level 3 binding processes when specific conditions are met. Finally, at Level 5, the democratic system engages in metagovernance within its scope of authority. This means it can make decisions on how to run Level 4 processes, potentially involving a system of checks and balances across different bodies and processes.
+
+This framework draws particular inspiration from the autonomy levels defined for self-driving cars, where there is also a shift of power and responsibility from a single authority, such as a human driver or an AI corporation, to a new form of decision-making system, either autonomous or democratic.
+
+Moreover, it's possible for a single AI organization, government, or AI system to simultaneously implement multiple democratic systems at varying levels, each pertinent to different decision domains. For instance, an AI organization's decisions on whether to release a new model could be at Level 2, whereas decisions regarding the model specification used for fine-tuning could be situated at Level 4. There's also flexibility regarding the scope of authority for a process. For example, a Level 3 process might be defined as binding for a time span of two years or continue until a specified condition is met, such as a model passing a specific benchmark.
+
+In summary, this section comprehensively covers the framework and implications of implementing democracy levels within decision-making systems.
+
+In this section, we discuss the concept of "dimensions" within democratic systems. While the levels indicate the roles performed by these systems as opposed to unilateral authority, dimensions convey how "good enough" these systems are for supporting meaningful, safe, and effective implementation of higher democracy levels.
+
+There are situations where a democratic system might be lacking in certain areas. For example, participants might remain uninformed, the system might lack representativeness, or it might not be robust enough to handle adversaries. In such cases, moving blindly to higher levels of democracy can pose risks, potentially leading to decisions that are poorly made. The assessment of these dimensions is also sensitive to context, meaning whether a system is "good enough" can depend on various factors like the public's trust, their understanding of the process, and their willingness to participate.
+
+We will now describe three primary categories of dimensions: process quality, delegation, and trust, each containing several dimensions.
+
+To support more decision-making responsibilities, a democratic system or infrastructure component must reliably provide a certain level of process quality. Process quality dimensions are evaluated through different criteria. Firstly, the decisions produced should be representative of the relevant population. Participants need to be informed about the issue at hand. There should be deliberative reasoning involved in the processes. Decision outputs must be substantive, and the systems need to be robust against adversarial behavior and less-than-ideal conditions. Furthermore, the final traces of these processes should be legible, meaning they are transparent and understandable to those who did not participate.
+
+Next, we discuss the ability of the unilateral authority to effectively delegate responsibilities to the democratic system. This delegation involves several capabilities. The unilateral authority must be able to commit to the outcomes organizationally and publicly. It should integrate these processes into its operations and be able to bind itself either technically or legally to the resulting decisions.
+
+Lastly, for a decision-making process to be successful and accepted, there must be external conditions that support this success. We collectively refer to these conditions as trust. Specifically, the public and stakeholders should be sufficiently aware of the process, they need to buy into its legitimacy, and they must be willing to participate. Additionally, there should be sufficient mechanisms for accountability that can adequately support this trust.
+
+In this section, we'll explore an example application of the decision-making framework discussed in this paper. The authors illustrate the framework by examining how decision-making power transitions in real-world scenarios. 
+
+Let's begin with an initiative by Anthropic, known as the Collective Constitutional AI effort. In this effort, a representative subset of the United States public was involved in providing and evaluating principles that an artificial intelligence system should follow. These principles underwent a process of de-duplication and slight transformation to train a research model. This process played a critical role in model development. Consequently, it can be considered an example of transitioning from Level 0, which is unilateral decision-making, to Level 1, where decisions are informed by external input.
+
+The authors point out that if Anthropic had predetermined a specific process or criteria to handle the de-duplication, transformation, and ultimate acceptance or rejection of the output, this would illustrate a Level 2 process. Moreover, if there was a binding commitment to adopt the results of the process, it could then be viewed as operating at Level 3.
+
+Another example the authors describe involves Meta's Oversight Board. This board's decisions on content moderation about individual posts represent a transfer of decision-making power at Level 4, characterized by regular binding decisions. On the other hand, the board's broader policy advisory opinions are non-binding and, therefore, function only at Level 1.
+
+It's important to note, according to the authors, that the Oversight Board was not specifically designed to be democratically representative. In contrast, Meta's Community Forums on AI are designed with the intention of being representative. However, these forums merely inform policies and product decisions and operate at Level 1. 
+
+Thus, through these examples, the authors comprehensively elucidate the varied applications of their decision-making framework across different organizations and contexts.
+
+Moving on to the section discussing related frameworks. In developing our framework, we have drawn inspiration from existing frameworks designed to evaluate the democratic nature of systems. Notable influences include works by Arnstein published in 1969, Lindberg's contributions in 2014, efforts by IAP2 Australasia, and recent work by Skaaning in 2023. Our approach is also informed by frameworks that assess degrees of responsible behavior and autonomy in artificial intelligence systems, as outlined by Bommasani in 2024 and SAE in 2021.
+
+Our research connects with various explorations and assessments of democratic systems. Among these are democratic initiatives explored by the Collective Intelligence Project in 2024, participatory assessments from Delgado in 2023, Cooper in 2024, and Suresh in 2024. Additionally, it draws on pluralistic approaches by Sorensen in 2024, human-centered designs as discussed by Sigfrids in 2023, and public AI initiatives by the Public AI Network and Vincent in 2023. For a deeper dive into these efforts surrounding democratic artificial intelligence, more details can be found in the appendix, under the section titled "Related Work."
+
+Now, let's discuss Table 1, which provides an overview of the Democracy Level Dimensions and the Democratic System Card. This table presents the dimensions of the Democracy Levels Framework along with the corresponding questions on the democratic system card. These components are essential to guide reflection on whether the quality of a democratic system matches the level of decision-making power it is entrusted with. For more detailed information, examples, and templates for completing Democratic System Cards, listeners are encouraged to refer to the appendix section titled "System Card" or visit the website democracylevels.org, specifically the page dedicated to system cards. This concludes our discussion of the related frameworks section, providing a comprehensive understanding of the established systems that underpin our work.
+
+This section of the research paper is titled "Democracy Levels Tools."
+
+In the realm of democratic artificial intelligence, the core components such as levels and dimensions provide a common language. This language is essential when discussing how decision-making power is allocated and how it transitions. However, putting this theory into practice presents a challenge, especially when it comes to balancing the critical elements of democratic AI, which are context, level, and system, during the planning of transitions.
+
+To assist stakeholders with this complex task of planning and evaluating potential shifts between these levels, the authors present two innovative tools. These tools are designed to help various stakeholders anchor their thinking process effectively. The first tool is called the "Levels Decision Tool." This tool is specifically aimed at helping unilateral authorities and advocates. It aids them in planning transitions to higher levels of democratic decision-making, providing a structured way to navigate this journey.
+
+The second tool introduced is the "Democratic System Card." This card is intended to help with the assessment of democratic systems. Its purpose is to give stakeholders a clear understanding of how suitable a system is for adoption at a desired level. Moreover, it helps to pinpoint opportunities for innovation and improvement within these systems.
+
+By using these tools, stakeholders are better equipped to approach the complexities of democratic transitions with a strategic and well-informed mindset. This approach promises to enhance the planning and implementation processes, ultimately contributing to more effective democratic systems.
+
+In this section, we explore the Levels Decision Tool, which is detailed further in the appendix. This tool has been developed to pragmatically assist in evaluating the potential reasons for delegating a decision or an entire decision domain to a democratic system. 
+
+The tool can be used by unilateral authorities, meaning those who have the sole power to make decisions, directly in their own processes. Additionally, it is useful for stakeholders and advocates who are looking to identify the right arguments to demonstrate the value of democratic systems to those authorities.
+
+Deciding on the specific level to aim for with this tool depends significantly on the context surrounding the decision. Factors include the identity of the unilateral authority, the extent of their power, who will be impacted by the decision, and how the authority interacts with various stakeholders, both inside and outside the organization.
+
+The Levels Decision Tool encompasses a set of tailored questions about the context I just described. These questions are designed to help decision-makers determine the appropriate level of democracy to aim for in their processes. Some key areas these questions cover include the value of legitimacy among the public, internal and external stakeholders, and the government. They also consider the potential benefits of collective intelligence and the feasibility of transferring decision-making power. 
+
+Furthermore, the tool prompts consideration of the importance of speed and adaptability within the decision domain, the available resources to support this process, and the novelty of the situation at hand. Notably, while some questions are universally applicable, others may be specific to certain contexts like those found within corporations. This nuanced approach ensures that the tool can be adapted to various scenarios, making it a versatile aid in the delegation of decisions to democratic systems.
+
+Let's delve into the concept of the Democratic System Card. This tool is designed to assist decision-makers in documenting, assessing, comparing, and evaluating democratic systems in a structured way. The primary aim here is to provide insights into the suitability of a system at various levels of democracy for a specific context. You can find details about the system card in a table and in an appendix, which offer further explanations of the three key dimensions we have previously discussed: process quality, delegation, and trust.
+
+A complete Democratic System Card consists of three main components. First, it includes descriptions detailing how the democratic system operates overall in relation to each dimension. Second, it offers assessments of the system's implementation with respect to each dimension, guided by a series of specific questions. Finally, it provides a qualitative evaluation of the highest level of power that the system can be trusted with for decision-making in a particular context.
+
+Similar to model cards and AI system cards, the Democratic System Card supports the assessment of a democratic system across different contexts. It enables decision-makers to determine whether a democratic system is capable of being entrusted with higher levels of decision-making power, offering clarity on which dimensions of the system currently act as bottlenecks. Furthermore, stakeholders and advocacy groups can use these cards to compare and contrast various systems, providing a basis for the proposals or advocacy of alternative systems. While fully developed democratic systems, or proposals for comprehensive systems, should include complete cards, prototypes, or research projects may only address parts of the card, as not every component may be applicable.
+
+In addition to their primary purpose, Democratic System Cards are resources for identifying gaps within the democratic infrastructure ecosystem. This can be especially useful for those exploring potential opportunities and applications of their research. Process designers and democratic infrastructure providers can also utilize these cards to understand critical needs for operating at more significant levels of delegated power and to consider which combinations of democratic processes might complement each other effectively.
+
+Section titled "Alternative Views."
+
+In this section, the authors summarize common objections and their responses in a question-and-answer format. Additional alternative views are available in the appendix of the document.
+
+The first question posed is, "Shouldn't people make their own choices about how they use AI?" This is known as the libertarian critique. It argues that individuals are the best judges of what is in their interests and should be free to make their own choices as long as these choices do not harm others.
+
+The authors respond by agreeing with this perspective, but with critical caveats. They emphasize that while most decisions should ideally be made by individuals or users, democratic processes may be necessary to address systemic impacts and significant externalities. This is particularly the case for decisions where revealed preferences differ significantly from more reflective or deliberative preferences. Even in cases without these conditions, there often remains a significant barrier to individual choice in practice, mainly due to the lack of interoperability and the resulting friction when moving between different AI systems. This friction is especially present when AI systems are directly integrated into devices, products, and services.
+
+The next question addressed is, "Shouldn't governments just regulate?" This is referred to as the government-only critique, which highlights that corporations have a poor track record in addressing systemic issues associated with their activities.
+
+The authors argue that while government action is crucial—and point out that the Democracy Levels Framework can be applied to regulators—government regulation alone is insufficient. Given both the potential extraordinary benefits and risks of AI, along with the influence of corporations on AI development, a comprehensive approach to democratic AI is likely necessary. Organizations developing AI systems are closer to the critical context needed for informed decision-making and can act more rapidly than governments can respond with regulation. The framework aims to prevent democratic legitimacy from relying solely on the slowest-moving actor in a jurisdiction.
+
+The authors note that governments themselves may sometimes be less democratic, with autocrats or politicians possibly seeking to consolidate power. It might be faster to innovate by creating appropriate democratic systems for AI governance within the industry and then integrating them into government once they are more mature. Moreover, organizations involved in developing AI, its use, and the associated risks can be transnational, extending beyond the jurisdiction of any single government.
+
+Next, they tackle the question, "Shouldn't AI corporations focus solely on shareholders and profit?" This shareholder-first critique is based on the belief that shifting power away from shareholders and executives to democratic systems would decrease societal benefit, under the assumption that maximizing corporate profits for shareholders will also maximize societal good.
+
+The authors acknowledge that shareholder maximization can be societally beneficial—if externalities are sufficiently internalized—which generally requires effective government action as earlier mentioned. They mention that the competing Stakeholder Theory aims to address such gaps by encouraging corporations to consider stakeholder impacts, noting that democratic processes are an effective means for implementation.
+
+They also highlight that most shareholder pressure is a relatively slow tool with significant lag. Given the rapid pace of AI change, a more responsive form of societal feedback may be critical. It's especially unlikely that broad-based societal benefits will emerge if profit-maximizing, AI-first corporations continue to dominate the economy, increasingly leaving people outside of both democratic and economic feedback loops.
+
+However, the authors add that even within a shareholder primacy model, trust and legitimacy could become more vital for corporate executives and shareholders as the societal importance of AI grows. This is due to a combination of procurement, regulatory, and universal owner pressures. As shown by the Levels Decision Tool in another section of the paper, devolving some power could bring several potential benefits.
+
+Finally, they address the question, "Wouldn't this slow down the development of AI?" This is known as the accelerationist critique, which reflects concerns that democratic processes could hinder AI progress and development. This might reduce the capabilities of democratic nations compared to their non-democratic counterparts, potentially affecting valuable innovation and the relative power of democratic nations.
+
+The response to this question acknowledges that democratic systems can indeed be slow and ineffective, but this is not inevitable. With adequate investment in democratic innovation, such as the development of augmented deliberative democratic processes, improvements are possible. The concern about the relative position of democratic versus non-democratic states is theoretically driven by a desire to protect democratic values. Applying democratic processes to AI governance is an embodiment of these democratic values and their benefits. Improved democratic processes could lead to high-quality decision-making and regulation, possibly even creating conditions that would accelerate innovation.
+
+Let's begin the discussion section of the paper.
+
+The authors begin by acknowledging the growing systemic impacts of artificial intelligence. They suggest that democratic AI will likely be a crucial component, though not the only requirement, for any potential positive future. This implies that while democratic AI alone cannot solve all challenges, it is an essential part of the solution.
+
+Next, the authors emphasize the significant role of the machine learning community in facilitating this future. This involves two key responsibilities. First, the community is tasked with enhancing our democratic infrastructure. This means developing systems and processes that align with democratic values and principles.
+
+Second, the authors stress the importance of raising awareness about linking technical capabilities to democratic oversight. As artificial intelligence systems become increasingly powerful, ensuring that their development and deployment are subject to democratic processes becomes more critical. This connection helps to ensure that the power of AI is used responsibly and aligns with societal values.
+
+By addressing these points, the authors underline the necessity for collaboration between technical experts and democratic institutions to shape an AI-driven future that benefits all.
+
+In the section titled "What decisions should be made democratically?", the authors examine the types of decisions that warrant democratic processes. They acknowledge that the question of which decisions should be democratized is open to debate. While the Levels Decision Tool, which is discussed in another section of the paper, provides a summary of relevant considerations, the authors intentionally remain neutral on the specifics of this issue.
+
+However, they suggest a broad viewpoint that supports the idea of a unilateral authority transferring decision-making power to a democratic process under certain conditions. Specifically, they argue for democratic decision-making when three criteria are met. First, when the decision involves externalities, meaning the decision has costs or benefits to third parties who do not bear the decision-making authority. Second, when those affected by the decision cannot easily or reasonably choose to avoid these impacts. Third, the impacts of these decisions should be significant enough to justify the costs involved in implementing a democratic system.
+
+While the authors do not aim to be definitive or comprehensive, they offer some plausible examples of decisions that might meet these criteria. These include:
+
+One, governance decisions made by AI regulators that have the potential to significantly alter societal norms or economic conditions. For instance, decisions around setting limits or guardrails on human-AI relationships, determining whether and how AI agents can be considered legal persons, deciding their participation in the economy, and evaluating whether AI agents should replace human workers.
+
+Two, development and deployment decisions made by AI organizations. These decisions can impact large user groups, cause significant cascading effects, pose major systemic or societal risks, or greatly alter societal directions when compared to alternatives. Examples include setting safety thresholds for the release of increasingly advanced AI models, modifying the behavior of models that have become economically or emotionally significant to many people, and decisions regarding the organizational structures and incentives to which influential labs are held accountable.
+
+Three, decisions made by AI systems where a concept referred to as "society-in-the-loop" should be applied. This would include decisions by AI systems that play critical roles in managing utility-scale infrastructure.
+
+These points together outline the types of decisions the authors believe should be considered for democratic processes, highlighting the intersection of AI technology with societal governance.
+
+In the subsection on Future Directions, the authors discuss the substantial work needed to integrate democratic principles into AI systems. They emphasize that this undertaking requires a comprehensive approach involving evaluation, system design, pilot studies, and institutionalization. A specific technical example they mention is social choice analysis, which could help determine whether current machine learning paradigms are already inherently democratic or potentially undemocratic.
+
+The authors then note that advancements in artificial intelligence could enhance various democratic processes and systems. Recent studies have highlighted AI's potential to mediate human deliberation and facilitate consensus-building. For instance, AI systems can synthesize diverse viewpoints within large populations while preserving cultural and contextual nuances. Additionally, they can promote constructive disagreement. Harnessing these capabilities to develop, test, and validate tailored democratic systems could make these systems a viable alternative to unilateral decision-making.
+
+To accurately evaluate the democratic aspects of AI-enabled systems, further research is necessary to create domain-specific metrics and evaluation frameworks. The authors suggest that both the concept of "democracy for AI" and "AI for democracy" would gain from additional research aimed at integrating these ideas into existing governance and technical structures and processes.
+
+In the conclusion, the authors emphasize that achieving maturity in the democratic governance of artificial intelligence won't happen overnight. It requires organizations, democratic infrastructure providers, stakeholders, and the general public to develop what they describe as "democratic muscle." They caution against taking on too much all at once, as this can lead to setbacks. Instead of expecting organizations to meet an unattainable ideal, the authors suggest focusing on improvements relative to the current situation or compared to similar organizations. This approach can be facilitated through a leveling and evaluation system. They also suggest that clearly defining larger milestones on the way to achieving ambitious goals can provide motivation and enable the creation of strong incentives, such as advanced market commitments. 
+
+The framework presented in the paper is aimed at building democratic capacity and clarifying when organizations claim to act more democratically than they actually do. This framework can serve as a basis for holding organizations accountable to their stated democratic standards. The authors note that throughout history, discrepancies between ambitious democratic goals and reality have been significant drivers of democratic progress. They consider true democratization to be a journey and hope to have provided a useful guide for this path. 
+
+The authors recognize that artificial intelligence is reshaping the world, and if we wish to preserve liberty and agency over our future, they see few alternatives but to develop democratic systems that are suitable for the age of artificial intelligence. By offering a concrete framework, which can be debated and improved upon, the authors hope to foster more productive discussions about the futures we should be aiming for concerning power, participation, pluralism, and democracy. The call for democratic AI and the Democracy Levels Framework intend to contribute to this dialogue.
+
+Acknowledgments.
+
+The authors wish to extend their gratitude to Danielle Allen, Nora Ammann, Liz Barry, Joe Edelman, Joseph Gubbels, David Evan Harris, Maximilian Kroner Dale, Sarah Hubbard, Jonas Kgomo, Seth Lazar, Lorenzo Manuali, Evan Shapiro, Anka Reuel, Allison Stanger, Jessica Yu, Glen Weyl, Kinney Zalesne, and others who provided feedback on earlier versions of this paper. They emphasize that any remaining limitations within the paper are solely the responsibility of the authors.
+
+Additionally, Luke Thorburn received partial support from UK Research and Innovation through the grant number EP S023356 slash 1. This support was provided within the UKRI Centre for Doctoral Training in Safe and Trusted Artificial Intelligence at King's College London. The website for this center is safeandtrustedai.org.
+
+This concludes the acknowledgments section.
+
+We're now moving on to the Appendices section of the paper. This section does not contain any content to narrate.
+
+Section: Democracy Levels Tool Application Illustration.
+
+In this section, we explore the key aspects stakeholders need to consider when transitioning power to a democratic authority. The three critical elements are the context in which decisions are made, the level to which the transition is targeted, and the democratic systems that will be used. These Democracy Levels Tools are designed to help ground thinking in these tasks, and this is demonstrated in Figure 1.
+
+First, the Levels Decision Tool assists in determining what level to aim for, given the specific context for a decision. This tool supports high-level planning, which is necessary ahead of any potential transitions. Second, the Democratic System Card focuses on evaluating whether a particular democratic system is adequate for meeting the demands of the given context and the targeted level. This tool aids in lower-level planning related to the specific democratic system or process that should be adopted in a transition.
+
+Figure 1 illustrates a diagram showing how the Levels Decision Tool and the Democratic System Card can be utilized to assist stakeholders with planning the transfer of decision-making power. It also aids in evaluating which democratic systems to adopt within their specific decision-making context.
+
+This concludes our discussion on the Democracy Levels Tool Application Illustration.
+
+Now, let's explore the Levels Decision Tool, which is thoroughly discussed in the paper. This tool is essentially a series of questions designed to help you determine the appropriate Democracy Level to aim for in a specific context. The questions come with arrows that guide you: if you answer 'yes' to a question, the arrows indicate whether you should target a higher or a lower Democracy Level. In certain situations, both arrows might be present. This means the decision on which Level to target will depend on the context in which you are applying the tool.
+
+Additionally, if you're seeking the most current version of the Levels Decision Tool, it is available online. You can access it, along with an editable Google Docs version, by visiting democracylevels dot org slash decision-tool. This web resource ensures you have the latest updates and customization options at your fingertips.
+
+This brings us to the conclusion of this overview. We've highlighted the purpose and guidance provided by the Levels Decision Tool, including how it can be accessed online for further use.
+
+Let's explore the Democratic System Card, which is explained in this section. This is a set of questions intended to guide reflection on whether the quality of a democratic system matches the level of decision-making power that is delegated to it. This evaluation considers a specific domain of decision-making in a particular context. These questions are organized according to the dimensions outlined in the Democracy Levels Framework.
+
+To get started with completing a System Card, here are the initial steps you should follow:
+
+First, describe the process or system at a high level. This involves outlining the main features and goals of the system you are considering.
+
+Next, summarize the other systems that this process relies on or interacts with, and which influence its success. Examples of these might include data from sortition, which refers to the use of random selection in decision-making, or systems for authenticating users or citizens.
+
+Then, for each dimension or property outlined on the card, you should describe how that dimension operates within the process or system you are evaluating. This will involve a detailed examination of each aspect.
+
+Finally, utilize the guiding questions provided to reflect on the extent to which each dimension is satisfied. This means assessing whether the current setup meets the set criteria or if there are areas for improvement.
+
+For those interested in accessing the most current version of the Democratic System Card, including templates that can be edited and initially filled using a large language model for context, you can visit the following website: democracylevels.org/system-card.
+
+This concludes the section on the Democratic System Card.
+
+Let's dive into the section titled "Design Decisions".
+
+In this section, the authors discuss several important choices that are integrated into the framework they propose. One deliberate decision is to separate process quality from delegation. This is particularly significant when third-party democratic infrastructure providers are involved. Such providers might be commissioned by unilateral authorities, for instance, AI labs and regulators. Notable works on this topic include studies by Chang in 2024, Ovadya in 2023, Broxmeyer in 2024, and the RSA in 2019, as well as research by Anthropic in 2023. This deliberate separation is aimed at preventing fraud and enabling improvements in processes to be shared across different organizations.
+
+Looking at the operational side, at level one, which we'll refer to as L1, these commissioned deliberations function similarly to commissioned representative surveys or community engagement initiatives. However, as the level increases, these processes become more complex and are more directly integrated into organizational decision-making strategies.
+
+The section further elaborates on the dependencies of these dimensions. For example, if a process does not show enough quality relative to the power it has been given, this can result in a negative reaction, such as low trust. This could happen if a process is undermined or if a democratic decision initially seems favorable but ultimately proves to be counterproductive.
+
+The authors note that many of these dimensions have been well-studied within democratic theory and related fields. They can be implemented in various ways, as illustrated by the numerous interpretations of representation mentioned by Dovi in 2018. At this stage, the authors intend for their framework to remain unbiased concerning these differences.
+
+This concludes the section on "Design Decisions", where several key design considerations and their implications for democratic processes and infrastructural quality were outlined.
+
+Moving on to the section titled "More Alternative Views," we begin by addressing a question: Why should non-experts make decisions on technical matters? This is known as the technocratic critique, which raises concerns about potentially poor decisions being made by non-experts in a democratic process, especially because artificial intelligence is highly complex and can be conceptually difficult to understand.
+
+In response to this question, the authors agree that non-experts should not make technical decisions, similar to how no one would want a non-medical professional to diagnose them. However, they point out that many decisions about AI, such as which data to collect and how to specify goals, are or can be highly value-laden. They reference an assumption that such decisions are too complex for non-experts as debatable. Despite this complexity, successful democratic processes like Citizens' Assemblies have involved non-expert members of the public to produce informed decisions on similarly complex problems. These processes include mechanisms for bridging the expertise gap, such as educational components and expert consultations.
+
+Next, we explore the question: Why would people want to take part in the democratic governance of AI? This question is rooted in the so-called busy lives critique, arguing that people are busy and may not want to dedicate time to tasks they see as jobs for corporations or perhaps the government.
+
+The authors acknowledge that not everyone will have the time or interest to participate in the democratic governance of AI. However, they introduce the Democracy Levels Framework, which is compatible with various democratic processes. It suggests that it is not necessary for everyone to be continuously interested for democratic governance of AI to be viable.
+
+The discussion continues with a question about democracy itself: Democracy isn't just collective decision-making or deliberation—what about other important elements or theories of democracy? Some critiques argue that democracy encompasses more than just preference aggregation. It includes respect for human rights, rule of law, equality before the law, and freedom of expression. Others argue that the framework might be too closely aligned with participatory ideals of democracy and may not fully accommodate other theories, such as representative or agonistic views of democracy.
+
+In response, the authors agree that democracy is indeed more than collective decision-making, especially at the level of nation-states. However, they point out that there are already existing frameworks for evaluating democracy in such settings. Their framework, centered on the concept of Levels, strategically focuses on transferring decision-making power from unilateral authorities to relevant communities. They believe this is a necessary, though not always sufficient, element of democratic-ness that can be applied not only to governments and regulators but also to organizations and AI models. Furthermore, the framework remains flexible about the preferred theory of democracy since all theories describe some process, formal or informal, through which collective decisions are made. These theories can be evaluated against the Levels, and essential criteria described in dimensions and the Democratic System Card can also be applied and interpreted, for instance, when using representative or agonistic frames.
+
+This concludes the exploration of alternative views on democracy and the governance of AI within this section.
+
+We now move on to the section titled "Additional Related Work," where the authors expand on the related work mentioned earlier in the paper. This section discusses how their framework relates to three main areas: alignment, participatory AI, and human-centered AI.
+
+Let's start with the concept of "Alignment." Alignment procedures, such as Reinforcement Learning from Human Feedback and Constitutional AI, generally aim to refine AI systems so they better align with human preferences, values, or goals. However, these methods do not often prioritize democratic considerations. For instance, the annotators selected for preference learning methods, like Reinforcement Learning from Human Feedback or Direct Preference Optimization, tend to be highly unrepresentative of the entire user population. Moreover, these methods typically presume that preference comparisons originate from a single individual, even though they actually involve input from multiple annotators who might have different preferences.
+
+Recently, efforts have been initiated to make alignment methods more democratic. One such effort is Anthropic's Collective Constitutional AI, which utilizes Pol.is to identify principles for AI to follow, drawing from a representative sample of U.S. adults. In another example, researchers have called for the explicit application of social choice approaches to preference learning methods, rather than interpreting different annotators implicitly as one person. These initial efforts are promising, but as of now, there is no standard way to evaluate the democratic nature of these new alignment approaches. The framework presented in this paper aims to offer such guidelines.
+
+Now, turning to "Participatory AI." This is another emerging approach that emphasizes engagement with diverse voices throughout the design and deployment of AI systems. This approach includes a range of methods for engaging people—from consulting with stakeholders, such as expressing preferences for policies through rankings, to empowering stakeholders to own the design process. This means playing a central role in shaping deliberation procedures as well as deciding on process outcomes. Although participatory AI holds promise, its progress is still nascent. In the private sector, efforts have largely been limited to consultation. On the public front, implementing participatory approaches encounters challenges integrating with existing institutional rules and frameworks, as well as reaching a consensus on who should be involved. Overall, some feel there is a need for greater clarity regarding the definition and role of Participatory AI, and how it connects with other existing approaches. The authors believe that their Democracy Levels Framework can help provide some of this clarity.
+
+Now let's discuss "Human-centered AI." The Democracy Levels Framework that the authors propose strives to make AI systems more human-centered. When they refer to human-centered AI, they mean AI systems that are developed incorporating human-centered design methods alongside algorithmic ones, ensuring that the AI serves human needs better. Democratic AI and what we might call traditional human-centered AI share many goals, often enabling progress in one to benefit the other. For example, democratic processes involve iterative, deliberative decision-making from a broad range of input, whereas traditional human-centered processes encourage iterative refinement through feedback from users and stakeholders throughout the design lifecycle. Democratic processes empower people to collectively make governance and policy decisions affecting them, while human-centered design empowers users to shape systems in ways that align with their goals. As one moves up through the Democracy Levels in the framework, the agency of constituents is increasingly prioritized, providing them with greater decision-making power over their AI systems.
+
+In conclusion, the authors provide a clear connection between their work and the related areas of alignment, participatory AI, and human-centered AI, setting the stage for their Democracy Levels Framework to offer valuable guidelines for these innovative approaches.
+
+In this section of the research paper, we delve into additional examples of Democratic System Cards. For further insight, the authors suggest visiting the website democracylevels-dot-org, slash system-card, where you can find examples of democratic system cards applied to real-world processes and systems. This resource is designed to extend the current body of work, providing tools and resources to assist authorities and stakeholders in implementing and evaluating democratic systems through the use of system cards.
+
+A comprehensive table is provided in the paper, which serves to examine different dimensions of process quality, delegation, and trust in the context of democratic infrastructure.
+
+Starting with process quality, this relates to the democratic infrastructure. The key elements addressed include:
+
+1. **Representation:** This examines whether key decisions reflect the constituent population. The table asks, to what extent is there sufficient representation during critical parts of the process? It also considers if any barriers could lead to bias in representation.
+   
+2. **Informedness:** This focuses on whether critical information is incorporated into decision-making. It asks how well are trade-offs and consequences considered, and whether information is sourced from diverse domains such as expertise, authority figures, a broad range of constituents, the most impacted stakeholders, and those with significant influence.
+
+3. **Deliberation:** This considers whether decisions are thoughtful and discussed, rather than being superficial and reactive. It questions the ability of participants to move from shallow goals to deeper values, collaborate where necessary, and address issues within the available timeframe.
+
+4. **Substantiveness:** Here, the table queries if decisions are actionable and address the issues at hand meaningfully. It looks at the complexity of the decisions and how uncertainties and implementation risks are handled.
+
+5. **Robustness:** This assesses if the process can withstand suboptimal conditions or adversarial behavior. It examines vulnerability to things like low turnout, larger power asymmetries, and strategic manipulation.
+
+6. **Legibility:** This asks whether the processes and decisions are accessible, understandable, and verifiable. It addresses accessibility, understandability, and the verifiability of processes, system execution, decisions being made, and the reasons and inputs behind those decisions.
+
+Moving to the section on **Delegation**, which pertains to unilateral or existing authorities:
+
+1. **Integration:** This element measures how well an authority incorporates the democratic process into its operations. The table queries whether internal communication structures support democratic processes and if the outputs are integrated effectively. It also checks if triggers for democratic processes exist.
+
+2. **Ability to bind:** This assesses the technical and legal capacities for an authority to bind itself to democratic decisions. It questions both the technical and legal infrastructure developed to support this binding.
+
+3. **Commitment:** The focus here is on how committed an authority is to act in line with democratic decisions. It discusses levels of commitment internally, privately, and publicly, regardless of the authority's ability to enforce binding.
+
+The last section focuses on **Trust**, linked to external conditions:
+
+1. **Awareness:** This is about public recognition of the democratic process. It examines the level of awareness among the public about the system's existence, function, application, and how they can participate.
+
+2. **Participation:** This section checks if the public is willing and able to participate in the process, if they are adequately compensated for their involvement, and if they are indeed participating.
+
+3. **Accountability:** This involves whether there are sufficient accountability structures and external watchdogs overseeing the democratic process and implementation of its outputs. It investigates the clarity of oversight lines and effectiveness of influential organizations in holding authorities to their democratic commitments.
+
+4. **Buy-in:** Finally, this looks at the acceptance of the process's legitimacy by the public and key stakeholders. It questions the legitimacy of the system, process, and decision as recognized by these groups.
+
+Each of these categories is vital for understanding the implementation and functioning of democratic systems using system cards, as presented in this section of the research paper.
+
+I'm sorry, but it seems that the excerpt provided does not contain any actual content from the research paper. It only includes style and command definitions from a LaTeX document, and there's no specific research content or findings that can be narrated. 
+
+Please provide a different section that includes the substantive text or findings from the paper, and I will be able to help you with the narration script.
+
+I'm sorry, but it seems like you've pasted a part of a LaTeX document that doesn't include a specific section of a research paper. Please provide the full content of a particular section that you want to be converted into a narration script, ensuring it contains clear context, descriptions of figures or tables, or detailed explanations.
+
+Let's begin discussing the section on various aspects that can affect trust, legitimacy, decision-making, and organizational processes.
+
+Firstly, under the heading **General Trust and Legitimacy**, we explore the importance of trust and legitimacy to a unilateral authority. The authors ask if this authority is trusted or not by other actors, irrespective of the decisions it makes. Moving on to the specifics of decision-making, the section questions to what extent these decisions involve a lack of clear expert consensus, significant public interest concerns or externalities, limited public impact, and whether they pertain to technical or operational matters where clear expert consensus might be absent.
+
+Next, we have the section titled **External Stakeholder Legitimacy**. It explores the extent to which powerful stakeholder groups have conflicting perspectives. It also looks at whether these conflicts result in a bias for inaction. Furthermore, it examines the opportunity to reduce criticism or consequences due to what is termed as "process legitimacy."
+
+Following this is the topic of **Internal Stakeholder Legitimacy**. This explores whether there is significant disagreement internally. It questions if there is a need to evolve organizational values or purpose backed by a strong mandate and whether talent exists that is motivated by public benefit. Additionally, it examines the history of collaborative decision-making, the impacts of a hierarchical structure, and whether this structure can facilitate delegation of power to a democratic system or might lead to reduced respect for such systems. It also looks at extensive collaboration between teams or departments, considering if this corresponds with flexible systems or indicates complex interdependencies.
+
+The section on **Government Risk** asks whether there is a risk of backlash, such as from antitrust or regulatory actions, if power becomes too concentrated. It explores political pressure to act against public wishes and questions the presence of limited oversight. It also considers high scrutiny environments and the role of proactive democratization in accelerating regulatory outcomes. Potential obstacles presented by complex regulatory landscapes are discussed here, along with whether there is clear existing law.
+
+Under the heading **Collective Intelligence**, questions arise about whether the decision benefits from a broad diversity of perspectives and locally distributed knowledge. It examines if the decisions involve high levels of uncertainty or feature complex interdependencies.
+
+Then, the section on **Viability** asks about political obstacles to delegating power. It evaluates if democratic legitimacy can overcome these barriers or if political obstacles persist despite democratic norms. It further explores organizational structure, legal, technical, or physical obstacles that might impede delegating or devolving power.
+
+In the section titled **Resources**, the authors discuss whether the resources allocated to the democratic system are commensurate with the importance of its decisions. They query if resources can be made available for recurring expenses, especially impacting levels four and five.
+
+The topic of **Speed** considers whether the decision involves time-critical responses and if there are processes suited to such constraints. Here, level four processes can address regular time-critical scenarios in specified ways, but some complex systems may be ruled out. It also looks at if emergency responses are necessary.
+
+Under **Adaptability**, the focus is on anticipating rapid changes to internal or external conditions that might impact decisions, relevance, or the remit of a process. The ability of systems like levels four or five to repeat or adapt is also highlighted.
+
+Finally, in the section on **Novelty**, the authors question the novelty of devolving such decisions. They explore if being a democratic first-mover might enhance respect and newsworthiness but also consider the exposure to unknown risks.
+
+Overall, these sections collectively address how different factors contribute to the effectiveness and legitimacy of organizational decisions within varying governance, operational, and stakeholder contexts.
+
+Welcome to an example system card for an AI tool called the Habermas Machine, designed to support collective deliberation. This card outlines the functionalities and evaluations of this unique system aimed at facilitating communication and understanding among diverse viewpoints.
+
+Starting with the context, the Habermas Machine is a novel approach to collective deliberation. It leverages large language models, or LLMs, to help uncover common ground among individuals coming from varied perspectives. Drawing inspiration from Jürgen Habermas's theory of communicative action, this AI system processes personal opinions and critiques submitted by participants. Through a cycle of generation and refinement, the Habermas Machine is able to produce statements that seek to maximize collective support and reflect a shared understanding.
+
+At the heart of the system are two specialized models: a generative model that proposes candidate group statements of high quality and a personalized reward model, or PRM. The PRM evaluates these candidates based on the personal opinions of each participant, offering a ranking specific to each one. These individual rankings are then combined using a social choice function. This process attempts to select a group statement that not only enjoys broad support but also integrates critical minority viewpoints, thus facilitating a consensus that is both balanced and inclusive.
+
+Now, considering other systems essential for the Habermas Machine's success: there are several dependencies. First, the quality of user input is crucial. If participants do not contribute in good faith, or lack pertinent information, the outcomes will be less effective. Second, the Habermas Machine heavily relies on the LLMs' capabilities to comprehend complex opinions, generate coherent statements, and incorporate critiques effectively. Any biases present in the LLMs could hinder the process. Third, a dependable interaction platform is essential for users to engage with the Habermas Machine, submit their opinions and critiques, and receive the resulting statements. Fourth, human oversight remains vital to ensure fairness, address unforeseen issues, and interpret outputs with real-world relevance. Fifth, the context of deliberation, particularly the social or political issue under discussion, can significantly influence the system's efficacy. Lastly, the Habermas Machine does not provide information, instead focusing solely on unearthing common ground among participants who are already informed. Other systems will need to be established to educate participants.
+
+Moving on to process quality, we begin with representation. The Habermas Machine does not directly deal with representing participants demographically. While it groups participants, it concentrates on processing their opinions rather than ensuring these groups represent the wider population proportionately. The system's goal is to reflect diverse viewpoints by incorporating both majority and minority opinions into the generated statements.
+
+Examining the issue of representation further, we find that while sufficient representation isn't directly addressed, technology may create barriers. Limitations like access to devices, digital literacy, or internet connectivity could prevent certain populations from participating, risking underrepresentation. Possible solutions include developing voice-accessible platforms or supported access.
+
+Next, we discuss informedness. While the Habermas Machine doesn't directly enhance the knowledge of participants, the deliberative process may inadvertently increase awareness by exposing individuals to various perspectives and prompting them to evaluate and critique these opinions. As for including critical context in decision-making, the Habermas Machine doesn't actively supply additional information or context. Instead, informedness may emerge as a side effect of participants engaging with AI-generated statements that compile different viewpoints.
+
+On to deliberation. The Habermas Machine is crafted to promote deliberation through an iterative process. Participants go through multiple rounds of interaction—submitting initial opinions, reviewing and ranking AI-generated statements, and critiquing the top-ranked statements. The AI mediator utilizes these critiques to produce revised statements, ensuring continual improvement. However, the system offers a controlled method of deliberation without direct participant interaction.
+
+Assessing this process, we see that the iterative nature of the Habermas Machine encourages participants to look beyond surface-level opinions, collaborating indirectly by generating a shared group statement. The system aids this collective deliberation by synthesizing individual inputs into a potential consensus.
+
+Regarding substantiveness, the Habermas Machine strives to produce meaningful outputs by creating group statements that encapsulate common ground. The iterative nature of the process, which includes critiques, moves away from vague or simplistic statements, towards more elaborate representations of the group's collective view on complex issues.
+
+This brings us to an evaluation of the process's efficacy. Although the group statements produced aren't directly actionable as they are not formal policy documents, they aim to clearly and informatively address issues. By engaging with complex subject matter in conjunction with diverse inputs, the Habermas Machine can capture multifaceted perspectives and nuances; however, the absence of direct interactions might limit this complexity slightly. Uncertainty is addressed through diverse viewpoints, but the current system opts for a single output. Introducing a distribution over outputs could enhance uncertainty management. Risks to the implementability of outputs aren't specifically accounted for, as these outputs aren't designed to be directly implemented.
+
+Next, let's address robustness. While not yet fully tested, the iterative critique aspect offers some resilience against adversarial behavior, as statements can be revised and refined multiple times. However, extreme opinions might unduly influence the model more than others.
+
+Looking further into the process's potential vulnerabilities: the Habermas Machine relies on genuine input from its users, hence it could be manipulated if participants intentionally misrepresent their views. Another vulnerability includes strategic manipulation through coordinated biased inputs, lacking substantial safeguards against such attempts. Transparency may provide some defense against false claims, though.
+
+Lastly, we consider legibility. The Habermas Machine's process is moderately accessible and understandable. The steps for opinion submission, statement generation, critique, and revision are conceptually clear. Participants and non-participants alike should easily comprehend the natural language group statements. However, the underlying mechanisms of the large language models and the specifics of the algorithms in generating and selecting statements are not easily understood by those not directly involved.
+
+In the evaluation of legibility, there are several considerations. While there is transparency in the intermediate steps and personalized rankings allow for a certain level of inspection, the reasoning for the choice of specific group statement wording may be less apparent. Furthermore, verifying the robustness of the Habermas Machine needs technical expertise to assess the AI models and methodology used. For those not directly engaged, trust in the established research process is crucial for verification. The group statements, as the decisions made, are presented clearly and naturally, making them understandable. However, the final statement represents a synthesis and does not explicitly detail which groups favored or opposed specific elements of the issue posed, although it does incorporate minority opinions.
+
+This thorough explanation of the Habermas Machine and its democratic system card illustrates not just its intent but also the critical areas for attention in its execution, robustness, and use as a tool for collective deliberation in various social and political contexts.
+
+Welcome to this comprehensive exploration of a proposed democratic system card for a hypothetical UK Citizen Assembly focused on AI. In this audio, we'll delve into the context, process quality, delegation, and trust aspects, ensuring a thorough understanding of this study.
+
+Let's begin with the context of the Citizen Assembly. This assembly comprises 100 UK citizens selected through a process called sortition. This method ensures a demographic representation based on geography, age, gender, education level, and home ownership, mirroring the wider population. The participants meet for a total of 60 hours spanning six full-day meetings and four evening sessions. Their main agenda is to understand AI's role in the UK by engaging with materials and testimony from experts, stakeholders, and authorities. They deliberate on a pivotal question: "How should the UK address the risks of AI persuasion?" From these discussions, they formulate key recommendations, which the UK Government commits to publicly addressing.
+
+To support this assembly, organizers need access to reliable data to conduct the sortition process effectively, ensuring fair representation. A broader communication strategy underpins this process, raising awareness and fostering external input, enabling the general public to engage by sharing their values, perspectives, and concerns.
+
+Now, regarding the process quality, the focus is on representation. Members are chosen to depict a demographic microcosm of the UK. The evaluation of representational quality reveals full involvement of assembly members in final decision-making; however, agenda-setting originates from the organizing team, which may initially restrict representation. Certain groups, due to various factors, typically engage less in political processes, thus additional efforts are required to secure their participation. Although every key decision made by these 100 individuals is reflective of the assembly's views, it is not exhaustive of the wider population's views.
+
+The narrative moves to informedness. The assembly embarks on a comprehensive learning journey, absorbing diverse information from experts in AI, stakeholders, and fellow members. This extended time frame ensures they understand the context and potential trade-offs thoroughly. Feedback from stakeholders on draft recommendations enriches their insight into impacts and trade-offs. However, despite these efforts, diverse learning styles and the sheer amount of information present challenges for a uniform understanding among participants.
+
+Deliberation is next; here, we assess the depth of decision-making. Over 60 hours are spent in structured deliberations led by independent facilitators, designed to move discussions from superficial to more profound levels. Participants reconcile differing viewpoints via facilitated discussions and group work. Although time constraints are often noted, particularly with complex AI governance issues, facilitators manage these effectively, ensuring all decision-making steps are addressed properly.
+
+Examining substantiveness, the process ensures recommendations are actionable and tackle significant issues presented to the assembly. These are developed with an eye on the systems they will influence, focusing on implementability. While recommendations are intended to be precise and executable, practical limits necessitate further interpretation by policymakers upon implementation.
+
+The robustness of the system is addressed next, considering resistance to manipulation and optimal decision-making even under challenging conditions. While there is a potential for demographic manipulation during recruitment, adherence to transparent rules mitigates such risks.
+
+Moving on to legibility, all decisions and processes are made available to the public. Detailed elements might be challenging to grasp fully outside the assembly, though data points remain accessible via a searchable database.
+
+In the delegation section, integration analyses how authority assimilates these democratic processes. The UK government structures processes to incorporate outputs into decision-making, although automated implementation is unfeasible due to the strategic nature of decisions, allowing room for necessary adjustments.
+
+The ability to bind section discusses legal and technical adherence to democratic decisions. Though presenting recommendations in Parliament ensures visibility, binding implementation is beyond this assembly's scope.
+
+Commitment becomes pivotal, with the government pledging to respond to and implement recommendations maximally, based on conditional acceptance, though the actual extent remains uncertain.
+
+In the trust section, awareness concerns the public's understanding of the assembly. Despite a public communication campaign, overall awareness and engagement are low. Yet, where informed, the assembly's role in shaping AI policy is conveyed clearly.
+
+Assessing participation, recruitment efforts yield average global response rates, though interest lags behind exceptional cases like Ireland. Participants receive fair compensation, ensuring willingness and ability to engage.
+
+Accountability involves an independent body overseeing recommendation implementation, fostering government accountability despite limited enforcement power.
+
+Finally, evaluating buy-in, the system includes stakeholders early in planning to ensure legitimacy and diminish shallow biases present in traditional decision-making systems. Both public and stakeholders find the system, despite limitations, validated by its careful resistance to fleeting public opinion.
+
+This concludes our detailed walkthrough. Thank you for listening. Ensure to stay informed and engaged in the ever-evolving dialogue about AI governance and democratic inclusion.
+
+Thanks for listening. This has been an audio narration of Democratic AI is Possible. The Democracy Levels Framework Shows How It Might Work. By Aviv Ovadya, Kyle Redman, Luke Thorburn, and 11 more authors. Published on November 14, 2024. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
