@@ -1,86 +1,85 @@
-# unarXiv Review — 2026-03-22
+# unarXiv Review — 2026-03-23
 
 ## Changes Made
 
-### refactor(worker): remove dead `handleAdminMigrateListIds` endpoint
+### fix(webhook): handle script_ready status before VALID_STATUSES check
 
-**File:** `unarxiv-web/worker/src/index.ts`
+**File:** `unarxiv-web/worker/src/handlers/narration.ts`
 
-A one-time migration endpoint that converted lists with IDs shorter than 6
-characters to the 6-char format introduced when list IDs were standardized.
-The migration ran when the ID format changed; the endpoint now always returns
-`{ message: "No short list IDs to migrate", migrated: 0 }`. Removed the
-function body (~30 lines) and its route table entry (`POST /api/admin/migrate-list-ids`).
+The Modal narration worker sends `status="script_ready"` when the LLM script
+phase finishes but TTS is still running. The webhook handler had code to record
+a partial `narration_version` (so the frontend can preview the transcript early),
+but it was placed *after* a VALID_STATUSES guard that only allowed DB-level
+statuses (`unnarrated`, `narrating`, `narrated`, `failed`). `script_ready` is a
+webhook-only status (never written to the DB), so it was being rejected with a
+400 and the partial-version recording never ran.
 
-### docs(worker): replace stale route list with pointer to `buildRouteTable`
+Fix: move the `script_ready` early-return block and the `script_char_count`
+update above the VALID_STATUSES check. The status validation now only applies to
+the code path that calls `updatePaperStatus`, which is correct — that path should
+only accept statuses that are valid in the DB.
 
-**File:** `unarxiv-web/worker/src/index.ts`
+**Impact:** Premium narrations that use the LLM script phase now correctly
+populate the transcript in the frontend while TTS is still running.
 
-The file-header JSDoc comment listed ~12 original API routes, but the worker
-has grown to 40+ endpoints. The comment was misleading — it implied a complete
-summary when it was just historical. Replaced the stale route listing with a
-one-liner: "See `buildRouteTable()` below for the complete list of API routes."
-The route table itself is the self-documenting source of truth.
+### fix(narration): use baseUrl param in handleNarratePaper dispatch
 
-### refactor(frontend): deduplicate `PremiumNarrationModal` in `PaperActionButton`
+**File:** `unarxiv-web/worker/src/handlers/narration.ts`
 
-**File:** `unarxiv-web/frontend/src/components/PaperActionButton.tsx`
+`handleNarratePaper` accepts a `baseUrl: string` parameter (computed from
+`url.origin` in the request handler) for constructing the Modal callback URL.
+But the internal dispatch call was passing the hardcoded string
+`"https://api.unarxiv.org"` instead of using it. In production this has no
+effect, but in local dev with `MODAL_WEBHOOK_SECRET` set (e.g. testing against
+real Modal), callbacks would be sent to production instead of the local worker.
 
-The component had three early-return branches (narrated / narrating /
-unnarrated+failed), each with an identical copy of:
+Fix: pass `baseUrl` to `dispatchToModal`.
 
-```jsx
-{showPremiumModal && (
-  <PremiumNarrationModal
-    paper={paper}
-    onClose={() => setShowPremiumModal(false)}
-  />
-)}
-```
+### refactor(narration): remove unused ip variable in handleNarrationCheck
 
-Converted the early-return branches to inline conditionals inside a single
-`return`, allowing the modal to render once at the end of the component.
-Also extracted the `openPremiumModal` callback to avoid 3 duplicate
-`() => { setShowPremiumModal(true); toggleMenu(false); }` arrow functions,
-and removed the unused `isEnhanced` variable. Net: -15 lines.
+**File:** `unarxiv-web/worker/src/handlers/narration.ts`
 
-### fix(scheduled-task): correct SKILL.md deploy commands
+`handleNarrationCheck` was extracting the client IP but not using it (Turnstile
+is disabled). Removed the unused variable and renamed params to `_request`/`_env`
+to make intent clear.
 
-**File:** `/Users/seanahrens/.claude/scheduled-tasks/daily-codebase-review/SKILL.md`
-(updated via `mcp__scheduled-tasks__update_scheduled_task`)
+### docs: correct rate limit description in CLAUDE.md
 
-The deploy step in the scheduled task had two bugs:
-1. Worker deploy used `npx wrangler deploy` (missing `--config wrangler.production.toml`
-   — would deploy against the placeholder DB ID in `wrangler.toml`)
-2. Frontend deploy used `--project-name=texreader-frontend` (old name — correct name
-   is `unarxiv-frontend` per CLAUDE.md)
+**File:** `CLAUDE.md`
 
-Both corrected. This was a silent bug that would cause all future automated deploys
-from this task to fail or target the wrong project.
+The key config section said "10/day/IP, global daily cap configurable via
+`DAILY_GLOBAL_LIMIT`". Two inaccuracies:
+1. The actual per-IP default is **24** (controlled by `PER_IP_DAILY_LIMIT`).
+2. `DAILY_GLOBAL_LIMIT` is defined in `types.ts` and `wrangler.toml` but is
+   **not enforced** in any request handler. The `getGlobalSubmissionCount` DB
+   function exists but is never called.
+
+Updated comment to reflect actual behavior.
 
 ---
 
 ## Left Unchanged (Identified, Needs Human Decision)
 
+- **`DAILY_GLOBAL_LIMIT` / `getGlobalSubmissionCount` not enforced** — the env
+  var and DB helper exist but are never wired together. A decision is needed on
+  whether to implement the global daily cap or remove the dead infrastructure.
+- **Worker unit tests fail against local DB** — `premium.test.ts` fails because
+  the local wrangler D1 state is missing `migration 007_narration_tier.sql`
+  (the `narration_tier` column). These failures are pre-existing and unrelated
+  to today's changes. The fix is to run `npm run db:reset` in the worker
+  directory before running tests.
+- **`db.ts` and `index.ts` remain large monolithic files** — splitting by domain
+  is the right direction but high blast-radius; deferred for deliberate planning.
+- **Design system / shared component library** — no shared `Button`/`Modal`
+  primitives. shadcn/ui would reduce duplication in modals but is a significant
+  dependency addition. Human decision.
 - **`/api/my-additions` worker routes** — `GET /api/my-additions` and
-  `DELETE /api/my-additions/:id` are still registered in the worker but have no
-  frontend callers. The handlers are functional. Leaving intact pending a human
-  decision on whether to wire them to a "My Additions" UI or remove them.
-- **`worker/src/index.ts` size** (~1065 lines after today's removals) and
-  **`db.ts`** (~830 lines): Both remain large monolithic files. Splitting by
-  domain (papers, ratings, lists, playlist) is the right long-term direction but
-  is a high-blast-radius change deferred for deliberate human planning.
-- **Design system** — No shared `Button`/`Modal`/`Badge` components. All repeated
-  patterns already have page-specific components. shadcn/ui would reduce some
-  duplication in modals but is a significant dependency addition — human decision.
-- **`formatEtaShort` naming** — The local `formatEtaShort(seconds: number)` in
-  `PaperActionButton.tsx` takes seconds (a number), while `api.ts` has no
-  `formatEtaShort` export (previously noted as a potential rename candidate —
-  this was a false alarm from a prior REVIEW.md; the local function is fine as-is).
+  `DELETE /api/my-additions/:id` are still registered with no frontend callers.
+  Functional but not wired to UI. Deferred.
 
 ---
 
 ## Deploy Status
 
-- **Worker** (`unarxiv-api`): Version `4cda7831-40f1-4a2f-94a1-6eb3cdb9663b` — deployed 2026-03-22
-- **Frontend** (`unarxiv-frontend`): Deployment `ce77cf9f` — deployed 2026-03-22
+- **Worker** (`unarxiv-api`): Version `e86264a7-d358-4441-a5ca-1d9210e68bd6` — deployed 2026-03-23
+- **Frontend** (`unarxiv-frontend`): Deployment `93220449` — deployed 2026-03-23
