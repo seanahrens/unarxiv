@@ -3,23 +3,17 @@ import { knownCompleteId } from "../helpers/fixtures";
 import { startAudioPlayback } from "../helpers/page-actions";
 
 test.describe("Audio Playback", () => {
-  test("play button starts audio on complete paper", async ({ page }) => {
+  // Both assertions only need one page load + audio start — batch them.
+  test("play button starts audio and src points to API endpoint", async ({ page }) => {
     const id = knownCompleteId();
     await startAudioPlayback(page, id);
 
-    const isPaused = await page.evaluate(
-      () => (document.querySelector("audio") as HTMLAudioElement)?.paused
-    );
+    const [isPaused, src] = await page.evaluate(() => {
+      const el = document.querySelector("audio") as HTMLAudioElement;
+      return [el?.paused, el?.src] as const;
+    });
+
     expect(isPaused).toBe(false);
-  });
-
-  test("audio element has correct src", async ({ page }) => {
-    const id = knownCompleteId();
-    await startAudioPlayback(page, id);
-
-    const src = await page.evaluate(
-      () => (document.querySelector("audio") as HTMLAudioElement)?.src
-    );
     expect(src).toContain(`/api/papers/${id}/audio`);
   });
 });
