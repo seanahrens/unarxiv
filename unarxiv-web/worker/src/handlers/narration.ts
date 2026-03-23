@@ -460,16 +460,6 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     body.narration_tier = provider === "elevenlabs" ? "plus3" : provider === "openai" ? "plus2" : "plus1";
   }
 
-  const VALID_STATUSES: PaperStatus[] = ["unnarrated", "narrating", "narrated", "failed"];
-  if (!VALID_STATUSES.includes(body.status as PaperStatus)) {
-    return json({ error: "Invalid status" }, 400);
-  }
-
-  // Validate audio_r2_key format to prevent path confusion in R2 lookups
-  if (body.audio_r2_key !== undefined && !/^audio\/[\w.\/-]+\.mp3$/.test(body.audio_r2_key)) {
-    return json({ error: "Invalid audio_r2_key format" }, 400);
-  }
-
   // Update script_char_count if provided (from script generation phase)
   if (body.script_char_count != null && body.script_char_count > 0) {
     await updateScriptCharCount(env.DB, body.arxiv_id, body.script_char_count);
@@ -478,6 +468,7 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
   // script_ready = LLM script is done, TTS still running. Record a partial
   // narration_version with the transcript so the frontend can show it, but
   // do NOT change the paper's status — it stays "narrating".
+  // Must be handled before VALID_STATUSES check (script_ready is webhook-only, not a DB status).
   if (body.status === "script_ready" && body.transcript_r2_key) {
     const narrationTier = body.narration_tier ?? "plus1";
     const ttsProvider = body.tts_provider ?? null;
@@ -500,6 +491,16 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       tts_cost: null,
     });
     return json({ ok: true });
+  }
+
+  const VALID_STATUSES: PaperStatus[] = ["unnarrated", "narrating", "narrated", "failed"];
+  if (!VALID_STATUSES.includes(body.status as PaperStatus)) {
+    return json({ error: "Invalid status" }, 400);
+  }
+
+  // Validate audio_r2_key format to prevent path confusion in R2 lookups
+  if (body.audio_r2_key !== undefined && !/^audio\/[\w.\/-]+\.mp3$/.test(body.audio_r2_key)) {
+    return json({ error: "Invalid audio_r2_key format" }, 400);
   }
 
   await updatePaperStatus(env.DB, body.arxiv_id, body.status as PaperStatus, {
