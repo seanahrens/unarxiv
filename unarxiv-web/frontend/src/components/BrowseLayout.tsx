@@ -62,8 +62,13 @@ export default function BrowseLayout({
       // "Newly Added" — data already available
       setCollectionPapers([]);
       setCollectionMeta(null);
-      // Update URL without reload
-      window.history.pushState({}, "", "/");
+      // If we're on a different route (e.g. /l), do a proper navigation;
+      // otherwise just update the URL in-place.
+      if (window.location.pathname !== "/") {
+        router.push("/");
+      } else {
+        window.history.pushState({}, "", "/");
+      }
       return;
     }
 
@@ -91,7 +96,7 @@ export default function BrowseLayout({
       setCollectionMeta(null);
     }
     setLoadingCollection(false);
-  }, []);
+  }, [router]);
 
   // Handle browser back/forward
   useEffect(() => {
