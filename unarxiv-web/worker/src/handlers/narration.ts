@@ -413,7 +413,6 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     duration_seconds?: number;
     // Premium narration fields
     narration_tier?: "base" | "plus1" | "plus2" | "plus3";
-    script_type?: "base" | "upgraded";
     tts_provider?: string;
     tts_model?: string;
     llm_provider?: string;
@@ -489,7 +488,6 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       paper_id: body.arxiv_id,
       narration_tier: narrationTier,
       quality_rank: qualityRank,
-      script_type: "upgraded",
       tts_provider: ttsProvider,
       tts_model: ttsModel,
       llm_provider: body.llm_provider ?? null,
@@ -516,7 +514,6 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
   // On completion, record a narration_version and update best_version_id
   if (body.status === "narrated" && body.audio_r2_key) {
     const narrationTier = body.narration_tier ?? "base";
-    const scriptType = body.script_type ?? "base";
     const ttsProvider = body.tts_provider ?? null;
     const ttsModel = body.tts_model ?? null;
     const qualityRank = narrationTier === "base" ? 0 : computeQualityRank(ttsProvider, ttsModel);
@@ -532,7 +529,6 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       paper_id: body.arxiv_id,
       narration_tier: narrationTier,
       quality_rank: qualityRank,
-      script_type: scriptType,
       tts_provider: ttsProvider,
       tts_model: ttsModel,
       llm_provider: body.llm_provider ?? null,

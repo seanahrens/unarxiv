@@ -886,7 +886,6 @@ export async function insertNarrationVersion(
     paper_id: string;
     narration_tier: "base" | "plus1" | "plus2" | "plus3";
     quality_rank: number;
-    script_type: "base" | "upgraded";
     tts_provider?: string | null;
     tts_model?: string | null;
     llm_provider?: string | null;
@@ -902,18 +901,17 @@ export async function insertNarrationVersion(
   const result = await db
     .prepare(
       `INSERT INTO narration_versions
-         (paper_id, narration_tier, quality_rank, script_type,
+         (paper_id, narration_tier, quality_rank,
           tts_provider, tts_model, llm_provider, llm_model,
           audio_r2_key, transcript_r2_key, duration_seconds,
           actual_cost, llm_cost, tts_cost)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
     .bind(
       v.paper_id,
       v.narration_tier,
       v.quality_rank,
-      v.script_type,
       v.tts_provider ?? null,
       v.tts_model ?? null,
       v.llm_provider ?? null,
@@ -974,7 +972,7 @@ export async function findExistingPremiumScript(db: D1Database, paperId: string)
   const result = await db
     .prepare(
       `SELECT transcript_r2_key FROM narration_versions
-       WHERE paper_id = ? AND script_type = 'upgraded' AND transcript_r2_key IS NOT NULL
+       WHERE paper_id = ? AND narration_tier != 'base' AND transcript_r2_key IS NOT NULL
        ORDER BY created_at DESC LIMIT 1`
     )
     .bind(paperId)

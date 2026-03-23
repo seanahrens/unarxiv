@@ -174,7 +174,6 @@ CREATE TABLE IF NOT EXISTS narration_versions (
     paper_id          TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
     narration_tier    TEXT NOT NULL CHECK(narration_tier IN ('base', 'plus1', 'plus2', 'plus3')),
     quality_rank      INTEGER NOT NULL DEFAULT 0,  -- higher = better quality
-    script_type       TEXT NOT NULL CHECK(script_type IN ('base', 'upgraded')),
     tts_provider      TEXT,     -- 'openai' | 'elevenlabs' | 'google' | null (free voice)
     tts_model         TEXT,     -- provider-specific model ID
     llm_provider      TEXT,     -- 'openai' | 'anthropic' | null (base script)

@@ -20,7 +20,6 @@ export interface NarrationVersion {
   paper_id: string;
   narration_tier: "base" | "plus1" | "plus2" | "plus3";
   quality_rank: number;
-  script_type: "base" | "upgraded";
   tts_provider: string | null;
   tts_model: string | null;
   llm_provider: string | null;

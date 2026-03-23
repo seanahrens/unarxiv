@@ -24,8 +24,8 @@ VALUES (
 );
 
 -- Free-tier narration version for the narrated paper (base quality, no premium upgrade)
-INSERT OR IGNORE INTO narration_versions (paper_id, version_type, quality_rank, script_type, tts_provider, tts_model, audio_r2_key, duration_seconds)
-VALUES ('2301.07041', 'free', 0, 'free', 'openai', 'tts-1', 'audio/2301.07041.mp3', 1847);
+INSERT OR IGNORE INTO narration_versions (paper_id, narration_tier, quality_rank, tts_provider, tts_model, audio_r2_key, duration_seconds)
+VALUES ('2301.07041', 'base', 0, 'openai', 'tts-1', 'audio/2301.07041.mp3', 1847);
 
 -- A paper currently being narrated
 INSERT OR IGNORE INTO papers (id, arxiv_url, title, authors, abstract, published_date, status, eta_seconds, created_at)
