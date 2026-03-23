@@ -455,15 +455,17 @@ export async function deleteRating(db: D1Database, paperId: string, ip: string, 
 /** Get all papers with rating data for admin curate page. */
 export async function getAllPapersWithRatings(
   db: D1Database
-): Promise<(Paper & { bayesian_avg: number | null; rating_count: number; has_low_rating: boolean })[]> {
+): Promise<(Paper & { bayesian_avg: number | null; rating_count: number; has_low_rating: boolean; best_narration_tier: string | null })[]> {
   const results = await db
     .prepare(
-      `SELECT * FROM papers
+      `SELECT p.*, nv.narration_tier as best_narration_tier
+       FROM papers p
+       LEFT JOIN narration_versions nv ON p.best_version_id = nv.id
        ORDER BY
-         bayesian_avg ASC NULLS LAST,
-         created_at DESC`
+         p.bayesian_avg ASC NULLS LAST,
+         p.created_at DESC`
     )
-    .all<Paper & { bayesian_avg: number | null; rating_count: number; has_low_rating: boolean }>();
+    .all<Paper & { bayesian_avg: number | null; rating_count: number; has_low_rating: boolean; best_narration_tier: string | null }>();
 
   return results.results;
 }

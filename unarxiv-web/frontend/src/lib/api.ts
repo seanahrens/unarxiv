@@ -283,6 +283,7 @@ export interface PaperWithRating extends Paper {
   avg_rating: number | null;
   rating_count: number;
   has_low_rating: boolean;
+  best_narration_tier: string | null;
 }
 
 export interface AdminRating {

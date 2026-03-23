@@ -56,6 +56,7 @@ export async function handleAdminPapersWithRatings(request: Request, env: Env, b
       avg_rating: p.bayesian_avg,
       rating_count: p.rating_count || 0,
       has_low_rating: !!p.has_low_rating,
+      best_narration_tier: p.best_narration_tier ?? null,
     })),
   });
 }

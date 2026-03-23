@@ -401,7 +401,7 @@ export default function AdminPage() {
     else if (statusFilter === "narrating") list = list.filter((p) => p.status === "narrating");
     if (showLowRated) list = list.filter((p) => p.has_low_rating);
     if (showYours) list = list.filter((p) => yourPaperIds.has(p.id));
-    if (showUpgraded) list = list.filter((p) => p.best_version_id != null);
+    if (showUpgraded) list = list.filter((p) => p.best_narration_tier && p.best_narration_tier !== "base");
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) => p.title?.toLowerCase().includes(q) || p.id.toLowerCase().includes(q));
