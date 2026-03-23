@@ -22,7 +22,7 @@ import {
   getPapersBatch,
   insertPaper,
 } from "../db";
-import { json } from "./helpers";
+import { json, getClientIp } from "./helpers";
 
 export async function handleCreateList(request: Request, env: Env): Promise<Response> {
   const body = await request.json<{ name?: string; description?: string; publicly_listed?: boolean }>();
@@ -174,7 +174,7 @@ export async function handleImportList(request: Request, env: Env, listId: strin
   const existingIds = new Set(existing.map((p) => p.id));
   const missing = ids.filter((id) => !existingIds.has(id));
 
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ip = getClientIp(request);
   const importToken = request.headers.get("X-User-Token") || undefined;
   const cf = (request as Request<unknown, IncomingRequestCfProperties>).cf;
   const toAdd = missing.slice(0, 20);

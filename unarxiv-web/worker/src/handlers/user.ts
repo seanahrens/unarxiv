@@ -31,7 +31,7 @@ import { json, getUserToken, getClientIp } from "./helpers";
 
 export async function handleRating(request: Request, env: Env, paperId: string): Promise<Response> {
   const method = request.method;
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ip = getClientIp(request);
   const token = request.headers.get("X-User-Token") || null;
   if (method === "GET") {
     const rating = await getRating(env.DB, paperId, ip, token);
@@ -74,7 +74,7 @@ export async function handleRating(request: Request, env: Env, paperId: string):
 // --- My additions ---
 
 export async function handleMyAdditions(request: Request, env: Env, baseUrl: string): Promise<Response> {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ip = getClientIp(request);
   const token = request.headers.get("X-User-Token") || null;
   let papers: Paper[];
   if (token) {
@@ -90,7 +90,7 @@ export async function handleMyAdditions(request: Request, env: Env, baseUrl: str
 }
 
 export async function handleDeleteMyAddition(request: Request, env: Env, id: string): Promise<Response> {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ip = getClientIp(request);
   const token = request.headers.get("X-User-Token") || null;
   const paper = await getPaper(env.DB, id);
   if (!paper) return json({ error: "Paper not found" }, 404);

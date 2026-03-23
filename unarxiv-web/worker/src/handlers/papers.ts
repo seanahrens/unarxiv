@@ -15,7 +15,7 @@ import {
   getRecentPapers,
   getAllPapers,
 } from "../db";
-import { json } from "./helpers";
+import { json, getClientIp } from "./helpers";
 
 export async function handleBatchPapers(request: Request, env: Env, baseUrl: string): Promise<Response> {
   const body = await request.json<{ ids?: string[] }>();
@@ -154,7 +154,7 @@ export async function handleSubmitPaper(
   // Rate limit: 240 paper submissions per IP per day (admin bypasses).
   // Uses IP (not token) — consistent with narration limits; tokens are
   // client-generated and trivially regenerated to evade limits.
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ip = getClientIp(request);
   const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
   if (!isAdmin) {
     const limit = parseInt(env.PAPER_SUBMISSION_DAILY_LIMIT || "240");

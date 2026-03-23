@@ -22,7 +22,7 @@ import {
   updatePaperSourceStats,
 } from "../db";
 import { arxivSrcUrl, scrapeArxivMetadata } from "../arxiv";
-import { json, requireAdmin } from "./helpers";
+import { json, requireAdmin, getClientIp } from "./helpers";
 import { computeQualityRank } from "./premium";
 
 // ─── Narration Trigger ───────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ export async function handleNarratePaper(
 
   if (claimed) {
     // We won the race — do rate limit check and record submission
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const ip = getClientIp(request);
     const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
     if (!isAdmin) {
       const limit = parseInt(env.PER_IP_DAILY_LIMIT || "24");
@@ -386,7 +386,7 @@ export async function handleGetProgress(env: Env, id: string, baseUrl: string): 
 // ─── Visit Recording ─────────────────────────────────────────────────────────
 
 export async function handleRecordVisit(request: Request, env: Env, id: string): Promise<Response> {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ip = getClientIp(request);
   const token = request.headers.get("X-User-Token") || null;
   await recordVisit(env.DB, id, ip, token);
   return json({ ok: true });
