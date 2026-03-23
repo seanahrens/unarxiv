@@ -1,85 +1,54 @@
-# unarXiv Review — 2026-03-23
+# unarXiv Review — 2026-03-23 (session 2)
+
+*Note: A first review session ran earlier today (see commits 5602509–dc60625) and addressed the critical `script_ready` webhook bug and a `baseUrl` dispatch fix. This session covers the remaining items identified in a full second pass of the codebase.*
 
 ## Changes Made
 
-### fix(webhook): handle script_ready status before VALID_STATUSES check
+### docs(setup): fix incorrect status values in SETUP.md
 
-**File:** `unarxiv-web/worker/src/handlers/narration.ts`
+**File:** `unarxiv-web/SETUP.md`
 
-The Modal narration worker sends `status="script_ready"` when the LLM script
-phase finishes but TTS is still running. The webhook handler had code to record
-a partial `narration_version` (so the frontend can preview the transcript early),
-but it was placed *after* a VALID_STATUSES guard that only allowed DB-level
-statuses (`unnarrated`, `narrating`, `narrated`, `failed`). `script_ready` is a
-webhook-only status (never written to the DB), so it was being rejected with a
-400 and the partial-version recording never ran.
+Two documentation bugs that would cause errors for developers following the setup guide:
 
-Fix: move the `script_ready` early-return block and the `script_char_count`
-update above the VALID_STATUSES check. The status validation now only applies to
-the code path that calls `updatePaperStatus`, which is correct — that path should
-only accept statuses that are valid in the DB.
+1. `"papers stay in 'preparing' status"` — `'preparing'` is not a valid paper status. The actual status is `'narrating'`, which is what the paper is set to when narration is claimed.
 
-**Impact:** Premium narrations that use the LLM script phase now correctly
-populate the transcript in the frontend while TTS is still running.
+2. The simulated webhook curl example sent `"status":"complete"`, which the worker rejects (VALID_STATUSES are `unnarrated/narrating/narrated/failed`). Changed to `"narrated"` and added `eta_seconds:0` to match what Modal actually sends on completion.
 
-### fix(narration): use baseUrl param in handleNarratePaper dispatch
+**Impact:** Developers following the local dev setup guide will now get working curl commands.
 
-**File:** `unarxiv-web/worker/src/handlers/narration.ts`
+### refactor(worker): remove unused QUEUE_BATCH_SIZE from Env type
 
-`handleNarratePaper` accepts a `baseUrl: string` parameter (computed from
-`url.origin` in the request handler) for constructing the Modal callback URL.
-But the internal dispatch call was passing the hardcoded string
-`"https://api.unarxiv.org"` instead of using it. In production this has no
-effect, but in local dev with `MODAL_WEBHOOK_SECRET` set (e.g. testing against
-real Modal), callbacks would be sent to production instead of the local worker.
+**File:** `unarxiv-web/worker/src/types.ts`
 
-Fix: pass `baseUrl` to `dispatchToModal`.
+`QUEUE_BATCH_SIZE` is set in `wrangler.toml` and `wrangler.production.toml` but is never read in any handler or utility function. Removing it from the `Env` interface eliminates false signals that it's an available env var with defined semantics for agents and developers reading the types.
 
-### refactor(narration): remove unused ip variable in handleNarrationCheck
+The `wrangler.toml` entries are unchanged since wrangler doesn't enforce that all env vars appear in the TypeScript interface.
 
-**File:** `unarxiv-web/worker/src/handlers/narration.ts`
+### refactor(worker): use getClientIp helper consistently across handlers
 
-`handleNarrationCheck` was extracting the client IP but not using it (Turnstile
-is disabled). Removed the unused variable and renamed params to `_request`/`_env`
-to make intent clear.
+**Files:** `narration.ts`, `papers.ts`, `lists.ts`, `user.ts`
 
-### docs: correct rate limit description in CLAUDE.md
+`getClientIp(request)` was defined in `helpers.ts` as a shared utility but was not used in 7 of the 8 call sites that need the client IP. Instead, each file had its own inline `request.headers.get("CF-Connecting-IP") || "unknown"`. Notably `user.ts` imported `getClientIp` but then used the raw header directly.
 
-**File:** `CLAUDE.md`
-
-The key config section said "10/day/IP, global daily cap configurable via
-`DAILY_GLOBAL_LIMIT`". Two inaccuracies:
-1. The actual per-IP default is **24** (controlled by `PER_IP_DAILY_LIMIT`).
-2. `DAILY_GLOBAL_LIMIT` is defined in `types.ts` and `wrangler.toml` but is
-   **not enforced** in any request handler. The `getGlobalSubmissionCount` DB
-   function exists but is never called.
-
-Updated comment to reflect actual behavior.
+Replaced all 7 inline occurrences with the helper call and added the import to the three files (`narration.ts`, `papers.ts`, `lists.ts`) that were missing it. No behaviour change.
 
 ---
 
 ## Left Unchanged (Identified, Needs Human Decision)
 
-- **`DAILY_GLOBAL_LIMIT` / `getGlobalSubmissionCount` not enforced** — the env
-  var and DB helper exist but are never wired together. A decision is needed on
-  whether to implement the global daily cap or remove the dead infrastructure.
-- **Worker unit tests fail against local DB** — `premium.test.ts` fails because
-  the local wrangler D1 state is missing `migration 007_narration_tier.sql`
-  (the `narration_tier` column). These failures are pre-existing and unrelated
-  to today's changes. The fix is to run `npm run db:reset` in the worker
-  directory before running tests.
-- **`db.ts` and `index.ts` remain large monolithic files** — splitting by domain
-  is the right direction but high blast-radius; deferred for deliberate planning.
-- **Design system / shared component library** — no shared `Button`/`Modal`
-  primitives. shadcn/ui would reduce duplication in modals but is a significant
-  dependency addition. Human decision.
-- **`/api/my-additions` worker routes** — `GET /api/my-additions` and
-  `DELETE /api/my-additions/:id` are still registered with no frontend callers.
-  Functional but not wired to UI. Deferred.
+- **`DAILY_GLOBAL_LIMIT` / `getGlobalSubmissionCount` not enforced** (carried over from session 1) — the env var and DB helper exist but are never wired together. Decide whether to implement the global daily cap, document it as intentionally unimplemented, or remove the dead infrastructure.
+
+- **Legacy payload flattening block in `handleModalWebhook`** — the comment says to remove it "after ~1 week" when old in-flight narrations complete. Likely stale. Needs human decision on whether Modal has fully transitioned to the new flat payload format.
+
+- **`/api/my-additions` worker routes** — registered in the route table but no frontend callers. Functional but unused UI surface.
+
+- **`admin/page.tsx` size** — the admin page is a large (~1000+ line) single file. Splitting it would improve maintainability but is high blast-radius; deferred for deliberate planning.
+
+- **Design system / shared component library** — no shared `Button`/`Modal` primitives. `shadcn/ui` would reduce duplication in modals but is a significant dependency addition. Human decision.
 
 ---
 
 ## Deploy Status
 
-- **Worker** (`unarxiv-api`): Version `e86264a7-d358-4441-a5ca-1d9210e68bd6` — deployed 2026-03-23
-- **Frontend** (`unarxiv-frontend`): Deployment `93220449` — deployed 2026-03-23
+- **Worker** (`unarxiv-api`): Version `f9083e01-bb75-446b-a50f-576a5a637ac1` — deployed 2026-03-23
+- **Frontend** (`unarxiv-frontend`): Deployment `e0d7566b` — deployed 2026-03-23
