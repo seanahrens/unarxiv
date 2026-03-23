@@ -9,7 +9,6 @@ export interface Env {
   DAILY_GLOBAL_LIMIT: string;
   PER_IP_DAILY_LIMIT: string;
   PAPER_SUBMISSION_DAILY_LIMIT: string;
-  QUEUE_BATCH_SIZE: string;
   ADMIN_PASSWORD: string;
   ENCRYPTION_KEY: string; // AES-256-GCM key material for encrypting user API keys
   HF_LIST_ID?: string;
