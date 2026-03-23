@@ -425,6 +425,9 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             narration_tier="base",
         )
         raise
+    finally:
+        import shutil
+        shutil.rmtree(work_dir, ignore_errors=True)
 
 
 # Web endpoint for the Cloudflare Worker to call
@@ -539,6 +542,7 @@ def narrate_paper_premium(
     audio_r2_key = f"audio/{arxiv_id}/v{version_id}.mp3"
     transcript_r2_key = f"transcripts/{arxiv_id}/v{version_id}.txt"
 
+    parsed = None  # initialised here so the finally block can always reference it
     try:
         # ---------------------------------------------------------------
         # Stage 1: Send initial status
@@ -754,6 +758,10 @@ def narrate_paper_premium(
             error_message=str(e)[:500],
         )
         raise
+    finally:
+        import shutil
+        if parsed is not None:
+            shutil.rmtree(parsed.work_dir, ignore_errors=True)
 
 
 @app.function(
