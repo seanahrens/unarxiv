@@ -15,11 +15,13 @@ import {
   isInProgress,
   fetchAdminLists,
   deleteListAdmin,
+  requestPremiumNarration,
   type Contributor,
   type PaperWithRating,
   type AdminRating,
   type AdminList,
 } from "@/lib/api";
+import { getStoredKeys } from "@/lib/premiumKeys";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 
@@ -301,6 +303,7 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showLowRated, setShowLowRated] = useState(false);
   const [showYours, setShowYours] = useState(false);
+  const [showUpgraded, setShowUpgraded] = useState(false);
 
   // Auth: check session
   useEffect(() => {
@@ -398,12 +401,13 @@ export default function AdminPage() {
     else if (statusFilter === "narrating") list = list.filter((p) => p.status === "narrating");
     if (showLowRated) list = list.filter((p) => p.has_low_rating);
     if (showYours) list = list.filter((p) => yourPaperIds.has(p.id));
+    if (showUpgraded) list = list.filter((p) => p.best_version_id != null);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) => p.title?.toLowerCase().includes(q) || p.id.toLowerCase().includes(q));
     }
     return list;
-  }, [papers, statusFilter, showLowRated, showYours, searchQuery, yourPaperIds]);
+  }, [papers, statusFilter, showLowRated, showYours, showUpgraded, searchQuery, yourPaperIds]);
 
   const STATUS_ORDER: Record<string, number> = {
     failed: 0,
@@ -437,7 +441,7 @@ export default function AdminPage() {
   const paginated = useMemo(() => sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE), [sorted, safePage]);
 
   // Reset page when filters change
-  useEffect(() => { setPage(0); }, [statusFilter, searchQuery, showLowRated, showYours, sortKey, sortDir]);
+  useEffect(() => { setPage(0); }, [statusFilter, searchQuery, showLowRated, showYours, showUpgraded, sortKey, sortDir]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -496,6 +500,44 @@ export default function AdminPage() {
     setProcessing(new Set());
     if (failed.length > 0) setActionError(`Failed to reprocess ${failed.length} paper(s)`);
   }, [password, selected]);
+
+  const handleBulkUpgrade = useCallback(async (tier: "plus1" | "plus2" | "plus3") => {
+    if (selected.size === 0) return;
+    const keys = getStoredKeys();
+    // Determine which LLM provider key is available
+    const llmProvider = keys.openai ? "openai" : keys.google ? "google" : null;
+    if (!llmProvider) {
+      setActionError("No API keys stored — add keys via the upgrade modal on any paper first");
+      return;
+    }
+    // Check TTS key availability for plus2/plus3
+    if (tier === "plus2" && !keys.openai) {
+      setActionError("No OpenAI API key stored — needed for 2Plus");
+      return;
+    }
+    if (tier === "plus3" && !keys.elevenlabs) {
+      setActionError("No ElevenLabs API key stored — needed for 3Plus");
+      return;
+    }
+    setActionError("");
+    const ids = [...selected];
+    setProcessing(new Set(ids));
+    setReprocessMenuOpen(false);
+    const failed: string[] = [];
+    for (const id of ids) {
+      try {
+        const updated = await requestPremiumNarration(id, {
+          option_id: tier,
+          encrypted_keys: keys as Partial<Record<string, string>>,
+          llm_provider: llmProvider,
+        });
+        setPapers((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated } : p)));
+      } catch { failed.push(id); }
+    }
+    setSelected(new Set());
+    setProcessing(new Set());
+    if (failed.length > 0) setActionError(`Failed to upgrade ${failed.length} paper(s)`);
+  }, [selected]);
 
   const handleBulkClearPremium = useCallback(async () => {
     if (!password || selected.size === 0) return;
@@ -647,6 +689,17 @@ export default function AdminPage() {
           </svg>
           Yours
         </button>
+        <button
+          onClick={() => setShowUpgraded((v) => !v)}
+          className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors inline-flex items-center gap-1.5 ${
+            showUpgraded ? "bg-violet-50 border-violet-300 text-violet-700" : "bg-surface border-stone-200 text-stone-500 hover:bg-stone-50"
+          }`}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          Upgraded
+        </button>
       </div>
 
       {/* Bulk actions */}
@@ -660,7 +713,7 @@ export default function AdminPage() {
                 disabled={deleting.size > 0 || processing.size > 0}
                 className="px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors disabled:opacity-40"
               >
-                {processing.size > 0 ? "Reprocessing..." : "Reprocess"}
+                {processing.size > 0 ? "Processing..." : "Base"}
               </button>
               <button
                 onClick={() => setReprocessMenuOpen((v) => !v)}
@@ -673,15 +726,21 @@ export default function AdminPage() {
               </button>
             </div>
             {reprocessMenuOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-surface border border-stone-200 rounded-lg shadow-lg z-10 min-w-[160px]">
-                <button onClick={() => handleBulkReprocess("script_only")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 rounded-t-lg">
-                  Script only
+              <div className="absolute top-full left-0 mt-1 bg-surface border border-stone-200 rounded-lg shadow-lg z-10 min-w-[200px]">
+                <button onClick={() => handleBulkReprocess("full")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 rounded-t-lg">
+                  Base <span className="text-stone-400">(new script)</span>
                 </button>
-                <button onClick={() => handleBulkReprocess("narration_only")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 border-t border-stone-100">
-                  Narration only
+                <button onClick={() => handleBulkUpgrade("plus1")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 border-t border-stone-100">
+                  1Plus <span className="text-stone-400">(new script)</span>
+                </button>
+                <button onClick={() => handleBulkUpgrade("plus2")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 border-t border-stone-100">
+                  2Plus
+                </button>
+                <button onClick={() => handleBulkUpgrade("plus3")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 border-t border-stone-100">
+                  3Plus
                 </button>
                 <button onClick={() => { setReprocessMenuOpen(false); handleBulkClearPremium(); }} className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-b-lg border-t border-stone-100">
-                  Clear Premium
+                  Clear Upgrades
                 </button>
               </div>
             )}
