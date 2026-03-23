@@ -320,9 +320,8 @@ export async function handleNarratePremium(
   // Claim the paper atomically — premium upgrades also allow 'narrated' → 'narrating'
   const claimed = await claimPaperForPremium(env.DB, id);
   if (!claimed) {
-    // Already narrating — still 200, return current state
-    const current = await getPaper(env.DB, id);
-    return json(paperToResponse(current!, baseUrl));
+    // Already narrating — tell the caller so they can show an appropriate message
+    return json({ error: "This paper is already being upgraded. Please wait for it to finish." }, 409);
   }
 
   // Dispatch to Modal with decrypted keys (never persisted in D1)
@@ -544,6 +543,7 @@ export async function handleGetVersions(env: Env, id: string, baseUrl: string): 
       is_best: v.id === paper.best_version_id,
     })),
     best_version_id: paper.best_version_id,
+    is_narrating: paper.status === "narrating",
   });
 }
 

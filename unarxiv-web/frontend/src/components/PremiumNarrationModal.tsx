@@ -117,6 +117,7 @@ function OptionCard({
   selected,
   supported,
   disabled,
+  inProgress,
   onClick,
   isPlayingSample,
   onToggleSample,
@@ -129,6 +130,7 @@ function OptionCard({
   selected: boolean;
   supported: boolean;
   disabled: boolean;
+  inProgress?: boolean;
   onClick: () => void;
   isPlayingSample: boolean;
   onToggleSample: () => void;
@@ -221,7 +223,9 @@ function OptionCard({
             {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
           </div>
           <div className="text-right flex flex-col items-end shrink-0">
-            {disabled ? (
+            {inProgress ? (
+              <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">In Progress</span>
+            ) : disabled ? (
               <span className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Unlocked</span>
             ) : (
               <>
@@ -418,6 +422,7 @@ export default function PremiumNarrationModal({
 
   // Existing versions (to show completed badges)
   const [existingVersions, setExistingVersions] = useState<PaperVersion[]>([]);
+  const [isNarrating, setIsNarrating] = useState(false);
 
   // Whether a premium LLM script already exists (no LLM cost for subsequent narrations)
   const [hasExistingScript, setHasExistingScript] = useState(false);
@@ -451,7 +456,10 @@ export default function PremiumNarrationModal({
         setLoading(false);
       });
     getPaperVersions(paper.id)
-      .then((resp) => setExistingVersions(resp.versions))
+      .then((resp) => {
+        setExistingVersions(resp.versions);
+        setIsNarrating(resp.is_narrating);
+      })
       .catch(() => {});
   }, [paper.id]);
 
@@ -670,7 +678,13 @@ export default function PremiumNarrationModal({
                       : cfg.id === "plus1"
                       ? hasLlmKeyStored(llmProvider)
                       : hasKeyForProvider(cfg.provider);
-                    const isDisabled = (VOICE_TIERS[est.option_id]?.rank ?? 0) <= highestCompletedRank;
+                    const isCompleted = (VOICE_TIERS[est.option_id]?.rank ?? 0) <= highestCompletedRank;
+                    // A tier is in-progress if the paper is narrating and there's a partial
+                    // version for this tier (has transcript but no audio yet)
+                    const tierInProgress = isNarrating && existingVersions.some(
+                      (v) => v.narration_tier === est.option_id && !v.audio_url
+                    );
+                    const isDisabled = isCompleted || tierInProgress;
                     return (
                       <OptionCard
                         key={est.option_id}
@@ -679,6 +693,7 @@ export default function PremiumNarrationModal({
                         selected={!isDisabled && selectedOptionId === est.option_id}
                         supported={isSupported}
                         disabled={isDisabled}
+                        inProgress={tierInProgress}
                         onClick={() => { if (!isDisabled) setSelectedOptionId(est.option_id); }}
                         isPlayingSample={playingSampleId === est.option_id}
                         onToggleSample={() => toggleSample(est.option_id)}

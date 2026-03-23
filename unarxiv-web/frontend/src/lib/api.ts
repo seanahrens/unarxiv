@@ -709,6 +709,7 @@ export interface PaperVersionsResponse {
   versions: PaperVersion[];
   best_version_id: number | null;
   best_version: PaperVersion | null;
+  is_narrating: boolean;
 }
 
 export async function getPaperVersions(paperId: string): Promise<PaperVersionsResponse> {
@@ -716,7 +717,7 @@ export async function getPaperVersions(paperId: string): Promise<PaperVersionsRe
     headers: userHeaders(),
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  const data = await res.json() as { versions: PaperVersion[]; best_version_id: number | null };
+  const data = await res.json() as { versions: PaperVersion[]; best_version_id: number | null; is_narrating?: boolean };
   const best = data.versions.find((v) => v.is_best) ?? null;
-  return { ...data, best_version: best };
+  return { ...data, best_version: best, is_narrating: !!data.is_narrating };
 }
