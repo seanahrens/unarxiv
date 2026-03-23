@@ -419,6 +419,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             audio_size_bytes=file_size,
             duration_seconds=duration_seconds,
             narration_tier="base",
+            script_char_count=len(tts_text),
             **_source_stats,
         )
         print(f"Done: {arxiv_id}")
