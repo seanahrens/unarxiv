@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { adminVerify, adminDeletePaper } from "../helpers/api";
-import { ADMIN_PASSWORD } from "../helpers/fixtures";
+import { ADMIN_PASSWORD, ADMIN_DASHBOARD } from "../helpers/fixtures";
 
 test.describe("Admin Auth", () => {
   test("admin page shows password prompt without auth", async ({ page }) => {
@@ -8,8 +8,8 @@ test.describe("Admin Auth", () => {
     await expect(
       page.locator('input[type="password"]')
     ).toBeVisible();
-    // Should NOT show dashboard content (contributors table)
-    await expect(page.locator("text=Top Contributors")).not.toBeVisible();
+    // Should NOT show dashboard content
+    await expect(page.locator(ADMIN_DASHBOARD).first()).not.toBeVisible();
   });
 
   test("wrong password is rejected on admin page", async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe("Admin Auth", () => {
     await expect(
       page.locator('[data-testid="admin-auth-error"], .text-red-600')
     ).toBeVisible({ timeout: 5000 });
-    await expect(page.locator("text=Top Contributors")).not.toBeVisible();
+    await expect(page.locator(ADMIN_DASHBOARD).first()).not.toBeVisible();
   });
 
   test("API: verify endpoint rejects missing password", async () => {
@@ -48,8 +48,8 @@ test.describe("Admin Auth", () => {
     await page.goto("/admin");
     await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
     await page.locator('button:has-text("Continue")').click();
-    // Dashboard content (Top Contributors) should be visible after auth
-    await expect(page.locator("text=Top Contributors")).toBeVisible({ timeout: 10000 });
+    // Dashboard content should be visible after auth
+    await expect(page.locator(ADMIN_DASHBOARD).first()).toBeVisible({ timeout: 10000 });
     // Error should NOT be shown
     await expect(
       page.locator('[data-testid="admin-auth-error"], .text-red-600')

@@ -56,6 +56,20 @@ export const DOWNLOAD_AUDIO = '[data-testid="download-audio"], button:has-text("
  */
 export const RATING_MODAL = '[data-testid="rating-modal"], div.fixed.inset-0';
 
+/**
+ * Shared selector for the "Newly Added" navigation button in BrowseLayout.
+ * Works on current production (no data-testid) AND after deployment.
+ */
+export const NEWLY_ADDED_NAV =
+  '[data-testid="newly-added-nav"], button:has-text("Newly Added")';
+
+/**
+ * Shared selector for the admin dashboard content area (shown after auth).
+ * Works on current production (no data-testid) AND after deployment.
+ */
+export const ADMIN_DASHBOARD =
+  '[data-testid="admin-dashboard"], h2:has-text("Top Contributors")';
+
 /** Discovered in global-setup.ts and written to env */
 export function knownCompleteId(): string {
   const id = process.env.KNOWN_COMPLETE_ID;

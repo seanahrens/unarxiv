@@ -623,7 +623,7 @@ export default function AdminPage() {
   const allPageSelected = paginated.length > 0 && paginated.every((p) => selected.has(p.id));
 
   return (
-    <div>
+    <div data-testid="admin-dashboard">
       <div className="flex items-center justify-between mb-4">
         <div>
           <a href="/" className="text-sm text-stone-400 hover:text-stone-600 transition-colors mb-2 inline-block">

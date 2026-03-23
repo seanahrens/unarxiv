@@ -125,6 +125,7 @@ export default function BrowseLayout({
       {/* Mobile: horizontal scrollable pills */}
       <div className="flex lg:hidden overflow-x-auto gap-2 mb-4 pb-2 -mx-2 px-2 scrollbar-hide">
         <button
+          data-testid="newly-added-nav"
           onClick={() => handleSelect(null)}
           className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             isNewlyAdded
@@ -158,6 +159,7 @@ export default function BrowseLayout({
           </h2>
           <div className="flex flex-col gap-0.5">
             <button
+              data-testid="newly-added-nav"
               onClick={() => handleSelect(null)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
                 isNewlyAdded
