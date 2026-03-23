@@ -74,6 +74,17 @@ Guidelines:
 3. Equations: Speak mathematical expressions in plain English. For example,
    "x squared plus y squared equals r squared". Convey the mathematical meaning
    without any symbols or LaTeX notation.
+   CRITICAL: NEVER output LaTeX math delimiters in your output. This means you
+   must NEVER write `\(`, `\)`, `\[`, `\]`, `\begin{equation}`, `\end{equation}`,
+   `\begin{align}`, `\end{align}`, `\begin{gather}`, `\end{gather}`, or any other
+   LaTeX math environment markers. Convert ALL mathematical notation to spoken
+   English BEFORE writing the output. For example:
+   - WRONG: "the variable \( z \) is defined as..."
+   - RIGHT: "the variable z is defined as..."
+   - WRONG: "\[ \hat{v}_\theta = f_\theta(y_t, z, C) \]"
+   - RIGHT: "v-hat sub theta equals f sub theta of y sub t, z, and C."
+   Every equation environment (`\begin{equation}`, `\begin{align}`, etc.) must be
+   converted to a spoken sentence — never passed through as LaTeX.
 4. Clean output: Remove all LaTeX formatting commands. Custom macros (commands
    like \\benchname, \\myterm, \\algname) must be replaced: look for their
    \\newcommand definition in the document and substitute the expansion (e.g.,
@@ -109,11 +120,22 @@ Guidelines:
    "interesting" unless those exact words appear in the source text. Your voice
    is the paper's voice, not a commentator's.
 6. Never refuse or add meta-commentary: You are a narration engine, not a
-   chatbot. If a chunk contains only a section heading or sparse content, narrate
-   whatever is present. NEVER write phrases like "Unfortunately I cannot",
-   "Please provide more content", "Sorry, I can only...", "While I cannot
-   visually display the figure", or any similar chatbot-style response. Process
-   whatever input you receive.
+   chatbot. NEVER write phrases like "Unfortunately I cannot", "Please provide
+   more content", "Sorry, I can only...", "While I cannot visually display the
+   figure", or any similar chatbot-style response. Process whatever input you
+   receive.
+   If a chunk contains ONLY a section heading with no body content (e.g., just
+   `\section{Tutorial}` or `\section{Ablation Studies}`), output EXACTLY ONE
+   natural transition sentence such as: "Moving on to the tutorial." or "Next,
+   the ablation studies." Then stop. Do NOT write "there is no content here",
+   "this section contains only a heading", "I will now narrate...", "Start with
+   the section title:", "proceed with the content that would be present", or
+   anything else meta about the chunk contents.
+   ALSO: Do NOT output section headings as standalone announcement sentences
+   like "The section is titled 'Related Work.'" or "This is the Experiments
+   section." Instead, absorb the section heading into a natural spoken transition
+   such as "Moving on to related work..." or begin narrating the section content
+   directly.
 7. Figures — visual and text-based descriptions:
    When figure images are provided alongside this chunk (as vision inputs), describe
    them based on what you actually see: chart type, axes and their ranges, specific
@@ -169,6 +191,10 @@ Guidelines:
    comparisons, and convey the main takeaway. Do not just restate the caption.
 3. Equations: Rewrite any remaining symbolic or LaTeX notation into plain spoken
    English (e.g., "x squared plus y squared equals r squared").
+   CRITICAL: NEVER output LaTeX math delimiters in your output. NEVER write
+   `\(`, `\)`, `\[`, `\]`, `\begin{equation}`, `\end{equation}`, `\begin{align}`,
+   or any other LaTeX math environment markers. Convert ALL mathematical notation
+   to spoken English BEFORE writing the output.
 4. Remove citation markers like [1], [2,3], footnote references. Render URLs
    naturally: say "democracylevels.org/system-card", not "democracylevels dot org
    slash system-card". For URLs with mixed-case path components (e.g.,
@@ -188,6 +214,11 @@ Guidelines:
    phrases like "Unfortunately I cannot", "Please provide more content", "While
    I cannot visually display the figure", or any chatbot-style response. Process
    whatever input you receive.
+   If a chunk is ONLY a section heading with no body, output ONE short transition
+   sentence (e.g., "Moving on to the tutorial.") and stop. Do NOT explain the
+   absence of content or meta-narrate your process.
+   Do NOT output section headings as standalone lines like "The section is titled
+   'X'" — absorb them into natural spoken transitions instead.
 7. Figures: When figure images are provided as vision inputs, describe what you
    actually see — chart type, axes, data values, labels, colour coding, and the
    main visual takeaway. When no image is provided, describe from surrounding text
@@ -345,6 +376,32 @@ def _strip_latex_preamble(latex: str) -> str:
         return latex[section_match.start():]
 
     return latex
+
+
+def _strip_latex_math_delimiters(text: str) -> str:
+    """Post-processing safety net: strip LaTeX math delimiters from LLM output.
+
+    Removes inline math markers \\( ... \\) and display math markers \\[ ... \\]
+    as well as equation/align/gather environments, leaving the inner content.
+    This catches cases where the LLM passes through LaTeX despite being instructed
+    not to, so the TTS engine doesn't read the raw delimiter characters.
+    """
+    # Strip \( ... \) inline math delimiters (keep inner content)
+    text = re.sub(r'\\\(|\\\)', '', text)
+    # Strip \[ ... \] display math delimiters (keep inner content)
+    text = re.sub(r'\\\[|\\\]', '', text)
+    # Strip \begin{equation}/\end{equation} and similar environments
+    text = re.sub(
+        r'\\begin\{(?:equation|align|gather|multline|eqnarray)\*?\}',
+        '', text
+    )
+    text = re.sub(
+        r'\\end\{(?:equation|align|gather|multline|eqnarray)\*?\}',
+        '', text
+    )
+    # Normalize whitespace after stripping
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
 
 
 def _split_latex_into_sections(latex: str) -> list[str]:
@@ -744,7 +801,10 @@ def generate_from_source(
         img_note = f", {len(images)} image(s)" if images else ""
         print(f"[llm] Processing chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars{img_note})...")
         result = provider.generate_script(chunk, is_latex=is_latex, images=images or None)
-        script_parts.append(result.improved_script)
+        cleaned = _strip_latex_math_delimiters(result.improved_script)
+        if cleaned != result.improved_script:
+            print(f"[llm] WARNING: chunk {i + 1} contained raw LaTeX math delimiters — stripped")
+        script_parts.append(cleaned)
         total_in_tok += result.input_tokens
         total_out_tok += result.output_tokens
         total_cost += result.cost_usd

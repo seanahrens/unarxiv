@@ -1,0 +1,77 @@
+% teaser % lin
+% 3D 打印视频
+% 渲染视频
+\section{Introduction}
+
+Part segmentation provides explicit part-level structures of 3D assets, serving as a core primitive for 3D content creation pipelines and offering fundamental 3D perception capabilities for spatial intelligence.
+%
+It enables a wide range of downstream applications, including part-level editing, animation rigging, and industrial uses such as 3D printing.
+%
+However, existing methods often fall short in segmentation quality, producing erroneous regions and imprecise boundaries that limit their practical usability.
+
+
+To this end, one line of work attempts to transfer the comprehensive 2D segmentation priors to 3D via 2D-to-3D lifting.
+%
+Methods such as SAMPart3D~\cite{sampart3d} optimize 3D segmentation via 2D-to-3D distillation, 
+but incur substantial computational and time overhead, and often yield blurry boundaries.
+%
+In parallel, another set of methods~\cite{segment3d,pointsam,geosam2} applies SAM~\cite{sam,sam2,sam3} to obtain 2D masks of multi-view projected images, which are then back-projected and fused into 3D masks.
+%
+However, these multi-view pipelines incur substantial runtime overhead, are sensitive to view coverage, and the back-projection and fusion step often introduces cross-view inconsistencies and imprecise boundaries.
+
+% su du kuai
+Recently, another line of work~\cite{p3sam,partsam} moves toward native 3D part segmentation so as to remedy the inherent shortcomings of the aforementioned methods that leverage 2D segmentation priors.
+%
+These methods predict segmentation parts directly in the native 3D space, explicitly enforce semantic and structural consistency, and are more efficient at inference.
+%
+However, it is a typical requirement to collect large-scale training datasets with curated 3D part annotations, 
+where fine-grained annotations are costly and inconsistent across sources in granularity, hierarchy, and boundary definitions.
+
+
+%
+% 总结，2D的问题，mismatch，3D的问题，然后本质promising是纯三维，41行，我们发现能够物体结构，外观这里，分割，prior
+% Overall, existing approaches face a fundamental trade-off between annotation and training cost and the structural artifacts caused by lifting 2D cues into 3D.
+% %
+% We attribute these artifacts to the inherent mismatch between 2D priors and native 3D structure,
+% %
+% motivating us to instead exploit a native 3D structural prior in place of lifted 2D cues.
+In summary, the first line of methods suffers from a mismatch between 2D priors and 3D structure, while the second relies on costly training from scratch.
+%
+Therefore, a more promising approach is to leverage a prior model that encodes both 3D structure and texture to perform segmentation.
+%
+In particular, 3D generative models trained on large-scale unannotated 3D textured assets internalize rich part-level structure and texture patterns, providing a strong 3D prior over geometry and appearance. 
+%
+Such priors encourage part segmentation with sharper boundaries, while reducing reliance on dense part annotations and extensive task-specific training.
+%
+This motivates us to ask:
+\textit{How can 3D generative priors be effectively transferred to part-level 3D segmentation to improve quality and data efficiency?}
+
+
+Motivated by this perspective, we propose \textit{SegviGen}, a generative framework for 3D part segmentation that leverages the rich 3D structural and textural knowledge encoded in large-scale 3D generative models.
+%
+Specifically, we formulate part segmentation as a colorization task that fully exploits the capacity of 3D generative models.
+%
+\textit{SegviGen} encodes the input 3D asset into a latent representation and uses it, together with the task embedding and query points, to condition the denoising process.
+%
+The model is trained to predict part-indicative colors, along with reconstructing the underlying geometry.
+%
+This formulation naturally accommodates additional conditioning signals, enabling \textit{SegviGen} to flexibly support interactive part segmentation, full segmentation, and 2D segmentation map–guided full segmentation under a unified architecture. 
+%
+Notably, while the first two tasks are common settings, 2D segmentation map–guided full segmentation is uniquely enabled by \textit{SegviGen}, supporting arbitrary part granularity and more precise segmentation that is critical for industrial applications.
+% 写清楚哪几个setting
+
+
+Qualitative and quantitative results show that \textit{SegviGen} consistently surpasses the prior state of the art, P3-SAM~\cite{p3sam}, while using only 0.32\% of the labeled training data. % 写清楚啥方法。
+%
+On interactive part segmentation, it achieves the best performance across all metrics on PartObjaverse-Tiny~\cite{partobjaverse_tiny} and PartNeXT~\cite{partnext}, with a 40\% gain in IoU@1, an important metric that reflects the model’s single-click accuracy. 
+% 体现这个指标的挑战性 
+%
+On full segmentation without guidance, \textit{SegviGen} outperforms the best baseline by 15\% in overall IoU, averaged across datasets.
+%
+Our main contributions are summarized as follows:
+\begin{itemize}[leftmargin=*, topsep=2pt, itemsep=1pt, parsep=0pt, partopsep=0pt]
+    \item We propose \textit{SegviGen}, a unified multi-task framework for 3D part segmentation that effectively exploits the structural and textural priors encoded in pretrained 3D generative models, enabling accurate and efficient segmentation.
+    \item We reformulate 3D segmentation as part-wise colorization, where \textit{SegviGen} predicts the colors of actiave voxel as part labels in a single generative process.
+    \item Extensive experiments show that \textit{SegviGen} outperforms the prior state of the art by 40\% on interactive part segmentation and 15\% on full segmentation, using only 0.32\% of the labeled training data, highlighting the effectiveness of transferring 3D generative priors to part segmentation.
+\end{itemize}
+

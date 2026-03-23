@@ -1,0 +1,213 @@
+SegviGen: Repurposing 3D Generative Model for Part Segmentation.
+
+By Lin Li, Haoran Feng, Zehuan Huang, and 8 more authors.
+
+Published on March 17, 2026.
+
+This research paper introduces SegviGen, a framework that repurposes native three-dimensional generative models for three-dimensional part segmentation. Existing pipelines often lift strong two-dimensional priors into three-dimensional through distillation or multi-view mask aggregation. However, they often suffer from cross-view inconsistency and blurred boundaries. Alternatively, current methods explore native three-dimensional discriminative segmentation, which typically requires large-scale annotated three-dimensional data and substantial training resources. In contrast, SegviGen leverages the structured priors encoded in pretrained three-dimensional generative model to induce segmentation through distinctive part colorization, establishing a novel and efficient framework for part segmentation.
+
+Specifically, SegviGen encodes a three-dimensional asset and predicts part-indicative colors on active voxels of a geometry-aligned reconstruction. It supports interactive part segmentation, full segmentation, and full segmentation with two-dimensional guidance in a unified framework. Extensive experiments show that SegviGen improves over the prior state of the art by 40 percent on interactive part segmentation and by 15 percent on full segmentation, while using only 0.32 percent of the labeled training data. This demonstrates that pretrained three-dimensional generative priors transfer effectively to three-dimensional part segmentation, enabling strong performance with limited supervision.
+
+Part segmentation provides explicit part-level structures of three-dimensional assets, serving as a core primitive for three-dimensional content creation pipelines and offering fundamental three-dimensional perception capabilities for spatial intelligence. It enables a wide range of downstream applications, including part-level editing, animation rigging, and industrial uses such as three-dimensional printing. However, existing methods often fall short in segmentation quality, producing erroneous regions and imprecise boundaries that limit their practical usability.
+
+To this end, one line of work attempts to transfer the comprehensive two-dimensional segmentation priors to three-dimensional via two-dimensional to three-dimensional lifting. Methods such as SAMPart3D optimize three-dimensional segmentation via two-dimensional to three-dimensional distillation, but incur substantial computational and time overhead, and often yield blurry boundaries. In parallel, another set of methods applies SAM to obtain two-dimensional masks of multi-view projected images, which are then back-projected and fused into three-dimensional masks. However, these multi-view pipelines incur substantial runtime overhead, are sensitive to view coverage, and the back-projection and fusion step often introduces cross-view inconsistencies and imprecise boundaries.
+
+Recently, another line of work moves toward native three-dimensional part segmentation so as to remedy the inherent shortcomings of the aforementioned methods that leverage two-dimensional segmentation priors. These methods predict segmentation parts directly in the native three-dimensional space, explicitly enforce semantic and structural consistency, and are more efficient at inference. However, it is a typical requirement to collect large-scale training datasets with curated three-dimensional part annotations, where fine-grained annotations are costly and inconsistent across sources in granularity, hierarchy, and boundary definitions.
+
+Overall, existing approaches face a fundamental trade-off between annotation and training cost and the structural artifacts caused by lifting two-dimensional cues into three-dimensional. We attribute these artifacts to the inherent mismatch between two-dimensional priors and native three-dimensional structure, motivating us to instead exploit a native three-dimensional structural prior in place of lifted two-dimensional cues. In summary, the first line of methods suffers from a mismatch between two-dimensional priors and three-dimensional structure, while the second relies on costly training from scratch. Therefore, a more promising approach is to leverage a prior model that encodes both three-dimensional structure and texture to perform segmentation. In particular, three-dimensional generative models trained on large-scale unannotated three-dimensional textured assets internalize rich part-level structure and texture patterns, providing a strong three-dimensional prior over geometry and appearance. Such priors encourage part segmentation with sharper boundaries, while reducing reliance on dense part annotations and extensive task-specific training. This motivates us to ask: How can three-dimensional generative priors be effectively transferred to part-level three-dimensional segmentation to improve quality and data efficiency?
+
+Motivated by this perspective, we propose SegviGen, a generative framework for three-dimensional part segmentation that leverages the rich three-dimensional structural and textural knowledge encoded in large-scale three-dimensional generative models. Specifically, we formulate part segmentation as a colorization task that fully exploits the capacity of three-dimensional generative models. SegviGen encodes the input three-dimensional asset into a latent representation and uses it, together with the task embedding and query points, to condition the denoising process. The model is trained to predict part-indicative colors, along with reconstructing the underlying geometry. This formulation naturally accommodates additional conditioning signals, enabling SegviGen to flexibly support interactive part segmentation, full segmentation, and two-dimensional segmentation map-guided full segmentation under a unified architecture. Notably, while the first two tasks are common settings, two-dimensional segmentation map-guided full segmentation is uniquely enabled by SegviGen, supporting arbitrary part granularity and more precise segmentation that is critical for industrial applications.
+
+Qualitative and quantitative results show that SegviGen consistently surpasses the prior state of the art, P3-SAM, while using only zero point thirty-two percent of the labeled training data. On interactive part segmentation, it achieves the best performance across all metrics on PartObjaverse-Tiny and PartNeXT, with a forty percent gain in intersection over union at one, an important metric that reflects the model’s single-click accuracy. On full segmentation without guidance, SegviGen outperforms the best baseline by fifteen percent in overall intersection over union, averaged across datasets.
+
+Our main contributions are summarized as follows: We propose SegviGen, a unified multi-task framework for three-dimensional part segmentation that effectively exploits the structural and textural priors encoded in pre-trained three-dimensional generative models, enabling accurate and efficient segmentation. We reformulate three-dimensional segmentation as part-wise colorization, where SegviGen predicts the colors of active voxels as part labels in a single generative process. Extensive experiments show that SegviGen outperforms the prior state of the art by forty percent on interactive part segmentation and fifteen percent on full segmentation, using only zero point thirty-two percent of the labeled training data, highlighting the effectiveness of transferring three-dimensional generative priors to part segmentation.
+
+The section is titled "Related Work."
+
+In this section, we delve into 3D part segmentation. Traditional 3D part segmentation is typically approached as supervised semantic labeling on points or faces. This process uses fixed part taxonomies that are provided by curated 3D segmentation datasets. Examples of such datasets include those referenced as partnet, 3dmeshsegmentation, scannet, and pointnet.
+
+Concretely speaking, these methods often combine a 3D feature encoder with a segmentation head to predict dataset-specific part IDs. However, the closed-world nature of both the label space and the training data presents a limitation on generalization. This makes it difficult to transfer results to unseen object categories or arbitrary, non-canonical part decompositions.
+
+To alleviate this generalization bottleneck, recent works have begun to exploit 2D foundation models as transferable priors for 3D part segmentation. A common strategy involves a render-and-lift pipeline. This pipeline segments multi-view renderings with promptable 2D models and then projects and fuses the masks back onto the 3D surface. Although this pipeline is straightforward, it is often limited by incomplete view coverage and cross-view inconsistencies, which can result in imprecise or blurred part boundaries after 2D-to-3D aggregation.
+
+Another approach leverages distillation or feature projection to supervise 3D predictors with transferred 2D representations or pseudo-labels. However, this method still inherits the 2D–3D domain gap and multi-view alignment issues. It typically requires longer optimization and training cycles.
+
+Recognizing the scalability and reliability issues inherent in the 2D-to-3D lifting process, recent studies have shifted towards native feed-forward 3D segmentation. This approach predicts masks directly on 3D representations at inference time. Representative efforts in open-world part segmentation include training queryable 3D predictors with automatically curated supervision. It also involves learning continuous part-aware 3D feature fields for direct decomposition and prompt-guided 3D mask prediction models. More recent large-scale native 3D part segmentation models, such as P3-SAM and PartSAM, have further scaled training on millions of shape–part pairs.
+
+Despite these encouraging advances, native 3D approaches face fundamental bottlenecks. These include the availability of large-scale, high-quality 3D part annotations and the inconsistency in part taxonomies and granularity across datasets, which often introduces supervision mismatches and ultimately weakens cross-domain generalization.
+
+Figure 1 illustrates the pipeline of a method called SegviGen. This approach reformulates 3D part segmentation as a conditional colorization task. During training, given a 3D mesh and its part-color ground truth, both are encoded using a pretrained 3D Variational Autoencoder, or VAE. Noise is added to the ground-truth latent, and then the geometry latent, noisy color latent, and point-condition tokens are concatenated to form the final latent input. Conditioned on the sampled timestep and a task embedding, the multi-task flow transformer predicts the noise residual for flow-matching training.
+
+The rapid progress of diffusion-based generative models, together with the emergence of large-scale, high-quality three-dimensional data collections, has catalyzed a wave of three-dimensional generative methods. A prevalent route builds three-dimensional assets through a two-dimensional-to-three-dimensional pipeline. Models first synthesize multi-view imagery and subsequently reconstruct the three-dimensional geometry and appearance from these views. However, view-to-view discrepancies in the synthesized images can propagate and degrade the final three-dimensional quality.
+
+In contrast, a growing family of native three-dimensional generative models learns directly in three-dimensional latent spaces. These models typically pair a variational autoencoder with a diffusion transformer, known as DiT, to perform denoising over compact latents. By learning to generate in a compact yet expressive three-dimensional latent space, these models encode rich structural and texture knowledge across large-scale three-dimensional assets, providing a strong transferable prior for downstream three-dimensional part segmentation.
+
+In particular, TRELLIS2 introduces a field-free structured latent via an omni-voxel sparse voxel representation, or O-Voxel, that jointly models geometry and appearance. This enables efficient generation with sharp, high-frequency textures that better preserve fine-grained part boundaries for three-dimensional segmentation.
+
+The authors propose SegviGen, a unified multi-task framework for three-dimensional part segmentation that supports three practical settings: interactive part-segmentation, full segmentation, and full segmentation with two-dimensional guidance. To leverage the prior knowledge encoded in a pretrained three-dimensional generative model, they cast three-dimensional segmentation as a colorization problem. Specifically, they encode the input three-dimensional asset into a compact latent that conditions generation, and optionally augment it with user interactions or a two-dimensional segmentation map. Conditioned on these inputs, the model reconstructs the three-dimensional asset while predicting colors for active voxels in the structured three-dimensional representation, where each color corresponds to an individual part, yielding the final segmentation. 
+
+Now, they begin by describing the underlying three-dimensional generative model, followed by their task reformulation, and then detail the overall pipeline.
+
+The section covers the concept of a Structured 3D Generative Model. Recent work organizes each textured three-dimensional asset into a sparse set of active voxels on a regular grid. Here, every active voxel stores both geometry and texture features aligned in three dimensions. This particular formulation utilizes a flexible dual-grid construction. This allows it to robustly manage arbitrary topology while encoding physically-based material attributes together with geometry for accurate appearance modeling.
+
+Given this sparse omni-voxel representation, a Sparse Compression Variational Autoencoder, or SC-VAE, maps each voxelized asset feature tensor, referred to as x, to a compact structured latent, written as z subscript 1 equals E subscript phi of x. It reconstructs it through the expression, hat x equals D subscript theta of z subscript 1. This process yields an expressive but highly compressed three-dimensional latent space.
+
+Building upon these latents, a conditional flow-matching generator learns a time-dependent vector field, denoted as v subscript psi of z subscript t, t, and c, under the condition c. This is achieved by matching the constant velocity along linear interpolants. The specific equations used include z subscript 0 follows a normal distribution with mean 0 and identity covariance matrix, t follows a uniform distribution from 0 to 1, and z subscript t equals open parenthesis 1 minus t close parenthesis times z subscript 0 plus t times z subscript 1. Additionally, the loss function L subscript CFM equals the expected value of the squared norm of the difference between v subscript psi of z subscript t, t, and c, and the quantity z subscript 1 minus z subscript 0.
+
+This latent generative pipeline enables efficient synthesis of geometry- and texture-consistent three-dimensional assets. The resulting structured latents capture rich joint statistics of shape and appearance, providing a strong transferable prior for fine-grained three-dimensional part segmentation.
+
+The authors reformulate three-dimensional part segmentation as a color prediction problem within a structured three-dimensional representation. This approach aligns with their base three-dimensional generative model, which parameterizes geometry alongside appearance attributes such as color, material properties, and roughness, all within a unified representation.
+
+To maximize reuse of the pretrained generative prior, the authors avoid introducing an additional segmentation-specific attribute channel. Such an addition would increase modeling and optimization complexity. Instead, they express segmentation targets directly in color space, which is the most visually intuitive attribute. The authors consider three task settings with consistent input and output formats.
+
+Firstly, interactive part-segmentation is formulated as binary part extraction. Given three-dimensional points indicating a target part, the model is supervised to color the selected part in white and the remaining regions in black.
+
+Secondly, full segmentation targets multi-part decomposition. In this setting, each part is assigned a distinct color from a randomly sampled color palette, and voxel colors are supervised accordingly. Importantly, correctness is defined up to a permutation of colors within each object, meaning any one-to-one assignment between predicted colors and parts is considered valid. To reduce sensitivity to particular color choices, the authors use ten independently sampled palettes per shape, providing multiple colorizations for the same underlying partition.
+
+Lastly, full segmentation with two-dimensional guidance additionally conditions the model on a rendered two-dimensional segmentation map. The process begins with colorizing the three-dimensional parts and rendering the corresponding two-dimensional segmentation map. The model is then trained to generate three-dimensional voxel colors that are consistent with the color assignments found in the two-dimensional guidance.
+
+Overall, this formulation preserves a unified model interface across settings, enabling a consistent architecture and training pipeline.
+
+Moving into the section on Unified Multi-Task 3D Part Segmentation, we first overview the overall framework. Here, 3D part segmentation is formulated as a conditional part-wise colorization task in 3D latent space, capitalizing on pretrained 3D generative models. Given an input asset denoted as \( X \), a pretrained 3D VAE encoder, represented as \( E(\cdot) \), encodes it to a latent variable \( z = E(X) \). This latent variable helps in specifying the active voxel support and anchors generation to the underlying shape. For each task, a part-wise colorized target is constructed and encoded into the same latent space to obtain \( y \), following the task-specific scheme outlined in the referenced section.
+
+Next, \(\epsilon\) is sampled from a normal distribution \(\mathcal{N}(0, I)\) and \(t\) is sampled from a uniform distribution \(\mathcal{U}(0, 1)\) to form a noisy interpolation. This interpolation is expressed as the equation: \( y_t = (1-t)\,y + t\,\epsilon \).
+
+A pretrained DiT-based backbone is fine-tuned to predict the noise residual conditioned on the noisy input \( y_t \), the geometry latent \( z \), the task condition \( C \), and a learned task embedding \( e_{\tau} \), expressed by the function:
+
+\[
+\hat{v}_\theta = f_\theta(y_t, z, C, e_{\tau}, t).
+\]
+
+Training follows the conditional flow-matching objective, which is given by the expression:
+
+\[
+\mathcal{L}(\theta) = \mathbb{E}_{X,\tau,t,\epsilon}\Big[ w(t)\,\big\| \hat{v}_\theta - (\epsilon - y) \big\|_2^2 \Big],
+\]
+
+where \( w(t) \) represents an optional timestep weighting.
+
+Moving on to the interactive part-segmentation results, Figure with the label "comparison point" compares SegviGen with existing baselines such as Point-SAM and P3-SAM. In this figure, yellow points are user clicks, and the predicted target part is marked in red. SegviGen, by leveraging priors from pretrained 3D generative models, achieves more accurate results with sharper boundaries than prior methods, while requiring substantially less training data.
+
+In the section on Condition Injection, we employ task-specific conditioning designs while maintaining a unified interface across settings. For interactive segmentation, user clicks in the user interface provide an efficient and intuitive form of guidance. Each click is encoded as a sparse point token with its 3D coordinates and an associated feature vector. Given that the 3D coordinates are effectively encoded by RoPE within the attention layers, we omit the additional learnable input-level positional embedding used in prior designs. Instead, all points share the same learnable feature vector \( Q \), which serves as the point token during both training and inference. Given point coordinates \( \mathbf{u} = \{u_i\}_{i=1}^{m} \) with \( u_i \in \mathbb{R}^3 \), point-condition tokens are formed as:
+
+\[
+Q = \big[ \mathbf{q}(u_1), \ldots, \mathbf{q}(u_m) \big],
+\]
+
+where
+
+\[
+\mathbf{q}(u_i) = \big[ u_i ; \mathbf{e}_p \big],
+\]
+
+and \( \mathbf{e}_p \) is a shared learnable feature appended to every point token. The denoising model is then instantiated as:
+
+\[
+\hat{v}_{\theta} = f_{\theta}(y_t, z, Q, e_{\tau}, t).
+\]
+
+When the number of points is fewer than 10, point tokens are padded to a length of 10 using zero coordinates and zero features. This preserves a unified model, maintaining the same interface for full segmentation and 2D-guided full segmentation by providing 10 padded tokens with all-zero coordinates and features.
+
+For full segmentation with 2D guidance, we provide a user-specified 2D segmentation colorization, allowing direct control over the desired part granularity and label palette. The guidance image is encoded into a sequence of conditioning tokens injected via cross-attention, represented as:
+
+\[
+p = g_{\phi}(I_{\text{guide}}),
+\]
+
+where \( g_{\phi}(\cdot) \) indicates an image encoder. In this context, denoising is conditioned on both the padded point-token interface \( Q_{0} \) and the image guidance tokens \( p \):
+
+\[
+\hat{v}_{\theta} = f_{\theta}(y_t, z, (Q_{0}, p), e_{\tau}, t).
+\]
+
+In Task Embedding, to enhance multi-task generalization within a single model, task identity is encoded as a continuous embedding and injected with the timestep signal. Let \( \tau \in \{1, \dots, T\} \) stand for the task index. A sinusoidal encoding is first computed from \( \tau \):
+
+\[
+s_{\tau} = \mathrm{PE}(\tau) \in \mathbb{R}^{d_f},
+\]
+
+where \( \mathrm{PE}(\cdot) \) follows the standard sinusoidal scheme. A lightweight multi-layer perceptron then maps \( s_{\tau} \) to the task embedding:
+
+\[
+e_{\tau} = \mathrm{MLP}_{\psi}(s_{\tau}) \in \mathbb{R}^{d}.
+\]
+
+Simultaneously, the timestep \( t \) is embedded as \( e_t \in \mathbb{R}^{d} \). The final modulation vector used by the DiT backbone is derived by additive fusion:
+
+\[
+m = e_t + e_{\tau},
+\]
+
+with the expression for \(\hat{v}_{\theta}\) being:
+
+\[
+\hat{v}_{\theta} = f_{\theta}(y_t, z, C, m).
+\]
+
+Here, \( m \) conditions the adaptive layers to jointly encode diffusion progress and task semantics. During training, samples from different tasks are interleaved and supervised with their corresponding \( \tau \), promoting the shared backbone to learn task-discriminative behaviors while maintaining a unified parameterization.
+
+Experiments.
+
+In this section, we will delve into the setting of our experiments, covering implementation details, datasets, baselines, and evaluation metrics.
+
+Starting with the implementation details, the base model we utilize is called Trellis.2. This is a 3D generative framework which features a native and compact structured latent representation. In our experiments, the Tex-SLAT flow model is the component that remains trainable, whereas the SC-VAE component is kept frozen. We use the AdamW optimizer with a learning rate of one times ten to the power of negative four. All experiments are conducted using eight NVIDIA A800 GPUs, and the model is trained for a duration of eight hours. Unless specified otherwise, the segmentation results presented in this paper are produced with a 12-step inference process.
+
+Moving on to the datasets, for training purposes, we employ the PartVerse dataset. This dataset comprises 12,000 objects with a total of approximately 91,000 annotated parts. For evaluation, we use PartObjaverse-Tiny, which includes 200 textured mesh objects, as well as a 300-object textured-mesh subset of PartNeXT.
+
+Regarding the baselines, we compared our model's performance in full segmentation with several other models: P3-SAM, Find3D, SAMPart3D, and Partfield. P3-SAM is a native 3D point-promptable part segmenter equipped with multiple mask heads and an IoU predictor. It can be executed automatically by sampling prompt points and consolidating redundant masks with Non-Max Suppression. Find3D focuses on open-world, language-queryable parts by automatically labeling rendered multi-view images with SAM and a Vision Language Model. These are projected back to 3D, followed by training a transformer to generate per-point features aligned to a CLIP-like embedding space for cosine-similarity querying. SAMPart3D and Partfield both learn part-aware 3D features from multi-view SAM masks and retrieve parts by feature clustering.
+
+For interactive part segmentation, we compared our model with P3-SAM and Point-SAM. Point-SAM adapts the SAM prompt-and-mask paradigm to point clouds and is trained with SAM-generated pseudo masks.
+
+Finally, discussing the metrics, to evaluate interactive segmentation, we sample ten positive points for each part. We then measure the average Intersection Over Union, or IoU, between the predicted masks for all clicks of all parts and their corresponding ground truth masks. IoU at N refers to the IoU score in N foreground clicks. The evaluation metric for full segmentation is carried out using the same method from previous works, employing IoU to gauge the accuracy of overall mask predictions.
+
+Let's now explore the associated tables and figures. Table One provides a comparison of interactive part segmentation performance measured with IoU at different numbers of clicks. It contrasts SegviGen with Point-SAM and P3-SAM on the datasets PartObjaverse-Tiny and PartNeXT. In the case of PartObjaverse-Tiny, SegviGen performs most impressively, showing an IoU of 42.49 at one click, increasing to 75.02 at ten clicks. Similarly, for PartNeXT, SegviGen achieves an IoU starting at 54.86 at one click and reaching an impressive 82.73 at ten clicks. 
+
+Figure Two presents a visual comparison of full segmentation results. In this figure, SegviGen is compared against several earlier methods, with each color representing different segmented parts. SegviGen notably achieves high-accuracy full segmentation with well-defined part boundaries utilizing only 3D input. With the addition of 2D guidance, it allows for explicit control over granularity and labels, thus enabling controllable, ultra-fine-grained 3D part parsing.
+
+There is no accompanying content following the section heading. Therefore, this concludes the section.
+
+The authors evaluate interactive part segmentation on two benchmarks: PartObjaverse-Tiny and PartNeXT. They benchmark against two state-of-the-art native three-dimensional methods: Point-SAM, which is specialized for point cloud segmentation, and P3-SAM. The quantitative results are summarized in Table one. As shown in Table one, SegviGen consistently outperforms all baselines by a significant margin across all interaction rounds. Notably, the authors' method demonstrates exceptional efficiency in the few-shot interaction setting. 
+
+In the most challenging one-click scenario, measured by Intersection over Union at one, SegviGen achieves 42.49 percent on PartObjaverse-Tiny and 54.86 percent on PartNeXT. This surpasses Point-SAM by approximately 17.6 percent and 31.0 percent, respectively. These results indicate that the generative framework of the authors' method possesses a much stronger initial understanding of three-dimensional part structures compared to discriminative approaches. This strength allows it to infer complete part geometries from minimal user guidance. 
+
+Furthermore, as the number of user clicks increases from one to ten, SegviGen exhibits a steady and robust performance gain. On the PartNeXT dataset, the method reaches an Intersection over Union of 82.73 percent at ten clicks, which is significantly higher than Point-SAM at 65.04 percent and P3-SAM at 53.81 percent. This demonstrates that the model effectively incorporates user feedback to refine boundaries and resolve ambiguities.
+
+The focus of this section is on the full segmentation capabilities of a model called SegviGen. We evaluate SegviGen in two distinct settings: first, using purely native 3D representation, and second, incorporating 2D guidance. Quantitative comparisons with state-of-the-art methods, including Find3D, SAMPart3D, PartField, and P3-SAM, are presented in a table labeled as Table “auto segmentation.” Qualitative results can be found in a figure labeled as “comparison full.”
+
+Let's begin by discussing the scenario without using 2D guidance. In this setting, SegviGen performs segmentation solely based on the structural and appearance priors learned during pretraining without access to any external 2D segmentation maps. The model is prompted to generate part-indicative colors directly from the latent 3D representation. As shown in Table “auto segmentation,” SegviGen demonstrates superior generalization capacity, particularly on the PartNext dataset. It achieves an Intersection over Union, or IoU, of 55.40 percent, significantly outperforming PartField at 41.50 percent and SAMPart3D at 29.62 percent. Although SAMPart3D performs well on the smaller PartObjaverse-Tiny dataset with an IoU of 59.05 percent, its performance collapses on PartNext. In contrast, SegviGen maintains robust performance, achieving 50.64 percent on the PartObjaverse-Tiny dataset.
+
+Moving on to the scenario with 2D guidance, to further unleash the potential of SegviGen, a 2D-guided mode is introduced. Here, the model is conditioned on a single-view 2D segmentation map, which is rendered either via nvdiffrast or derived from a 2D segmenter. This setting combines the rich semantic cues of 2D foundation models with the geometric consistency of SegviGen's 3D generative framework. Incorporating this lightweight 2D prior yields substantial performance gains. As indicated in Table “auto segmentation,” SegviGen with 2D map guidance achieves new state-of-the-art results on both datasets, reaching 62.98 percent on PartObjaverse-Tiny and 71.53 percent on PartNext.
+
+Next, let us examine Table “auto segmentation,” which displays quantitative results in terms of Intersection over Union for full segmentation. It consists of two columns for PartObjaverse-Tiny and PartNext, respectively. The methods compared in this table include Find3D, SAMPart3D, PartField, and P3-SAM. Specifically, Find3D achieves 15.62 percent on PartObjaverse-Tiny and 19.04 percent on PartNext. SAMPart3D records 59.05 percent on PartObjaverse-Tiny and 29.62 percent on PartNext. PartField achieves 51.72 percent and 41.50 percent on PartObjaverse-Tiny and PartNext, respectively. Meanwhile, P3-SAM records 45.36 percent on PartObjaverse-Tiny and 31.94 percent on PartNext. SegviGen achieves 50.64 percent on PartObjaverse-Tiny and 55.40 percent on PartNext. When using a 2D map, SegviGen improves further to 62.98 percent on PartObjaverse-Tiny and 71.53 percent on PartNext.
+
+A figure labeled “more results ours” presents more qualitative segmentation results of SegviGen.
+
+There is another figure labeled “more apps edit.” This figure demonstrates interactive 3D editing results using SegviGen and another model called VoxHammer. SegviGen provides precise part segmentation, facilitating downstream editing models. In this figure, the target region to be edited is indicated by green points. This illustrates the practical utility of SegviGen in downstream 3D editing pipelines.
+
+The section titled "Ablation Studies and Analysis" appears to contain only a section heading, without any additional content provided. Thus, the heading "Ablation Studies and Analysis" itself is what is present in this portion of the document.
+
+The authors explore the point embedding mechanism to determine the optimal representation point prompt within their framework. They conducted an ablation study on the point embedding mechanism, comparing two distinct strategies.
+
+Firstly, the Explicit Coordinate Encoding is discussed. In this setting, spatial coordinates are explicitly injected into the feature space. A frequency-based positional encoding scheme is utilized to map continuous 3D coordinates into high-dimensional embeddings, which then fuse with learnable semantic vectors. Consequently, the input features encapsulate both absolute spatial information and semantic category explicitly.
+
+Secondly, the Label-based Semantic Embedding is explained. Here, the feature vectors act solely as semantic indicators without explicitly encoding geometric values. A shared learnable embedding vector is assigned to all foreground points. The spatial information is preserved implicitly via the coordinate indices of the Sparse Tensor, relying on the sparse backbone's intrinsic ability to process spatial locality.
+
+The first table presented is an ablation study on point embedding mechanisms. It compares the performance of Explicit Coordinate Encoding and Label-based Semantic Embedding under varying numbers of clicks on PartObjaverse. The table includes columns labeled Method, IoU at 1, 3, 5, 7, and 10 clicks. For the Explicit Coordinate Encoding method, the IoU scores are 41.75, 60.19, 67.43, 71.61, and 75.40, respectively. For the Label-based Semantic Embedding, the scores are slightly higher at 1 and 3 clicks with values of 42.49 and 61.14, but it scores 67.53, 71.50, and 75.02 at 5, 7, and 10 clicks.
+
+The second table addresses the effect of sampling steps on segmentation performance, suggesting 12 steps as a practical trade-off between accuracy and efficiency. The table has columns labeled Steps, IoU at 1, 3, 5, 7, and 10 clicks, followed by Time. With 1 step, the IoU scores are 42.90, 59.98, 65.86, 69.50, and 72.85, with a time of 0.44 seconds. At 4 steps, the IoU at 1 click peaks at 44.51, with other scores being 60.40, 66.65, 70.64, and 73.58, at 1.02 seconds. For 8 steps, the scores are 44.21, 61.14, 67.64, 71.14, and 74.49, taking 1.81 seconds. At 12 steps, the IoU scores are 42.49, 61.14, 67.53, 71.50, and 75.02, in 2.63 seconds. Finally, with 25 steps, the highest IoU scores are observed at steps 3, 5, 7, with 61.67, 68.30, 71.87, although slightly lower at other levels, all occurring in 5.12 seconds.
+
+Quantitative results illustrate a distinct trend in the performance of these point embedding mechanisms. The Label-based Semantic Embedding achieves slightly higher IoU scores when the number of clicks is limited, for example, at 1 click. However, as the number of interactions increases, the Explicit Coordinate Encoding method consistently outperforms the Label-based approach, particularly in the later stages, such as 10 clicks. This phenomenon is attributed to the nature of the embeddings. While label-based embeddings are sufficient for sparse guidance, explicit positional encodings provide a finer granularity of spatial differentiation. This capability becomes increasingly critical when processing a larger set of points, allowing the model to better resolve complex geometric details from multiple user constraints.
+
+The authors analyze the impact of sampling steps on segmentation performance, as presented in Table referred to as steps analysis. Due to the trajectory property of the flow model, they observe a great performance even with just one step. Performance improves as steps increase, but these gains start to saturate beyond eight steps. Although using 25 steps offers marginal improvements, the inference latency nearly doubles when compared to 12 steps. Therefore, the authors adopt 12 steps as the optimal balance between achieving high-quality results and computational efficiency.
+
+This paper introduces a framework called SegviGen, which repurposes pretrained 3D generative models for 3D part segmentation. Unlike 2D-to-3D lifting methods, which often struggle with cross-view inconsistency and blurred boundaries, and native 3D discriminative approaches that demand large-scale part annotations and heavy training, SegviGen transfers generative priors to deliver accurate and globally coherent segmentations with limited supervision.
+
+It reformulates segmentation as part-wise colorization, simultaneously reconstructing geometry and predicting part-indicative colors. This approach supports multiple task settings through flexible conditioning. Experiments conducted on interactive and full segmentation benchmarks show consistent improvements over prior methods, highlighting the effectiveness and data efficiency of 3D generative priors for 3D part segmentation.
+
+Figure 1 presents an interactive demo. Users can specify clicks on the 3D asset to perform interactive part segmentation and adjust visualization settings. The figure features four images in two rows, demonstrating this interactive capability.
+
+Figure 2 provides more qualitative comparisons for full segmentation. It demonstrates the performance across different models, showcasing the distinct advantages of the SegviGen approach.
+
+Lastly, we see a figure titled "Teaser". It illustrates that SegviGen enables diverse and accurate 3D part segmentation by leveraging priors from large-scale 3D generative models. With substantially less training data, it produces high-fidelity segmentation results, characterized by sharp part boundaries and strong generalization across various object categories.
+
+Thanks for listening. This has been an audio narration of SegviGen: Repurposing 3D Generative Model for Part Segmentation. By Lin Li, Haoran Feng, Zehuan Huang, and 8 more authors. Published on March 17, 2026. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

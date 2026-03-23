@@ -1,0 +1,22 @@
+\begin{abstract}
+We introduce \textit{SegviGen}, a framework that repurposes native 3D generative models for 3D part segmentation. 
+%
+Existing pipelines either lift strong 2D priors into 3D via distillation or multi-view mask aggregation, 
+%
+often suffering from cross-view inconsistency and blurred boundaries, 
+%
+or explore native 3D discriminative segmentation, 
+%
+which typically requires large-scale annotated 3D data and substantial training resources.
+%
+In contrast, \textit{SegviGen} leverages the structured priors encoded in pretrained 3D generative model to induce segmentation through distinctive part colorization, establishing a novel and efficient framework for part segmentation.
+%
+Specifically, \textit{SegviGen} encodes a 3D asset and predicts part-indicative colors on active voxels of a geometry-aligned reconstruction. 
+%
+It supports interactive part segmentation, full segmentation, and full segmentation with 2D guidance in a unified framework.
+%
+% Extensive experiments show that \textit{SegviGen} outperforms prior state of the art by approximately 40\% on interactive part segmentation and 15\% on full segmentation, while using only 0.32\% of the training data.
+Extensive experiments show that \textbf{\textit{SegviGen} improves over the prior state of the art by 40\% on interactive part segmentation and by 15\% on full segmentation, while using only 0.32\% of the labeled training data.}
+%
+It demonstrates that pretrained 3D generative priors transfer effectively to 3D part segmentation, enabling strong performance with limited supervision.
+\end{abstract}

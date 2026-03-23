@@ -1,0 +1,1410 @@
+%%% ====================================================================
+%%%  BibTeX-file{
+%%%     author          = "Gerry Murray",
+%%%     version         = "1.2",
+%%%     date            = "2 April 2012",
+%%%     filename        = "acmsmall-sample-bibfile.bib",
+%%%     address         = "ACM, NY",
+%%%     email           = "murray at hq.acm.org",
+%%%     codetable       = "ISO/ASCII",
+%%%     keywords        = "ACM Reference Format, bibliography, citation, references",
+%%%     supported       = "yes",
+%%%     docstring       = "This BibTeX database file contains 'bibdata' entries
+%%%                        that 'match' the examples provided in the Specifications Document
+%%%                        AND, also, 'legacy'-type bibs. It should assist authors in
+%%%                        choosing the 'correct' at-bibtype and necessary bib-fields
+%%%                        so as to obtain the appropriate ACM Reference Format output.
+%%%                        It also contains many 'Standard Abbreviations'. "
+%%%  }
+%%% ====================================================================
+
+% Journals
+
+% First the Full Name is given, then the abbreviation used in the AMS Math
+% Reviews, with an indication if it could not be found there.
+% Note the 2nd overwrites the 1st, so swap them if you want the full name.
+
+ %{AMS}
+ @String{AMSTrans = "American Mathematical Society Translations" }
+ @String{AMSTrans = "Amer. Math. Soc. Transl." }
+ @String{BullAMS = "Bulletin of the American Mathematical Society" }
+ @String{BullAMS = "Bull. Amer. Math. Soc." }
+ @String{ProcAMS = "Proceedings of the American Mathematical Society" }
+ @String{ProcAMS = "Proc. Amer. Math. Soc." }
+ @String{TransAMS = "Transactions of the American Mathematical Society" }
+ @String{TransAMS = "Trans. Amer. Math. Soc." }
+
+ %ACM
+ @String{CACM = "Communications of the {ACM}" }
+ @String{CACM = "Commun. {ACM}" }
+ @String{CompServ = "Comput. Surveys" }
+ @String{JACM = "J. ACM" }
+ @String{ACMMathSoft = "{ACM} Transactions on Mathematical Software" }
+ @String{ACMMathSoft = "{ACM} Trans. Math. Software" }
+ @String{SIGNUM = "{ACM} {SIGNUM} Newsletter" }
+ @String{SIGNUM = "{ACM} {SIGNUM} Newslett." }
+
+ @String{AmerSocio = "American Journal of Sociology" }
+ @String{AmerStatAssoc = "Journal of the American Statistical Association" }
+ @String{AmerStatAssoc = "J. Amer. Statist. Assoc." }
+ @String{ApplMathComp = "Applied Mathematics and Computation" }
+ @String{ApplMathComp = "Appl. Math. Comput." }
+ @String{AmerMathMonthly = "American Mathematical Monthly" }
+ @String{AmerMathMonthly = "Amer. Math. Monthly" }
+ @String{BIT = "{BIT}" }
+ @String{BritStatPsych = "British Journal of Mathematical and Statistical
+          Psychology" }
+ @String{BritStatPsych = "Brit. J. Math. Statist. Psych." }
+ @String{CanMathBull = "Canadian Mathematical Bulletin" }
+ @String{CanMathBull = "Canad. Math. Bull." }
+ @String{CompApplMath = "Journal of Computational and Applied Mathematics" }
+ @String{CompApplMath = "J. Comput. Appl. Math." }
+ @String{CompPhys = "Journal of Computational Physics" }
+ @String{CompPhys = "J. Comput. Phys." }
+ @String{CompStruct = "Computers and Structures" }
+ @String{CompStruct = "Comput. \& Structures" }
+ @String{CompJour = "The Computer Journal" }
+ @String{CompJour = "Comput. J." }
+ @String{CompSysSci = "Journal of Computer and System Sciences" }
+ @String{CompSysSci = "J. Comput. System Sci." }
+ @String{Computing = "Computing" }
+ @String{ContempMath = "Contemporary Mathematics" }
+ @String{ContempMath = "Contemp. Math." }
+ @String{Crelle = "Crelle's Journal" }
+ @String{GiornaleMath = "Giornale di Mathematiche" }
+ @String{GiornaleMath = "Giorn. Mat." } % didn't find in AMS MR., ibid.
+
+ %IEEE
+ @String{Computer = "{IEEE} Computer" }
+ @String{IEEETransComp = "{IEEE} Transactions on Computers" }
+ @String{IEEETransComp = "{IEEE} Trans. Comput." }
+ @String{IEEETransAC = "{IEEE} Transactions on Automatic Control" }
+ @String{IEEETransAC = "{IEEE} Trans. Automat. Control" }
+ @String{IEEESpec = "{IEEE} Spectrum" } % didn't find in AMS MR
+ @String{ProcIEEE = "Proceedings of the {IEEE}" }
+ @String{ProcIEEE = "Proc. {IEEE}" } % didn't find in AMS MR
+ @String{IEEETransAeroElec = "{IEEE} Transactions on Aerospace and Electronic
+     Systems" }
+ @String{IEEETransAeroElec = "{IEEE} Trans. Aerospace Electron. Systems" }
+
+ @String{IMANumerAna = "{IMA} Journal of Numerical Analysis" }
+ @String{IMANumerAna = "{IMA} J. Numer. Anal." }
+ @String{InfProcLet = "Information Processing Letters" }
+ @String{InfProcLet = "Inform. Process. Lett." }
+ @String{InstMathApp = "Journal of the Institute of Mathematics and
+     its Applications" }
+ @String{InstMathApp = "J. Inst. Math. Appl." }
+ @String{IntControl = "International Journal of Control" }
+ @String{IntControl = "Internat. J. Control" }
+ @String{IntNumerEng = "International Journal for Numerical Methods in
+     Engineering" }
+ @String{IntNumerEng = "Internat. J. Numer. Methods Engrg." }
+ @String{IntSuper = "International Journal of Supercomputing Applications" }
+ @String{IntSuper = "Internat. J. Supercomputing Applic." } % didn't find
+%% in AMS MR
+ @String{Kibernetika = "Kibernetika" }
+ @String{JResNatBurStand = "Journal of Research of the National Bureau
+     of Standards" }
+ @String{JResNatBurStand = "J. Res. Nat. Bur. Standards" }
+ @String{LinAlgApp = "Linear Algebra and its Applications" }
+ @String{LinAlgApp = "Linear Algebra Appl." }
+ @String{MathAnaAppl = "Journal of Mathematical Analysis and Applications" }
+ @String{MathAnaAppl = "J. Math. Anal. Appl." }
+ @String{MathAnnalen = "Mathematische Annalen" }
+ @String{MathAnnalen = "Math. Ann." }
+ @String{MathPhys = "Journal of Mathematical Physics" }
+ @String{MathPhys = "J. Math. Phys." }
+ @String{MathComp = "Mathematics of Computation" }
+ @String{MathComp = "Math. Comp." }
+ @String{MathScand = "Mathematica Scandinavica" }
+ @String{MathScand = "Math. Scand." }
+ @String{TablesAidsComp = "Mathematical Tables and Other Aids to Computation" }
+ @String{TablesAidsComp = "Math. Tables Aids Comput." }
+ @String{NumerMath = "Numerische Mathematik" }
+ @String{NumerMath = "Numer. Math." }
+ @String{PacificMath = "Pacific Journal of Mathematics" }
+ @String{PacificMath = "Pacific J. Math." }
+ @String{ParDistComp = "Journal of Parallel and Distributed Computing" }
+ @String{ParDistComp = "J. Parallel and Distrib. Comput." } % didn't find
+%% in AMS MR
+ @String{ParComputing = "Parallel Computing" }
+ @String{ParComputing = "Parallel Comput." }
+ @String{PhilMag = "Philosophical Magazine" }
+ @String{PhilMag = "Philos. Mag." }
+ @String{ProcNAS = "Proceedings of the National Academy of Sciences
+                    of the USA" }
+ @String{ProcNAS = "Proc. Nat. Acad. Sci. U. S. A." }
+ @String{Psychometrika = "Psychometrika" }
+ @String{QuartMath = "Quarterly Journal of Mathematics, Oxford, Series (2)" }
+ @String{QuartMath = "Quart. J. Math. Oxford Ser. (2)" }
+ @String{QuartApplMath = "Quarterly of Applied Mathematics" }
+ @String{QuartApplMath = "Quart. Appl. Math." }
+ @String{RevueInstStat = "Review of the International Statisical Institute" }
+ @String{RevueInstStat = "Rev. Inst. Internat. Statist." }
+
+ %SIAM
+ @String{JSIAM = "Journal of the Society for Industrial and Applied
+     Mathematics" }
+ @String{JSIAM = "J. Soc. Indust. Appl. Math." }
+ @String{JSIAMB = "Journal of the Society for Industrial and Applied
+     Mathematics, Series B, Numerical Analysis" }
+ @String{JSIAMB = "J. Soc. Indust. Appl. Math. Ser. B Numer. Anal." }
+ @String{SIAMAlgMeth = "{SIAM} Journal on Algebraic and Discrete Methods" }
+ @String{SIAMAlgMeth = "{SIAM} J. Algebraic Discrete Methods" }
+ @String{SIAMAppMath = "{SIAM} Journal on Applied Mathematics" }
+ @String{SIAMAppMath = "{SIAM} J. Appl. Math." }
+ @String{SIAMComp = "{SIAM} Journal on Computing" }
+ @String{SIAMComp = "{SIAM} J. Comput." }
+ @String{SIAMMatrix = "{SIAM} Journal on Matrix Analysis and Applications" }
+ @String{SIAMMatrix = "{SIAM} J. Matrix Anal. Appl." }
+ @String{SIAMNumAnal = "{SIAM} Journal on Numerical Analysis" }
+ @String{SIAMNumAnal = "{SIAM} J. Numer. Anal." }
+ @String{SIAMReview = "{SIAM} Review" }
+ @String{SIAMReview = "{SIAM} Rev." }
+ @String{SIAMSciStat = "{SIAM} Journal on Scientific and Statistical
+     Computing" }
+ @String{SIAMSciStat = "{SIAM} J. Sci. Statist. Comput." }
+
+ @String{SoftPracExp = "Software Practice and Experience" }
+ @String{SoftPracExp = "Software Prac. Experience" } % didn't find in AMS MR
+ @String{StatScience = "Statistical Science" }
+ @String{StatScience = "Statist. Sci." }
+ @String{Techno = "Technometrics" }
+ @String{USSRCompMathPhys = "{USSR} Computational Mathematics and Mathematical
+     Physics" }
+ @String{USSRCompMathPhys = "{U. S. S. R.} Comput. Math. and Math. Phys." }
+ @String{VLSICompSys = "Journal of {VLSI} and Computer Systems" }
+ @String{VLSICompSys = "J. {VLSI} Comput. Syst." }
+ @String{ZAngewMathMech = "Zeitschrift fur Angewandte Mathematik und
+     Mechanik" }
+ @String{ZAngewMathMech = "Z. Angew. Math. Mech." }
+ @String{ZAngewMathPhys = "Zeitschrift fur Angewandte Mathematik und Physik" }
+ @String{ZAngewMathPhys = "Z. Angew. Math. Phys." }
+
+% Publishers % ================================================= |
+
+ @String{Academic = "Academic Press" }
+ @String{ACMPress = "{ACM} Press" }
+ @String{AdamHilger = "Adam Hilger" }
+ @String{AddisonWesley = "Addison-Wesley" }
+ @String{AllynBacon = "Allyn and Bacon" }
+ @String{AMS = "American Mathematical Society" }
+ @String{Birkhauser = "Birkha{\"u}ser" }
+ @String{CambridgePress = "Cambridge University Press" }
+ @String{Chelsea = "Chelsea" }
+ @String{ClaredonPress = "Claredon Press" }
+ @String{DoverPub = "Dover Publications" }
+ @String{Eyolles = "Eyolles" }
+ @String{HoltRinehartWinston = "Holt, Rinehart and Winston" }
+ @String{Interscience = "Interscience" }
+ @String{JohnsHopkinsPress = "The Johns Hopkins University Press" }
+ @String{JohnWileySons = "John Wiley and Sons" }
+ @String{Macmillan = "Macmillan" }
+ @String{MathWorks = "The Math Works Inc." }
+ @String{McGrawHill = "McGraw-Hill" }
+ @String{NatBurStd = "National Bureau of Standards" }
+ @String{NorthHolland = "North-Holland" }
+ @String{OxfordPress = "Oxford University Press" }  %address Oxford or London?
+ @String{PergamonPress = "Pergamon Press" }
+ @String{PlenumPress = "Plenum Press" }
+ @String{PrenticeHall = "Prentice-Hall" }
+ @String{SIAMPub = "{SIAM} Publications" }
+ @String{Springer = "Springer-Verlag" }
+ @String{TexasPress = "University of Texas Press" }
+ @String{VanNostrand = "Van Nostrand" }
+ @String{WHFreeman = "W. H. Freeman and Co." }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+@inproceedings{partnet,
+  author={Mo, Kaichun and Zhu, Shilin and Chang, Angel X. and Yi, Li and Tripathi, Subarna and Guibas, Leonidas J. and Su, Hao},
+  booktitle={CVPR}, 
+  title={PartNet: A Large-Scale Benchmark for Fine-Grained and Hierarchical Part-Level 3D Object Understanding}, 
+  year={2019},
+}
+
+@inproceedings{3dmeshsegmentation,
+  author = {Xiaobai Chen and Aleksey Golovinskiy and Thomas Funkhouser},
+  title = {A Benchmark for 3D Mesh Segmentation},
+  booktitle = {SIGGRAPH},
+  year = {2009},
+}
+
+@inproceedings{scannet,
+      title={ScanNet: Richly-annotated 3D Reconstructions of Indoor Scenes}, 
+      author={Angela Dai and Angel X. Chang and Manolis Savva and Maciej Halber and Thomas Funkhouser and Matthias Nießner},
+      year={2017},
+      booktitle={arXiv},
+}
+
+@inproceedings{pointnet,
+  title={PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation},
+  author={Qi, Charles R and Su, Hao and Mo, Kaichun and Guibas, Leonidas J},
+  booktitle={arXiv preprint arXiv:1612.00593},
+  year={2017}
+}
+
+@inproceedings{pointtransformerv3,
+    title={Point Transformer V3: Simpler, Faster, Stronger},
+    author={Wu, Xiaoyang and Jiang, Li and Wang, Peng-Shuai and Liu, Zhijian and Liu, Xihui and Qiao, Yu and Ouyang, Wanli and He, Tong and Zhao, Hengshuang},
+    booktitle={CVPR},
+    year={2024}
+}
+
+
+@inproceedings{pointtransformerv2,
+    title={Point transformer V2: Grouped Vector Attention and Partition-based Pooling},
+    author={Wu, Xiaoyang and Lao, Yixing and Jiang, Li and Liu, Xihui and Zhao, Hengshuang},
+    booktitle={NeurIPS},
+    year={2022}
+}
+
+@inproceedings{pointpromptraining,
+    title={Towards Large-scale 3D Representation Learning with Multi-dataset Point Prompt Training},
+    author={Wu, Xiaoyang and Tian, Zhuotao and Wen, Xin and Peng, Bohao and Liu, Xihui and Yu, Kaicheng and Zhao, Hengshuang},
+    booktitle={CVPR},
+    year={2024}
+}
+
+@inproceedings{meshcnn,
+   title={MeshCNN: a network with an edge},
+   booktitle={ACM},
+   author={Hanocka, Rana and Hertz, Amir and Fish, Noa and Giryes, Raja and Fleishman, Shachar and Cohen-Or, Daniel},
+   year={2019},
+}
+
+@inproceedings{meshtransformer,
+    author = {Lin, Kevin and Wang, Lijuan and Liu, Zicheng},
+    title = {End-to-End Human Pose and Mesh Reconstruction with Transformers},
+    booktitle = {CVPR},
+    year = {2021},
+}
+
+@inproceedings{clip,
+    title={Learning Transferable Visual Models From Natural Language Supervision}, 
+    author={Alec Radford and Jong Wook Kim and Chris Hallacy and Aditya Ramesh and Gabriel Goh and Sandhini Agarwal and Girish Sastry and Amanda Askell and Pamela Mishkin and Jack Clark and Gretchen Krueger and Ilya Sutskever},
+    year={2021},
+    booktitle ={arXiv},
+}
+
+@inproceedings{glip,
+      title={Grounded Language-Image Pre-training}, 
+      author={Liunian Harold Li and Pengchuan Zhang and Haotian Zhang and Jianwei Yang and Chunyuan Li and Yiwu Zhong and Lijuan Wang and Lu Yuan and Lei Zhang and Jenq-Neng Hwang and Kai-Wei Chang and Jianfeng Gao},
+      year={2022},
+      booktitle ={arXiv},
+}
+
+@inproceedings{sam,
+  title={Segment Anything},
+  author={Kirillov, Alexander and Mintun, Eric and Ravi, Nikhila and Mao, Hanzi and Rolland, Chloe and Gustafson, Laura and Xiao, Tete and Whitehead, Spencer and Berg, Alexander C. and Lo, Wan-Yen and Doll{\'a}r, Piotr and Girshick, Ross},
+  booktitle ={arXiv},
+  year={2023}
+}
+
+@inproceedings{sam2,
+  title={SAM 2: Segment Anything in Images and Videos},
+  author={Ravi, Nikhila and Gabeur, Valentin and Hu, Yuan-Ting and Hu, Ronghang and Ryali, Chaitanya and Ma, Tengyu and Khedr, Haitham and R{\"a}dle, Roman and Rolland, Chloe and Gustafson, Laura and Mintun, Eric and Pan, Junting and Alwala, Kalyan Vasudev and Carion, Nicolas and Wu, Chao-Yuan and Girshick, Ross and Doll{\'a}r, Piotr and Feichtenhofer, Christoph},
+  booktitle ={arXiv},
+  year={2024}
+}
+
+@inproceedings{dino,
+  title={Emerging Properties in Self-Supervised Vision Transformers},
+  author={Caron, Mathilde and Touvron, Hugo and Misra, Ishan and J\'egou, Herv\'e  and Mairal, Julien and Bojanowski, Piotr and Joulin, Armand},
+  booktitle={ICCV},
+  year={2021}
+}
+
+@inproceedings{segmentanymesh,
+    title={Segment Any Mesh}, 
+    author={George Tang and William Zhao and Logan Ford and David Benhaim and Paul Zhang},
+    year={2025},
+    booktitle={arXiv},
+}
+
+@inproceedings{sam3d,
+    title={SAM3D: Segment Anything in 3D Scenes}, 
+    author={Yunhan Yang and Xiaoyang Wu and Tong He and Hengshuang Zhao and Xihui Liu},
+    year={2023},
+    booktitle={arXiv},
+}
+
+@inproceedings{sampro3d,
+    title={SAMPro3D: Locating SAM Prompts in 3D for Zero-Shot Instance Segmentation}, 
+    author={Mutian Xu and Xingyilang Yin and Lingteng Qiu and Yang Liu and Xin Tong and Xiaoguang Han},
+    year={2025},
+    booktitle={arXiv},
+}
+
+@inproceedings{partslip++,
+    title={PartSLIP++: Enhancing Low-Shot 3D Part Segmentation via Multi-View Instance Segmentation and Maximum Likelihood Estimation}, 
+    author={Yuchen Zhou and Jiayuan Gu and Xuanlin Li and Minghua Liu and Yunhao Fang and Hao Su},
+    year={2023},
+    booktitle={arXiv},
+}
+
+@inproceedings{zerops,
+    title={ZeroPS: High-quality Cross-modal Knowledge Transfer for Zero-Shot 3D Part Segmentation}, 
+    author={Yuheng Xue and Nenglun Chen and Jun Liu and Wenyun Sun},
+    year={2025},
+    booktitle={arXiv},
+}
+
+@inproceedings{partdistill,
+    title={PartDistill: 3D Shape Part Segmentation by Vision-Language Model Distillation}, 
+    author={Ardian Umam and Cheng-Kun Yang and Min-Hung Chen and Jen-Hui Chuang and Yen-Yu Lin},
+    year={2024},
+    booktitle={arXiv},
+}
+
+@inproceedings{3dpartsegvia2dfea,
+    title={3D Part Segmentation via Geometric Aggregation of 2D Visual Features}, 
+    author={Marco Garosi and Riccardo Tedoldi and Davide Boscaini and Massimiliano Mancini and Nicu Sebe and Fabio Poiesi},
+    year={2025},
+    booktitle={arXiv},
+}
+
+@inproceedings{find3d,
+    title={Find Any Part in 3D}, 
+    author={Ziqi Ma and Yisong Yue and Georgia Gkioxari},
+    year={2025},
+    booktitle={arXiv},
+}
+
+@inproceedings{partfield,
+    title={PartField: Learning 3D Feature Fields for Part Segmentation and Beyond}, 
+    author={Minghua Liu and Mikaela Angelina Uy and Donglai Xiang and Hao Su and Sanja Fidler and Nicholas Sharp and Jun Gao},
+    year={2025},
+    booktitle={ICCV},
+}
+
+@inproceedings{pointsam,
+  title={Point-{SAM}: Promptable 3D Segmentation Model for Point Clouds},
+  author={Yuchen Zhou and Jiayuan Gu and Tung Yen Chiang and Fanbo Xiang and Hao Su},
+  booktitle={The Thirteenth International Conference on Learning Representations},
+  year={2025},
+}
+
+@inproceedings{sampart3d,
+    author = {Yunhan Yang and Yukun Huang and Yuan-Chen Guo and Liangjun Lu and Xiaoyang Wu and Edmund Y. Lam and Yan-Pei Cao and Xihui Liu},
+    title = {SAMPart3D: Segment Any Part in 3D Objects}, 
+    booktitle = {arXiv},
+    year = {2024},
+}
+
+@inproceedings{dinov2,
+  title={DINOv2: Learning Robust Visual Features without Supervision},
+  author={Oquab, Maxime and Darcet, Timothée and Moutakanni, Theo and Vo, Huy V. and Szafraniec, Marc and Khalidov, Vasil and Fernandez, Pierre and Haziza, Daniel and Massa, Francisco and El-Nouby, Alaaeldin and Howes, Russell and Huang, Po-Yao and Xu, Hu and Sharma, Vasu and Li, Shang-Wen and Galuba, Wojciech and Rabbat, Mike and Assran, Mido and Ballas, Nicolas and Synnaeve, Gabriel and Misra, Ishan and Jegou, Herve and Mairal, Julien and Labatut, Patrick and Joulin, Armand and Bojanowski, Piotr},
+  booktitle = {arXiv},
+  year={2023}
+}
+
+@inproceedings{segment3d,
+  title={Segment3d: Learning fine-grained class-agnostic 3d segmentation without manual labels},
+  author={Huang, Rui and Peng, Songyou and Takmaz, Ayca and Tombari, Federico and Pollefeys, Marc and Song, Shiji and Huang, Gao and Engelmann, Francis},
+  booktitle={European Conference on Computer Vision},
+  pages={278--295},
+  year={2024},
+  organization={Springer}
+}
+
+@inproceedings{geosam2,
+  title={GeoSAM2: Unleashing the Power of SAM2 for 3D Part Segmentation},
+  author={Deng, Ken and Yang, Yunhan and Sun, Jingxiang and Liu, Xihui and Liu, Yebin and Liang, Ding and Cao, Yan-Pei},
+  booktitle={arXiv},
+  year={2025}
+}
+
+@inproceedings{p3sam,
+  title={P3-sam: Native 3d part segmentation},
+  author={Ma, Changfeng and Li, Yang and Yan, Xinhao and Xu, Jiachen and Yang, Yunhan and Wang, Chunshi and Zhao, Zibo and Guo, Yanwen and Chen, Zhuo and Guo, Chunchao},
+  booktitle={arXiv},
+  year={2025}
+}
+
+@inproceedings{partsam,
+  title={PartSAM: A Scalable Promptable Part Segmentation Model Trained on Native 3D Data},
+  author={Zhu, Zhe and Wan, Le and Xu, Rui and Zhang, Yiheng and Chen, Honghua and Dou, Zhiyang and Lin, Cheng and Liu, Yuan and Wei, Mingqiang},
+  booktitle={arXiv},
+  year={2025}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+@inproceedings{trellis,
+  title={Structured 3d latents for scalable and versatile 3d generation},
+  author={Xiang, Jianfeng and Lv, Zelong and Xu, Sicheng and Deng, Yu and Wang, Ruicheng and Zhang, Bowen and Chen, Dong and Tong, Xin and Yang, Jiaolong},
+  booktitle={Proceedings of the Computer Vision and Pattern Recognition Conference},
+  pages={21469--21480},
+  year={2025}
+}
+
+@inproceedings{trellis2,
+  title={Native and Compact Structured Latents for 3D Generation},
+  author={Xiang, Jianfeng and Chen, Xiaoxue and Xu, Sicheng and Wang, Ruicheng and Lv, Zelong and Deng, Yu and Zhu, Hongyuan and Dong, Yue and Zhao, Hao and Yuan, Nicholas Jing and others},
+  booktitle={arXiv},
+  year={2025}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@article{sam3,
+  title={Sam 3: Segment anything with concepts},
+  author={Carion, Nicolas and Gustafson, Laura and Hu, Yuan-Ting and Debnath, Shoubhik and Hu, Ronghang and Suris, Didac and Ryali, Chaitanya and Alwala, Kalyan Vasudev and Khedr, Haitham and Huang, Andrew and others},
+  journal={arXiv preprint arXiv:2511.16719},
+  year={2025}
+}
+
+
+% diffusion models
+@article{ho2020ddpm,
+  title={Denoising diffusion probabilistic models},
+  author={Ho, Jonathan and Jain, Ajay and Abbeel, Pieter},
+  journal={Advances in neural information processing systems},
+  volume={33},
+  pages={6840--6851},
+  year={2020}
+}
+
+@article{song2020ddim,
+  title={Denoising diffusion implicit models},
+  author={Song, Jiaming and Meng, Chenlin and Ermon, Stefano},
+  journal={arXiv preprint arXiv:2010.02502},
+  year={2020}
+}
+
+% 3D datasets
+@inproceedings{deitke2023objaverse,
+  title={Objaverse: A universe of annotated 3d objects},
+  author={Deitke, Matt and Schwenk, Dustin and Salvador, Jordi and Weihs, Luca and Michel, Oscar and VanderBilt, Eli and Schmidt, Ludwig and Ehsani, Kiana and Kembhavi, Aniruddha and Farhadi, Ali},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={13142--13153},
+  year={2023}
+}
+
+@article{deitke2024objaversexl,
+  title={Objaverse-xl: A universe of 10m+ 3d objects},
+  author={Deitke, Matt and Liu, Ruoshi and Wallingford, Matthew and Ngo, Huong and Michel, Oscar and Kusupati, Aditya and Fan, Alan and Laforte, Christian and Voleti, Vikram and Gadre, Samir Yitzhak and others},
+  journal={Advances in Neural Information Processing Systems},
+  volume={36},
+  year={2024}
+}
+
+% 3D generative models
+@article{liu2024one2345,
+  title={One-2-3-45: Any single image to 3d mesh in 45 seconds without per-shape optimization},
+  author={Liu, Minghua and Xu, Chao and Jin, Haian and Chen, Linghao and Varma T, Mukund and Xu, Zexiang and Su, Hao},
+  journal={Advances in Neural Information Processing Systems},
+  volume={36},
+  year={2024}
+}
+
+@article{sella2025blendedpointcloud,
+  title={Blended Point Cloud Diffusion for Localized Text-guided Shape Editing},
+  author={Sella, Etai and Atia, Noam and Mokady, Ron and Averbuch-Elor, Hadar},
+  journal={arXiv preprint arXiv:2507.15399},
+  year={2025}
+}
+
+@article{liu2023syncdreamer,
+  title={Syncdreamer: Generating multiview-consistent images from a single-view image},
+  author={Liu, Yuan and Lin, Cheng and Zeng, Zijiao and Long, Xiaoxiao and Liu, Lingjie and Komura, Taku and Wang, Wenping},
+  journal={arXiv preprint arXiv:2309.03453},
+  year={2023}
+}
+
+@inproceedings{long2024wonder3d,
+  title={Wonder3d: Single image to 3d using cross-domain diffusion},
+  author={Long, Xiaoxiao and Guo, Yuan-Chen and Lin, Cheng and Liu, Yuan and Dou, Zhiyang and Liu, Lingjie and Ma, Yuexin and Zhang, Song-Hai and Habermann, Marc and Theobalt, Christian and others},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={9970--9980},
+  year={2024}
+}
+
+@article{hong2023lrm,
+  title={Lrm: Large reconstruction model for single image to 3d},
+  author={Hong, Yicong and Zhang, Kai and Gu, Jiuxiang and Bi, Sai and Zhou, Yang and Liu, Difan and Liu, Feng and Sunkavalli, Kalyan and Bui, Trung and Tan, Hao},
+  journal={arXiv preprint arXiv:2311.04400},
+  year={2023}
+}
+
+@inproceedings{tang2025lgm,
+  title={Lgm: Large multi-view gaussian model for high-resolution 3d content creation},
+  author={Tang, Jiaxiang and Chen, Zhaoxi and Chen, Xiaokang and Wang, Tengfei and Zeng, Gang and Liu, Ziwei},
+  booktitle={European Conference on Computer Vision},
+  pages={1--18},
+  year={2025},
+  organization={Springer}
+}
+
+@inproceedings{huang2024epidiff,
+  title={Epidiff: Enhancing multi-view synthesis via localized epipolar-constrained diffusion},
+  author={Huang, Zehuan and Wen, Hao and Dong, Junting and Wang, Yaohui and Li, Yangguang and Chen, Xinyuan and Cao, Yan-Pei and Liang, Ding and Qiao, Yu and Dai, Bo and others},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={9784--9794},
+  year={2024}
+}
+
+@article{zhang2024clay,
+  title={CLAY: A Controllable Large-scale Generative Model for Creating High-quality 3D Assets},
+  author={Zhang, Longwen and Wang, Ziyu and Zhang, Qixuan and Qiu, Qiwei and Pang, Anqi and Jiang, Haoran and Yang, Wei and Xu, Lan and Yu, Jingyi},
+  journal={ACM Transactions on Graphics (TOG)},
+  volume={43},
+  number={4},
+  pages={1--20},
+  year={2024},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{wu2024unique3d,
+  title={Unique3D: High-Quality and Efficient 3D Mesh Generation from a Single Image},
+  author={Wu, Kailu and Liu, Fangfu and Cai, Zhihan and Yan, Runjie and Wang, Hanyang and Hu, Yating and Duan, Yueqi and Ma, Kaisheng},
+  journal={arXiv preprint arXiv:2405.20343},
+  year={2024}
+}
+
+@article{li2024craftsman,
+  title={CraftsMan: High-fidelity Mesh Generation with 3D Native Generation and Interactive Geometry Refiner},
+  author={Li, Weiyu and Liu, Jiarui and Chen, Rui and Liang, Yixun and Chen, Xuelin and Tan, Ping and Long, Xiaoxiao},
+  journal={arXiv preprint arXiv:2405.14979},
+  year={2024}
+}
+
+@article{wen2024ouroboros3d,
+  title={Ouroboros3D: Image-to-3D Generation via 3D-aware Recursive Diffusion},
+  author={Wen, Hao and Huang, Zehuan and Wang, Yaohui and Chen, Xinyuan and Qiao, Yu and Sheng, Lu},
+  journal={arXiv preprint arXiv:2406.03184},
+  year={2024}
+}
+
+@article{xu2024instantmesh,
+  title={Instantmesh: Efficient 3d mesh generation from a single image with sparse-view large reconstruction models},
+  author={Xu, Jiale and Cheng, Weihao and Gao, Yiming and Wang, Xintao and Gao, Shenghua and Shan, Ying},
+  journal={arXiv preprint arXiv:2404.07191},
+  year={2024}
+}
+
+@inproceedings{voleti2025sv3d,
+  title={Sv3d: Novel multi-view synthesis and 3d generation from a single image using latent video diffusion},
+  author={Voleti, Vikram and Yao, Chun-Han and Boss, Mark and Letts, Adam and Pankratz, David and Tochilkin, Dmitry and Laforte, Christian and Rombach, Robin and Jampani, Varun},
+  booktitle={European Conference on Computer Vision},
+  pages={439--457},
+  year={2025},
+  organization={Springer}
+}
+
+@article{wang2024crm,
+  title={Crm: Single image to 3d textured mesh with convolutional reconstruction model},
+  author={Wang, Zhengyi and Wang, Yikai and Chen, Yifei and Xiang, Chendong and Chen, Shuo and Yu, Dajiang and Li, Chongxuan and Su, Hang and Zhu, Jun},
+  journal={arXiv preprint arXiv:2403.05034},
+  year={2024}
+}
+
+@inproceedings{liu2024one2345++,
+  title={One-2-3-45++: Fast single image to 3d objects with consistent multi-view generation and 3d diffusion},
+  author={Liu, Minghua and Shi, Ruoxi and Chen, Linghao and Zhang, Zhuoyang and Xu, Chao and Wei, Xinyue and Chen, Hansheng and Zeng, Chong and Gu, Jiayuan and Su, Hao},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={10072--10083},
+  year={2024}
+}
+
+@article{wu2024direct3d,
+  title={Direct3D: Scalable Image-to-3D Generation via 3D Latent Diffusion Transformer},
+  author={Wu, Shuang and Lin, Youtian and Zhang, Feihu and Zeng, Yifei and Xu, Jingxi and Torr, Philip and Cao, Xun and Yao, Yao},
+  journal={arXiv preprint arXiv:2405.14832},
+  year={2024}
+}
+
+@article{zhao2024michelangelo,
+  title={Michelangelo: Conditional 3d shape generation based on shape-image-text aligned latent representation},
+  author={Zhao, Zibo and Liu, Wen and Chen, Xin and Zeng, Xianfang and Wang, Rui and Cheng, Pei and Fu, Bin and Chen, Tao and Yu, Gang and Gao, Shenghua},
+  journal={Advances in Neural Information Processing Systems},
+  volume={36},
+  year={2024}
+}
+
+@article{roessle2024l3dg,
+  title={L3DG: Latent 3D Gaussian Diffusion},
+  author={Roessle, Barbara and M{\"u}ller, Norman and Porzi, Lorenzo and Bul{\o}, Samuel Rota and Kontschieder, Peter and Dai, Angela and Nie{\ss}ner, Matthias},
+  journal={arXiv preprint arXiv:2410.13530},
+  year={2024}
+}
+
+@article{wu2024blockfusion,
+  title={Blockfusion: Expandable 3d scene generation using latent tri-plane extrapolation},
+  author={Wu, Zhennan and Li, Yang and Yan, Han and Shang, Taizhang and Sun, Weixuan and Wang, Senbo and Cui, Ruikai and Liu, Weizhe and Sato, Hiroyuki and Li, Hongdong and others},
+  journal={ACM Transactions on Graphics (TOG)},
+  volume={43},
+  number={4},
+  pages={1--17},
+  year={2024},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{meng2024lt3sd,
+  title={LT3SD: Latent Trees for 3D Scene Diffusion},
+  author={Meng, Quan and Li, Lei and Nie{\ss}ner, Matthias and Dai, Angela},
+  journal={arXiv preprint arXiv:2409.08215},
+  year={2024}
+}
+
+@inproceedings{liu2024part123,
+  title={Part123: part-aware 3d reconstruction from a single-view image},
+  author={Liu, Anran and Lin, Cheng and Liu, Yuan and Long, Xiaoxiao and Dou, Zhiyang and Guo, Hao-Xiang and Luo, Ping and Wang, Wenping},
+  booktitle={ACM SIGGRAPH 2024 Conference Papers},
+  pages={1--12},
+  year={2024}
+}
+
+@inproceedings{dong2025tela,
+  title={Tela: Text to layer-wise 3d clothed human generation},
+  author={Dong, Junting and Fang, Qi and Huang, Zehuan and Xu, Xudong and Wang, Jingbo and Peng, Sida and Dai, Bo},
+  booktitle={European Conference on Computer Vision},
+  pages={19--36},
+  year={2025},
+  organization={Springer}
+}
+%---------------------------------------------------------------------------------
+@misc{li2025craftsman3dhighfidelitymeshgeneration,
+      title={CraftsMan3D: High-fidelity Mesh Generation with 3D Native Generation and Interactive Geometry Refiner}, 
+      author={Weiyu Li and Jiarui Liu and Hongyu Yan and Rui Chen and Yixun Liang and Xuelin Chen and Ping Tan and Xiaoxiao Long},
+      year={2025},
+      eprint={2405.14979},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2405.14979}, 
+}
+@misc{chen2024meshxlneuralcoordinatefield,
+      title={MeshXL: Neural Coordinate Field for Generative 3D Foundation Models}, 
+      author={Sijin Chen and Xin Chen and Anqi Pang and Xianfang Zeng and Wei Cheng and Yijun Fu and Fukun Yin and Yanru Wang and Zhibin Wang and Chi Zhang and Jingyi Yu and Gang Yu and Bin Fu and Tao Chen},
+      year={2024},
+      eprint={2405.20853},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2405.20853}, 
+}
+@misc{chen2024meshanythingartistcreatedmeshgeneration,
+      title={MeshAnything: Artist-Created Mesh Generation with Autoregressive Transformers}, 
+      author={Yiwen Chen and Tong He and Di Huang and Weicai Ye and Sijin Chen and Jiaxiang Tang and Xin Chen and Zhongang Cai and Lei Yang and Gang Yu and Guosheng Lin and Chi Zhang},
+      year={2024},
+      eprint={2406.10163},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2406.10163}, 
+}
+@misc{wang2024llamameshunifying3dmesh,
+      title={LLaMA-Mesh: Unifying 3D Mesh Generation with Language Models}, 
+      author={Zhengyi Wang and Jonathan Lorraine and Yikai Wang and Hang Su and Jun Zhu and Sanja Fidler and Xiaohui Zeng},
+      year={2024},
+      eprint={2411.09595},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2411.09595}, 
+}
+@misc{hao2024meshtronhighfidelityartistlike3d,
+      title={Meshtron: High-Fidelity, Artist-Like 3D Mesh Generation at Scale}, 
+      author={Zekun Hao and David W. Romero and Tsung-Yi Lin and Ming-Yu Liu},
+      year={2024},
+      eprint={2412.09548},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2412.09548}, 
+}
+
+@misc{he2024neurallightrigunlockingaccurate,
+      title={Neural LightRig: Unlocking Accurate Object Normal and Material Estimation with Multi-Light Diffusion}, 
+      author={Zexin He and Tengfei Wang and Xin Huang and Xingang Pan and Ziwei Liu},
+      year={2024},
+      eprint={2412.09593},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2412.09593}, 
+}
+@misc{gao2025meshartgeneratingarticulatedmeshes,
+      title={MeshArt: Generating Articulated Meshes with Structure-Guided Transformers}, 
+      author={Daoyi Gao and Yawar Siddiqui and Lei Li and Angela Dai},
+      year={2025},
+      eprint={2412.11596},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2412.11596}, 
+}
+@misc{li2025triposghighfidelity3dshape,
+      title={TripoSG: High-Fidelity 3D Shape Synthesis using Large-Scale Rectified Flow Models}, 
+      author={Yangguang Li and Zi-Xin Zou and Zexiang Liu and Dehu Wang and Yuan Liang and Zhipeng Yu and Xingchao Liu and Yuan-Chen Guo and Ding Liang and Wanli Ouyang and Yan-Pei Cao},
+      year={2025},
+      eprint={2502.06608},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2502.06608}, 
+}
+
+@misc{zhao2025deepmeshautoregressiveartistmeshcreation,
+      title={DeepMesh: Auto-Regressive Artist-mesh Creation with Reinforcement Learning}, 
+      author={Ruowen Zhao and Junliang Ye and Zhengyi Wang and Guangce Liu and Yiwen Chen and Yikai Wang and Jun Zhu},
+      year={2025},
+      eprint={2503.15265},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2503.15265}, 
+}
+
+@misc{wei2025octgptoctreebasedmultiscaleautoregressive,
+      title={OctGPT: Octree-based Multiscale Autoregressive Models for 3D Shape Generation}, 
+      author={Si-Tong Wei and Rui-Huan Wang and Chuan-Zhi Zhou and Baoquan Chen and Peng-Shuai Wang},
+      year={2025},
+      eprint={2504.09975},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2504.09975}, 
+}
+
+@misc{li2025step1x3dhighfidelitycontrollablegeneration,
+      title={Step1X-3D: Towards High-Fidelity and Controllable Generation of Textured 3D Assets}, 
+      author={Weiyu Li and Xuanyang Zhang and Zheng Sun and Di Qi and Hao Li and Wei Cheng and Weiwei Cai and Shihao Wu and Jiarui Liu and Zihao Wang and Xiao Chen and Feipeng Tian and Jianxiong Pan and Zeming Li and Gang Yu and Xiangyu Zhang and Daxin Jiang and Ping Tan},
+      year={2025},
+      eprint={2505.07747},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2505.07747}, 
+}
+
+@misc{wu2025direct3ds2gigascale3dgeneration,
+      title={Direct3D-S2: Gigascale 3D Generation Made Easy with Spatial Sparse Attention}, 
+      author={Shuang Wu and Youtian Lin and Feihu Zhang and Yifei Zeng and Yikang Yang and Yajie Bao and Jiachen Qian and Siyu Zhu and Xun Cao and Philip Torr and Yao Yao},
+      year={2025},
+      eprint={2505.17412},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2505.17412}, 
+}
+
+
+@misc{wu2025dipodualstateimagescontrolled,
+      title={DIPO: Dual-State Images Controlled Articulated Object Generation Powered by Diverse Data}, 
+      author={Ruiqi Wu and Xinjie Wang and Liu Liu and Chunle Guo and Jiaxiong Qiu and Chongyi Li and Lichao Huang and Zhizhong Su and Ming-Ming Cheng},
+      year={2025},
+      eprint={2505.20460},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2505.20460}, 
+}
+
+@misc{ye2025shapellmomninativemultimodalllm,
+      title={ShapeLLM-Omni: A Native Multimodal LLM for 3D Generation and Understanding}, 
+      author={Junliang Ye and Zhengyi Wang and Ruowen Zhao and Shenghao Xie and Jun Zhu},
+      year={2025},
+      eprint={2506.01853},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2506.01853}, 
+}
+
+@misc{lin2025partcrafterstructured3dmesh,
+      title={PartCrafter: Structured 3D Mesh Generation via Compositional Latent Diffusion Transformers}, 
+      author={Yuchen Lin and Chenguo Lin and Panwang Pan and Honglei Yan and Yiqiang Feng and Yadong Mu and Katerina Fragkiadaki},
+      year={2025},
+      eprint={2506.05573},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2506.05573}, 
+}
+
+@misc{tang2025efficientpartlevel3dobject,
+      title={Efficient Part-level 3D Object Generation via Dual Volume Packing}, 
+      author={Jiaxiang Tang and Ruijie Lu and Zhaoshuo Li and Zekun Hao and Xuan Li and Fangyin Wei and Shuran Song and Gang Zeng and Ming-Yu Liu and Tsung-Yi Lin},
+      year={2025},
+      eprint={2506.09980},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2506.09980}, 
+}
+
+@misc{zhao2025assemblerscalable3dassembly,
+      title={Assembler: Scalable 3D Part Assembly via Anchor Point Diffusion}, 
+      author={Wang Zhao and Yan-Pei Cao and Jiale Xu and Yuejiang Dong and Ying Shan},
+      year={2025},
+      eprint={2506.17074},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2506.17074}, 
+}
+
+@misc{qu2025deocc1to33ddeocclusionsingle,
+      title={DeOcc-1-to-3: 3D De-Occlusion from a Single Image via Self-Supervised Multi-View Diffusion}, 
+      author={Yansong Qu and Shaohui Dai and Xinyang Li and Yuze Wang and You Shen and Liujuan Cao and Rongrong Ji},
+      year={2025},
+      eprint={2506.21544},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2506.21544}, 
+}
+
+@misc{dong2025morecontextuallatents3d,
+      title={From One to More: Contextual Part Latents for 3D Generation}, 
+      author={Shaocong Dong and Lihe Ding and Xiao Chen and Yaokun Li and Yuxin Wang and Yucheng Wang and Qi Wang and Jaehyeok Kim and Chenjian Gao and Zhanpeng Huang and Zibin Wang and Tianfan Xue and Dan Xu},
+      year={2025},
+      eprint={2507.08772},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2507.08772}, 
+}
+
+@misc{huang2025stereogsmultiviewstereovision,
+      title={Stereo-GS: Multi-View Stereo Vision Model for Generalizable 3D Gaussian Splatting Reconstruction}, 
+      author={Xiufeng Huang and Ka Chun Cheung and Runmin Cong and Simon See and Renjie Wan},
+      year={2025},
+      eprint={2507.14921},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2507.14921}, 
+}
+
+@misc{chen2025ultra3defficienthighfidelity3d,
+      title={Ultra3D: Efficient and High-Fidelity 3D Generation with Part Attention}, 
+      author={Yiwen Chen and Zhihao Li and Yikai Wang and Hu Zhang and Qin Li and Chi Zhang and Guosheng Lin},
+      year={2025},
+      eprint={2507.17745},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2507.17745}, 
+}
+
+% unified 3D generative models
+@article{kingma2013vae,
+  title={Auto-encoding variational bayes},
+  author={Kingma, Diederik P},
+  journal={arXiv preprint arXiv:1312.6114},
+  year={2013}
+}
+
+@inproceedings{peebles2023dit,
+  title={Scalable diffusion models with transformers},
+  author={Peebles, William and Xie, Saining},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={4195--4205},
+  year={2023}
+}
+
+@article{li2025triposg,
+  title={TripoSG: High-Fidelity 3D Shape Synthesis using Large-Scale Rectified Flow Models},
+  author={Li, Yangguang and Zou, Zi-Xin and Liu, Zexiang and Wang, Dehu and Liang, Yuan and Yu, Zhipeng and Liu, Xingchao and Guo, Yuan-Chen and Liang, Ding and Ouyang, Wanli and others},
+  journal={arXiv preprint arXiv:2502.06608},
+  year={2025}
+}
+
+@article{huang2024mvadapter,
+  title={Mv-adapter: Multi-view consistent image generation made easy},
+  author={Huang, Zehuan and Guo, Yuan-Chen and Wang, Haoran and Yi, Ran and Ma, Lizhuang and Cao, Yan-Pei and Sheng, Lu},
+  journal={arXiv preprint arXiv:2412.03632},
+  year={2024}
+}
+
+%---------------------------------------------------------------------------------
+% 3d editing
+@misc{poole2022dreamfusiontextto3dusing2d,
+      title={DreamFusion: Text-to-3D using 2D Diffusion}, 
+      author={Ben Poole and Ajay Jain and Jonathan T. Barron and Ben Mildenhall},
+      year={2022},
+      eprint={2209.14988},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2209.14988}, 
+}
+
+@misc{chen2023shapeditorinstructionguidedlatent3d,
+      title={SHAP-EDITOR: Instruction-guided Latent 3D Editing in Seconds}, 
+      author={Minghao Chen and Junyu Xie and Iro Laina and Andrea Vedaldi},
+      year={2023},
+      eprint={2312.09246},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2312.09246}, 
+}
+
+@misc{sella2023voxetextguidedvoxelediting,
+      title={Vox-E: Text-guided Voxel Editing of 3D Objects}, 
+      author={Etai Sella and Gal Fiebelman and Peter Hedman and Hadar Averbuch-Elor},
+      year={2023},
+      eprint={2303.12048},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2303.12048}, 
+}
+
+@misc{zhuang2024tipeditoraccurate3deditor,
+      title={TIP-Editor: An Accurate 3D Editor Following Both Text-Prompts And Image-Prompts}, 
+      author={Jingyu Zhuang and Di Kang and Yan-Pei Cao and Guanbin Li and Liang Lin and Ying Shan},
+      year={2024},
+      eprint={2401.14828},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2401.14828}, 
+}
+
+@misc{mvedit,
+      title={Generic 3D Diffusion Adapter Using Controlled Multi-View Editing}, 
+      author={Hansheng Chen and Ruoxi Shi and Yulin Liu and Bokui Shen and Jiayuan Gu and Gordon Wetzstein and Hao Su and Leonidas Guibas},
+      year={2024},
+      eprint={2403.12032},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2403.12032}, 
+}
+
+@misc{liu2024makeyour3dfastconsistentsubjectdriven,
+      title={Make-Your-3D: Fast and Consistent Subject-Driven 3D Content Generation}, 
+      author={Fangfu Liu and Hanyang Wang and Weiliang Chen and Haowen Sun and Yueqi Duan},
+      year={2024},
+      eprint={2403.09625},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2403.09625}, 
+}
+
+@misc{dong2024interactive3dcreatewantinteractive,
+      title={Interactive3D: Create What You Want by Interactive 3D Generation}, 
+      author={Shaocong Dong and Lihe Ding and Zhanpeng Huang and Zibin Wang and Tianfan Xue and Dan Xu},
+      year={2024},
+      eprint={2404.16510},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2404.16510}, 
+}
+
+@misc{qi2024tailor3dcustomized3dassets,
+      title={Tailor3D: Customized 3D Assets Editing and Generation with Dual-Side Images}, 
+      author={Zhangyang Qi and Yunhan Yang and Mengchen Zhang and Long Xing and Xiaoyang Wu and Tong Wu and Dahua Lin and Xihui Liu and Jiaqi Wang and Hengshuang Zhao},
+      year={2024},
+      eprint={2407.06191},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2407.06191}, 
+}
+
+@misc{cao2024mvinpainterlearningmultiviewconsistent,
+      title={MVInpainter: Learning Multi-View Consistent Inpainting to Bridge 2D and 3D Editing}, 
+      author={Chenjie Cao and Chaohui Yu and Fan Wang and Xiangyang Xue and Yanwei Fu},
+      year={2024},
+      eprint={2408.08000},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2408.08000}, 
+}
+
+@misc{zhang2025scenelanguagerepresentingscenes,
+      title={The Scene Language: Representing Scenes with Programs, Words, and Embeddings}, 
+      author={Yunzhi Zhang and Zizhang Li and Matt Zhou and Shangzhe Wu and Jiajun Wu},
+      year={2025},
+      eprint={2410.16770},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2410.16770}, 
+}
+
+@misc{erkoç2024preditor3dfastprecise3d,
+      title={PrEditor3D: Fast and Precise 3D Shape Editing}, 
+      author={Ziya Erkoç and Can Gümeli and Chaoyang Wang and Matthias Nießner and Angela Dai and Peter Wonka and Hsin-Ying Lee and Peiye Zhuang},
+      year={2024},
+      eprint={2412.06592},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2412.06592}, 
+}
+
+@misc{gao20243dmesheditingusing,
+      title={3D Mesh Editing using Masked LRMs}, 
+      author={Will Gao and Dilin Wang and Yuchen Fan and Aljaz Bozic and Tuur Stuyck and Zhengqin Li and Zhao Dong and Rakesh Ranjan and Nikolaos Sarafianos},
+      year={2024},
+      eprint={2412.08641},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2412.08641}, 
+}
+
+@misc{barda2024instant3ditmultiviewinpaintingfast,
+      title={Instant3dit: Multiview Inpainting for Fast Editing of 3D Objects}, 
+      author={Amir Barda and Matheus Gadelha and Vladimir G. Kim and Noam Aigerman and Amit H. Bermano and Thibault Groueix},
+      year={2024},
+      eprint={2412.00518},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2412.00518}, 
+}
+
+@article{shi2023mvdream,
+  title={Mvdream: Multi-view diffusion for 3d generation},
+  author={Shi, Yichun and Wang, Peng and Ye, Jianglong and Long, Mai and Li, Kejie and Yang, Xiao},
+  journal={arXiv preprint arXiv:2308.16512},
+  year={2023}
+}
+
+@misc{meshpad,
+      title={MeshPad: Interactive Sketch-Conditioned Artist-Reminiscent Mesh Generation and Editing}, 
+      author={Haoxuan Li and Ziya Erkoc and Lei Li and Daniele Sirigatti and Vladyslav Rozov and Angela Dai and Matthias Nießner},
+      year={2025},
+      eprint={2503.01425},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2503.01425}, 
+}
+
+@misc{dinh2025geometrystyle3dstylization,
+      title={Geometry in Style: 3D Stylization via Surface Normal Deformation}, 
+      author={Nam Anh Dinh and Itai Lang and Hyunwoo Kim and Oded Stein and Rana Hanocka},
+      year={2025},
+      eprint={2503.23241},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2503.23241}, 
+}
+
+
+@misc{li2025cmdcontrollablemultiviewdiffusion,
+      title={CMD: Controllable Multiview Diffusion for 3D Editing and Progressive Generation}, 
+      author={Peng Li and Suizhi Ma and Jialiang Chen and Yuan Liu and Congyi Zhang and Wei Xue and Wenhan Luo and Alla Sheffer and Wenping Wang and Yike Guo},
+      year={2025},
+      eprint={2505.07003},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2505.07003}, 
+}
+
+@article{zhang20233dshape2vecset,
+  title={3dshape2vecset: A 3d shape representation for neural fields and generative diffusion models},
+  author={Zhang, Biao and Tang, Jiapeng and Niessner, Matthias and Wonka, Peter},
+  journal={ACM Transactions On Graphics (TOG)},
+  volume={42},
+  number={4},
+  pages={1--16},
+  year={2023},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{li2025sparc3d,
+  title={Sparc3D: Sparse Representation and Construction for High-Resolution 3D Shapes Modeling},
+  author={Li, Zhihao and Wang, Yufei and Zheng, Heliang and Luo, Yihao and Wen, Bihan},
+  journal={arXiv preprint arXiv:2505.14521},
+  year={2025}
+}
+
+@misc{zheng2025pro3deditorprogressiveviewsperspective,
+      title={Pro3D-Editor  : A Progressive-Views Perspective for Consistent and Precise 3D Editing}, 
+      author={Yang Zheng and Mengqi Huang and Nan Chen and Zhendong Mao},
+      year={2025},
+      eprint={2506.00512},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2506.00512}, 
+}
+
+@misc{baron2025editp233deditingpropagation,
+      title={EditP23: 3D Editing via Propagation of Image Prompts to Multi-View}, 
+      author={Roi Bar-On and Dana Cohen-Bar and Daniel Cohen-Or},
+      year={2025},
+      eprint={2506.20652},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2506.20652}, 
+}
+
+@misc{sella2025blendedpointclouddiffusion,
+      title={Blended Point Cloud Diffusion for Localized Text-guided Shape Editing}, 
+      author={Etai Sella and Noam Atia and Ron Mokady and Hadar Averbuch-Elor},
+      year={2025},
+      eprint={2507.15399},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2507.15399}, 
+}
+
+%---------------------------------------------------------------------------
+% image generation and editing
+@inproceedings{huberman2024ddpminversion,
+  title={An edit friendly ddpm noise space: Inversion and manipulations},
+  author={Huberman-Spiegelglas, Inbar and Kulikov, Vladimir and Michaeli, Tomer},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={12469--12478},
+  year={2024}
+}
+
+@inproceedings{NullTextInversion,
+  title={Null-text inversion for editing real images using guided diffusion models},
+  author={Mokady, Ron and Hertz, Amir and Aberman, Kfir and Pritch, Yael and Cohen-Or, Daniel},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={6038--6047},
+  year={2023}
+}
+
+@article{ramesh2022dalle2,
+  title={Hierarchical text-conditional image generation with clip latents},
+  author={Ramesh, Aditya and Dhariwal, Prafulla and Nichol, Alex and Chu, Casey and Chen, Mark},
+  journal={arXiv preprint arXiv:2204.06125},
+  volume={1},
+  number={2},
+  pages={3},
+  year={2022}
+}
+
+@article{saharia2022imagen,
+  title={Photorealistic text-to-image diffusion models with deep language understanding},
+  author={Saharia, Chitwan and Chan, William and Saxena, Saurabh and Li, Lala and Whang, Jay and Denton, Emily L and Ghasemipour, Kamyar and Gontijo Lopes, Raphael and Karagol Ayan, Burcu and Salimans, Tim and others},
+  journal={Advances in neural information processing systems},
+  volume={35},
+  pages={36479--36494},
+  year={2022}
+}
+
+@misc{ldm,
+      title={High-Resolution Image Synthesis with Latent Diffusion Models}, 
+      author={Robin Rombach and Andreas Blattmann and Dominik Lorenz and Patrick Esser and Björn Ommer},
+      year={2022},
+      eprint={2112.10752},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2112.10752}, 
+}
+
+@misc{sd3,
+      title={Scaling Rectified Flow Transformers for High-Resolution Image Synthesis}, 
+      author={Patrick Esser and Sumith Kulal and Andreas Blattmann and Rahim Entezari and Jonas Müller and Harry Saini and Yam Levi and Dominik Lorenz and Axel Sauer and Frederic Boesel and Dustin Podell and Tim Dockhorn and Zion English and Kyle Lacey and Alex Goodwin and Yannik Marek and Robin Rombach},
+      year={2024},
+      eprint={2403.03206},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2403.03206}, 
+}
+
+@article{SemanticImageInversion,
+  title={Semantic image inversion and editing using rectified stochastic differential equations},
+  author={Rout, Litu and Chen, Yujia and Ruiz, Nataniel and Caramanis, Constantine and Shakkottai, Sanjay and Chu, Wen-Sheng},
+  journal={arXiv preprint arXiv:2410.10792},
+  year={2024}
+}
+
+@article{TamingRectifiedFlow,
+  title={Taming rectified flow for inversion and editing},
+  author={Wang, Jiangshan and Pu, Junfu and Qi, Zhongang and Guo, Jiayi and Ma, Yue and Huang, Nisha and Chen, Yuxin and Li, Xiu and Shan, Ying},
+  journal={arXiv preprint arXiv:2411.04746},
+  year={2024}
+}
+
+@misc{gal2022imageworthwordpersonalizing,
+      title={An Image is Worth One Word: Personalizing Text-to-Image Generation using Textual Inversion}, 
+      author={Rinon Gal and Yuval Alaluf and Yuval Atzmon and Or Patashnik and Amit H. Bermano and Gal Chechik and Daniel Cohen-Or},
+      year={2022},
+      eprint={2208.01618},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2208.01618}, 
+}
+
+@misc{zhu2025kvedittrainingfreeimageediting,
+      title={KV-Edit: Training-Free Image Editing for Precise Background Preservation}, 
+      author={Tianrui Zhu and Shiyi Zhang and Jiawei Shao and Yansong Tang},
+      year={2025},
+      eprint={2502.17363},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2502.17363}, 
+}
+
+@misc{dong2023prompttuninginversiontextdriven,
+      title={Prompt Tuning Inversion for Text-Driven Image Editing Using Diffusion Models}, 
+      author={Wenkai Dong and Song Xue and Xiaoyue Duan and Shumin Han},
+      year={2023},
+      eprint={2305.04441},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2305.04441}, 
+}
+
+@misc{feng2025personalizefreediffusiontransformer,
+      title={Personalize Anything for Free with Diffusion Transformer}, 
+      author={Haoran Feng and Zehuan Huang and Lin Li and Hairong Lv and Lu Sheng},
+      year={2025},
+      eprint={2503.12590},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2503.12590}, 
+}
+
+%---------------------------------------------------------------------------
+% structured 3d diffusion models
+
+@misc{wu2025amodal3ramodal3dreconstruction,
+      title={Amodal3R: Amodal 3D Reconstruction from Occluded 2D Images}, 
+      author={Tianhao Wu and Chuanxia Zheng and Frank Guan and Andrea Vedaldi and Tat-Jen Cham},
+      year={2025},
+      eprint={2503.13439},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2503.13439}, 
+}
+
+% Rectified Flow Inversion.
+@misc{labs2025flux1kontextflowmatching,
+      title={FLUX.1 Kontext: Flow Matching for In-Context Image Generation and Editing in Latent Space},
+      author={Black Forest Labs and Stephen Batifol and Andreas Blattmann and Frederic Boesel and Saksham Consul and Cyril Diagne and Tim Dockhorn and Jack English and Zion English and Patrick Esser and Sumith Kulal and Kyle Lacey and Yam Levi and Cheng Li and Dominik Lorenz and Jonas Müller and Dustin Podell and Robin Rombach and Harry Saini and Axel Sauer and Luke Smith},
+      year={2025},
+      eprint={2506.15742},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2506.15742},
+}
+
+@misc{flux2024,
+    author={Black Forest Labs},
+    title={FLUX},
+    year={2024},
+    howpublished={\url{https://github.com/black-forest-labs/flux}},
+}
+
+
+%---------------------------------------------------------------------------
+% Experiments
+
+@misc{repaint,
+      title={RePaint: Inpainting using Denoising Diffusion Probabilistic Models}, 
+      author={Andreas Lugmayr and Martin Danelljan and Andres Romero and Fisher Yu and Radu Timofte and Luc Van Gool},
+      year={2022},
+      eprint={2201.09865},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2201.09865}, 
+}
+
+% Experiment Details
+@misc{gso,
+      title={Google Scanned Objects: A High-Quality Dataset of 3D Scanned Household Items}, 
+      author={Laura Downs and Anthony Francis and Nate Koenig and Brandon Kinman and Ryan Hickman and Krista Reymann and Thomas B. McHugh and Vincent Vanhoucke},
+      year={2022},
+      eprint={2204.11918},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2204.11918}, 
+}
+
+@misc{partobjaverse_tiny,
+      title={SAMPart3D: Segment Any Part in 3D Objects}, 
+      author={Yunhan Yang and Yukun Huang and Yuan-Chen Guo and Liangjun Lu and Xiaoyang Wu and Edmund Y. Lam and Yan-Pei Cao and Xihui Liu},
+      year={2024},
+      eprint={2411.07184},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2411.07184}, 
+}
+
+@misc{fluxfill,
+  title        = {{FLUX.1 Tools: Introducing Fill, Depth, Canny, and Redux}},
+  author       = {{Black Forest Labs}},
+  year         = {2024},
+  month        = nov,
+  day          = {21},
+  howpublished = {\url{https://bfl.ai/blog/24-11-21-tools}},
+  note         = {Accessed: 2025-08-15}
+}
+
+% metric
+@misc{charmfer_distance,
+      title={A Point Set Generation Network for 3D Object Reconstruction from a Single Image}, 
+      author={Haoqiang Fan and Hao Su and Leonidas Guibas},
+      year={2016},
+      eprint={1612.00603},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/1612.00603}, 
+}
+
+@misc{volume_iou,
+      title={3D-R2N2: A Unified Approach for Single and Multi-view 3D Object Reconstruction}, 
+      author={Christopher B. Choy and Danfei Xu and JunYoung Gwak and Kevin Chen and Silvio Savarese},
+      year={2016},
+      eprint={1604.00449},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/1604.00449}, 
+}
+
+@ARTICLE{ssim,
+  author={Zhou Wang and Bovik, A.C. and Sheikh, H.R. and Simoncelli, E.P.},
+  journal={IEEE Transactions on Image Processing}, 
+  title={Image quality assessment: from error visibility to structural similarity}, 
+  year={2004},
+  volume={13},
+  number={4},
+  pages={600-612},
+  keywords={Image quality;Humans;Transform coding;Visual system;Visual perception;Data mining;Layout;Quality assessment;Degradation;Indexes},
+  doi={10.1109/TIP.2003.819861}
+}
+
+@misc{lpips,
+      title={The Unreasonable Effectiveness of Deep Features as a Perceptual Metric}, 
+      author={Richard Zhang and Phillip Isola and Alexei A. Efros and Eli Shechtman and Oliver Wang},
+      year={2018},
+      eprint={1801.03924},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/1801.03924}, 
+}
+
+@misc{fid,
+      title={GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium}, 
+      author={Martin Heusel and Hubert Ramsauer and Thomas Unterthiner and Bernhard Nessler and Sepp Hochreiter},
+      year={2018},
+      eprint={1706.08500},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/1706.08500}, 
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4.4
+@article{bang,
+   title={BANG: Dividing 3D Assets via Generative Exploded Dynamics},
+   volume={44},
+   ISSN={1557-7368},
+   url={http://dx.doi.org/10.1145/3730840},
+   DOI={10.1145/3730840},
+   number={4},
+   journal={ACM Transactions on Graphics},
+   publisher={Association for Computing Machinery (ACM)},
+   author={Zhang, Longwen and Zhang, Qixuan and Jiang, Haoran and Bai, Yinuo and Yang, Wei and Xu, Lan and Yu, Jingyi},
+   year={2025},
+   month=jul, 
+   pages={1–21} 
+}
+
+@misc{partnext,
+      title={PartNeXt: A Next-Generation Dataset for Fine-Grained and Hierarchical 3D Part Understanding}, 
+      author={Penghao Wang and Yiyang He and Xin Lv and Yukai Zhou and Lan Xu and Jingyi Yu and Jiayuan Gu},
+      year={2025},
+      eprint={2510.20155},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2510.20155}, 
+}
+@misc{adamw,
+      title={Decoupled Weight Decay Regularization}, 
+      author={Ilya Loshchilov and Frank Hutter},
+      year={2019},
+      eprint={1711.05101},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/1711.05101}, 
+}
+@misc{copartpartverse,
+      title={From One to More: Contextual Part Latents for 3D Generation}, 
+      author={Shaocong Dong and Lihe Ding and Xiao Chen and Yaokun Li and Yuxin Wang and Yucheng Wang and Qi Wang and Jaehyeok Kim and Chenjian Gao and Zhanpeng Huang and Zibin Wang and Tianfan Xue and Dan Xu},
+      year={2025},
+      eprint={2507.08772},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2507.08772}, 
+}
+
+@article{voxhammer,
+  title={Voxhammer: Training-free precise and coherent 3d editing in native 3d space},
+  author={Li, Lin and Huang, Zehuan and Feng, Haoran and Zhuang, Gengxiong and Chen, Rui and Guo, Chunchao and Sheng, Lu},
+  journal={arXiv preprint arXiv:2508.19247},
+  year={2025}
+}

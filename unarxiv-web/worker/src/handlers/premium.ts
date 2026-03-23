@@ -55,7 +55,7 @@ export const PRICING = {
 export const DEFAULT_MODELS = {
   llm: {
     openai:    "gpt-4o-mini",
-    anthropic: "claude-3-5-haiku-20241022",
+    anthropic: "claude-sonnet-4-6",
   },
   tts: {
     openai:     "tts-1-hd",
