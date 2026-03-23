@@ -52,7 +52,7 @@ PROVIDER_CONFIGS: dict[str, ProviderConfig] = {
         chunk_max=5_000,
         cost_per_char=0.30 / 1_000,        # $0.30 / 1K chars
         secs_per_chunk=15,
-        voice="Will",
+        voice="bIHbv24MWmeRgasZH58o",      # "Will" — premade voice, available on all tiers
     ),
     "openai": ProviderConfig(
         chunk_max=2_000,                    # smaller for ~20s/call + frequent ETA updates

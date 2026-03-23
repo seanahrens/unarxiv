@@ -176,17 +176,17 @@ export async function validateProviderKey(
     }
 
     if (provider === "elevenlabs") {
-      // TTS-scoped keys can't list voices or user info — validate via the
-      // TTS endpoint with a minimal request. 200/402 = valid key (402 = needs credits).
-      const resp = await fetch("https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM", {
-        method: "POST",
-        headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "test", model_id: "eleven_flash_v2_5" }),
+      // Validate by fetching user subscription info — works for all key types
+      // and doesn't require a paid voice or credits.
+      const resp = await fetch("https://api.elevenlabs.io/v1/user/subscription", {
+        headers: { "xi-api-key": apiKey },
       });
       if (resp.status === 401) return { valid: false, error: "Invalid API key" };
-      // 200 = valid with credits, 402 = valid but needs credits, 403 = valid but restricted
-      if (resp.ok || resp.status === 402 || resp.status === 403) {
-        return { valid: true, info: resp.status === 402 ? "Key valid (needs credits)" : "ElevenLabs key valid" };
+      if (resp.ok) {
+        const data = await resp.json<{ tier?: string; character_limit?: number; character_count?: number }>().catch(() => ({ tier: undefined, character_limit: undefined, character_count: undefined }));
+        const remaining = (data.character_limit ?? 0) - (data.character_count ?? 0);
+        if (remaining <= 0) return { valid: true, info: "Key valid (no characters remaining)" };
+        return { valid: true, info: `ElevenLabs key valid (${remaining.toLocaleString()} chars remaining)` };
       }
       return { valid: false, error: `ElevenLabs returned ${resp.status}` };
     }
