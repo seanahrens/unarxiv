@@ -18,6 +18,7 @@ export type PremiumProvider =
   | "openai"
   | "google"
   | "elevenlabs"
+  | "anthropic"
   | "polly"
   | "azure"
   | "free"; // unarXiv Voice (LLM-only)
@@ -25,15 +26,19 @@ export type PremiumProvider =
 interface StoredPremiumData {
   keys: Partial<Record<PremiumProvider, string>>;
   lastOption: string | null;
+  defaultScriptingProvider: string | null;
 }
 
 function readStorage(): StoredPremiumData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { keys: {}, lastOption: null };
-    return JSON.parse(raw) as StoredPremiumData;
+    if (!raw) return { keys: {}, lastOption: null, defaultScriptingProvider: null };
+    const parsed = JSON.parse(raw) as StoredPremiumData;
+    // Backfill for older storage shape
+    if (!("defaultScriptingProvider" in parsed)) (parsed as StoredPremiumData).defaultScriptingProvider = null;
+    return parsed;
   } catch {
-    return { keys: {}, lastOption: null };
+    return { keys: {}, lastOption: null, defaultScriptingProvider: null };
   }
 }
 
@@ -108,6 +113,22 @@ export function getLastOption(): string | null {
 export function setLastOption(option: string): void {
   const data = readStorage();
   data.lastOption = option;
+  writeStorage(data);
+}
+
+/**
+ * Returns the default scripting (LLM) provider id, or null if not set.
+ */
+export function getDefaultScriptingProvider(): string | null {
+  return readStorage().defaultScriptingProvider;
+}
+
+/**
+ * Persist the user's preferred default scripting (LLM) provider.
+ */
+export function setDefaultScriptingProvider(provider: string | null): void {
+  const data = readStorage();
+  data.defaultScriptingProvider = provider;
   writeStorage(data);
 }
 

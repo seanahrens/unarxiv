@@ -15,8 +15,12 @@ import {
 import {
   storeEncryptedKey,
   getStoredKey,
+  getStoredKeys,
   setLastOption,
   hasKeyForProvider,
+  getDefaultScriptingProvider,
+  setDefaultScriptingProvider,
+  clearKeys,
   type PremiumProvider,
 } from "@/lib/premiumKeys";
 import { track } from "@/lib/analytics";
@@ -330,6 +334,192 @@ function KeyInputRow({
 }
 
 // ---------------------------------------------------------------------------
+// All providers that can hold an API key (displayed in key management)
+// ---------------------------------------------------------------------------
+
+const KEY_MGMT_PROVIDERS: {
+  id: PremiumProvider;
+  label: string;
+  link: string;
+  placeholder: string;
+  isScriptingCapable: boolean;
+}[] = [
+  { id: "openai", label: "OpenAI", link: "https://platform.openai.com/api-keys", placeholder: "sk-...", isScriptingCapable: true },
+  { id: "google", label: "Google Gemini", link: "https://aistudio.google.com/app/apikey", placeholder: "AIza...", isScriptingCapable: true },
+  { id: "anthropic", label: "Anthropic", link: "https://console.anthropic.com/settings/keys", placeholder: "sk-ant-...", isScriptingCapable: true },
+  { id: "elevenlabs", label: "ElevenLabs", link: "https://elevenlabs.io/app/settings/api-keys", placeholder: "sk_...", isScriptingCapable: false },
+];
+
+// ---------------------------------------------------------------------------
+// Key Management Panel
+// ---------------------------------------------------------------------------
+
+function KeyManagementPanel({ onBack }: { onBack: () => void }) {
+  // Track which keys are stored (by presence of encrypted ciphertext)
+  const storedKeys = getStoredKeys();
+
+  // Local draft values — empty string means "unchanged". We never show the real key.
+  const [drafts, setDrafts] = useState<Partial<Record<PremiumProvider, string>>>({});
+  // Track which rows the user has actively modified
+  const [modified, setModified] = useState<Set<PremiumProvider>>(new Set());
+  // Validation states per provider
+  const [testStates, setTestStates] = useState<Partial<Record<PremiumProvider, "idle" | "testing" | "ok" | "fail">>>({});
+  // Default scripting provider
+  const [defaultProv, setDefaultProv] = useState<string | null>(getDefaultScriptingProvider);
+  // Saving indicator
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleChange = (provider: PremiumProvider, value: string) => {
+    setDrafts((d) => ({ ...d, [provider]: value }));
+    setModified((m) => { const s = new Set(m); s.add(provider); return s; });
+    setTestStates((s) => ({ ...s, [provider]: "idle" }));
+  };
+
+  const handleClear = (provider: PremiumProvider) => {
+    clearKeys(provider);
+    setDrafts((d) => { const n = { ...d }; delete n[provider]; return n; });
+    setModified((m) => { const s = new Set(m); s.delete(provider); return s; });
+    setTestStates((s) => { const n = { ...s }; delete n[provider]; return n; });
+    // If this was the default scripting provider, clear it
+    if (defaultProv === provider) {
+      setDefaultProv(null);
+      setDefaultScriptingProvider(null);
+    }
+  };
+
+  const handleDefaultChange = (provider: string) => {
+    const next = defaultProv === provider ? null : provider;
+    setDefaultProv(next);
+    setDefaultScriptingProvider(next);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    // Only encrypt + store providers that were actually modified
+    for (const provider of modified) {
+      const raw = drafts[provider]?.trim();
+      if (!raw) continue;
+      try {
+        const resp = await encryptKey(provider, raw);
+        const result = await validateKey(provider, resp.encrypted_key);
+        if (result.valid) {
+          storeEncryptedKey(provider, resp.encrypted_key);
+          setTestStates((s) => ({ ...s, [provider]: "ok" }));
+        } else {
+          setTestStates((s) => ({ ...s, [provider]: "fail" }));
+        }
+      } catch {
+        setTestStates((s) => ({ ...s, [provider]: "fail" }));
+      }
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const hasChanges = modified.size > 0 && [...modified].some((p) => (drafts[p]?.trim() ?? "").length > 0);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-stone-500 leading-snug">
+        Manage your API keys. Stored keys are encrypted locally in your browser.
+      </p>
+
+      {KEY_MGMT_PROVIDERS.map((prov) => {
+        const hasKey = !!storedKeys[prov.id];
+        const isModified = modified.has(prov.id);
+        const draft = drafts[prov.id] ?? "";
+        const testState = testStates[prov.id];
+
+        return (
+          <div key={prov.id} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-stone-700">{prov.label}</label>
+                {prov.isScriptingCapable && (hasKey || (isModified && draft) || defaultProv === prov.id) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDefaultChange(prov.id)}
+                    title="Choose which AI provider generates the narration script (the transcript fed to text-to-speech)"
+                    className={`flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 border transition-colors ${
+                      defaultProv === prov.id
+                        ? "border-stone-600 bg-stone-100 text-stone-700 font-medium"
+                        : "border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-600"
+                    }`}
+                  >
+                    {defaultProv === prov.id ? "✓ Scripting Default" : "Make Scripting Default"}
+                  </button>
+                )}
+              </div>
+              <a
+                href={prov.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-stone-400 hover:text-stone-600 underline"
+              >
+                Get Key →
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                value={isModified ? draft : (hasKey ? "••••••••••••••••" : "")}
+                onChange={(e) => handleChange(prov.id, e.target.value)}
+                onFocus={(e) => {
+                  // If showing masked dots (not yet modified), clear on focus so user can type fresh
+                  if (hasKey && !isModified) {
+                    handleChange(prov.id, "");
+                    // Move cursor to start after state update
+                    setTimeout(() => e.target.setSelectionRange(0, 0), 0);
+                  }
+                }}
+                placeholder={prov.placeholder}
+                className="flex-1 border border-stone-300 rounded-lg px-3 py-1.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 font-mono"
+              />
+              {hasKey && !isModified && (
+                <button
+                  type="button"
+                  onClick={() => handleClear(prov.id)}
+                  title="Remove key"
+                  className="text-stone-300 hover:text-red-400 transition-colors shrink-0"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+              {testState === "ok" && <span className="text-xs text-emerald-600 font-medium shrink-0">✓</span>}
+              {testState === "fail" && <span className="text-xs text-red-500 font-medium shrink-0">✗</span>}
+              {testState === "testing" && <span className="text-xs text-stone-400 font-medium shrink-0">…</span>}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-3 py-1.5 text-xs text-stone-500 hover:text-stone-700 transition-colors"
+        >
+          ← Back
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!hasChanges || saving}
+          className="px-4 py-1.5 text-xs font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+        >
+          {saving ? "Saving…" : saved ? "✓ Saved" : "Save Changes"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Modal
 // ---------------------------------------------------------------------------
 
@@ -416,7 +606,9 @@ export default function PremiumNarrationModal({
   // Step 2 key state
   const [ttsKeyRaw, setTtsKeyRaw] = useState("");
   const [ttsTestState, setTtsTestState] = useState<"idle" | "testing" | "ok" | "fail" | "needs-credits">("idle");
-  const [llmProvider, setLlmProvider] = useState<string>(LLM_PROVIDERS[0].id);
+  const [llmProvider, setLlmProvider] = useState<string>(
+    () => getDefaultScriptingProvider() ?? LLM_PROVIDERS[0].id
+  );
   const [llmKeyRaw, setLlmKeyRaw] = useState("");
   const [llmTestState, setLlmTestState] = useState<"idle" | "testing" | "ok" | "fail" | "needs-credits">("idle");
 
@@ -426,6 +618,9 @@ export default function PremiumNarrationModal({
 
   // Whether a premium LLM script already exists (no LLM cost for subsequent narrations)
   const [hasExistingScript, setHasExistingScript] = useState(false);
+
+  // Key management panel toggle
+  const [showKeyMgmt, setShowKeyMgmt] = useState(false);
 
   // Step 3 / submission
   const [submitting, setSubmitting] = useState(false);
@@ -638,23 +833,40 @@ export default function PremiumNarrationModal({
               </svg>
               Upgrade Narration
             </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-stone-400 hover:text-stone-600 transition-colors ml-4 shrink-0"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-3 ml-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowKeyMgmt((v) => !v)}
+                title="Manage API Keys"
+                className={`transition-colors ${showKeyMgmt ? "text-stone-700" : "text-stone-400 hover:text-stone-600"}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-stone-400 hover:text-stone-600 transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Body */}
         <div className="px-6 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+          {/* ── Key Management Panel ── */}
+          {showKeyMgmt && (
+            <KeyManagementPanel onBack={() => setShowKeyMgmt(false)} />
+          )}
+
           {/* ── Step 1: Choose option ── */}
-          {step === 1 && (
+          {!showKeyMgmt && step === 1 && (
             <>
               <p className="text-xs text-stone-500 leading-snug">
                 {hasExistingScript
@@ -710,7 +922,7 @@ export default function PremiumNarrationModal({
           )}
 
           {/* ── Step 2: API Keys ── */}
-          {step === 2 && (
+          {!showKeyMgmt && step === 2 && (
             <div className="space-y-4">
               <p className="text-xs text-stone-500 leading-snug">
                 You&apos;ll only need to enter these key(s) once. Keys are encrypted and saved locally in your browser.{" "}
@@ -793,7 +1005,7 @@ export default function PremiumNarrationModal({
           )}
 
           {/* ── Step 3: Confirm ── */}
-          {step === 3 && selectedEstimate && (
+          {!showKeyMgmt && step === 3 && selectedEstimate && (
             <div className="space-y-4">
               <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 space-y-2">
                 {(() => {
@@ -840,12 +1052,13 @@ export default function PremiumNarrationModal({
           )}
 
           {/* Fallback if no estimate found in step 3 */}
-          {step === 3 && !selectedEstimate && (
+          {!showKeyMgmt && step === 3 && !selectedEstimate && (
             <p className="text-sm text-stone-500">Loading estimate…</p>
           )}
         </div>
 
-        {/* Footer buttons */}
+        {/* Footer buttons — hidden when key management is open (it has its own) */}
+        {!showKeyMgmt && (
         <div className="px-6 py-4 border-t border-stone-100 flex gap-2 justify-end">
           {step === 1 && (
             <>
@@ -917,6 +1130,7 @@ export default function PremiumNarrationModal({
             </>
           )}
         </div>
+        )}
       </div>
     </div>,
     document.body
