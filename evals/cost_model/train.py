@@ -68,7 +68,10 @@ def fetch_training_data() -> list[dict[str, Any]]:
     url = f"{API_BASE}/api/admin/cost-training-data"
     req = urllib.request.Request(
         url,
-        headers={"X-Admin-Password": ADMIN_PASSWORD},
+        headers={
+            "X-Admin-Password": ADMIN_PASSWORD,
+            "User-Agent": "unarxiv-cost-model/1.0",
+        },
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
         data = json.loads(resp.read())
@@ -211,6 +214,7 @@ def deploy_coefficients(result: dict) -> None:
         headers={
             "Content-Type": "application/json",
             "X-Admin-Password": ADMIN_PASSWORD,
+            "User-Agent": "unarxiv-cost-model/1.0",
         },
         method="POST",
     )
