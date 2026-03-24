@@ -341,7 +341,7 @@ def _strip_non_prose(text: str) -> str:
     # Remove acknowledgements section (greedy to end of section or document)
     # Match sections whose title CONTAINS "Acknowledg" anywhere (handles compound titles)
     text = re.sub(
-        r"\\(?:sub)*section\*?\{[^}]*Acknowledg(?:e?ments?)[^}]*\}.*?(?=\\section[^a-zA-Z]|\Z)",
+        r"\\(?:sub)*section\*?\{[^}]*Acknowledg(?:e?ments?)[^}]*\}.*?(?=\\section[^a-zA-Z]|\\appendix\b|\Z)",
         "", text, flags=re.DOTALL | re.IGNORECASE,
     )
     text = re.sub(r"\\begin\{acks\}.*?\\end\{acks\}", "", text, flags=re.DOTALL)
@@ -647,6 +647,13 @@ def _handle_math(text: str) -> str:
     # Remove bare ^/_ followed by a single non-word-boundary char
     text = re.sub(r"[\^_](?=[a-zA-Z0-9*])(?!\w{2})", "", text)
 
+    # Clean up remaining _ artifacts from Greek-expanded subscripts.
+    # _convert_greek_letters adds spaces: \pi_\theta -> "$ pi _ theta $"
+    # _convert_subscripts only handles "_X" (no space) and "_{...}" (braced),
+    # so "_ theta" (underscore + space + word) is left unhandled.
+    text = re.sub(r"(\w)[ ]*_[ ]+(\w)", r"\1 sub \2", text)  # "pi _ theta" -> "pi sub theta"
+    text = re.sub(r"(?<![.\w])_[ ]+(\w)", r"sub \1", text)   # leading "_ theta" -> "sub theta"
+
     return text
 
 
@@ -749,8 +756,9 @@ def _normalize_text(text: str) -> str:
     # "Figure" / "Table" etc. with no number following → remove
     text = re.sub(r"\b(Figure|Fig\.|Table|Section|Eq\.|Equation)\s*(?=[,.\s;:)]|$)", "", text, flags=re.MULTILINE)
 
-    # Clean up doubled punctuation
-    text = re.sub(r"([.!?])\s*\.", r"\1", text)
+    # Clean up doubled punctuation (but preserve ellipsis — three or more consecutive dots)
+    text = re.sub(r"([!?])\.", r"\1", text)          # !. -> !  and ?. -> ?
+    text = re.sub(r"(?<!\.)\.\.(?!\.)", ".", text)   # ".." not part of "..." -> "."
     text = re.sub(r",\s*,", ",", text)
     text = re.sub(r"\(\s*,", "(", text)
     text = re.sub(r",\s*\)", ")", text)

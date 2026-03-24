@@ -90,8 +90,13 @@ def finalize_body(text: str) -> str:
     - Collapse excessive blank lines
     - Remove stray punctuation-only lines
     - Normalize whitespace
+    - Deduplicate consecutive identical paragraph headers
     """
     text = re.sub(r"\n{3,}", "\n\n", text)
     text = re.sub(r"[ \t]+", " ", text)
     lines = [l for l in text.split("\n") if l.strip() not in (".", ",", ";", ":", "-", "–")]
-    return "\n".join(lines).strip()
+    text = "\n".join(lines)
+    # Deduplicate consecutive identical short paragraph headers
+    # e.g., "Abstract.\n\nAbstract." -> "Abstract." (ICML two-abstract-block pattern)
+    text = re.sub(r"([A-Z][^\n]{2,60}\.)\n\n\1(?=\n)", r"\1", text)
+    return text.strip()

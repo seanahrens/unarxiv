@@ -1,0 +1,257 @@
+How Well Does Generative Recommendation Generalize?.
+
+By Authors.
+
+Published on 2026-03.
+
+Introduction.
+
+Generative recommendation (GR) has recently emerged as a promising paradigm for sequential recommendation. Compared with conventional models such as SASRec , a key difference is that GR models tokenize each item as a sequence of sub-item tokens ( semantic IDs ) rather than a single unique item ID.
+
+However, the advantage of GR models has typically been observed in terms of overall performance, that is, GR models correctly predict more data instances than conventional methods . This naturally raises the question of which types of data instances are better handled by generative recommendation models.
+
+We hypothesize that each data instance requires different levels of generalization and memorization for correct prediction, leading to the performance discrepancies observed between GR and item ID-based models. To investigate this, we propose an analytical framework that categorizes each data instance by the primary model capability it requires (either memorization or generalization) based on the underlying data patterns.
+
+We then analyze model performance on each category separately.
+
+Nevertheless, conducting such analyses requires two key components: identifying the data patterns of interest in the context of sequential recommendation, and designing reasonable methods to categorize instances.
+
+(1) Data patterns. Since the task is framed as predicting the next item from a user's history, a natural starting point is to focus on the target items. While prior work often studies cold-start items ( items that are rare or unseen during training) as out-of-distribution cases that require generalization , this target-centric view ignores the interaction between the history and the target. Even when a target item is popular, the transition from the given history to that item may be rare in the training data. Predicting such transitions can therefore still require generalization.
+
+(2) Categorization.
+
+We require a principled method to determine whether a given instance primarily relies on memorization or generalization.
+
+Prior studies, such as those based on counterfactual memorization , are usually computationally expensive, as they require frequent model retraining on datasets that exclude specific data points.
+
+This makes them impractical for recommendation settings with large-scale user interaction logs . Another line of work categorizes instances by
+
+measuring representation similarities between training instances and the predictions . However, these methods are mainly adopted in tasks without a clear ground truth, such as language modeling. In contrast, recommendation is typically evaluated with a well-defined ground-truth target item for each instance .
+
+Given these considerations, we treat item transitions (from a historical item to the target) rather than single target items as the data patterns of interest.
+
+To categorize data instances, we examine whether the item transitions required for the correct prediction have been observed in the training data (memorization), or if they can be composed or inferred from observed patterns (generalization).
+
+Using this categorization, we explicitly partition the test data into subsets reflecting different capabilities and evaluate model performance on each, thereby distinguishing the contributions of memorization and generalization to overall performance.
+
+To this end, we benchmark two representative models for each paradigm: TIGER as the semantic ID-based GR model and SASRec as the item ID-based conventional model. By evaluating performance on memorization and generalization subsets across seven real-world datasets, we find that GR models indeed excel on generalization-related subsets, while generally underperforming item ID-based models on memorization-related subsets. This observation motivates us to investigate the mechanism behind the generalization capability of GR models. We then shift our analysis from item transition patterns to sub-item token transition patterns. From this perspective, a substantial fraction of target item transitions that would be regarded as item-level generalization can instead be interpreted as token-level memorization. This effectively explains the source of the GR models' generalization capability.
+
+Finally, we show that these two paradigms are complementary. We introduce an adaptive ensembling method that combines a GR model with an item ID-based model. The ensemble assigns instance-specific weights based on whether each data instance primarily requires memorization or generalization, as predicted by an indicator. Experimental results show that this adaptive ensembling strategy consistently improves overall performance over both individual models and naive fixed-weight ensembles.
+
+Defining Memorization and Generalization.
+
+In this section, we describe our proposed framework for analyzing memorization and generalization in sequential recommendation. We first outline the task definition and notation . In what follows, we present our criteria for attributing data instances as memorization-based or generalization-based, relying on the item transition patterns they contain. Subsequently, we extend the generalization criteria to encompass multi-hop generalization . Finally, we discuss the remaining uncategorized instances .
+
+Task Definition.
+
+Sequential recommendation. A user is represented by a sequence of historical item interactions u equals , where i in I . The goal is to predict the next item i sub t that the user will interact with. The recommendation models are trained on a set of user interaction sequences D_ train . For a data instance (u, i sub t) not present in the training set, we attribute it to memorization or generalization based on its constituent item transition patterns.
+
+Item transition. As discussed, we treat item transitions as the fundamental data patterns for studying memorization and generalization. Specifically, we define an item transition as a directed pair of items , where i sub s, i sub t in u and s less than t . We further define the hop count of the item transition based on the distance between i sub s and i sub t in the user's history. For example, if s equals t minus 2 , the hop count is 2 . Our framework categorizes each data instance (u, i sub t) based on the set of item transitions , i sub s in u it contains.
+
+Memorization-Related Data Instance.
+
+We define a data instance as memorization-related if the 1 -hop item transition has been observed in the training data, regardless of which user's history it appears . Under this condition, it's possible for a model to correctly predict the target item only by memorizing the training data.
+
+Def. (Memorization). A data instance (u, i sub t) is memorization-related if:
+
+Generalization-Related Data Instance.
+
+A data instance is defined as generalization-related if: (1) it is not memorization-related; and (2) it contains at least one item transition that can be inferred or composed from observed transitions in the training data. We categorize generalization into multiple types based on specific inference or composition methods. Note that a single data instance may satisfy multiple generalization types.
+
+For simplicity, we first focus on 1 -hop item transitions where s equals t minus 1 , introducing three possible 1 -hop generalization types: transitivity, symmetry, and 2nd-order symmetry.
+
+Transitivity implies that the model can infer by bridging two observed transitions via an intermediate item x .
+
+Def. (Transitivity). A data instance (u, i sub t) not in D_ mem satisfies transitivity if:
+
+Symmetry allows the model to infer a transition if its reverse has been observed.
+
+Def. (Symmetry). A data instance (u, i sub t) not in D_ mem satisfies symmetry if:
+
+2nd-Order Symmetry encompasses complex symmetric relations where i sub t minus 1 and i sub t are related via an intermediate item x in non-transitive ways.
+
+Def. (2nd-Order Symmetry). A data instance (u, i sub t) not in D_ mem satisfies 2nd-order symmetry if there exists x in I, there exists u', u" in D_ train such that one of the following holds:
+
+Multi-Hop Generalization.
+
+Although focuses on 1 -hop item transitions for simplicity, our proposed criteria naturally extend to multi-hop transitions. Specifically, we define multi-hop generalization types (transitivity, symmetry, and 2nd-order symmetry) by applying the same logic to multi-hop item transitions (as defined). If a data instance involves multiple item transitions with different hop counts that satisfy the generalization criteria, we use the minimum hop count for categorization.
+
+Substitutability. Beyond the types introduced , one might consider extending the definition of memorization to multi-hop item transitions. However, we argue that "multi-hop memorization" is effectively a form of generalization. It requires the model to have strong generalization capabilities to bypass unnecessary intermediate items and select the appropriate multi-hop transition for prediction. Therefore, we define substitutability as a unique generalization type involving only multi-hop item transitions.
+
+Def. (Substitutability). A data instance (u, i sub t) not in D_ mem satisfies substitutability if:
+
+Uncategorized Data Instance.
+
+Given a maximum hop count ( 4 in our experiments, see ), any data instance that is neither memorization-related nor generalization-related is labeled as "uncategorized." Such instances may involve items unseen during training, exhibit higher-order transition patterns, require capabilities beyond the scope of memorization and generalization, or be inherently unpredictable based on historical data alone. In our experiments, we also analyze model performance on these uncategorized instances.
+
+Performance Breakdown: Item IDs vs. Semantic IDs.
+
+In this section, we present the empirical results for memorization and generalization capabilities for GR and item ID-based models.
+
+Experiment Setup.
+
+Datasets. We conduct experiments on seven public datasets that are widely used in evaluating GR models : "Sports and Outdoors" (Sports) and "Beauty" (Beauty) from the Amazon Reviews 2014 collection ; "Industrial and Scientific" (Science), "Musical Instruments" (Music), and "Office Products" (Office) from the Amazon 2023 collection ; Steam and Yelp. The statistics of processed datasets have been reported. We adopt the standard leave-last-out data split, using the last and second-to-last items of each sequence for testing and validation, respectively.
+
+Models. We benchmark two models: TIGER , representing the generative recommendation paradigm, and SASRec , representing the conventional sequential recommendation paradigm. Note that, for a fair comparison, we optimize the SASRec model using cross-entropy loss and treat all items as negative samples, following , rather than sampling a single negative item per instance as .
+
+Implementation details.
+
+We fine-tune the learning rate over 1 e minus 3, 3 e minus 3 and train for a maximum of 150 epochs with early stopping. The checkpoint achieving the best validation performance is selected for testing.
+
+Data categorization.
+
+We partition test instances into:
+
+memorization, generalization (if memorization is not satisfied), and uncategorized (if none of the above is satisfied).
+
+Note that the above three categories are mutually exclusive. However, a data instance may exhibit multiple generalization types, each associated with several possible hop distances. Following Occam's razor, we annotate an instance with all applicable types but retain only the minimum hop distance for each type.
+
+Performance Analysis.
+
+In this section, we analyze the performance comparison between SASRec and TIGER, broken down by the memorization and generalization categories defined.
+
+SASRec memorizes, TIGER generalizes. TIGER generally underperforms SASRec on memorization subsets ( minus 43.6 percent on Yelp, minus 41.2 percent on Sports, minus 35.2 percent on Beauty, and comparable on others), while consistently outperforming SASRec on generalization subsets ( plus 58.8 percent on Office, plus 56.7 percent on Beauty, and plus 39.8 percent on Sports).
+
+This trade-off suggests that SASRec relies more on memorizing observed patterns, while TIGER is more effective at composing learned item transitions for generalization. Both models achieve substantially higher performance on memorization than on generalization overall, reflecting the intrinsic difficulty of generalizing beyond observed transitions.
+
+Moreover, both models exhibit near-zero performance on the uncategorized subset while achieving reasonable performance on the others. This supports the validity of our data attribution and suggests that the uncategorized instances are indeed difficult to predict, consistent with our hypothesis .
+
+Generalization categories.
+
+Comparing performance across generalization categories, we observe that both models achieve higher performance on Substitutability and Symmetry than on Transitivity and 2nd-Symmetry. We attribute this to differences in the difficulty of the various generalization types. Substitutability and Symmetry require induction from only a single training example, whereas Transitivity and second-order Symmetry require composing knowledge from multiple examples, representing a structurally more complex form of generalization.
+
+Generalization hops.
+
+Within each generalization category, both models perform monotonically worse as hop distance increases. This shows that nearby item transitions pose a stronger influence than distant ones. In low-hop settings, SASRec can sometimes outperform TIGER. But its performance drops faster as the hop distance grows. The decline is even sharper in more difficult categories such as Transitivity and 2nd-Symmetry. This suggests that SASRec mainly generalizes over local context, while TIGER remains more robust for longer-hop generalization.
+
+Data ratio analysis. Finally, we examine the proportion of test instances in each category.
+
+In all datasets, memorization cases form a much smaller portion than generalization cases. This suggests that pure memorization is limited, and effective recommendation requires substantial generalization capability.
+
+Among the generalization categories, most instances require combining information from multiple training examples, whereas only a small fraction can be inferred from a single training instance (Substitutability and Symmetry). Uncategorized instances consistently account for less than 10 percent of the data, indicating that most test transitions can be explained by other categories.
+
+Mechanism Analysis: A Token-Level Lens.
+
+Semantic ID-based GR models generally outperform item ID-based models on generalization-related subsets. This raises a question: Why does GR generalize better yet memorize worse than item ID-based models? In this section, we investigate the underlying mechanisms of GR models through a token-level lens.
+
+We first introduce the concept of prefix n-gram memorization , and demonstrate that item-level generalization can often be interpreted as token-level memorization within the semantic ID space . Next, we characterize models' behavior using this new lens , and find that: (1) GR generalization performance improves when the underlying token transitions are more frequently observed in the training data. (2) Different item transitions can share the same memorized prefix, which can decrease GR's ability to memorize a specific item transition. Finally, to further validate our hypothesis, we design a controlled study to vary the token memorization ratio and measure its direct impact on the generalization-memorization trade-off .
+
+Prefix N-Gram Memorization.
+
+Motivation. Unlike item ID-based models, GR models represent items as sequences of discrete semantic ID tokens shared across items. This allows the model to anchor predictions on sub-item level transition patterns.
+
+However, quantifying memorization behavior at a token level is non-trivial. Directly attributing the effect of a single token on another token is difficult because token-to-token correlations are dense and highly dependent on the contexts . For LLMs, people often assess memorization via n -gram correlation between context and target text, reflecting the model's ability to memorize the n-gram 'knowledge' and generate the corresponding n-gram 'answer' . Drawing inspiration from this, we propose quantifying memorization in GR by considering the prefix n -grams of the context-target item pair. Since semantic IDs encode hierarchical (coarse-to-fine) semantic information, focusing on transitions from one prefix to another prefix captures the most prominent semantic dependencies.
+
+Token Prefix. Let tok(i) equals denote the semantic-ID tokenization of item i , where L is the number of tokens in the semantic ID. For a prefix length n less than or equal to L , define the n -gram prefix operator pref sub n(i) . 
+
+Prefix n-gram memorization. We define token-level memorization by considering only the semantic ID prefixes of items in the transitions. A test instance is considered n -gram prefix-memorizable if the first n tokens (the n -gram prefix) of both items in the target transition occur in the training set, even when the exact items differ.
+
+Def. (1-hop Prefix N-Gram Memorization). A data instance (u, i sub t) satisfies 1 -hop prefix n -gram memorization if:
+
+Analogous to the multi-hop generation framework, this definition naturally extends to k -hop transitions. Notably, when k equals 1 , token prefix memorization can be viewed as a relaxed form of memorization, whereas for k greater than 1 , it is analogous to the definition of substitutability . For the following sections, we refer to prefix n -gram memorization as token memorization for brevity.
+
+From Item Generalization to Token Memorization.
+
+We examine how item-level generalization can be reduced to token memorization for GR models, following the definition . Unless otherwise specified, the following experiments on all datasets aggregate all token memorizations with hop less than or equal to 4 , and utilize a 256 times 3 semantic ID quantization followed by one identifier token, consistent with .
+
+Item generalization instances often reduce to token memorization for GR models. illustrates the reduction of item-level generalization categories into token-level prefix-gram memorization.
+
+We observe that a non-trivial fraction of instances reduce to 1-, 2-, and 3-gram prefix memorization. For example, on average, more than 5 percent of item-level generalization transitions (symmetry, transitivity, and 2nd-symmetry) can also be explained as 3-hop prefix memorization. Notably, the vast majority of test instances ( greater than 99 percent ) across all item-level categories admit at least 1-gram prefix memorization. This demonstrates that for many test instances where the item-level transition is unseen, the training set nevertheless contains matching prefix transitions, allowing the model to leverage prefix memorization for inference.
+
+Token memorization ratio reflects item-level difficulty. Across categories, symmetry exhibits a higher ratio of 4-gram memorization, largely due to its overlap with item-level substitutability. In contrast, transitivity and 2nd-order symmetry mostly reduces to short prefix memorization (2–3 grams), yielding weaker prefix-transition support from training and making these tasks harder. Furthermore, uncategorized instances reduce almost exclusively to 1-gram memorization, representing the weakest form of prefix-transition support. Overall, these findings show that the ratio of token memorization directly reflects the item-level task difficulty and the model performance trends observed .
+
+Explaining Performance Trade-off via Token Memorization.
+
+Having established that item-level generalization often reduces to token-level memorization, we now investigate whether this mechanism explains the performance trade-off: GR generalizes better but memorizes worse at item level. We categorize test instances through token memorization and show that token memorization enables better generalization, and token memorization dilutes item memorization.
+
+Token Memorization Enables Better Generalization.
+
+To analyze how TIGER's performance correlates with token memorization support at a finer granularity, we quantify prefix support as the count of prefix-transition occurrences in the training data:
+
+ where C( times ) is the count function. Given an item-level generalization instance (u, i sub t) , the token memorization support is the sum of prefix supports of all the k-hop transitions to the target item.
+
+More token memorization support correlates with better generalization. We aggregate token memorization support for hop k less than or equal to 4 , and plot the TIGER and SASRec models' NDCG@10 on all item generalization instances (without item memorization support) against C sub n(u, i sub t) 
+
+. First, we observe that supported instances consistently achieve substantially higher NDCG@10 than non-supported instances for both TIGER and SASRec. TIGER’s gain over SASRec is substantially larger on prefix-supported instances, indicating that TIGER benefits from prefix-transition support that SASRec does not explicitly model.Furthermore, TIGER's performance gap increases with both increasing support count C sub n(u, i sub t) and prefix length n , indicating that more token memorization support correlates with better generalization performance.
+
+Token Memorization Dilutes Item Memorization.
+
+Conversely, we investigate why this same mechanism might degrade performance on item memorization tasks. We hypothesize a dilution effect: while SASRec directly optimizes the specific item transition i sub t minus 1 to i sub t , TIGER predicts through prefix transitions that are shared by many items. Thus, its ability to memorize specific item transitions can be diluted. To verify this, we evaluate TIGER's relative performance ( Delta NDCG ) against two metrics: item transition probability ( phi ), the probability of predicting target item based on all item transitions, and prefix transition probability ( psi ), the probability of predicting target item's prefix based on all prefix transitions. For a transition i sub t minus 1 to i sub t , these quantities are estimated empirically by:
+
+where C is the count function and C(x arrow times ) is the total number of outgoing transitions from the context x .
+
+Token memorization dilutes item memorization. We visualize how TIGER’s NDCG gain over SASRec ( Delta NDCG ) breaks down by item transition probability phi and prefix transition probability psi . across all datasets, we observe significant NDCG loss when instances have high phi but low psi .
+
+In this case, TIGER spreads probability mass across many items sharing the same prefix transition, causing difficulty for the model to memorize a specific item transition pattern. Conversely, TIGER can even outperform SASRec when psi is high, indicating that TIGER’s item memorization performance is strong only when token memorization aligns. Across the datasets, token memorization usually leads to more dilution cases, causing TIGER to underperform SASRec on memorization tasks.
+
+Mechanism Validation.
+
+In this section, we test our hypothesis that increasing token memorization ratio improves item-level generalization but can reduce item-level memorization. Our goal is to vary the token memorization ratio and measure the resulting changes in performance.
+
+Experiment Setup. To manipulate the token memorization ratio in a systematic way, we vary the codebook size. The intuition is that denser codebooks (smaller codebook sizes V ) induce more prefix sharing across items, which increases the total number of token memorization instances. We consider SID lengths L in 2,3,4,5 (including identifier tokens), and for each fixed L we evaluate two codebook sizes V . In we report the resulting token memorization ratios at each prefix length; as expected, smaller V yields a larger fraction of instances with prefix-transition support.
+
+Controlled factors. We only compare configurations within the same SID length L , since optimizing different lengths can have different difficulty and longer SID length often leads to optimization issues . We also fix the recommendation model size and match the training compute budget within each L . For each L , we estimate the training compute to ensure convergence, defined as both memorization and generalization metrics no longer increasing on the validation set. We report (i) validation training dynamics of NDCG@10 and (ii) final test NDCG@10 for each configuration.
+
+Smaller codebook sizes lead to better generalization but worse memorization.
+
+From , we observe a consistent pattern: smaller codebook size V (denser codebooks, higher token memorization ratio) leads to better item-level generalization, but degraded memorization performance. Averaged across settings, the smaller V improves generalization by
+
+ plus 10.24 percent relative compared to the larger variant, while memorization decreases by
+
+ minus 7.62 percent relative. This provides consistent evidence across all tested codebook sizes that increasing token memorization ratio improves generalization while degrading memorization.
+
+Regularization effect in training dynamics. From , we further observe that for large V , generalization performance peaks early and then degrades as training proceeds. In contrast, for small V , generalization remains stable or continues to improve until convergence. This suggests that denser tokenization has a stronger data-level regularization effect. It encourages TIGER to rely more on shared prefix-transition structure, rather than overfitting to noisier, item-specific transitions.
+
+Memorization-Aware Adaptive Ensemble.
+
+So far, we have shown that GR models excel on instances requiring generalization, whereas item ID-based models perform better on memorization.
+
+Motivated by this observation, we investigate whether it is possible to combine the strengths of both paradigms.
+
+We propose a hybrid framework that dynamically weights the predictions of a GR model and an item-based model for each given input, depending on the primary capability the input may require. We first introduce a simple, training-free indicator to estimate the likelihood of memorization, followed by an empirical validation of their correlation with ground-truth categories. Finally, we present experimental results demonstrating that this adaptive model ensemble strategy
+
+achieves improved overall performance.
+
+Adaptive Ensemble Indicators.
+
+The core idea of our adaptive ensemble strategy is to estimate how likely a data instance can be solved via memorization, and use this estimate to adjust the relative weights between the item ID-based model and the GR model for each instance. A key challenge is that the memorization criterion defined in cannot be directly applied at inference time, since the target item is unavailable. We therefore introduce a practical indicator that estimates the memorization likelihood of a data instance (u, i sub t) and converts it into an ensemble weight.
+
+Confidence-based indicator. The intuition behind this approach is that memorization-related instances tend to lie closer to the training data distribution. As a result, an item ID-based model that effectively memorizes training patterns should produce more confident predictions on such instances. We therefore use the prediction confidence of the item ID-based model as a proxy for memorization likelihood. While confidence is often defined as the distance between prediction logits and a uniform distribution, the recommendation task typically involves a very large item space where most items receive negligible probability. We thus adopt the maximum softmax probability (MSP) as a practical confidence score, defined as:
+
+where P_ ID( times given u) denotes the predicted probability distribution of the ID-based model given user history u . We then transform s_ Conf(u) into an ensemble weight that controls the contribution of each model:
+
+where q and tau are hyperparameters.
+
+Validation of the Indicator.
+
+In this section, we empirically validate whether the proposed MSP indicator provides a meaningful estimate of memorization likelihood and can therefore support our adaptive ensemble strategy. Using the same datasets and models as , we group data instances into bins according to quantiles of their indicator values. For each bin, we examine both the proportion of memorization-related instances and the performance of the two paradigms.
+
+Correlation with memorization. As the indicator value increases, the proportion of memorization-related instances rises monotonically. This trend suggests that the indicator provides a meaningful estimate of memorization likelihood.
+
+Performance crossover. We also observe a performance crossover between the generative model TIGER and the ID-based model SASRec as the indicator value increases. At lower indicator values, TIGER achieves better performance, whereas at higher values SASRec becomes increasingly competitive and may outperform TIGER. This crossover pattern is consistent with our hypothesis: instances with high indicator values tend to be memorization-related and are better handled by ID-based models, while instances with low values favor the stronger generalization capability of GR models.
+
+Performance of Adaptive Ensemble.
+
+Having validated the effectiveness of the proposed MSP indicators, we proceed to evaluate the overall performance of the memorization-aware adaptive model ensemble strategy on real-world datasets.
+
+Experimental settings. We use the same datasets and base models as .
+
+We use to map the raw MSP values to an instance-specific ensemble weight alpha (u) . The final prediction is obtained by combining the scores produced by the two base models, SASRec and TIGER, according to this weight. We compare our adaptive ensemble against the individual base models and a Fixed-weight Ensemble baseline, which assigns a global constant weight alpha _ static to SASRec for all instances. Hyperparameters are tuned on the validation set, with q in 1,5,9,13 , tau in 0, 0.1, 0.5 , and alpha _ static in 0, 0.1, 1.0 .
+
+Recommendation results. We present the performance comparison in and make the following observations: The proposed adaptive ensemble strategy generally outperforms both the individual base models and the fixed-weight ensemble baseline. These results provide empirical evidence that item ID-based models and GR models offer complementary strengths. The improvement over baselines is more prominent on datasets with a stronger model cross-over effect . The greater the comparative advantage each base model holds in its respective domain, the more the memorization-aware indicator can leverage this specialization.
+
+Related Works.
+
+Generative recommendation.
+
+Unlike conventional sequential recommendation paradigms , where each item is typically indexed by a unique ID, generative recommendation tokenizes each item as a sequence of sub-item tokens . A generative model then operates over these token sequences and autoregressively generates tokens that index the next item. Existing work on generative recommendation primarily focuses on developing improved tokenization methods, such as exploring alternative algorithms or incorporating additional data sources . Despite their empirical success, there remains a lack of systematic research examining which data instances generative recommendation outperforms conventional models on. Existing work typically attributes the strong performance of GR to semantic-integrated indexing systems or finer-grained learning objectives . These studies offer design-centric explanations but lack a systematic analysis of how such designs translate into distinct prediction behaviors compared to conventional models. In this work, we conduct an in-depth comparative study of these two paradigms through the lens of memorization versus generalization, specifically aiming to answer the question: do GR models outperform conventional baselines because they generalize better?
+
+Memorization and generalization. The study of model memorization and generalization has long been a central concern in machine learning, spanning from classical machine learning models to modern large language models . A key challenge of conducting these analyses is how to characterize the influence of training data on model behavior. One line of work approaches this question through counterfactual memorization, which measures the causal effect of removing individual training instances on task performance . However, these methods are often computationally expensive and difficult to scale .
+
+Other approaches define generalization as robustness to local input perturbations ( input clues or task rules ). In this work, we aim to investigate how generative recommendation models differ from conventional item ID-based models in their memorization and generalization capabilities. Because the recommendation task provides a concrete and well-defined ground-truth target, we categorize each data instance according to the primary capability required to make a correct prediction.
+
+Conclusion.
+
+In this work, we presented a systematic study comparing semantic ID-based generative recommendation models with traditional item ID-based models through the lens of memorization and generalization. We proposed a framework to categorize data instances based on the item transition patterns they contain. Extensive experiments across various datasets revealed that generative recommendation models excel on generalization-related instances, while item ID-based models perform better on memorization-related instances. To explain this, we analyzed the models at the token level, finding that item-level generalization in generative models often reduces to token-level memorization. Finally, we show that the two paradigms are complementary by demonstrating that adaptively adjusting ensemble weights using a memorization-aware indicator leads to improved performance. In future work, we plan to explore advanced tokenization methods that explicitly target the memorization and generalization capabilities characterized in this study.
+
+Thanks for listening. This has been an audio narration of How Well Does Generative Recommendation Generalize?. By Authors. Published on 2026-03. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

@@ -1,0 +1,233 @@
+mSFT: Addressing Dataset Mixtures Overfitting Heterogeneously in Multi-task SFT.
+
+By Authors.
+
+Published on 2026-03.
+
+Abstract.
+
+Current language model training commonly applies multi-task Supervised Fine-Tuning (SFT) using a homogeneous compute budget across all sub-datasets. This approach is fundamentally sub-optimal: heterogeneous learning dynamics cause faster-learning tasks to overfit early while slower ones remain under-fitted. To address this, we introduce mSFT, an iterative, overfitting-aware search algorithm for multi-task data mixtures. mSFT trains the model on an active mixture, identifies and excludes the earliest overfitting sub-dataset, and reverts to that specific optimal checkpoint before continuing. Extensive evaluations demonstrate that mSFT consistently outperforms 4 baselines across 10 benchmarks and 6 base models. Further analysis confirms mSFT maintains robust gains across diverse dataset sizes, task granularities, and is insensitive to its single new hyperparameter (compute budget). Notably, at low compute budget, mSFT can improve performance while lowering training FLOPs. Ultimately, mSFT establishes a practical overfitting-aware algorithm for multi-task SFT that maximizes the potential of models across diverse data mixtures.
+
+Introduction.
+
+Since the introduction of transformers and scaling laws, general foundation models trained on diverse data have overtaken specialized models. These foundation models undertake a multi-task Supervised Fine-tuning (SFT) stage, where diverse sub-datasets are commonly randomly mixed together; primarily to avoid forgetting from sequential training. Within this paradigm, practitioners follow a well-known approach, identifying the pre-overfitting optimal training compute (epoch) given a fixed data size. This optimal compute level is determined empirically by allocating a large amount of compute while saving intermediate checkpoints in memory, then identifying the checkpoint with the best generalization benchmark scores.
+
+Within this framework, frontier open-weight models inherently assume that the global optimal compute budget aligns with the optimal compute of each underlying sub-dataset. Consider Tab., where Magistral, OLMo, DeepSeek, and Qwen family of models identify the final compute-level homogeneously (that is, same compute for all sub-datasets).
+
+We hypothesize that this de facto approach is sub-optimal as each sub-dataset embody distinct distributions that lead to different learning and generalization dynamics. Nemotron demonstrated that their code sub-dataset required less compute than every other sub-dataset. Nevertheless, their compute allocation remains coarse, which we term as "Multi-stage Homogenous" in Tab. 
+Although empirically searching for the optimal compute per sub-dataset incurs additional costs, we argue these increases are negligible since SFT is one of the computationally lightest training stage. Consider, where we visualize the proportion of training compute allocated to the SFT stage considering the end-to-end training pipeline. We detail how this was derived based on open-source information in Appendix. We observe that the SFT stage takes approximately 0.01 percent of total training compute. Moreover, consistent performance gains with additional compute usage has been an influential philosophy guiding modern training.
+
+Contribution. 
+Given this backdrop, we first empirically demonstrate that dataset mixtures composed of sub-datasets overfit heterogenously, confirming our hypothesis that the status quo is sub-optimal . In response, we propose mSFT (m representing multi-task mixture), an overfitting search algorithm for multi-task SFT . Prior to introducing our approach, we discuss the limitations of a naïve approach . Then, we introduce our search method which dynamically excludes sub-datasets by iteratively rolling back to the checkpoint where a sub-dataset over-fitted the quickest ( Alg. ). Finally, we empirically demonstrate that mSFT is useful for practitioners, including extensive further analyses : mSFT's average performance across 10 benchmarks outperform 4 baselines (and 2 ablative baselines) across 6 base models ( Tab.).
+
+We observe that performance gains are not from disproportionate gains on a few outlier tasks, as seen by a decrease in standard deviation across benchmarks.
+
+mSFT performance gains are robust across diverse dataset sizes (9K, 18K, 27K) and task counts (5, 10, 15) .
+
+Reducing mSFT's only hyperparameter, compute budget C does not lead to performance degradation; with low C enabling FLOPs savings against SFT while improving performance .
+
+We demonstrate that mSFT works on diverse levels of task granularity by experimenting mSFT on a single dataset with sub-categories .
+
+We decompose the performance difference of SFT and mSFT through the lense of overfitting avoidance and catastrophic forgetting; and also show that mSFT commonly achieves a lower train loss .
+
+Motivation: Dataset Mixtures Overfit Heterogeneously.
+
+Multi-task SFT suffers from a fundamental misalignment between the diverse learning dynamics of individual tasks and the rigid nature of standard training paradigms. To formalize this, consider SFT of Language Models (LMs) parameterized by theta on a multi-task dataset mixture D equals cup sub i equals 1 to the N D sub i , which consists of N distinct tasks. We measure training progress using a continuous compute variable c , generalizing training epochs into finer-grained units (for example, fractional epochs). For any given task i , there exists an optimal compute c star sub i , defined as the stopping point where the model achieves maximum generalization on the task's held-out test set:
+
+Under the standard homogeneous training paradigm, this inherent diversity in optimal stopping points is ignored. The model is trained on the dataset mixture D for a fixed global compute budget c_ global . This imposes a rigid constraint where every task i is forced to adhere to the exact same training compute, meaning c sub i: equals c_ global, for all i in 1, N .
+
+Consequently, enforcing a single global compute budget inevitably produces sub-optimal outcomes across the mixture due to heterogeneous learning dynamics. Because distinct tasks differ significantly in data distribution and complexity, their convergence rates and optimal compute levels vary widely ( c star sub i does not equal c star sub j ). Empirically, individual sub-datasets reach peak generalization performance at substantially different compute levels . Thus, applying c_ global creates an inherent optimization conflict: rapidly converging tasks begin to overfit when c_ global greater than c star sub i , while slower-learning tasks remain under-fitted when c_ global less than c star sub i .
+
+mSFT.: Heterogeneous Early-stopping for Multi-task Data Mixtures
+
+Limitation of a Naïve Solution.
+
+A straightforward solution to heterogenous overfitting (as visualized in ) is leveraging the optimal compute found for each sub-dataset in and exclude these sub-datasets at these points during a new training run. We name this method single roll-out search SFT (SRO SFT), and embodies two stages: (i) single roll-out search, and (ii) train from scratch with heterogeneous exclusion. For instance, in the example , in stage (ii), AQUA-RAT would be excluded in epoch 1.25, while SciQ would be excluded in epoch 2.75. Pseudocode is available in Appendix.
+
+However, the key limitation of SRO search is that the optimal compute found during the search stage is an approximation after the first sub-dataset is excluded. Formally, let the model parameter update at step t be driven by the aggregate gradient of the active dataset mixture. In the search stage (i), the exclusion set is empty ( E equals ), so the update is a summation over all tasks i in D :
+
+where w sub i is the weight of the sub-dataset i . Consequently, the optimal compute budget c star sub i for any specific task i is conditional on the gradient interactions from the complete mixture.
+
+However, in the SRO training stage (ii), once a sub-dataset D_ exclude is added to the exclusion set E , the update rule shifts to:
+
+The removal of nabla L( times ; D_ exclude) causes the optimization trajectory to diverge ( theta ' sub t does not equal theta sub t ). Crucially, this drift exacerbates as | E| increases: as more tasks are dropped over time, the active gradient sum deviates further from the original search dynamics, rendering the pre-computed c star sub i increasingly inaccurate for late-stage tasks.
+
+Empirical Analysis. 
+We empirically validate whether the parameter divergence theta ' sub t does not equal theta sub t translates into shifted optimal compute. We construct an equal-weighted mixture of N equals 10 sub-datasets, each containing D sub i equals 1800 samples. We train a model on the full mixture D until the first sub-dataset, which we denote as D sub k , overfits. At this exact checkpoint, we bifurcate the training process into two branches: one continues training on the full mixture D , while the other continues on the reduced mixture D D sub k . For each of the 9 remaining tasks ( j does not equal k ), we compare the optimal compute achieved on the full mixture ( c star sub j ) against the optimal compute on the reduced mixture ( c' star sub j ). We report the shift, defined as Delta c star sub j: equals c' star sub j minus c star sub j , . The results clearly demonstrate that excluding even a small fraction of the training data (1/10) significantly alters the optimal stopping points for the remaining tasks, confirming our hypothesis that c' star sub j does not equal c star sub j .
+
+Iterative Overfitting-Aware Search.
+
+In response to this limitation, we propose mSFT, a training algorithm that ensures that the search and train phase is aligned. mSFT follows an iterative roll-out and roll-back search algorithm described below and conceptualized in Alg. 
+Initialization. 
+First, the algorithm initializes the exclusion set E that keeps track of the excluded sub-datasets, and the parameter theta is set to the base model theta sub 0 (line 1). The algorithm loops as long as there is at least one active sub-dataset (line 2).
+
+Roll-out. 
+For every active sub-dataset D E the model theta is trained by a pre-determined compute budget C hyperparameter (line 3). C is analogous to epochs in the literature, however, we call it compute budget (for example, 1/4 of an epoch) as we aim to record more granular levels of compute as we observe granular overfitting behavior in our preliminary analysis in and Appendix. For each active sub-dataset, the optimal compute is recorded (line 4). The sub-dataset that over-fitted earliest is expected to be excluded D_ exclude (line 5). In the rare case that no sub-dataset D sub i over-fitted within the compute budget C , the algorithm continues without rolling back.
+
+Roll-back. 
+The earliest over-fitted dataset D_ exclude will no longer be included in the active set (line 9), and the model is reverted to the point at which it overfit (line 10).
+
+Empirical Study.
+
+Experiment Set-up.
+
+Base Models. 
+For a broad range of model sizes and families, we employ OLMo 2 1B, Qwen2.5 0.5, 1.5, 3, 7B, and Qwen3 8B.
+
+Baselines. 
+We compare our approach with four baselines: standard SFT, the de facto norm, continual SFT which trains each of the sub-datasets sequentially, allowing each of them to arrive at the optimal early-stopping point, DynamixSFT which optimizes dataset mixture ratios using multi-armed bandits with 1-step roll-out, and Instance-dependant Early Stopping (IES; ) which computes second-order derivatives for each instance, and leverages a threshold hyperparameter for exclusion.
+
+Training and Evaluation Setting. 
+For fair comparison, all overlapping training configurations are equalized across methods. Overlapping hyperparameters were optimized for standard SFT. We use N equals 10 sub-datasets: CommonsenseQA, OpenBookQA, AQUA-RAT, GSM8K, SciQ, ARC-Easy, HellaSwag, Winogrande, BoolQ, and MedMCQA. All methods are greedy decoding evaluated 5-shot on the test set in intervals of 1/4 epochs, with the best performing checkpoint being reported. Further training details can be found in Appendix.
+
+Main Results.
+
+Overall Performance and Robustness. 
+As detailed in Tab., mSFT consistently outperforms all baseline methodologies across the six evaluated models (OLMo 2, Qwen2.5, Qwen3), achieving the highest average accuracy. While advanced baselines like DynamixSFT and IES yield marginal gains, and Continual SFT suffers from catastrophic forgetting (-2.2 percent), mSFT remains uniquely robust. It is the only approach to exhibit consistent improvements across all three major domains: Science and Knowledge (+0.7 percent), Commonsense and Language (+2.4 percent), and Mathematical and Quantitative reasoning (+3.0 percent).
+
+Consistency and Outlier Analysis. 
+Beyond aggregate accuracy, mSFT demonstrates superior systematic stability. it generally maintains the lowest standard deviation across benchmarks, confirming that the average improvements stem from uniformly distributed gains rather than skewed outlier performances. Furthermore, shows that mSFT achieves 1st place on individual benchmarks 26 times across all model configurations, doubling the frequency of the next best baseline (IES, 13 times). This affirms that mSFT reliably elevates both the performance floor and ceiling across a diverse suite of tasks.
+
+Ablation Study.
+
+Set-up. 
+We examine two naïve alternative heterogeneous early-stopping algorithms, that serve as ablation studies: Single roll-out searched SFT (SRO SFT), and Soft SRO SFT. SRO SFT is introduced , and Soft SRO SFT is the soft version, which aims to replicate SRO SFT via mixture ratios rather than hard exclusions, reducing catastrophic forgetting. SRO SFT and Soft SRO SFT are introduced with pseudo-codes in Appendix.
+
+Result. 
+As observed in Tab., mSFT's average performance is superior to both SRO SFT and Soft SRO SFT. This verifies that the naïve approach of using approximate optimal compute c sub i star through single roll-out search introduced in is sub-optimal.
+
+Further Analysis.
+
+To rigorously evaluate the practical utility of mSFT, we conduct additional analyses using Qwen2.5 3B. We primarily benchmark against standard SFT, the most widely adopted paradigm, and IES, which emerged as the strongest baseline .
+
+(I) mSFT.
+
+Gains are Robust Across Dataset Scales. We find that the performance gains of mSFT remain robust across varying dataset sizes and task counts ( N in 5, 10, 15 ) indicating that mSFT is valuable across a wide range of real-world scenarios. Across all three configurations, mSFT consistently outperforms SFT, yielding an average improvement of +5.4 percent .
+
+(II) mSFT.
+
+is Insensitive to Compute Budget C , with Simultaneous FLOPs Savings and Performance Gains. We demonstrate that under restricted compute budget, mSFT improves downstream performance while simultaneously reducing FLOPs. When C equals 1 , we observe a +3.4 percent performance gain alongside an average compute reduction of 120.3 PFLOPs . This efficiency is achieved because mSFT introduces no additional roll-out overhead compared to SFT, while dynamically excluding sub-datasets during training to save compute. Notably, these performance gains do not degrade as the budget C decreases. Refer to Appendix for details on how FLOPs are measured across all methods.
+
+(III) mSFT.
+
+Remains Effective on Granular Decompositions. We further investigate whether mSFT remains effective at a highly granular level by applying it to the 21 pre-defined sub-categories of the MedMCQA dataset. As shown in (grouped into 11 broad categories for legibility), mSFT yields an average accuracy improvement of +1.86 percent over SFT, outperforming IES (+0.29 percent). We observe particularly pronounced gains in specialized domains such as Pharmacology (+6.0 percent) and Forensic, Psychiatry and Radiology (+5.3 percent). Despite topic-specific variance, mSFT consistently improves performance across most sub-categories, validating its efficacy on fine-grained task distributions.
+
+(IV) Decomposing Overfitting Prevention and Catastrophic Forgetting. 
+To better understand the trade-off between preventing overfitting and the risk of catastrophic forgetting, we decompose mSFT's performance gains relative to SFT. Specifically, we quantify the effect of dataset exclusion as:
+
+where c_ final denotes the globally optimal checkpoint and c_ min represents the peak performance checkpoint identified during the roll-out search (Alg., line 5).
+
+A negative indicates forgetting from hard exclusions, which is the most common empirical outcome. Conversely, a positive value, as occasionally observed, suggests that continued training on the remaining mixture induces positive transfer. By subtracting from the overall performance gain over standard SFT, we isolate the benefit of overfitting prevention. Ultimately, our analysis reveals that while hard exclusion incurs minor forgetting penalties on average, the performance gains achieved by mitigating heterogeneous overfitting outweigh these losses, driving the overall superiority of mSFT.
+
+(V) mSFT.
+
+Commonly Embodies Lower Training Loss. As seen in (and Appendix ), mSFT commonly achieves a consistently lower training loss than standard SFT. With base model Qwen3 8B, the curve occasionally exhibits sharp, step-wise loss descents immediately after overfitted sub-datasets are excluded. We hypothesize this reflects a relief from gradient conflict. In SFT, simultaneous updates can cause progress on some tasks to actively disrupt others. Furthermore, once a fast-learning dataset passes its optimal compute point, it likely introduces noisy, over-specialized gradients. By dynamically filtering out these post-peak datasets, mSFT unburdens the optimizer, enabling the model to reallocate its capacity and more efficiently minimize the loss of the remaining, slower-learning tasks.
+
+Discussion.
+
+Additional Related Work. 
+Numerous works explore which datasets to include in the SFT stage, and the optimal mixture ratios. Another line of research addresses task imbalance through continuous loss-reweighting or gradient manipulation, primarily studied in computer vision, reinforcement learning, and early LM multi-tasking. While dynamically adjust task weights to balance convergence rates, they require continuous gradient-level interventions during the forward-backward pass and introduce multiple sensitive hyperparameters (for example, history windows, warm-up steps, temperature parameter). In contrast, mSFT operates strictly at the data-scheduling level and hard exclusions, entirely avoiding this per-step computational overhead.
+
+Efficient Disk Management. 
+An operational limitation of mSFT is the additional storage overhead incurred by saving intermediate checkpoints during the roll-out phase. To mitigate this, we introduce a dynamic checkpoint pruning algorithm in Appendix that actively discards redundant model states. Empirically, this strategy results in average storage footprint by approximately 4.44 times SFT (see Appendix ). Because disk space is rarely the primary bottleneck in large-scale LM training, especially given the negligible cost of storage relative to compute, we consider this an acceptable trade-off. Nevertheless, future work could further optimize this process to reduce disk overhead entirely.
+
+Computation of FLOPs Proportion.
+
+The OLMo 2 technical paper reports total FLOPs computed via the standard formula from. We adopt the same formula and extend it to each training stage to compute proportional contributions. We use the reported parameter size ( | theta | in 7 B, 13 B, 32 B ).
+
+Pre-training and mid-training. 
+Pre-training token counts are taken from §2.3. Mid-training tokens follow from the model souping procedure (§4.5): 7B performs three annealing runs of 50B tokens each (150B total); 13B performs three 100B runs plus one 300B run (600B total); 32B is derived by subtracting pre-training from the overall base (pre- + mid-training) total ( 6.60 T minus 6.06 T equals 0.54 T ).
+
+SFT. 
+Data is from allenai/tulu-3-sft-olmo-2-mixture (7B, 13B; n_ sft equals 939,334 ) and allenai/tulu-3-sft-olmo-2-mixture-0225 (32B; n_ sft equals 866,138 ). Per docs/tulu3.md, maximum sequence length is 4,096 tokens and training runs for 2 epochs: where n_ sft is the number of samples, and l_ SFT is the average token length per sample, capped at 4,096 and computed by streaming the full dataset with the OLMo 2 tokenizer.
+
+DPO. 
+Pair counts are from allenai/olmo-2-1124-7b-preference-mix (366,700 pairs, 7B), allenai/olmo-2-1124-13b-preference-mix (377,700 pairs, 13B), and allenai/olmo-2-0325-32b-preference-mix (377,900 pairs, 32B). Per docs/tulu3.md, training uses 1 epoch and maximum sequence length is 2,048 tokens. Each pair is processed as two separate forward to backward passes: where l_ DPO is the average token length across all chosen and rejected sequences pooled together, capped at 2,048.
+
+RLVR. 
+The 7B and 13B models use PPO; the 32B model uses GRPO. All sizes use 10M total episodes. For PPO (7B, 13B), rollouts are collected in batches of 32, giving n_ grad equals 10 M/32 equals 312,500 gradient update steps. For GRPO (32B), 16 completions are sampled per prompt, giving n_ grad equals 10 M/16 equals 625,000 gradient update steps. Prompt and response are each capped at 2,048 tokens. FLOPs split into forward-only (RLVR-roll) and forward to backward (RLVR-grad) passes:
+
+where the factor of 2 in FLOPs_ RLVR minus roll covers policy rollout and the frozen reference model (one forward pass each per episode), and the factor of 2 in the PPO FLOPs_ RLVR minus grad term covers the policy and value model gradients. FLOPs_ RLVR equals FLOPs_ RLVR minus roll plus FLOPs_ RLVR minus grad .
+
+Results. 
+Tab. reports the resulting FLOPs per stage.
+
+Additional Figures for Heterogeneous Overfitting.
+
+ and visualizes the per-sub-dataset validation accuracy for all remaining models. Across all models, each sub-dataset reaches its maximum accuracy at different training steps, confirming heterogeneous overfitting dynamics discussed.
+
+Further Details on SRO SFT and Soft SRO SFT.
+
+ 
+
+SRO.
+
+Alg. is the pseudocode for SRO. 
+
+ 
+
+Soft SRO.
+
+Alg. is the pseudocode for Soft SRO. |
+
+Further Experimental Results on Delta Optimal Compute.
+
+Further Experimental Details.
+
+Hardware.
+
+We use B200, H200, RTX A5000, and RTX 3090s for experiments. For other hardware like CPU and RAM we use commonly available ones, as these hardware did not induce any bottlenecks.
+
+Common Settings.
+
+Default training settings universal across methods are available in Tab. We use a single seed (20) as preliminary experiments with Qwen2.5 3B on seeds 20, 30, 40 lead to virtually identical performance gains. Tab. shows that the gains of mSFT is stable (low standard deviation) and thus statistically significant. This likely due to our methods and experiments being non-stochastic in nature.
+
+Method-specific Settings.
+
+SFT trains for 10 epochs as we observe that in some datasets do not overfit even up to 10 epochs (see and Appendix ). Continual SFT and mSFT's compute budget is C equals 3 epochs. DynamixSFT was first run on the settings provided in the paper, yet we found that further hyperparameter tuning, where sharpness factor beta equals 5000 improved performance in our environment so we used this for all reported experiment results. For IES, we adopt the default threshold of delta equals 0.01 as proposed in the original paper. The cumulative proportion of dropped instances over 10 epochs is visualized . For SRO SFT and Soft SRO SFT the single search compute budget is set to C equals 10 as this is conceptually similar to the 10 epochs allocated in SFT.
+
+Computation of Empirical FLOPS.
+
+We calculate computation costs using the standard formula from:
+
+where theta is the number of model parameters and t is the number of tokens.
+
+Method-specific FLOPs.
+
+Let t_ train and t_ validation denote the total training and validation tokens per unit compute budget (1 epoch) over the full mixture D .
+
+ SFT. 
+Standard supervised fine-tuning on all sub-datasets for C units of compute budget. 
+
+ Continual SFT. 
+Sequential training: each sub-dataset D sub i is trained independently for C units of compute budget before moving to the next. summing over all N sub-datasets trained sequentially.
+
+ DynamixSFT. 
+Dynamic mixture optimization via multi-armed bandits with 1-step look-ahead. At each update step (1 percent of total steps), the algorithm samples batches of size B_ look minus ahead for all N sub-datasets and performs forward-backward passes to estimate look-ahead rewards, incurring 8 theta FLOPs per token (2 forward pre-loss, 4 backward, 2 forward post-loss). Between updates, training proceeds with current mixture probabilities: where B_ look minus ahead is batch size for look-ahead, t_ avg is the average tokens per sample and t sub u denotes update steps.
+
+ IES. 
+Instance-dependent early stopping computes second-order differences of per-sample loss trajectories to identify mastered instances. Samples satisfying the convergence criterion are excluded from gradient updates (typically from the 3rd unit onward). Training FLOPs decrease as more samples are excluded, while validation always covers the full dataset. where t_ train to the power of (c) less than or equal to t_ train reflects the remaining active samples at c .
+
+ SRO SFT. 
+Single roll-out searched SFT: a two-step procedure. Step 1 (Search): Standard SFT for C units to determine per sub-dataset peak c sub i star , which is also their drop schedule. Step 2 (Train): Training with sub-datasets exclusions applied at their respective peak checkpoints; dropped sub-datasets are removed from the active token count. where t_ train to the power of (c) less than or equal to t_ train denotes training tokens over non-excluded sub-datasets at step c in Step 2.
+
+ Soft SRO SFT. 
+Step 1: Identical to SRO SFT Step 1, recording per-sub-dataset peak c sub i star . Step 2: Rather than hard exclusions, re-trains for C units with per-category sampling weight w sub i equals c sub i star/ c , where c equals 1 over N the sum of sub ic sub i star is the mean peak across all N sub-datasets. Early-peaking sub-datasets contribute fewer tokens; late-peaking subsets receive more exposure. 
+
+ mSFT. mSFT proceeds in S stages indexed by s equals 1, .., S . At each stage s , the model trains for C units on active subsets D E sub s , where E sub s is the accumulated exclusion set at stage s . Overfit sub-datasets are added to E sub s plus 1 and the model reverts to the earliest overfitting checkpoint (parameter rollback only; no additional FLOPs). where t_ train( D E sub s) and t_ validation( D E sub s) decreases as more sub-datasets are excluded. t_ validation( E sub s) denotes validation tokens of excluded sub-datasets. Note that the third term carries no compute budget C : excluded sets are validated only once at the rollback checkpoint to preserve the full validation trajectory, where as active sub-datasets are validated at every checkpoint throughout the stage. Total FLOPs: FLOPs_ mSFT equals the sum of sub s equals 1 to the power of S FLOPs_ stage sub s .
+
+Empirical FLOPs comparison. 
+Tab. reports the total FLOPs for each method across six model scales. DynamixSFT incurs substantial look-ahead overhead (94.9 percent of training FLOPs on average), while IES achieves costs smaller than SFT by dropping parts of samples from 3rd unit of compute budget onward. SRO SFT and Soft SRO SFT require an additional search phase (Step 1), resulting in higher total costs, though Soft SRO mitigates catastrophic forgetting via soft reweighting rather than hard exclusions.
+
+Further Loss Curves.
+
+mSFT.
+
+with Efficient Disk Management
+
+Checkpoint management. 
+Algorithm details the checkpoint management strategy integrated into mSFT, where blue annotations denote disk-management operations added atop the base algorithm. While standard SFT retains only a single checkpoint on disk throughout training, mSFT requires additional storage during the roll-out phase: per-dataset peak checkpoints theta (c sub i star)_ D sub i not in E are persisted as they are identified (line 5), requiring up to | D E sub s| checkpoints at stage s . Upon completing each iteration, the algorithm retains only the rollback checkpoint theta and the global best checkpoint theta star , the model that achieved the highest overall accuracy across all stages , and discards all remaining checkpoints (lines 13 to 18). The theoretical peak occurs at the second stage, where | D| minus 1 live per-dataset peaks coexist with the two retained checkpoints ( theta and theta star ), yielding a worst-case of | D| plus 1 model copies on disk. Averaging the per-stage peaks across all | D| stages gives: where E is the number of evaluation steps per stage and plus 2 accounts for the retained theta and theta star (for s greater than or equal to 2 ; stage 1 retains none, but the over-count vanishes as | D| grows). When E greater than or equal to | D| , that is, the evaluation grid is finer than the number of sub-datasets, the min of reduces to | D| minus s plus 1 and the average simplifies to | D| plus 52 . For our experiments with | D| equals 10 and C equals 3 epochs evaluated every 0.25 epochs ( E equals 12 greater than | D| ), this predicts a peak of 11 and an average of 7.5 model copies. In practice, multiple categories often share the same peak epoch, so several per-dataset champions collapse onto a single checkpoint. Empirically, across mSFT runs with compute budgets C in 1, 3 on multiple dataset mixtures, we observe an average disk utilization of 4.44| theta | , well below the | D| plus 1 theoretical bound. (see Appendix Figs. )
+
+Disk Storage Footprint.
+
+Thanks for listening. This has been an audio narration of mSFT: Addressing Dataset Mixtures Overfitting Heterogeneously in Multi-task SFT. By Authors. Published on 2026-03. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
