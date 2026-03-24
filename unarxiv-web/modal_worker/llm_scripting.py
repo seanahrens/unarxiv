@@ -488,6 +488,16 @@ def _strip_latex_artifacts(text: str) -> str:
     # Strip backslash macros that leaked through (e.g. \ours, \benchname)
     # Replace \macroname with just "macroname" (the plain word, better than "backslash macroname")
     text = re.sub(r'\\([A-Za-z]+)\b', r'\1', text)
+    # Strip section-outro artifacts injected by LLMs (persistent failure mode — 4+ rounds).
+    # Matches standalone lines like "This concludes the Introduction section." or
+    # "That concludes our discussion of the proposed method."
+    # These phrases are almost never present in academic source text as isolated sentences.
+    text = re.sub(
+        r'(?m)^(?:This|That) (?:concludes|ends|wraps up) [^\n.]{0,200}\.\s*$',
+        '',
+        text,
+        flags=re.IGNORECASE,
+    )
     # Normalize whitespace after stripping
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
