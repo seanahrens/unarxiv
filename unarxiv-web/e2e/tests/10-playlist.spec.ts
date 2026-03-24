@@ -58,6 +58,25 @@ test.describe("Playlist", () => {
     await expect(addBtn).toBeVisible({ timeout: 3000 });
   });
 
+  test("playlist page shows added paper on /my-papers", async ({ page }) => {
+    const id = knownCompleteId();
+    // Paper page is already loaded from beforeEach
+    await page.reload();
+    await page.locator("h1").waitFor({ timeout: 10000 });
+
+    // Add to playlist via dropdown
+    await openDropdown(page);
+    const addBtn = page.locator(ADD_TO_PLAYLIST).first();
+    await expect(addBtn).toBeVisible({ timeout: 3000 });
+    await addBtn.click();
+
+    // Navigate to my-papers and verify paper appears in playlist
+    await page.goto("/my-papers");
+    await expect(page.locator("h1:has-text('My Collections')")).toBeVisible({ timeout: 10000 });
+    // A link to the paper should be visible (playlist section)
+    await expect(page.locator(`a[href*="${id}"]`).first()).toBeVisible({ timeout: 5000 });
+  });
+
   test("playlist state persists across page reload", async ({ page }) => {
     const id = knownCompleteId();
     await page.reload();

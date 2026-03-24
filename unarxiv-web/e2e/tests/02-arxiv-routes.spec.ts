@@ -38,4 +38,13 @@ test.describe("ArXiv URL Routes", () => {
     const title = await heading.textContent();
     expect(title?.trim().length).toBeGreaterThan(0);
   });
+
+  test("invalid paper ID shows error state", async ({ page }) => {
+    await page.goto("/p?id=totally-invalid-id-xyz999");
+    // Should show an error message, not a blank page or spinner
+    const errorMsg = page.locator(".text-red-600").first();
+    await expect(errorMsg).toBeVisible({ timeout: 10000 });
+    const text = await errorMsg.textContent();
+    expect(text?.trim().length).toBeGreaterThan(0);
+  });
 });
