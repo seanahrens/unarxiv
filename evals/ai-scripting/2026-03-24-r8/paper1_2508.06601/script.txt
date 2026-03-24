@@ -1,0 +1,33 @@
+Deep Ignorance: Filtering Pretraining Data Builds Tamper-Resistant Safeguards into Open-Weight LLMs.
+
+By Kyle O'Brien, Stephen Casper, Quentin Anthony, and 7 more authors.
+
+Published on August 8, 2025.
+
+Moving on to the implementation details.
+
+The authors provide the implementation specifics by including various subsections from the appendix of the paper, which cover different aspects of their work. 
+
+The first subsection addresses filter training and evaluation. This section likely describes the processes and methodologies used to train and evaluate the filters in their approach.
+
+Next, the details of language model training are provided. This would encompass the procedures and parameters utilized to train the language models involved in the study.
+
+The section then delves into the discussion of the weakly monitored decision process with bio-robust features. This part presumably outlines how the decision process is structured and applied, emphasizing robustness in biological settings.
+
+Following this, the section on test task training is addressed. This subsection likely presents the methodology for training tasks specific to testing conditions, including data and settings used.
+
+The next topic involves comparing attacks to prior work. This subsection compares the attacks described in the current study with those from previous research, highlighting similarities, differences, and improvements.
+
+Details from "sdf.tex" are included next. This likely involves specific technical or algorithmic details pertinent to the study’s methodology.
+
+The CMU models are further explained in another subsection. Here, the authors probably describe certain models from Carnegie Mellon University, detailing their applications and performance.
+
+The discussion moves on to other models related to the weakly monitored decision process. This likely includes an exploration of additional models used alongside the primary focus models to compare performance or provide additional insights.
+
+Another crucial part of the implementation details involves prompts, as described in "prompts.tex". This section likely details the prompts used within the models, specifying how they influence model behavior or data processing.
+
+Finally, the section concludes with an analysis of filtered data. This likely reflects on the data that has been filtered throughout the study, assessing its quality, characteristics, and contribution to the research findings. 
+
+These comprehensive details collectively deliver a thorough understanding of the study's technical implementation, enabling a deep insight into the methodologies and approaches employed.
+
+Thanks for listening. This has been an audio narration of Deep Ignorance: Filtering Pretraining Data Builds Tamper-Resistant Safeguards into Open-Weight LLMs. By Kyle O'Brien, Stephen Casper, Quentin Anthony, and 7 more authors. Published on August 8, 2025. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

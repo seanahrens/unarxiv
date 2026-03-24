@@ -1,0 +1,115 @@
+
+
+
+% \textcolor{red}{Cas Notes on key TODOS:}
+% \begin{itemize}
+%     \item \textcolor{red}{Clear paper with AISI. Figure out framing and redactions. Get green light from authors.}
+%     \item \textcolor{red}{Make sure we are ready to release the models, training code, attack code. Probably don't release modernbert, blocklist, and filtered docs. Mention somewhere about how the Weak/Strong filter models with CB+LAT are the two most robustly bio-ignorant models overall.}
+%     \item \textcolor{red}{Table of models. Cref it.}  
+%     \item \textcolor{red}{Comb through.} 
+%     \item \textcolor{red}{Final fig sizing and spacing. Check for errors and bad cites.}
+% \end{itemize}
+
+% \textcolor{darkgreen}{Kyle Notes on key TODOS:}
+% \begin{itemize}
+%     \item \textcolor{darkgreen}{Resolve comments in Section 2}
+%     \item \textcolor{darkgreen}{Resolve Stella's feedback}
+% \end{itemize}
+
+\newpage
+\section{Introduction} \label{sec:intro}
+
+% Topic: Models are getting a lot better at dangerous capabilities
+As frontier large language models (LLMs) grow more advanced, their developers have raised concerns about increasing security risks posed by their models. 
+For example, in its Gemini 2.5 Pro Preview model card, Google Deepmind remarks, ``\textit{subsequent revisions in the next few months could lead to a model that reaches the critical capability level [for harmful novice uplift]}'' \citep{google2025gemini2_5_pro_preview}.
+Anthropic reported that it was preemptively activating its \textit{Safety Level 3} protocols for Claude Opus 4, writing that they ``\textit{could not rule out}'' ``\textit{the ability to significantly assist individuals or groups with basic STEM backgrounds in obtaining, producing, or deploying CBRN\footnote{Chemical, Biological, Radiological, and Nuclear (CBRN)} weapons.}'' \citep{anthropic_ASL3_2025}. 
+% These examples illustrate the pressing need for robust safeguards against misuse.
+% OpenAI's Deep Research system card reported, ``\textit{several of our biology evaluations indicate our models are on the cusp of being able to meaningfully help novices create known biological threats.}'' \citep{OpenAI2025}. 
+OpenAI's ChatGPT Agent system card states ``\textit{We have decided to [precautionarily] treat this launch as high capability in the Biological and Chemical domain}'' \citep{OpenAI2025_ChatGPT_Agent}.
+
+% \stella{I would rather frame this as ``current approaches to AI safety are overfit to the deployment context of closed-weights models and don't consider the context and needs of the open ecosystem.''} Frontier AI systems, such as those mentioned above, are often deployed with closed weights. 
+% Open-weights models, however, are being released and modified at an increasing rate \citep{bhandari2025forecasting}, and their capabilities tend to lag only six to twelve months behind those of closed-weights models \citep{epoch2024openmodelsreport, maslej2024artificial}.
+% Open-weights models offer unique benefits related to transparency, open research, and the de-concentration of power \citep{bommasani2024considerations, kapoor2024societal, françois2025differentapproachaisafety}.
+% However, they also create unique risks from downstream modifications and unmonitored use \citep{seger2023open, chan2023hazards, huang2024harmful}.
+% For these reasons, managing risks from open-weights models is a key challenge toward realizing the benefits and mitigating the harms of AI overall \citep{Bengio2025InternationalAS}.
+
+Today, frontier LLMs such as the above are often deployed with closed weights behind APIs.
+However, open-weight models are being released at an increasing rate \citep{bhandari2025forecasting}, and their capabilities tend to lag only six to twelve months behind those of closed-weight models \citep{epoch2024openmodelsreport, maslej2024artificial}.
+Open models offer unique benefits related to transparency, research, and the deconcentration of power \citep{bommasani2024considerations, kapoor2024societal, eiras2024risks, françois2025differentapproachaisafety}. 
+However, they create unique risks from downstream modifications and unmonitored use \citep{seger2023open, chan2023hazards, huang2024harmful, eiras2024risks}. 
+This prompts the question: How can harmful uses of advanced open-weight models be effectively mitigated?
+
+Despite the rising prominence of open-weight models, the science of open-weight model safety is nascent \citep{françois2025differentapproachaisafety, pai2024risk}. 
+Closed-weight deployments keep a model's weights secure and allow for monitors and filters on its inputs and outputs.
+However, \textbf{the defining challenge for open-weight model safety is that open models can be modified arbitrarily by downstream actors}.
+% As a result, open-weight model risk management is challenging, and progress has not been commensurate with the increasing risks and opportunities from open-weights models. 
+Despite recent work on developing \textit{tamper-resistant} models (e.g. \citealp{henderson2023self, rosati2024representation, tamirisa2408tamper, sheshadri2024latent}), existing techniques can consistently be undone within several hundred fine-tuning steps or fewer (e.g. \citealp{qi2024evaluating, huang2025virus, che2025model, fan2025towards, hu2024jogging, sheshadri2024latent, lucki2024adversarial, qian2025layered, deeb2024unlearning}).
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/fig1b.pdf}
+    \caption{\textbf{Training data filtering makes LLMs resistant to adversarial fine-tuning without sacrificing general performance.} Models whose training data has been filtered to remove text related to dual-use biology topics (left) have unaffected general capabilities and (right) have low biothreat proxy capabilities and resist up to 10,000 steps and 300M tokens of adversarial fine-tuning. We further detail results in \Cref{sec:tamper_resistant}.
+    }
+    \label{fig:fig1}
+\end{figure}
+
+% In contrast, open-weight models are typically publicly downloadable for users to run locally and modify. 
+% Notable open-weights models include  Llama \citep{grattafiori2024llama, meta2025llama4} and DeepSeek R1 \citep{guo2025deepseek}. 
+% Open-weight models are being released at an increasing rate \citep{bhandari2025forecasting}, and their capabilities tend to lag only six to twelve months behind those of closed-weights models \citep{epoch2024openmodelsreport, maslej2024artificial}.
+% They offer unique benefits related to transparency, open research, and the decentralization of power \citep{bommasani2024considerations, kapoor2024societal, françois2025differentapproachaisafety}. 
+% However, they create unique risks from downstream modifications and unmonitored use \citep{seger2023open, chan2023hazards, huang2024harmful}. 
+% However, standard safeguards optimized for closed-weights models do not extend to open-weights models since they do not optimize for tamper-resistance, a critical threat vector enabled by the ability for users to directly modify open-weights models. 
+
+
+% \stella{Should this paragraph be about finetuning specifically or open weight safety in general? There's non-FT based work we could plug such as ``Suppressing pink elephants with direct principle feedback''} Despite the rising prominence of open-weights models, the science of open-weights model safety is nascent \citep{françois2025differentapproachaisafety}. 
+% While closed-weights safety strategies can leverage a provider's full control over weights, prompts, and scaffolding, no such affordances can be relied upon for open-weights models.
+% % As a result, open-weights model risk management is challenging, and progress has not been commensurate with the increasing risks and opportunities from open-weights models. 
+% % For example, the emerging literature on \textit{AI Safety Cases} \citep{clymer2024safety, buhl2024safety, korbak2025sketch, goemans2024safety, clymer2025example} has yet to propose any strategies for developing strong safety assurances for open-weights systems. 
+% The defining challenge for open-weights model safety is that open-weights models can be modified arbitrarily by downstream actors.
+% Despite recent work on developing \textit{tamper-resistant} open-weights models (e.g. \citealp{henderson2023self, rosati2024representation, tamirisa2408tamper, sheshadri2024latent}), these techniques can consistently be undone within several hundred fine-tuning steps or fewer (e.g. \citealp{qi2024evaluating, huang2025virus, che2025model, fan2025towards, hu2024jogging, sheshadri2024latent, lucki2024adversarial, qian2025layered, deeb2024unlearning}).
+% A key limitation of existing methods for tamper resistance has been their focus on post-training techniques that leverage relatively small amounts of data \citep{jain2023mechanistically, anwar2024foundational}. For example, in this paper, we work with models pretrained on over 1,000 times the number of tokens (550B) used in a typical post-training intervention for tamper-resistance ($\le$150M).
+
+% Despite the rising prominence of open-weights models, the science of open-weights model safety is nascent \citep{françois2025differentapproachaisafety}. 
+% The defining challenge is that open-weights models can be modified arbitrarily by downstream actors. 
+% Standard safeguards optimized for closed-weights models do not extend to open-weights models since they do not optimize for resistance to harmful tampering, enabled by the ability for users to directly modify the underlying model. 
+% As a result, open-weight model risk management is challenging, and progress has not been commensurate with the increasing risks and opportunities from open-weights models. Despite recent work on developing \textit{tamper-resistant} open-weights models (e.g. \citealp{henderson2023self, rosati2024representation, tamirisa2408tamper, sheshadri2024latent}), these techniques can consistently be undone within several hundred fine-tuning steps or fewer (e.g. \citealp{qi2024evaluating, huang2025virus, che2025model, fan2025towards, hu2024jogging, sheshadri2024latent, lucki2024adversarial, qian2025layered, deeb2024unlearning}).
+
+In this paper, we investigate whether open-weight models can be made more tamper-resistant by filtering dual-use content from their pretraining data.
+Specifically, we work to make language models robustly ignorant of biothreat proxy knowledge \citep{Li2024TheWB} without degrading unrelated capabilities. 
+We hypothesize that if a model is unable to learn unsafe knowledge during pretraining, it will be much more difficult for an attacker to elicit harmful behaviors from it. 
+% We distinguish between practical tamper resistance and perfect robustness. 
+We make four key contributions:
+
+% We distinguish between practical tamper resistance and perfect robustness. This work does not attempt to address the risks posed by high-resource attackers, such as nation states with significant data and computational resources. Rather, we focus on thwarting low-resource attackers by increasing the cost of tampering. For the purpose of this work, we consider a safeguard to be tamper-resistant if performance on the proxy knowledge is still below the baseline (no safeguards) performance even after training on thousands of proxy documents. 
+
+\begin{enumerate}
+    \item \textbf{Knowledge Prevention:} We introduce an efficient multi-stage data filtering pipeline that accounts for less than 1\% of total training FLOPS. We use this filtering approach to successfully prevent biothreat proxy capabilities competitively with existing post-training safeguards. We do not observe degradation to unrelated capabilities
+    % . These results suggest that preventing LLMs from learning dual-use technical knowledge through data curation is both tractable and effective 
+    (\Cref{sec:filtering}).
+    \item \textbf{Tamper-Resistance:} We show that training data filtering\footnote{Filtering \& Evaluation code is available at \href{https://github.com/EleutherAI/deep-ignorance}{this link}.} can achieve \textit{state-of-the-art} tamper resistance for up to 10,000 steps and 300M tokens of adversarial fine-tuning on biothreat-related text, improving by more than an order of magnitude over post-training baselines (\Cref{sec:tamper_resistant}).
+    \item \textbf{Defense-in-Depth:} We demonstrate that data filtering cannot prevent LLMs from leveraging harmful knowledge provided in-context, but that Circuit-Breaking-based techniques \citep{zou2024improving} offer complementary defenses. However, we show that none of the defenses we test are resistant to staged attacks that combine fine-tuning and in-context retrieval (\Cref{sec:defense_in_depth}).
+    \item \textbf{Model Suite:} We release a suite of 6.9B parameter language models trained with combinations of data filtering and post-training safeguards. 
+    These models will allow researchers to study the causal impact that removing a subset of training data has on model mechanisms and behavior.\footnote{Data \& models are available at \href{https://huggingface.co/collections/EleutherAI/deep-ignorance-685441040d024a0fee593d68}{this link}. We overview released models in \Cref{tab:released_models}.}
+\end{enumerate}
+
+In addition to these core contributions, we also study challenges with evaluating LLM safeguards using multiple-choice questions, introduce a new hybrid unlearning algorithm that combines prior state-of-the-art defenses \citep{zou2024improving, sheshadri2024latent}, and present negative results involving our challenges with synthetic document training \citep{anthropic2025modifying} at scale. 
+Finally, while this work does not focus on machine unlearning, our models offer a test-bed for studying machine unlearning algorithms.
+Together, we hope that these findings can contribute to emerging science and standards for effective open-weight model risk management. 
+
+% \begin{figure}[t!]
+%     \centering
+%     \includegraphics[width=\linewidth]{figs/fig1.pdf}
+%     \caption{Pretraining data filtering makes LLMs resistant to unwanted fine-tuning. (a) Whereas most research on suppressing harmful model capabilities focuses on post-training interventions, we filter during pretraining and fine-tuning (600B tokens) instead of post-training ($\approx$200M tokens). (b) filtering biothreat-related conetnt from trainign data  can make models effectively resist harmful fine-tuning for up to 300M tokens on biothreat-related papers.}
+%     \label{fig:fig1}
+% \end{figure}
+
+% List of main experiments
+% \kyle{
+%     This list captures all the experiments we want to discuss in the main paper. 
+%     \begin{enumerate}
+%         \item Compare filtering setups (4 combinations) vs circuit breaking and baseline. No tampering.
+%         \item Compare filtering setups (4 combinations) vs circuit breaking and baseline. This time, we measure performance after applying varying amounts of adversarial fine-tuning on proxy knowledge. 
+%         \item Compare filtering setups (4 combinations) vs circuit breaking and baseline. This time, we measure performance after applying varying amounts of fine-tuning on benign/general text. We expect this to undo circuit breakers but keep filtering performance flat. 
+%         \item Compare all approaches on a new synthetic dataset with open and closed-book options. 
+%     \end{enumerate}
+% }

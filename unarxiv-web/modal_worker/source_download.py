@@ -133,31 +133,153 @@ def _collect_source_stats(latex_path: str, work_dir: str) -> tuple[int, int, int
     return tar_bytes, latex_char_count, figure_count
 
 
+def _find_main_tex(extract_dir: str) -> str | None:
+    """Find the main .tex file in a LaTeX archive (the one with \documentclass).
+
+    Checks root-level files first (most common), then searches subdirectories.
+    Returns the absolute path or None if not found.
+    """
+    import re
+    candidates: list[str] = []
+    for root, _, files in os.walk(extract_dir):
+        for fname in sorted(files):
+            if fname.endswith(".tex"):
+                candidates.append(os.path.join(root, fname))
+
+    # Prefer files at the root level with \documentclass
+    root_files = [p for p in candidates if os.path.dirname(p) == extract_dir]
+    for path in root_files:
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                head = fh.read(4096)
+            if re.search(r'\\documentclass', head):
+                return path
+        except Exception:
+            pass
+
+    # Fall back to any file anywhere with \documentclass
+    for path in candidates:
+        if path in root_files:
+            continue
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                head = fh.read(4096)
+            if re.search(r'\\documentclass', head):
+                return path
+        except Exception:
+            pass
+
+    # Last resort: return main.tex or first .tex file at root level
+    for name in ("main.tex", "paper.tex", "manuscript.tex"):
+        path = os.path.join(extract_dir, name)
+        if os.path.isfile(path):
+            return path
+    return root_files[0] if root_files else (candidates[0] if candidates else None)
+
+
+def _inline_latex_inputs(
+    file_path: str,
+    max_chars: int,
+    _visited: set[str] | None = None,
+) -> str:
+    """Recursively inline \input{} and \include{} commands in a LaTeX file.
+
+    Replaces each \input{filename} command with the actual content of the
+    referenced file, recursing into nested includes. This produces a single
+    complete LaTeX document in the correct logical order.
+
+    Args:
+        file_path: Absolute path to the .tex file to read and inline.
+        max_chars: Stop inlining once total chars reaches this limit.
+        _visited: Set of already-visited file paths (cycle guard).
+
+    Returns:
+        The fully inlined LaTeX content, capped at max_chars.
+    """
+    import re
+
+    if _visited is None:
+        _visited = set()
+
+    real_path = os.path.realpath(file_path)
+    if real_path in _visited:
+        return ""  # Cycle guard
+    _visited.add(real_path)
+
+    try:
+        with open(file_path, encoding="utf-8", errors="replace") as fh:
+            content = fh.read(max_chars)
+    except Exception:
+        return ""
+
+    base_dir = os.path.dirname(file_path)
+
+    # Replace \input{filename} and \include{filename} with inlined content.
+    # Handles optional .tex extension in the argument.
+    input_pattern = re.compile(
+        r'\\(?:input|include)\{([^}]+)\}',
+        re.MULTILINE,
+    )
+
+    parts: list[str] = []
+    last_end = 0
+    total_chars = 0
+
+    for m in input_pattern.finditer(content):
+        before = content[last_end:m.start()]
+        parts.append(before)
+        total_chars += len(before)
+        last_end = m.end()
+
+        if total_chars >= max_chars:
+            break
+
+        ref = m.group(1).strip()
+        # Try the path as-is, then with .tex appended
+        candidate_paths = [ref]
+        if not ref.endswith(".tex"):
+            candidate_paths.append(ref + ".tex")
+
+        inlined = ""
+        for cand in candidate_paths:
+            full = cand if os.path.isabs(cand) else os.path.join(base_dir, cand)
+            if os.path.isfile(full):
+                remaining = max_chars - total_chars
+                inlined = _inline_latex_inputs(full, remaining, _visited)
+                break
+
+        parts.append(inlined)
+        total_chars += len(inlined)
+
+    if total_chars < max_chars:
+        parts.append(content[last_end:])
+
+    return "".join(parts)[:max_chars]
+
+
 def _extract_raw_latex_text(latex_path: str, work_dir: str, max_chars: int = 200_000) -> str | None:
-    """Extract raw .tex content from a LaTeX tar archive for LLM context."""
+    """Extract raw .tex content from a LaTeX tar archive for LLM context.
+
+    Finds the main .tex file (the one with \\documentclass), then recursively
+    resolves \\input{} and \\include{} commands to produce a single inlined
+    document in logical order. This avoids the broken alphabetical concatenation
+    which (a) caused \\end{document} from main.tex to truncate all content files,
+    and (b) gave the LLM a list of \\input{} stubs instead of actual paper text.
+    """
     try:
         extract_dir = _extract_source_archive(latex_path, work_dir)
         if not extract_dir:
             return None
 
-        tex_parts: list[str] = []
-        total = 0
-        for root, _, files in os.walk(extract_dir):
-            for fname in sorted(files):
-                if fname.endswith(".tex"):
-                    fpath = os.path.join(root, fname)
-                    try:
-                        with open(fpath, encoding="utf-8", errors="replace") as fh:
-                            content = fh.read(max_chars - total)
-                            tex_parts.append(content)
-                            total += len(content)
-                            if total >= max_chars:
-                                break
-                    except Exception:
-                        pass
-            if total >= max_chars:
-                break
-        return "\n\n".join(tex_parts) if tex_parts else None
+        main_tex = _find_main_tex(extract_dir)
+        if not main_tex:
+            return None
+
+        print(f"[source] Main tex: {os.path.relpath(main_tex, extract_dir)}")
+        result = _inline_latex_inputs(main_tex, max_chars)
+        if result:
+            print(f"[source] Inlined LaTeX: {len(result):,} chars")
+        return result or None
     except Exception as e:
         print(f"Warning: could not extract LaTeX for LLM context: {e}")
         return None
