@@ -71,8 +71,7 @@ export async function handleListPapers(env: Env, url: URL, baseUrl: string): Pro
   } else if (sort === "all") {
     papers = await getAllPapers(env.DB, perPage, offset);
   } else {
-    const popular = await getPopularPapers(env.DB, perPage, offset);
-    papers = popular;
+    papers = await getPopularPapers(env.DB, perPage, offset);
   }
 
   return json({
