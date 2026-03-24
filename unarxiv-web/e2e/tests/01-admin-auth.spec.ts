@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { adminVerify, adminDeletePaper } from "../helpers/api";
-import { ADMIN_PASSWORD, ADMIN_DASHBOARD } from "../helpers/fixtures";
+import { ADMIN_PASSWORD, ADMIN_DASHBOARD, ADMIN_CONTINUE } from "../helpers/fixtures";
 
 test.describe("Admin Auth", () => {
   test("admin page shows password prompt without auth", async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe("Admin Auth", () => {
   test("wrong password is rejected on admin page", async ({ page }) => {
     await page.goto("/admin");
     await page.locator('input[type="password"]').fill("wrong-password-123");
-    await page.locator('button:has-text("Continue")').click();
+    await page.locator(ADMIN_CONTINUE).click();
     // Should show error and remain on login
     await expect(
       page.locator('[data-testid="admin-auth-error"], .text-red-600')
@@ -47,7 +47,7 @@ test.describe("Admin Auth", () => {
     test.skip(!ADMIN_PASSWORD, "ADMIN_PASSWORD env not set");
     await page.goto("/admin");
     await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
-    await page.locator('button:has-text("Continue")').click();
+    await page.locator(ADMIN_CONTINUE).click();
     // Dashboard content should be visible after auth
     await expect(page.locator(ADMIN_DASHBOARD).first()).toBeVisible({ timeout: 10000 });
     // Error should NOT be shown

@@ -70,6 +70,50 @@ export const NEWLY_ADDED_NAV =
 export const ADMIN_DASHBOARD =
   '[data-testid="admin-dashboard"], h2:has-text("Top Contributors")';
 
+/**
+ * Shared selector for the "Generate Narration" / "Narrate" button.
+ * The button text is "Narrate" (or "Retry" for failed); the old label
+ * "Generate Audio Narration" no longer exists in the UI.
+ */
+export const GENERATE_NARRATION =
+  '[data-testid="generate-narration"], button:has-text("Narrate"), button:has-text("Retry")';
+
+/**
+ * Shared selector for the rating submit button.
+ */
+export const SUBMIT_RATING =
+  '[data-testid="submit-rating"], button:has-text("Submit Rating"), button:has-text("Update Rating")';
+
+/**
+ * Shared selector for the rating "Done" button (post-submit view).
+ */
+export const DONE_RATING =
+  '[data-testid="done-rating"], button:has-text("Done")';
+
+/**
+ * Shared selector for the rating "Cancel" button.
+ */
+export const CANCEL_RATING =
+  '[data-testid="cancel-rating"], button:has-text("Cancel")';
+
+/**
+ * Shared selector for the rating "Clear Rating" button.
+ */
+export const CLEAR_RATING =
+  '[data-testid="clear-rating"], button:has-text("Clear Rating")';
+
+/**
+ * Shared selector for the admin password form continue button.
+ */
+export const ADMIN_CONTINUE =
+  '[data-testid="admin-continue"], button:has-text("Continue")';
+
+/**
+ * Shared selector for the "Link Profile to Another Device" button on /my-papers.
+ */
+export const LINK_TO_ANOTHER_DEVICE =
+  '[data-testid="link-to-another-device"], button:has-text("Link Profile to Another Device")';
+
 /** Discovered in global-setup.ts and written to env */
 export function knownCompleteId(): string {
   const id = process.env.KNOWN_COMPLETE_ID;

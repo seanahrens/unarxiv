@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { API_BASE, ADMIN_PASSWORD, knownCompleteId } from "../helpers/fixtures";
+import { API_BASE, ADMIN_PASSWORD, knownCompleteId, LINK_TO_ANOTHER_DEVICE } from "../helpers/fixtures";
 
 let testListId: string;
 let testListToken: string;
@@ -163,7 +163,7 @@ test.describe("Lists Frontend", () => {
   test("collections section visible on playlist page", async ({ page }) => {
     await page.goto("/my-papers");
     await expect(page.locator("h1:has-text('My Collections')")).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('button:has-text("Link Profile to Another Device")')).toBeVisible();
+    await expect(page.locator(LINK_TO_ANOTHER_DEVICE)).toBeVisible();
   });
 
   test("create collection via API and view it", async ({ page }) => {

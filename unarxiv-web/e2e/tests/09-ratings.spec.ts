@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { knownCompleteId, RATE_NARRATION, RATING_MODAL } from "../helpers/fixtures";
+import { knownCompleteId, RATE_NARRATION, RATING_MODAL, SUBMIT_RATING, DONE_RATING, CANCEL_RATING, CLEAR_RATING } from "../helpers/fixtures";
 import { openDropdown } from "../helpers/page-actions";
 
 test.describe("Ratings", () => {
@@ -30,13 +30,13 @@ test.describe("Ratings", () => {
     await star4.click({ force: true });
 
     // Step 3: Submit — wait for button to be enabled (stars > 0) before clicking
-    const submitBtn = page.locator('button:has-text("Submit Rating")');
+    const submitBtn = page.locator(SUBMIT_RATING);
     await expect(submitBtn).toBeEnabled({ timeout: 2000 });
     await submitBtn.click();
 
     // Modal transitions to a thank-you view — wait for it, then dismiss
     await expect(page.locator("text=Thanks for your feedback!")).toBeVisible({ timeout: 10000 });
-    await page.locator('button:has-text("Done")').click();
+    await page.locator(DONE_RATING).click();
 
     // Modal should now close
     await expect(ratingModal.first()).not.toBeVisible({ timeout: 5000 });
@@ -55,12 +55,12 @@ test.describe("Ratings", () => {
     await expect(ratingModal.first()).toBeVisible({ timeout: 5000 });
 
     // Click "Clear Rating"
-    const clearBtn = page.locator('button:has-text("Clear Rating")');
+    const clearBtn = page.locator(CLEAR_RATING);
     if (await clearBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await clearBtn.click();
     } else {
       // Just close the modal if no clear button (no rating was saved somehow)
-      await page.locator('button:has-text("Cancel")').click();
+      await page.locator(CANCEL_RATING).click();
     }
 
     // Modal should close

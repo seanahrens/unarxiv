@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { cleanupTestPaper, getPaper } from "../helpers/api";
-import { TEST_ARXIV_ID, API_BASE, SEARCH_INPUT } from "../helpers/fixtures";
+import { TEST_ARXIV_ID, API_BASE, SEARCH_INPUT, GENERATE_NARRATION } from "../helpers/fixtures";
 
 // This test is slow (~2 min) and excluded from the "fast" project
 test.describe("Narration Generation", () => {
@@ -28,10 +28,8 @@ test.describe("Narration Generation", () => {
     // Step 2: Wait for paper page to load
     await page.locator("h1").waitFor({ timeout: 15000 });
 
-    // Step 3: Click "Generate Audio Narration"
-    const genBtn = page
-      .locator('button:has-text("Generate Audio Narration")')
-      .first();
+    // Step 3: Click the Narrate button
+    const genBtn = page.locator(GENERATE_NARRATION).first();
     await expect(genBtn).toBeVisible({ timeout: 5000 });
     await genBtn.click();
 
