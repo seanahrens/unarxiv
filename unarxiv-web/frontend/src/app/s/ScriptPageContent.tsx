@@ -41,7 +41,16 @@ export default function ScriptPageContent() {
         }
       }
       const text = await res.text();
-      return { text, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null };
+      // Strip the deterministic header block (title / authors / date) from the
+      // displayed transcript — the page already shows this as UI chrome, so
+      // rendering it again from the raw text looks like a double header.
+      // Header format (from script_builder.py _build_header):
+      //   Title.\n\n[By Authors.\n\n][Published on Date.\n\n]
+      const stripped = text.replace(
+        /^[^\n]+\.\n\n(?:By [^\n]+\.\n\n)?(?:Published on [^\n]+\.\n\n)?/,
+        ""
+      );
+      return { text: stripped || text, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null };
     } catch {
       return null;
     }
