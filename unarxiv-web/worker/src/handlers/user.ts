@@ -97,7 +97,11 @@ export async function handleDeleteMyAddition(request: Request, env: Env, id: str
   const isOwner = (token && paper.submitted_by_token === token) || paper.submitted_by_ip === ip;
   if (!isOwner) return json({ error: "Not your paper" }, 403);
   if (paper.audio_r2_key) {
-    try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
+    try {
+      await env.AUDIO_BUCKET.delete(paper.audio_r2_key);
+    } catch (e) {
+      console.error("Failed to delete R2 object:", e);
+    }
   }
   await deletePaper(env.DB, id);
   return json({ ok: true });
