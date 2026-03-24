@@ -124,7 +124,7 @@ cd unarxiv-web
 
 - Tailwind CSS with stone color palette
 - No confirm dialogs on individual actions, only bulk operations
-- Bot protection: Cloudflare Turnstile integrated but currently disabled (code in `worker/src/index.ts`)
+- Bot protection: Cloudflare Turnstile integrated but currently disabled (worker stub in `narration.ts`, frontend widget in `TurnstileWidget.tsx`)
 - Popularity: unique visits per IP per paper (not per-view)
 
 ## Routes
