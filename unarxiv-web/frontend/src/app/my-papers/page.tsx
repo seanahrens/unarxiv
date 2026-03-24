@@ -17,7 +17,7 @@ export default function MyCollectionsPage() {
   const router = useRouter();
 
   const [myLists, setMyLists] = useState<ListMeta[]>([]);
-  const [listsLoading, setListsLoading] = useState(true);
+  const [listsLoading, setListsLoading] = useState(() => Object.keys(getMyListTokens()).length > 0);
   const [copiedListId, setCopiedListId] = useState<string | null>(null);
   const [syncCopied, setSyncCopied] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
