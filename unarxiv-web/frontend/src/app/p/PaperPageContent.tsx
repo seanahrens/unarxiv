@@ -198,6 +198,7 @@ function RatingModal({
 
           <div className="flex justify-end">
             <button
+              data-testid="done-rating"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg hover:bg-stone-700 transition-colors"
             >
@@ -248,6 +249,7 @@ function RatingModal({
           <div>
             {existingRating && (
               <button
+                data-testid="clear-rating"
                 onClick={handleClear}
                 disabled={clearing || saving}
                 className="px-4 py-2 text-sm text-red-600 hover:text-red-800 transition-colors disabled:opacity-50"
@@ -258,12 +260,14 @@ function RatingModal({
           </div>
           <div className="flex gap-2">
             <button
+              data-testid="cancel-rating"
               onClick={onClose}
               className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 transition-colors"
             >
               Cancel
             </button>
             <button
+              data-testid="submit-rating"
               onClick={handleSubmit}
               disabled={saving || clearing || stars === 0}
               className="px-4 py-2 text-sm font-medium bg-stone-900 text-white rounded-lg

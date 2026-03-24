@@ -192,6 +192,7 @@ export default function MyCollectionsPage() {
       {/* Device Sync */}
       <div className="flex justify-center mt-8">
         <button
+          data-testid="link-to-another-device"
           onClick={() => setShowSyncModal(true)}
           className="group inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-full border transition-colors text-stone-600 border-stone-300 bg-surface hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50"
         >

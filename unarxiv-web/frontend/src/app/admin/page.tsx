@@ -599,6 +599,7 @@ export default function AdminPage() {
           />
           {authError && <p data-testid="admin-auth-error" className="text-sm text-red-600 mb-3">{authError}</p>}
           <button
+            data-testid="admin-continue"
             type="submit"
             disabled={verifying}
             className="w-full px-4 py-2.5 bg-stone-900 hover:bg-stone-700 text-white

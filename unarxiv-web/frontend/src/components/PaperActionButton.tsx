@@ -231,6 +231,7 @@ export default function PaperActionButton({
       {(isUnnarrated || isFailed) && (
         <>
           <button
+            data-testid="generate-narration"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               onGenerate?.(rect);
