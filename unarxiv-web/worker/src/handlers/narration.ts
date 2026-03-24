@@ -195,12 +195,20 @@ export async function handleReprocessPaper(
   // Delete old media from R2 based on mode
   if (mode !== "narration_only") {
     // Delete old transcript (will be regenerated)
-    try { await env.AUDIO_BUCKET.delete(`transcripts/${id}.txt`); } catch {}
+    try {
+      await env.AUDIO_BUCKET.delete(`transcripts/${id}.txt`);
+    } catch (e) {
+      console.error(`Failed to delete transcript for ${id}:`, e);
+    }
   }
   if (mode !== "script_only") {
     // Delete old audio (will be regenerated)
     if (paper.audio_r2_key) {
-      try { await env.AUDIO_BUCKET.delete(paper.audio_r2_key); } catch {}
+      try {
+        await env.AUDIO_BUCKET.delete(paper.audio_r2_key);
+      } catch (e) {
+        console.error(`Failed to delete audio for ${id}:`, e);
+      }
     }
   }
 
