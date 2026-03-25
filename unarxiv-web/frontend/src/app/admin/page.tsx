@@ -360,9 +360,22 @@ interface ScoreSummaryRow {
   avg_tts: number | null;
 }
 
+interface ScoreCurrentRow {
+  narration_tier: string;
+  period: string;
+  avg_overall: number | null;
+  avg_fidelity: number | null;
+  avg_citations: number | null;
+  avg_header: number | null;
+  avg_figures: number | null;
+  avg_tts: number | null;
+  count: number;
+}
+
 interface ScoreStats {
   daily: ScoreDailyRow[];
   summary: ScoreSummaryRow[];
+  current: ScoreCurrentRow[];
 }
 
 function trendLabel(current: number | null, prior: number | null): { symbol: string; delta: string; color: string } | null {
@@ -474,7 +487,7 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
             <line
               x1={PAD.left} y1={scoreToY(v)}
               x2={PAD.left + cW} y2={scoreToY(v)}
-              stroke="#e7e5e4" strokeWidth="1"
+              stroke="#d6d3d1" strokeWidth="1"
             />
             <text x={PAD.left - 4} y={scoreToY(v) + 4} textAnchor="end" fontSize="8" fill="#a8a29e">
               {Math.round(v * 100)}
@@ -482,10 +495,10 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
           </g>
         ))}
         {/* Y=0 baseline */}
-        <line x1={PAD.left} y1={scoreToY(0)} x2={PAD.left + cW} y2={scoreToY(0)} stroke="#d6d3d1" strokeWidth="1" />
+        <line x1={PAD.left} y1={scoreToY(0)} x2={PAD.left + cW} y2={scoreToY(0)} stroke="#a8a29e" strokeWidth="1" />
         {/* Series */}
-        {hasBase && renderSeries("base", "#78716c", "#78716c")}
-        {hasLlm && renderSeries("llm", "#7c3aed", "#7c3aed")}
+        {hasBase && renderSeries("base", "#ef4444", "#ef4444")}
+        {hasLlm && renderSeries("llm", "#3b82f6", "#3b82f6")}
         {/* X-axis labels */}
         {firstPeriod && (
           <text x={periodToX(firstPeriod)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
@@ -506,14 +519,14 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
       {/* Legend */}
       <div className="flex gap-4 justify-end mt-1">
         {hasBase && (
-          <span className="flex items-center gap-1 text-xs" style={{ color: "#78716c" }}>
-            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#78716c" }} />
-            Base
+          <span className="flex items-center gap-1 text-xs" style={{ color: "#ef4444" }}>
+            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#ef4444" }} />
+            Regex
           </span>
         )}
         {hasLlm && (
-          <span className="flex items-center gap-1 text-xs" style={{ color: "#7c3aed" }}>
-            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#7c3aed" }} />
+          <span className="flex items-center gap-1 text-xs" style={{ color: "#3b82f6" }}>
+            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#3b82f6" }} />
             LLM
           </span>
         )}
@@ -522,12 +535,20 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   );
 }
 
-/** Horizontal bar rows for each goal, one column per tier */
-function GoalBreakdown({ summary }: { summary: ScoreSummaryRow[] }) {
-  const base = summary.find((r) => r.narration_tier === "base");
-  const llm = summary.find((r) => r.narration_tier !== "base");
+const GOAL_TOOLTIPS: Record<string, string> = {
+  Fidelity: "Content completeness — does the script include all main body prose without truncation or paraphrasing?",
+  Citations: "Artifact cleanliness — are citation brackets, LaTeX commands, and formatting artifacts removed?",
+  "Header/Footer": "Structural compliance — correct header/footer, no duplicate title blocks, clean section transitions.",
+  Figures: "Figure & table descriptions — are visual elements described with specific data points and comparisons? (LLM only)",
+  TTS: "TTS readability — does the script read naturally aloud with proper math verbalization and no unpronounceable sequences?",
+};
 
-  const goals: { label: string; key: keyof ScoreSummaryRow }[] = [
+/** Horizontal bar rows for each goal, one column per tier */
+function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
+  const base = current.find((r) => r.narration_tier === "base");
+  const llm = current.find((r) => r.narration_tier !== "base");
+
+  const goals: { label: string; key: keyof ScoreCurrentRow }[] = [
     { label: "Fidelity", key: "avg_fidelity" },
     { label: "Citations", key: "avg_citations" },
     { label: "Header/Footer", key: "avg_header" },
@@ -538,18 +559,18 @@ function GoalBreakdown({ summary }: { summary: ScoreSummaryRow[] }) {
   const Bar = ({ value }: { value: number | null }) => {
     if (value == null) return (
       <div className="flex items-center gap-1.5 flex-1">
-        <div className="flex-1" />
         <span className="text-xs text-stone-300 w-7 text-right font-mono">—</span>
+        <div className="flex-1" />
       </div>
     );
     const pct = Math.round(value * 100);
     const barColor = value >= 0.8 ? "bg-emerald-400" : value >= 0.5 ? "bg-amber-400" : "bg-red-400";
     return (
       <div className="flex items-center gap-1.5 flex-1">
+        <span className="text-xs text-stone-500 w-7 text-right font-mono">{pct}%</span>
         <div className="flex-1 bg-stone-100 rounded-full h-1.5 overflow-hidden">
           <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-xs text-stone-500 w-7 text-right font-mono">{pct}%</span>
       </div>
     );
   };
@@ -557,13 +578,15 @@ function GoalBreakdown({ summary }: { summary: ScoreSummaryRow[] }) {
   return (
     <div className="mt-4">
       <div className="flex mb-1">
-        <div className="w-24 shrink-0" />
-        {base && <div className="flex-1 text-xs text-stone-400 text-center">Base</div>}
-        {llm && <div className="flex-1 text-xs text-violet-400 text-center">LLM</div>}
+        <div className="w-28 shrink-0" />
+        {base && <div className="flex-1 text-xs text-red-400 text-center">Regex</div>}
+        {llm && <div className="flex-1 text-xs text-blue-400 text-center">LLM</div>}
       </div>
       {goals.map(({ label, key }) => (
-        <div key={key} className="flex items-center gap-2 py-1">
-          <div className="w-24 shrink-0 text-xs text-stone-400">{label}</div>
+        <div key={String(key)} className="flex items-center gap-2 py-1">
+          <div className="w-28 shrink-0 text-xs text-stone-400" title={GOAL_TOOLTIPS[label]}>
+            <span className="cursor-help border-b border-dashed border-stone-300">{label}</span>
+          </div>
           {base && <Bar value={base[key] as number | null} />}
           {llm && <Bar value={llm[key] as number | null} />}
         </div>
@@ -581,17 +604,38 @@ function QualityInsightsPanel({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const base = stats.summary.find((r) => r.narration_tier === "base");
-  const llm = stats.summary.find((r) => r.narration_tier !== "base");
-  const totalEvals = stats.summary.reduce((s, r) => s + r.total_count, 0);
+  // Current period stats (most recent commit, up to 10 papers)
+  const base = stats.current.find((r) => r.narration_tier === "base");
+  const llm = stats.current.find((r) => r.narration_tier !== "base");
+  const totalEvals = stats.current.reduce((s, r) => s + r.count, 0);
 
-  const TierPill = ({ row, color }: { row: ScoreSummaryRow; color: string }) => {
-    const trend = trendLabel(row.avg_7d, row.avg_prior_7d);
-    const avg = row.avg_7d ?? row.avg_overall;
-    const pct = avg != null ? Math.round(avg * 100) : null;
+  // Compute trend by comparing last two periods in daily for each tier
+  function getTierTrend(isBase: boolean): ReturnType<typeof trendLabel> {
+    const rows = stats.daily.filter((r) => (isBase ? r.narration_tier === "base" : r.narration_tier !== "base"));
+    // Merge multiple LLM sub-tiers per period by averaging
+    const byPeriod = new Map<string, { sum: number; n: number; start: string }>();
+    for (const r of rows) {
+      if (r.avg_overall == null) continue;
+      const entry = byPeriod.get(r.period);
+      if (!entry) byPeriod.set(r.period, { sum: r.avg_overall, n: 1, start: r.period_start });
+      else { entry.sum += r.avg_overall; entry.n += 1; }
+    }
+    const periods = Array.from(byPeriod.entries())
+      .sort((a, b) => a[1].start.localeCompare(b[1].start));
+    if (periods.length < 2) return null;
+    const latest = periods[periods.length - 1][1];
+    const prior = periods[periods.length - 2][1];
+    return trendLabel(latest.sum / latest.n, prior.sum / prior.n);
+  }
+
+  const TierPill = ({ row }: { row: ScoreCurrentRow }) => {
+    const isBase = row.narration_tier === "base";
+    const trend = getTierTrend(isBase);
+    const pct = row.avg_overall != null ? Math.round(row.avg_overall * 100) : null;
+    const color = isBase ? "text-red-500" : "text-blue-500";
     return (
       <span className={`inline-flex items-center gap-1 text-xs font-medium ${color}`}>
-        {row.narration_tier === "base" ? "Base" : "LLM"}
+        {isBase ? "Regex" : "LLM"}
         {pct != null && <span className="font-mono">{pct}%</span>}
         {trend && <span className={trend.color}>{trend.symbol}</span>}
       </span>
@@ -608,8 +652,8 @@ function QualityInsightsPanel({
         <span className="flex items-center gap-3">
           <span className="text-xs font-medium text-stone-400 uppercase tracking-wider">Quality Insights</span>
           <span className="flex items-center gap-2.5">
-            {base && <TierPill row={base} color="text-stone-600" />}
-            {llm && <TierPill row={llm} color="text-violet-600" />}
+            {base && <TierPill row={base} />}
+            {llm && <TierPill row={llm} />}
             {totalEvals > 0 && (
               <span className="text-xs text-stone-300">{totalEvals} eval{totalEvals !== 1 ? "s" : ""}</span>
             )}
@@ -626,28 +670,28 @@ function QualityInsightsPanel({
       {/* Expanded body */}
       {expanded && (
         <div className="px-4 pb-4 border-t border-stone-50">
-          {/* Summary pills with delta */}
+          {/* Summary pills */}
           {(base || llm) && (
             <div className="flex gap-4 pt-3 pb-2">
               {[base, llm].filter(Boolean).map((row) => {
                 const r = row!;
-                const trend = trendLabel(r.avg_7d, r.avg_prior_7d);
-                const avg7d = r.avg_7d != null ? Math.round(r.avg_7d * 100) : null;
                 const isBase = r.narration_tier === "base";
+                const trend = getTierTrend(isBase);
+                const pct = r.avg_overall != null ? Math.round(r.avg_overall * 100) : null;
                 return (
-                  <div key={r.narration_tier} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isBase ? "bg-stone-50" : "bg-violet-50"}`}>
-                    <span className={`text-xs font-semibold ${isBase ? "text-stone-600" : "text-violet-700"}`}>
-                      {isBase ? "Base" : "LLM"}
+                  <div key={r.narration_tier} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isBase ? "bg-red-50" : "bg-blue-50"}`}>
+                    <span className={`text-xs font-semibold ${isBase ? "text-red-600" : "text-blue-700"}`}>
+                      {isBase ? "Regex" : "LLM"}
                     </span>
-                    {avg7d != null && (
-                      <span className={`text-sm font-bold font-mono ${isBase ? "text-stone-800" : "text-violet-800"}`}>
-                        {avg7d}%
+                    {pct != null && (
+                      <span className={`text-sm font-bold font-mono ${isBase ? "text-red-800" : "text-blue-800"}`}>
+                        {pct}%
                       </span>
                     )}
                     {trend && (
                       <span className={`text-xs ${trend.color}`}>{trend.symbol} {trend.delta}</span>
                     )}
-                    <span className="text-xs text-stone-300">{r.count_7d}ev/7d</span>
+                    <span className="text-xs text-stone-300">{r.count}ev</span>
                   </div>
                 );
               })}
@@ -658,7 +702,7 @@ function QualityInsightsPanel({
           <ScoreTrendChart daily={stats.daily} />
 
           {/* Goal breakdown */}
-          {stats.summary.length > 0 && <GoalBreakdown summary={stats.summary} />}
+          {stats.current.length > 0 && <GoalBreakdown current={stats.current} />}
         </div>
       )}
     </div>
@@ -1139,7 +1183,7 @@ export default function AdminPage() {
       )}
 
       {/* Quality Insights panel — shown when score data exists */}
-      {scoreStats && (scoreStats.daily.length > 0 || scoreStats.summary.length > 0) && (
+      {scoreStats && (scoreStats.daily.length > 0 || scoreStats.current.length > 0) && (
         <QualityInsightsPanel
           stats={scoreStats}
           expanded={showQualityPanel}

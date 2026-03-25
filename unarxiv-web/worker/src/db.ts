@@ -1133,11 +1133,29 @@ export interface ScoreSummaryRow {
 }
 
 /**
- * Returns daily score averages (last 30 days, by tier) and all-time summary averages (by tier).
+ * Per-tier stats for the most recent parser commit that has scores (up to 10 most recent papers).
+ * Used as the "current headline" in the Quality Insights panel.
+ */
+export interface ScoreCurrentRow {
+  narration_tier: string;
+  /** The period (commit hash or date) this represents */
+  period: string;
+  avg_overall: number | null;
+  avg_fidelity: number | null;
+  avg_citations: number | null;
+  avg_header: number | null;
+  avg_figures: number | null;
+  avg_tts: number | null;
+  /** Number of papers averaged (up to 10) */
+  count: number;
+}
+
+/**
+ * Returns daily score averages (last 90 days, by tier), all-time summary, and current-period stats.
  * Used by the admin Quality Insights panel.
  */
-export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDailyRow[]; summary: ScoreSummaryRow[] }> {
-  const [dailyResult, summaryResult] = await Promise.all([
+export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDailyRow[]; summary: ScoreSummaryRow[]; current: ScoreCurrentRow[] }> {
+  const [dailyResult, summaryResult, currentResult] = await Promise.all([
     db.prepare(`
       SELECT COALESCE(ns.parser_commit, date(ns.scored_at)) as period,
              MIN(ns.scored_at)       as period_start,
@@ -1174,7 +1192,50 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
       JOIN narration_versions nv ON nv.id = ns.version_id
       GROUP BY nv.narration_tier
     `).all<ScoreSummaryRow>(),
+
+    // Most recent commit period per tier, up to 10 most recent scores each
+    db.prepare(`
+      WITH period_max AS (
+        SELECT nv.narration_tier,
+               COALESCE(ns.parser_commit, date(ns.scored_at)) AS period,
+               MAX(ns.scored_at) AS max_scored_at
+        FROM narration_scores ns
+        JOIN narration_versions nv ON nv.id = ns.version_id
+        GROUP BY nv.narration_tier, COALESCE(ns.parser_commit, date(ns.scored_at))
+      ),
+      latest_period AS (
+        SELECT narration_tier, period
+        FROM (
+          SELECT narration_tier, period,
+                 ROW_NUMBER() OVER (PARTITION BY narration_tier ORDER BY max_scored_at DESC) AS rn
+          FROM period_max
+        )
+        WHERE rn = 1
+      ),
+      ranked_scores AS (
+        SELECT ns.score_overall, ns.score_fidelity, ns.score_citations,
+               ns.score_header, ns.score_figures, ns.score_tts,
+               nv.narration_tier, lp.period,
+               ROW_NUMBER() OVER (PARTITION BY nv.narration_tier ORDER BY ns.scored_at DESC) AS rn
+        FROM narration_scores ns
+        JOIN narration_versions nv ON nv.id = ns.version_id
+        JOIN latest_period lp
+          ON lp.narration_tier = nv.narration_tier
+         AND lp.period = COALESCE(ns.parser_commit, date(ns.scored_at))
+      )
+      SELECT narration_tier, period,
+             AVG(score_overall)   AS avg_overall,
+             AVG(score_fidelity)  AS avg_fidelity,
+             AVG(score_citations) AS avg_citations,
+             AVG(score_header)    AS avg_header,
+             AVG(score_figures)   AS avg_figures,
+             AVG(score_tts)       AS avg_tts,
+             COUNT(*)             AS count
+      FROM ranked_scores
+      WHERE rn <= 10
+      GROUP BY narration_tier, period
+    `).all<ScoreCurrentRow>(),
   ]);
 
-  return { daily: dailyResult.results, summary: summaryResult.results };
+  return { daily: dailyResult.results, summary: summaryResult.results, current: currentResult.results };
 }
