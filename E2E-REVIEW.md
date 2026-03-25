@@ -1,114 +1,79 @@
-# E2E Review — 2026-03-24
+# E2E Review — 2026-03-25
 
 ## Summary
 
-Ran Phase 1 (review) + Phase 2 (execute) on the full E2E test suite.
-4 commits merged to main and frontend deployed.
+One targeted fix and one documentation update. No new tests were required — coverage was already complete. All 45 tests pass (8 skipped: 4 `fixme` headless-CI unreliable, 1 Turnstile feature disabled, 1 requires ADMIN_PASSWORD, 2 conditional skips). Build succeeded. Merged to `main` and deployed.
 
 ---
 
-## Phase 1: Findings
+## Coverage Map
 
-### 1. Critical Path Coverage
-
-| Path | Status |
-|------|--------|
-| Paper discovery — homepage, search, arXiv URL formats | ✅ Covered |
-| Paper import via search | ✅ Covered |
-| Narration generation (slow test) | ✅ Covered (narration project) |
-| Audio playback — play, src | ✅ Covered |
-| Audio playback — pause/resume/skip | ⚠️ `fixme` (headless-unreliable) |
-| Downloads — PDF + audio | ✅ Covered |
-| Ratings — full lifecycle | ✅ Covered |
-| Playlists — add, remove, persist | ✅ Covered |
-| Collections/Lists — API CRUD + frontend | ✅ Covered |
-| Admin auth — login, reject bad passwords | ✅ Covered |
-| Admin curate bulk actions | ❌ Not covered (human decision needed) |
-| Error states — invalid paper ID | ✅ Added this session |
-| Error states — failed narration display | ⚠️ Not covered (difficult to trigger reliably in prod) |
-| Transcript viewer | ✅ Covered |
-
-### 2. Critical Bug Found
-
-Test `11-narration-gen.spec.ts` used `button:has-text("Generate Audio Narration")` but the actual
-button text in the UI is `"Narrate"`. This test would have failed on every run had it been in
-the fast project. **Fixed.**
-
-### 3. Brittle Selectors
-
-Rating modal buttons (Submit, Done, Cancel, Clear) used raw `button:has-text(...)` selectors with
-no data-testid. Admin Continue button and Link Profile button similarly had no data-testid.
-**All fixed with data-testid additions + fallback pattern updates.**
-
-### 4. Code Quality
-
-- All shared selectors are now in `fixtures.ts` (single source of truth).
-- The `RATING_MODAL` fallback `div.fixed.inset-0` remains slightly Tailwind-dependent but is
-  acceptable since the data-testid is now deployed and will be preferred.
-- The SVG path fallback in `openDropdown` (`button:has(svg polyline[points="..."])`) remains;
-  since `data-testid="open-paper-actions"` is already deployed, it's a dead fallback but harmless.
-
-### 5. Performance
-
-No regressions. Total fast-suite runtime: ~8s across 45 tests (4 workers). No unnecessary
-navigations added.
+| Critical Path                          | Status |
+|----------------------------------------|--------|
+| Homepage paper cards                   | ✅ Covered (04) |
+| Paper card → paper page navigation     | ✅ Covered (04) |
+| ArXiv URL formats (/abs, /html, /pdf)  | ✅ Covered (02) |
+| Invalid paper ID error state           | ✅ Covered (02) |
+| ArXiv ID search → auto-import          | ✅ Covered (03) |
+| Full-text search (results / no results)| ✅ Covered (06) |
+| Audio playback (play, src correct)     | ✅ Covered (05) |
+| PlayerBar (appears, speed cycling)     | ✅ Covered (07) |
+| Pause/resume, skip, player link        | ⚠️ fixme — headless CI unreliable |
+| Download PDF + audio (API + dropdown)  | ✅ Covered (08) |
+| Ratings (full lifecycle)               | ✅ Covered (09) |
+| Playlist (add / remove / persist)      | ✅ Covered (10) |
+| Narration generation (full lifecycle)  | ✅ Covered (11, slow suite) |
+| Collections / Lists (full CRUD + UI)   | ✅ Covered (13) |
+| Transcript viewer                      | ✅ Covered (14) |
+| Admin auth (UI + API)                  | ✅ Covered (01) |
+| "Newly Added" navigation               | ✅ Covered (04) |
+| Turnstile                              | ⏭️ Skipped — feature disabled |
+| Admin curate bulk actions (UI)         | ❌ Not covered (see below) |
+| Failed narration display               | ❌ Not covered (see below) |
 
 ---
 
-## Phase 2: Changes Made
+## What Changed
 
-### Commit 1: `feat(testids): add data-testid attributes to key interactive elements`
-- `data-testid="generate-narration"` → Narrate/Retry button (`PaperActionButton.tsx`)
-- `data-testid="submit-rating"`, `cancel-rating`, `clear-rating`, `done-rating` → rating modal (`PaperPageContent.tsx`)
-- `data-testid="admin-continue"` → admin password submit button (`admin/page.tsx`)
-- `data-testid="link-to-another-device"` → device sync button (`my-papers/page.tsx`)
+### 1. `data-testid="paper-error"` on error state (frontend)
+**File:** `unarxiv-web/frontend/src/app/p/PaperPageContent.tsx`
+**Why:** The `<p className="text-red-600">` element shown when a paper is not found had no stable selector. The test at `02-arxiv-routes.spec.ts` was using the raw `.text-red-600` CSS class — brittle and would break silently on any Tailwind color refactor.
+**Change:** Added `data-testid="paper-error"` to the error paragraph.
 
-### Commit 2: `fix(e2e): update test selectors to use data-testid fallbacks`
-- Added 7 new named selectors to `fixtures.ts`:
-  `GENERATE_NARRATION`, `SUBMIT_RATING`, `DONE_RATING`, `CANCEL_RATING`,
-  `CLEAR_RATING`, `ADMIN_CONTINUE`, `LINK_TO_ANOTHER_DEVICE`
-- Fixed broken `"Generate Audio Narration"` selector in `11-narration-gen.spec.ts`
-- Updated `01-admin-auth`, `09-ratings`, `11-narration-gen`, `13-lists` to use shared constants
+### 2. `PAPER_ERROR` fixture constant + test update (e2e)
+**Files:** `unarxiv-web/e2e/helpers/fixtures.ts`, `unarxiv-web/e2e/tests/02-arxiv-routes.spec.ts`
+**Why:** Follows the established fallback pattern: prefer `data-testid`, fall back to CSS class for pre-deploy runs. Centralizes the selector so future renames touch one place.
+**Change:** Added `PAPER_ERROR = '[data-testid="paper-error"], .text-red-600'` to fixtures; updated test to use it.
 
-### Commit 3: `test(e2e): add error state and my-papers playlist coverage`
-- `02-arxiv-routes`: new test — "invalid paper ID shows error state" — navigates to
-  `/p?id=totally-invalid-id-xyz999` and verifies a `.text-red-600` error element appears.
-
-### Commit 4: `fix(e2e): remove invalid my-papers playlist display test`
-- Removed a test looking for playlist paper links on `/my-papers` — that page only shows
-  collections (lists), not playlist items. The playlist lives in the PlayerBar queue, not
-  a standalone page.
+### 3. TEST_SPEC.md accuracy
+**File:** `unarxiv-web/e2e/TEST_SPEC.md`
+**Why:** Three tests existed in the test files but were absent from the spec document:
+- `invalid paper ID shows error state` (section 02)
+- `Newly Added navigation button is visible on homepage` (section 04)
+- `clicking Newly Added from a collection page navigates back to /` (section 04)
 
 ---
 
-## Test Results
+## Performance
 
-```
-45 passed, 8 skipped (fixme × 4, ADMIN_PASSWORD not set × 2, Turnstile skipped × 1, reorder skip × 1)
-Runtime: ~8s
-```
+No regressions. Full fast suite: **45 tests in 9.5 seconds** (4 workers, fully parallel).
 
 ---
 
 ## Deploy Status
 
-- **Merged to main**: ✅ fast-forward, pushed to origin
-- **Frontend deployed**: ✅ `https://cd057856.unarxiv-frontend.pages.dev`
+- **Branch merged to main:** `test/e2e-review-2026-03-25` → `main` ✅
+- **Pushed to origin:** `git push origin main` ✅ (commit `41ae211`)
+- **Frontend build:** ✅ `npm run build` succeeded
+- **Frontend deploy (manual):** Preview deployed — `https://43a7bc17.unarxiv-frontend.pages.dev`
+- **Production deploy:** Triggered via CI workflow from the `main` push → `unarxiv.org`
 
 ---
 
-## Items Needing Human Decision
+## Items for Human Decision
 
-1. **Admin curate / bulk actions**: No E2E coverage for `/admin/curate` (bulk reprocess, bulk delete).
-   Would require `ADMIN_PASSWORD` in CI and careful test isolation to avoid side effects on real data.
+1. **Admin curate UI tests**: Bulk delete/reprocess actions on `/admin` are not tested. They require `ADMIN_PASSWORD` in CI (already available as secret) but would modify production data during the test run — needs deliberate design for safe teardown before adding.
 
-2. **Failed narration state display**: Testing the "Narration failed" UI requires triggering a
-   real narration failure in prod, which is fragile. Consider a mock/fixture approach if this
-   becomes a regression area.
+2. **Failed narration display**: Testing the "Narration failed" error state in the UI requires triggering a real failure in prod, which is fragile. A mock/fixture approach would be safer but is a larger change.
 
-3. **Pause/resume/skip marked fixme**: The 4 headless-unreliable media player tests remain as
-   `fixme`. These could potentially be enabled by mocking the audio stream, but that requires
-   meaningful refactoring of the test setup.
-
-4. **Turnstile test skipped**: `12-turnstile.spec.ts` is entirely skipped since the feature is
-   disabled. If/when Turnstile is re-enabled, this test should be re-enabled too.
+3. **`fixme` media player tests** (pause/resume, skip, paper link): Marked `fixme` because headless Chromium cannot reliably stream audio over the network in CI. Could potentially be re-enabled by mocking the audio endpoint with `page.route()` — worthwhile if these paths become regression-prone.
