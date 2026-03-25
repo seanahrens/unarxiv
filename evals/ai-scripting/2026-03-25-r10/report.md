@@ -183,3 +183,256 @@ text = re.sub(r"(?m)^I(?:'m| am) sorry[^\n]*\.\s*$", '', text, flags=re.IGNORECA
 **Problem**: The strip list mentions `\\ref{}` but the model converts it to English "reference label" instead of omitting it.
 
 **Change**: Added to guideline 4: "NEVER convert \\ref{label} to the word 'reference' followed by the label name. \\ref{} and all cross-reference commands must be omitted entirely — output nothing."
+
+---
+
+# LLM Script Evaluation Report — 2026-03-25 (Round 10, Part 2: claude-sonnet-4-6)
+
+## Context
+
+**Cutoff commit**: `1de825a` — `eval(round10): \ref artifacts, LLM refusals, raw LaTeX in math papers` — 2026-03-25 14:50:46 -0600 (20:50:46 UTC)
+
+**LLM provider/model**: `anthropic / claude-sonnet-4-6`
+
+**Parser version registered**: `1de825a` / `plus1` (registered via D1 direct insert)
+
+**Key Context**: These 3 papers are the first batch narrated with `claude-sonnet-4-6` after switching from `gpt-4o`. The switch was made after GPT-4o's persistent instruction-following failures across rounds 7-10 (Part 1). This eval tests whether Sonnet 4.6 resolves the third-person narration, URL handling, and artifact issues.
+
+**Scripts generated after cutoff (UTC 20:50:46)**:
+
+| Version ID | Paper ID | LLM | Created (UTC) |
+|------------|----------|-----|---------------|
+| 236 | 2603.09151 | anthropic/claude-sonnet-4-6 | 2026-03-25 23:02:11 |
+| 235 | 2603.18815 | anthropic/claude-sonnet-4-6 | 2026-03-25 22:58:32 |
+| 234 | 2603.23497 | anthropic/claude-sonnet-4-6 | 2026-03-25 22:55:29 |
+
+**Papers evaluated**:
+1. "Deep Tabular Research via Continual Experience-Driven Execution" (v236, 2603.09151)
+2. "ProRL Agent: Rollout-as-a-Service for RL Training of Multi-Turn LLM Agents" (v235, 2603.18815)
+3. "WildWorld: A Large-Scale Dataset for Dynamic World Modeling with Actions and Explicit State toward Generative ARPG" (v234, 2603.23497)
+
+---
+
+## Executive Summary
+
+`claude-sonnet-4-6` represents a **dramatic improvement** over `gpt-4o`. The two most severe failure modes from prior rounds — systematic third-person meta-narration and inconsistent URL handling — are entirely absent. All three papers narrate faithfully in first person throughout, including in appendix sections and after structured content (tables, figure captions, itemized lists). Citation stripping is perfect across all papers.
+
+**One new failure mode** appears in 2 of 3 papers: `\textbf{...}` LaTeX bold formatting is being output as `**bold markdown**` rather than being stripped. This is a TTS formatting issue (Goal 5) — the model understands the content but outputs Markdown syntax that a TTS engine would speak literally as "asterisk asterisk Label dot asterisk asterisk".
+
+| Goal | Paper 1 (v236) | Paper 2 (v235) | Paper 3 (v234) | Average |
+|------|---------------|---------------|---------------|---------|
+| Goal 1: Fidelity | 9/10 | 9/10 | 9/10 | 9.0/10 |
+| Goal 2: Citations | 10/10 | 10/10 | 10/10 | 10.0/10 |
+| Goal 3: Header/Footer | 10/10 | 10/10 | 10/10 | 10.0/10 |
+| Goal 4: Figures | 9/10 | 9/10 | 9/10 | 9.0/10 |
+| Goal 5: TTS | 9/10 | 7/10 | 7/10 | 7.7/10 |
+| **Overall** | **9.4/10** | **9.0/10** | **9.0/10** | **9.1/10** |
+
+**Average overall: 9.1/10** — significantly above the 0.82 quality bar.
+
+---
+
+## Paper 1: 2603.09151 — Deep Tabular Research (v236)
+
+### Score Table
+
+| Goal | Score | Key Evidence |
+|------|-------|-------------|
+| Goal 1: Fidelity | 9/10 | Near-verbatim throughout; 2 spots where "reference answers" silently dropped |
+| Goal 2: Citations | 10/10 | All citations stripped; no \Cref or \ref artifacts |
+| Goal 3: Header/Footer | 10/10 | Correct header and footer |
+| Goal 4: Figures | 9/10 | Excellent descriptions with specific data values, chart types, axes |
+| Goal 5: TTS | 9/10 | Math spoken in plain English; no LaTeX artifacts; no bold markdown |
+
+### Goal 1: Near-Verbatim Fidelity — 9/10
+
+First-person narration maintained throughout, including the appendix (case studies, algorithm descriptions, benchmark details). Abstract, methods, results, and case study sections faithfully rendered.
+
+**Minor issue**: Two spots where words were silently dropped near `\textbf{}` commands. Source (appendix.tex line 156 and 161):
+```
+All reference answers are computed programmatically...
+In addition to validating that reference answers are computed...
+```
+Script output (lines 263, 269):
+> "In addition to validating that  are computed from the underlying table data..."
+> "...not just a  but also structured, checkable criteria..."
+
+The words "reference answers" (from a `\textbf{Answer Verification}` bullet context nearby) were dropped. This may be a tokenization gap when `\textbf{}` commands appear in close proximity.
+
+### Goal 2: Citation/Footnote Stripping — 10/10
+
+Perfect. All `\cite{}`, `\citep{}` citations stripped. No `\ref{}`, `\Cref{}` artifacts. Round 10 Part 1's post-processing fixes working correctly.
+
+### Goal 3: Header/Footer Compliance — 10/10
+
+Correct header (handled by script_builder.py). Body begins with abstract. Footer present.
+
+### Goal 4: Figure/Table Description Quality — 9/10
+
+Figure 1 (system overview diagram) described with full panel-by-panel breakdown including specific expectation scores (7.2, 8.5), formula structures, and visual layout. All results tables read out completely with all 9 methods and 7+ metric values each. Line chart with dual y-axes described with specific call counts and accuracy percentages. Heatmap described with 8 rows, 10 columns, specific percentage values per cell.
+
+### Goal 5: TTS Formatting Quality — 9/10
+
+Math spoken correctly throughout. Example:
+> "The score E of pi equals R-hat of pi, plus alpha times P of pi, times the square root of the quantity log of the sum over all paths pi-prime of N of pi-prime, divided by the quantity 1 plus N of pi."
+
+No LaTeX delimiters, no backslash macros, no `**bold**` markdown artifacts. "matplotlib dot pyplot" in the code narration is correct (Python library reference, not a URL).
+
+---
+
+## Paper 2: 2603.18815 — ProRL Agent (v235)
+
+### Score Table
+
+| Goal | Score | Key Evidence |
+|------|-------|-------------|
+| Goal 1: Fidelity | 9/10 | Faithful first-person; comprehensive appendix coverage including 5 architecture diagrams |
+| Goal 2: Citations | 10/10 | All citations stripped; no artifacts |
+| Goal 3: Header/Footer | 10/10 | Correct |
+| Goal 4: Figures | 9/10 | Architecture diagrams described in exceptional detail |
+| Goal 5: TTS | 7/10 | 3 instances of \textbf{} paragraph headers output as **bold markdown** |
+
+### Goal 1: Near-Verbatim Fidelity — 9/10
+
+First-person narration maintained in main paper and appendix. The appendix contains 5 architecture comparison diagrams (ProRL Agent, SkyRL-Agent, Agent Lightning, VeRL-Tool, rLLM, GEM process placements) — all described comprehensively with specific API endpoints, class names, method signatures, and system behaviors. No third-person drift observed at any point.
+
+### Goal 2: Citation/Footnote Stripping — 10/10
+
+Perfect.
+
+### Goal 3: Header/Footer Compliance — 10/10
+
+Correct. Body begins with abstract text.
+
+### Goal 4: Figure/Table Description Quality — 9/10
+
+Architecture diagrams described with remarkable specificity. Coupled vs. decoupled design figure described with specific labels ("red dashed HTTP boundary", component names, data flow arrows). Training curve plots described with specific x/y axis ranges, start/end values, and trend interpretation. DAPO timeline diagram includes worker labels, color-coding, and idle time analysis.
+
+### Goal 5: TTS Formatting Quality — 7/10
+
+**Critical failure**: Three paragraph headers using `\noindent\textbf{STEM Agent.}` pattern output as Markdown bold:
+
+Source (experiment.tex):
+```
+\noindent\textbf{STEM Agent.} We further train...
+\noindent\textbf{Math Agent.} We also train...
+\noindent\textbf{Code Agent.} We also train...
+```
+
+Script output (lines 173, 177, 183):
+> `**STEM Agent.** We further train a STEM agent...`
+> `**Math Agent.** We also train a math agent...`
+> `**Code Agent.** We also train a code agent...`
+
+For TTS, these would be spoken as "asterisk asterisk STEM Agent dot asterisk asterisk We further train..." — completely unlistenable. The model converted `\textbf{...}` to Markdown bold instead of stripping the formatting.
+
+---
+
+## Paper 3: 2603.23497 — WildWorld (v234)
+
+### Score Table
+
+| Goal | Score | Key Evidence |
+|------|-------|-------------|
+| Goal 1: Fidelity | 9/10 | Faithful first-person; all sections covered including dataset statistics and experiments |
+| Goal 2: Citations | 10/10 | Perfect stripping |
+| Goal 3: Header/Footer | 10/10 | Correct |
+| Goal 4: Figures | 9/10 | Dataset donut charts, histograms, bar charts described with specific percentages |
+| Goal 5: TTS | 7/10 | 3 instances of \textbf{} section headers output as **bold markdown** |
+
+### Goal 1: Near-Verbatim Fidelity — 9/10
+
+First-person narration maintained throughout. All filtering criteria described with specific thresholds. Benchmark metrics explained clearly. Results table fully narrated with all numeric values.
+
+### Goal 5: TTS Formatting Quality — 7/10
+
+**Same pattern as Paper 2**: Three `\textbf{...}` paragraph headers output as Markdown bold:
+
+Source (sec/04.experiments.tex):
+```
+\textbf{Camera-Conditioned Video Generation.}
+\textbf{Skeleton-Conditioned Video Generation.}
+\textbf{State-Conditioned Video Generation.}
+```
+
+Script output (lines 97, 99, 101):
+> `**Camera-Conditioned Video Generation.** In this setting...`
+> `**Skeleton-Conditioned Video Generation.** Skeletal pose...`
+> `**State-Conditioned Video Generation.** Based on CamCtrl...`
+
+---
+
+## Cross-Paper Patterns (Round 10 Part 2)
+
+### NEW: `\textbf{}` → `**markdown**` (Papers 2 and 3)
+
+`\textbf{paragraph label}` followed by body text is converted to `**paragraph label**` (Markdown bold) in 2 of 3 papers. Paper 1 uses different `\textbf{}` patterns (inside bullet items and table cells) where the model correctly strips the formatting, so this issue is specific to the `\noindent\textbf{Label.}` paragraph-header usage pattern.
+
+The model appears to recognize these as section-level headers and defaults to Markdown H-style bold instead of stripping formatting.
+
+### RESOLVED vs. Round 10 Part 1 (gpt-4o):
+
+| Issue | gpt-4o (Part 1) | claude-sonnet-4-6 (Part 2) |
+|-------|----------------|---------------------------|
+| Third-person narration | Present in all papers | Absent in all papers |
+| URL dot/slash speaking | Not observed (fixed in r9) | Absent |
+| `\ref{}` "reference label" artifacts | 6+ in paper 1 | Absent |
+| LLM "I'm sorry" refusals | Present in paper 3 | Absent |
+| Raw LaTeX math artifacts | Present in math paper | Absent (math papers not tested) |
+| `\textbf{}` → `**markdown**` | Not observed | Present in 2/3 papers |
+
+---
+
+## Cost/Quality Assessment
+
+| Metric | Value |
+|--------|-------|
+| Current model | `claude-sonnet-4-6` |
+| Estimated cost/paper | ~$0.45 |
+| Average overall score | 9.1/10 (0.91) |
+| Quality bar (≥ 0.82) | PASSING |
+| Prior round score (gpt-4o, Part 1) | 6.7/10 (0.67) — FAILING |
+
+---
+
+## Model/Provider Assessment
+
+`claude-sonnet-4-6` demonstrates dramatically better instruction-following than `gpt-4o` for this task. The failure modes that persisted across 3+ rounds with GPT-4o are fully resolved. The only new failure (`\textbf{}` → `**markdown**`) is prompt-fixable and affects TTS formatting, not content fidelity.
+
+**Decision per Step 6**: Current model passes at 9.1/10 and is NOT the cheapest. Per Rule 1, test one tier down (`claude-3-5-haiku-latest`, ~$0.12/paper). The model switch to Haiku 3.5 is implemented in this round, after applying the `\textbf{}` fix. If Haiku 3.5 also passes ≥ 0.82 in the next eval, confirm the downgrade.
+
+---
+
+## Fixes Implemented This Round (Part 2)
+
+### Fix 1 (Prompt): Prohibit Markdown bold/italic output; explicitly strip \textbf{}, \textit{}, \emph{}
+
+**Problem**: `\noindent\textbf{Label.}` paragraph headers are converted to `**Label.**` (Markdown bold) instead of being stripped. The prompt says "Remove all LaTeX formatting commands" but does not explicitly name `\textbf{}` or prohibit Markdown output format.
+
+**Change**: Added to guideline 4 (Clean output): explicit instruction to strip `\textbf{}`, `\textit{}`, `\emph{}`, `\noindent` and any other formatting commands, keeping only the argument text. Added explicit prohibition: "NEVER output Markdown bold (**text**) or Markdown italic (*text*) — these are not spoken correctly by TTS."
+
+### Fix 2 (Post-processing): Strip Markdown bold/italic from LLM output
+
+**Problem**: Even with the prompt fix, `**...**` could appear if the LLM processes a chunk where a `\textbf{}` paragraph header starts the chunk.
+
+**Change**: Added regex to `_strip_latex_artifacts`:
+```python
+# Strip Markdown bold (**text**) and italic (*text*) artifacts from LLM output
+text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)  # **bold** → bold
+text = re.sub(r'\*([^*]+)\*', r'\1', text)       # *italic* → italic
+```
+
+### Fix 3 (Model): Downgrade to `claude-3-5-haiku-latest`
+
+**Rationale**: `claude-sonnet-4-6` passes at 9.1/10 with 0.09 margin above the bar. Per the model ladder, the next tier down (`claude-3-5-haiku-latest`, ~$0.12/paper vs ~$0.45) should be tested. The prompt fixes in this round should reduce the `\textbf{}` issue, making it a fairer test of Haiku 3.5.
+
+**Change**: Set `AnthropicProvider.DEFAULT_MODEL = "claude-3-5-haiku-latest"` in `llm_scripting.py`. Deploy Modal worker.
+
+---
+
+## Recommended Next Steps
+
+1. Evaluate 2-3 papers narrated with `claude-3-5-haiku-latest` in the next round.
+2. If Haiku 3.5 scores ≥ 0.82 overall: confirm downgrade (saves ~$0.33/paper, 75% cost reduction).
+3. If Haiku 3.5 scores < 0.82: revert to Sonnet 4.6.
+4. Monitor content dropout near `\textbf{}` commands (Paper 1 "reference answers" issue).

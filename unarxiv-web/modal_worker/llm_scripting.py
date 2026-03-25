@@ -121,7 +121,15 @@ Guidelines:
    silently deleted, leaving only the surrounding prose: e.g. "In Section"
    or "Theorem" with no trailing label text; section heading commands
    (\\section{}, \\subsection{}, etc.) — do NOT output the heading as a
-   standalone line or label. Also remove or skip all document metadata:
+   standalone line or label.
+   CRITICAL — formatting commands: Strip ALL LaTeX text-formatting commands
+   and keep only the plain text inside: \\textbf{X} → "X", \\textit{X} → "X",
+   \\emph{X} → "X", \\text{X} → "X", \\noindent → (nothing). Do NOT convert
+   \\textbf{} or \\textit{} to Markdown bold (**X**) or italic (*X*) — your
+   output must contain NO Markdown formatting characters. "**Label.**" in
+   output is WRONG. "Label." is correct. TTS engines will speak asterisks
+   literally, which is unlistenable.
+   Also remove or skip all document metadata:
    \\title{}, \\author{}, \\affiliation{}, \\institute{}, \\email{},
    \\icmlauthor{}, \\icmlaffiliation{}, \\maketitle, \\begin{document}, ORCID
    links, and similar preamble content — the title, authors, and date are
@@ -550,6 +558,12 @@ def _strip_latex_artifacts(text: str) -> str:
         text,
         flags=re.IGNORECASE,
     )
+    # Strip Markdown bold/italic artifacts where LLM converted \textbf{X} → **X** or \textit{X} → *X*.
+    # TTS engines speak asterisks literally; these must be stripped before reaching audio output.
+    # **bold text** → bold text
+    text = re.sub(r'\*\*([^*\n]+)\*\*', r'\1', text)
+    # *italic text* → italic text  (only single asterisks; avoid matching * in math/code contexts)
+    text = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'\1', text)
     # Normalize whitespace after stripping
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
@@ -640,9 +654,25 @@ def _split_on_paragraphs(text: str, max_chars: int) -> list[str]:
 # Cost tables (USD per token)
 # ---------------------------------------------------------------------------
 
-# claude-sonnet-4-6: $3 / MTok input, $15 / MTok output
-_ANTHROPIC_COST_IN = 3.0 / 1_000_000
-_ANTHROPIC_COST_OUT = 15.0 / 1_000_000
+# Anthropic models — per MTok pricing:
+#   claude-sonnet-4-6      : $3.00 in / $15.00 out  (~$0.45/paper, ~8 min)
+#   claude-3-5-haiku-latest: $0.80 in / $4.00 out   (~$0.12/paper, ~3-4 min) ← best value
+#   claude-3-haiku-latest  : $0.25 in / $1.25 out   (~$0.03/paper, older/weaker)
+#
+# Set ANTHROPIC_DEFAULT_MODEL in Modal secrets to switch without a redeploy.
+# Use the friendly names below — no date suffixes needed.
+_ANTHROPIC_COSTS = {
+    # Current flagship (new naming scheme — no date suffix)
+    "claude-sonnet-4-6":         (3.00 / 1_000_000, 15.00 / 1_000_000),
+    # Latest aliases — Anthropic keeps these pointed at the newest version
+    "claude-3-5-haiku-latest":   (0.80 / 1_000_000,  4.00 / 1_000_000),
+    "claude-3-5-sonnet-latest":  (3.00 / 1_000_000, 15.00 / 1_000_000),
+    "claude-3-haiku-latest":     (0.25 / 1_000_000,  1.25 / 1_000_000),
+    # Pinned versions (fallback if you need reproducibility)
+    "claude-3-5-haiku-20241022": (0.80 / 1_000_000,  4.00 / 1_000_000),
+    "claude-3-haiku-20240307":   (0.25 / 1_000_000,  1.25 / 1_000_000),
+}
+_ANTHROPIC_COST_IN, _ANTHROPIC_COST_OUT = _ANTHROPIC_COSTS["claude-3-haiku-latest"]  # default
 
 # gpt-4o: $2.50 / MTok input, $10 / MTok output
 _OPENAI_COST_IN = 2.50 / 1_000_000
@@ -704,7 +734,9 @@ def _compute_max_tokens(chunk_chars: int) -> int:
 
 
 class AnthropicProvider:
-    DEFAULT_MODEL = "claude-sonnet-4-6"
+    DEFAULT_MODEL = "claude-3-5-haiku-latest"    # mid-tier; testing after sonnet-4-6 passed at 9.1/10
+    HAIKU_MODEL   = "claude-3-5-haiku-latest"    # mid-tier: 4x cost vs haiku-3, 2-3x faster
+    SONNET_MODEL  = "claude-sonnet-4-6"          # best quality: 15x cost vs haiku-3
 
     def __init__(self, api_key: str, model: str | None = None):
         self._api_key = api_key
@@ -717,6 +749,7 @@ class AnthropicProvider:
         max_tokens: int,
         images: list[tuple[str, str]] | None = None,
     ) -> LLMResult:
+        import time
         import anthropic  # noqa: PLC0415
 
         client = anthropic.Anthropic(api_key=self._api_key)
@@ -732,16 +765,43 @@ class AnthropicProvider:
             content.append({"type": "text", "text": user})
         else:
             content = user  # type: ignore[assignment]
-        message = client.messages.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": content}],
-        )
+
+        # Retry with exponential backoff on rate limit (429) errors.
+        # Keeps retrying for up to 30 minutes before giving up — this means
+        # the paper stays in "narrating" state and no error is surfaced to the
+        # user until we've truly exhausted all options.
+        _RATE_LIMIT_TIMEOUT = 30 * 60  # 30 minutes total
+        _INITIAL_DELAY = 60            # 60s first wait (resets a 1-min token bucket)
+        _MAX_DELAY = 300               # cap individual waits at 5 minutes
+        deadline = time.monotonic() + _RATE_LIMIT_TIMEOUT
+        delay = _INITIAL_DELAY
+        attempt = 0
+        while True:
+            try:
+                message = client.messages.create(
+                    model=self._model,
+                    max_tokens=max_tokens,
+                    system=system,
+                    messages=[{"role": "user", "content": content}],
+                )
+                break
+            except anthropic.RateLimitError as e:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    print(f"[llm] Rate limit: gave up after 30 minutes of retrying.")
+                    raise
+                wait = min(delay, remaining)
+                attempt += 1
+                print(f"[llm] Rate limit hit (attempt {attempt}), "
+                      f"retrying in {wait:.0f}s ({remaining:.0f}s budget remaining): {e}")
+                time.sleep(wait)
+                delay = min(delay * 2, _MAX_DELAY)
+
         improved = message.content[0].text
         in_tok = message.usage.input_tokens
         out_tok = message.usage.output_tokens
-        cost = round(in_tok * _ANTHROPIC_COST_IN + out_tok * _ANTHROPIC_COST_OUT, 6)
+        cost_in, cost_out = _ANTHROPIC_COSTS.get(self._model, (_ANTHROPIC_COST_IN, _ANTHROPIC_COST_OUT))
+        cost = round(in_tok * cost_in + out_tok * cost_out, 6)
         return LLMResult(improved, in_tok, out_tok, cost, "anthropic", self._model)
 
     def generate_script(
