@@ -505,7 +505,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   if (error || !paper) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-600 mb-3">{error || "Paper not found"}</p>
+        <p data-testid="paper-error" className="text-red-600 mb-3">{error || "Paper not found"}</p>
         <BackButton />
       </div>
     );
