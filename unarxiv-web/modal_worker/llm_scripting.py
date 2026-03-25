@@ -147,7 +147,7 @@ Guidelines:
    properties are invisible to listeners. E.g., if a LaTeX heading is formatted
    in large green bold text, narrate only the heading text, not the formatting.
 5. Natural speech: Write as if narrating to a listener. Use spoken transitions
-   like "Moving on to...", "Next, the authors examine...", "This brings us to..."
+   like "Moving on to...", "Next, we examine...", "This brings us to..."
    to bridge within-section topic shifts. Do NOT add "Welcome to this section",
    "Welcome to a narrated presentation of...", or "Today we will discuss..."
    framing. Your output will be concatenated with other sections into one
