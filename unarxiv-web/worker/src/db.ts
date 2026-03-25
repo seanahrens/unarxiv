@@ -1150,8 +1150,22 @@ export interface ScoreCurrentRow {
   count: number;
 }
 
+/** Register a parser commit hash so it appears on the Quality Insights chart even before scoring. */
+export async function registerParserVersion(
+  db: D1Database,
+  commitHash: string,
+  tier: string,
+  notes?: string
+): Promise<void> {
+  await db
+    .prepare(`INSERT OR IGNORE INTO parser_versions (commit_hash, tier, notes) VALUES (?, ?, ?)`)
+    .bind(commitHash, tier, notes ?? null)
+    .run();
+}
+
 /**
  * Returns daily score averages (last 90 days, by tier), all-time summary, and current-period stats.
+ * Includes parser_versions commits with no scores yet as empty periods on the right of the chart.
  * Used by the admin Quality Insights panel.
  */
 export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDailyRow[]; summary: ScoreSummaryRow[]; current: ScoreCurrentRow[] }> {
@@ -1171,6 +1185,30 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
       JOIN narration_versions nv ON nv.id = ns.version_id
       WHERE ns.scored_at >= date('now', '-90 days')
       GROUP BY COALESCE(ns.parser_commit, date(ns.scored_at)), nv.narration_tier
+
+      UNION ALL
+
+      SELECT pv.commit_hash      as period,
+             pv.registered_at   as period_start,
+             pv.tier            as narration_tier,
+             NULL               as avg_overall,
+             NULL               as avg_fidelity,
+             NULL               as avg_citations,
+             NULL               as avg_header,
+             NULL               as avg_figures,
+             NULL               as avg_tts,
+             0                  as count
+      FROM parser_versions pv
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM narration_scores ns2
+        JOIN narration_versions nv2 ON nv2.id = ns2.version_id
+        WHERE COALESCE(ns2.parser_commit, date(ns2.scored_at)) = pv.commit_hash
+          AND nv2.narration_tier = pv.tier
+          AND ns2.scored_at >= date('now', '-90 days')
+      )
+      AND pv.registered_at >= date('now', '-90 days')
+
       ORDER BY period_start ASC
     `).all<ScoreDailyRow>(),
 

@@ -221,6 +221,19 @@ CREATE TABLE IF NOT EXISTS narration_scores (
 CREATE INDEX IF NOT EXISTS idx_scores_version ON narration_scores(version_id);
 CREATE INDEX IF NOT EXISTS idx_scores_scored_at ON narration_scores(scored_at);
 
+-- Parser version registry (migration 011)
+-- Eval agents register each commit hash when they run, even if no papers are scored yet.
+-- This lets the Quality Insights chart show the latest commit on the x-axis as an empty period.
+CREATE TABLE IF NOT EXISTS parser_versions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    commit_hash   TEXT NOT NULL,
+    tier          TEXT NOT NULL,  -- 'base' | 'plus1' | 'plus2' | 'plus3'
+    registered_at TEXT NOT NULL DEFAULT (datetime('now')),
+    notes         TEXT,
+    UNIQUE(commit_hash, tier)
+);
+CREATE INDEX IF NOT EXISTS idx_parser_versions_tier ON parser_versions(tier, registered_at);
+
 -- ML cost model coefficients (migration 009)
 -- Trained by evals/cost_model/train.py and deployed via POST /api/admin/model-coefficients
 CREATE TABLE IF NOT EXISTS model_coefficients (

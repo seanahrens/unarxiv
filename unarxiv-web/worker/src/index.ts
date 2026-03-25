@@ -74,6 +74,7 @@ import {
   handleAdminGetVersionsWithScores,
   handleAdminSubmitScore,
   handleAdminScoreStats,
+  handleAdminRegisterParserVersion,
 } from "./handlers/admin";
 import { cleanup } from "./db";
 import { curateHuggingFaceTopPapers } from "./handlers/curation";
@@ -236,6 +237,11 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "POST",
       pattern: /^\/api\/admin\/scores$/,
       handler: (req, env) => handleAdminSubmitScore(req, env),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/admin\/parser-versions$/,
+      handler: (req, env) => handleAdminRegisterParserVersion(req, env),
     },
     {
       method: "DELETE",

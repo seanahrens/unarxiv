@@ -467,10 +467,13 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   const firstPeriod = periodOrder[0];
   const lastPeriod = periodOrder[periodOrder.length - 1];
 
-  const hasBase = (seriesMap.base.size > 0);
-  const hasLlm = (seriesMap.llm.size > 0);
+  // hasBase/hasLlm: true only if there are actual scored (non-null) data points for legend/line
+  const hasBase = Array.from(seriesMap.base.values()).some((v) => v != null);
+  const hasLlm = Array.from(seriesMap.llm.values()).some((v) => v != null);
+  // hasAnyPeriods: true if there are any periods at all (including unscored future commits)
+  const hasAnyPeriods = periodOrder.length > 0;
 
-  if (!hasBase && !hasLlm) {
+  if (!hasAnyPeriods) {
     return (
       <div className="flex items-center justify-center h-20 text-xs text-stone-300">
         No scored data yet

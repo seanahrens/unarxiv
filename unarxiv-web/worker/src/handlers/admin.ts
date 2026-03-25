@@ -14,6 +14,7 @@ import {
   getVersionsWithScores,
   insertNarrationScore,
   getScoreTrends,
+  registerParserVersion,
 } from "../db";
 import { json, requireAdmin } from "./helpers";
 
@@ -223,6 +224,26 @@ export async function handleAdminScoreStats(request: Request, env: Env): Promise
   if (authErr) return authErr;
   const data = await getScoreTrends(env.DB);
   return json(data);
+}
+
+/** POST /api/admin/parser-versions — register a parser commit so it shows on the chart before scoring. */
+export async function handleAdminRegisterParserVersion(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+
+  let body: { commit_hash: string; tier: string; notes?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON" }, 400);
+  }
+
+  if (!body.commit_hash || !body.tier) {
+    return json({ error: "commit_hash and tier required" }, 400);
+  }
+
+  await registerParserVersion(env.DB, body.commit_hash, body.tier, body.notes);
+  return json({ ok: true, commit_hash: body.commit_hash, tier: body.tier });
 }
 
 /** POST /api/admin/scores — insert a narration quality score. */
