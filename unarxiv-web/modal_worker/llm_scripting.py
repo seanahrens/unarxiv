@@ -115,7 +115,11 @@ Guidelines:
    \\pageref{}, \\eqref{} (omit entirely — do NOT output tilde-separated ref
    names like "~ref~ablation_qual" or "Figure~ref~foo", and do NOT output the
    bare word "Cref" or "cref" either — remove the entire reference including
-   surrounding whitespace); section heading commands
+   surrounding whitespace). CRITICAL: NEVER convert \\ref{label} into the
+   word "reference" followed by the label name — that is an artifact.
+   "Section reference sec:model" is WRONG. The entire \\ref{} must be
+   silently deleted, leaving only the surrounding prose: e.g. "In Section"
+   or "Theorem" with no trailing label text; section heading commands
    (\\section{}, \\subsection{}, etc.) — do NOT output the heading as a
    standalone line or label. Also remove or skip all document metadata:
    \\title{}, \\author{}, \\affiliation{}, \\institute{}, \\email{},
@@ -174,6 +178,12 @@ Guidelines:
    "this section contains only a heading", "I will now narrate...", "Start with
    the section title:", "proceed with the content that would be present", or
    anything else meta about the chunk contents.
+   If a chunk contains ONLY LaTeX style commands, package imports, custom
+   environment definitions, or macro definitions with no readable prose (e.g.,
+   all lines are \\usepackage{}, \\newenvironment{}, \\definecolor{}, etc.),
+   output an EMPTY STRING — nothing at all. Do NOT explain, do NOT apologize,
+   do NOT write "I'm sorry" or "this appears to be template code". Just output
+   nothing.
    ALSO: Do NOT output section headings as standalone announcement sentences
    like "The section is titled 'Related Work.'" or "This is the Experiments
    section." Instead, absorb the section heading into a natural spoken transition
@@ -269,6 +279,9 @@ Guidelines:
    If a chunk is ONLY a section heading with no body, output ONE short transition
    sentence (e.g., "Moving on to the tutorial.") and stop. Do NOT explain the
    absence of content or meta-narrate your process.
+   If a chunk contains ONLY LaTeX style commands, package imports, or macro
+   definitions with no readable prose, output an EMPTY STRING. Do NOT write
+   "I'm sorry", "I can't assist", or any explanation — just nothing.
    Do NOT output section headings as standalone lines like "The section is titled
    'X'" — absorb them into natural spoken transitions instead.
 7. Figures: When figure images are provided as vision inputs, describe what you
@@ -517,6 +530,13 @@ def _strip_latex_artifacts(text: str) -> str:
     text = re.sub(r'\b[Cc]ref\b', '', text)
     # Strip tilde-separated ref artifacts: e.g. ~ref~ablation_qual or Figure~ref~foo
     text = re.sub(r'~ref~\S*', '', text)
+    # Strip "reference label" artifacts where LLM converted \ref{label} to "reference label"
+    # e.g. "Section reference sec:model" → "Section", "Theorem reference thm:upper" → "Theorem"
+    # Discriminator: LaTeX labels contain colons or underscores; plain English "reference" doesn't.
+    text = re.sub(r'\breference\s+[a-zA-Z][a-zA-Z0-9]*(?:[_:][a-zA-Z0-9_:.-]*)?\b', '', text, flags=re.IGNORECASE)
+    # Strip LLM refusal lines ("I'm sorry, I can't assist...") injected when a chunk has no body.
+    # These appear when the LLM receives a style-only or macro-only chunk and defaults to chatbot mode.
+    text = re.sub(r"(?m)^I(?:'m| am) sorry[^\n]*\.\s*$", '', text, flags=re.IGNORECASE)
     # Strip backslash macros that leaked through (e.g. \ours, \benchname)
     # Replace \macroname with just "macroname" (the plain word, better than "backslash macroname")
     text = re.sub(r'\\([A-Za-z]+)\b', r'\1', text)

@@ -1,0 +1,255 @@
+Pirates in Wonderland: Liquid Democracy has Bicriteria Guarantees.
+
+By Jonathan A. Noel, Mashbat Suzuki, and Adrian Vetta.
+
+Published on May 11, 2021.
+
+In this abstract, we discuss liquid democracy, which has a natural graphical representation known as the delegation graph. As a result, the strategic aspects of liquid democracy can be studied as a game over these delegation graphs, which we refer to as the liquid democracy game. 
+
+Our main result in this research is that the liquid democracy game possesses bicriteria approximation guarantees. These guarantees pertain to both rationality and social welfare. More specifically, we have proven that the price of stability for epsilon-Nash equilibria is exactly epsilon in the liquid democracy game.
+
+Moving on to the introduction. Liquid democracy is a form of direct and representative democracy, based on the concept of delegation. Each voter has the choice of voting themselves or transferring, transitively, its vote to a trusted proxy. Recent interest in liquid democracy, from both practical and theoretical perspectives, was sparked by the Pirate Party in Germany and its Liquid Feedback platform. Similar initiatives have subsequently been undertaken by the Demoex Party in Sweden, the Internet Party in Spain, and the Net Party in Argentina.
+
+There are many potential benefits of a transitive delegation mechanism. Participation may improve in quantity for several reasons. The system is easy to use and understand, induces low barriers to participation, and is inherently egalitarian. There is no distinction between voters and representatives; everyone is both a voter and a delegator. Participation may also improve in quality due to the flexibility to choose different forms of participation. Voters can choose to be active participants on topics they are comfortable with or delegate on topics they are less comfortable with. Accountability may improve due to the transparent nature of the mechanism and because there is a demonstrable line of responsibility between a delegated proxy and its delegators. The quality of decision making may improve via a specialization to delegated experts and a reduction in induced costs, such as the duplication of resources.
+
+Our objective here is not to evaluate such claimed benefits, but we refer the listener to a selection of works for detailed discussions on the motivations underlying liquid democracy. Rather, our focus is to quantitatively measure the performance of liquid democracy in an idealized setting. Specifically, can equilibria in these voting mechanisms provide high social welfare? That is, we study the price of stability of liquid democracy.
+
+Let's delve into the background of liquid democracy. At its core, vote delegation is what liquid democracy revolves around. Furthermore, there are several key characteristics of vote delegation in liquid democracy: optionality, retractability, partitionability, and transitivity. We'll begin by defining these concepts and exploring their origins.
+
+The notion of optional delegation provides voters with the choice of direct participation, meaning they can vote themselves or choose to abstain, or indirect participation, which involves delegating their vote. This concept dates back over a century to the work of Charles Dodgson on parliamentary representation. Although Dodgson was a parson and a mathematician, he is more familiarly known as Lewis Carroll, the author of "Alice in Wonderland."
+
+In 1969, Miller proposed that delegations be both retractable and partitionable. A retractable delegation allows for delegation assignments to be time-sensitive and reversible. Meanwhile, a partitionable delegation allows a voter to select different delegates for different policy decisions. This option is particularly valuable when potential delegates possess varied competencies. For example, Alice might prefer to delegate to the Hatter on matters concerning tea-blending but choose the Queen of Hearts on horticultural matters.
+
+Finally, the concept of transitive delegation was introduced by Ford. This allows a proxy to delegate its vote and all its delegated votes to others. Transitive delegation is central to liquid democracy. If an agent benefits more by delegating her vote to a more informed proxy, it would be counterproductive to prevent that proxy from re-delegating the vote to an even more informed proxy. Additionally, such transitivity is necessary in situations where the proxy is unable to vote. It also reduces the duplication of efforts involved in voting.
+
+As Tullock noted in the 1960s, the development of the computer created the possibility of implementing large proxy voting systems. With the advent of the internet and modern security technologies, liquid democracy has become inherently practical. For more on this, refer to the work of Lumphier in 1995.
+
+There has recently been increasing interest in liquid democracy from the AI community. This is evident from the broad range of recent papers on the topic. Some examples include the works by Bri, BT, CG, CMM, GKM, GA, KMP, KR, and ZZ. The most directly related work to ours is the game-theoretic model of liquid democracy studied by Escoffier et al. Another related game-theoretic model was investigated by Bloembergen et al. Our motivation stems from an open question posed by Escoffier and others: are price of anarchy type results obtainable for their model of liquid democracy? We will answer this question for a generalization of their model.
+
+Moving on to the contributions of our research, we explore the context that vote delegation possesses a natural representation through what is termed as a delegation graph. This concept will be elaborated in more detail in Section reference sec:model. In this framework, if we consider each agent i having a utility of u sub i j, where this utility value is a real number between zero and one, based on the instance where agent j votes as her delegate, a game emerges. This game is referred to as the liquid democracy game, and it operates on this delegation graph. Our investigation targets the welfare ratio within this liquid democracy game. This welfare ratio is essentially a comparison between the social welfare achieved at equilibrium and the welfare determined by an optimal solution.
+
+In this setting, the existence of pure strategy Nash equilibria is not guaranteed. Thus, our focus shifts to analyzing mixed strategy Nash equilibria. Our primary finding, which is detailed in Section reference sec:bicriteria, reveals that there exist bicriteria approximation guarantees concerning both social welfare and rationality within the game.
+
+Now, let's delve into our mathematical findings. Consider Theorem reference thm:upper. The theorem states that for any value epsilon taken from the range of zero to one, and for any given instance of the liquid democracy game, an epsilon-Nash equilibrium exists. This equilibrium is characterized by social welfare that is at least epsilon multiplied by the optimal value. Theorem reference thm:upper is significant in its tightness, meaning that the bicriteria guarantees it posits cannot be further improved upon.
+
+Similarly, Theorem reference thm:lower asserts that for any epsilon value within the same range, there are instances where any epsilon-Nash equilibrium possesses welfare that is no greater than epsilon multiplied by the optimal value, plus an additional gamma for any gamma greater than zero.
+
+The implications of Theorems reference thm:upper and reference thm:lower are substantial. They lead us to conclude that the price of stability for epsilon-Nash equilibria is indeed epsilon. A key outcome of Theorem reference thm:upper is that robust approximation guarantees can be achieved simultaneously for both social welfare and rationality. To illustrate, when epsilon is set to one over two, this yields factor two approximation guarantees for each criterion.
+
+Let's summarize this with Corollary reference cor:upper. It states that for any given instance of the liquid democracy game, there exists a one-half Nash equilibrium with welfare at least one-half times the optimal value. This corollary exemplifies how optimization can be achieved within the constraints of the liquid democracy game.
+
+Next, we present a model of liquid democracy. In this section, we present the liquid democracy game. This game generalizes the game-theoretic model studied by Escoffier and their colleagues in 2019.
+
+Moving on to the delegation graph in the context of liquid democracy. In this system, each agent has three strategies they can adopt. They can abstain, they can vote for themselves, or they can delegate their vote to another agent. We represent a particular instance of this with a directed network, denoted as G equals the ordered pair V, A, and this is called the delegation graph.
+
+In this graph, there is a vertex in the set V, ranging from 1 through n, corresponding to each agent. When defining the sets of arcs, there are three potential situations. First, if an agent votes for themselves, the delegation graph includes a self-loop, represented by the ordered pair i, i. Second, if an agent i delegates their vote to another agent j, where j is not equal to i, then there is an arc from i to j in G. Third, should an agent choose to abstain, then the vertex i has an out-degree of zero.
+
+Because each vertex has an out-degree of at most one, the delegation graph G forms what is known as a 1-forest. Essentially, each component of G is an arborescence plus at most one arc. Specifically, a component in this forest is either an arborescence, which means it contains no cycle, or it has exactly one directed cycle, termed a delegation cycle. In the former scenario, the component has one sink node that indicates an abstaining voter. Whereas in the latter situation, if the delegation cycle is a self-loop, the component contains exactly one voter, referred to as a guru. Conversely, if the delegation cycle's length is at least two, the component contains no voters.
+
+An example of a delegation graph is depicted in Figure 1. This figure shows a delegation graph structure. Now, consider the transitivity of delegations: if an agent i is part of a component that includes a guru g, then that guru will cast a vote on behalf of agent i. Conversely, if agent i is within a component that lacks a guru — meaning it has either a sink node or a cycle with a length of at least two — then no vote will be cast on behalf of agent i. We represent the guru j associated with agent i as g of i equals j if such a guru exists. If there is no guru, we write g of i equals the empty set.
+
+Furthermore, finding the guru g of i is straightforward: it involves applying path traversal that begins at vertex i in the delegation graph. For instance, in Figure 1, there are two components that include a guru. Specifically, agent 4 functions as the guru for agents 1, 2, 3, and for itself. Meanwhile, agent 9 serves as the guru solely for itself. The other three components' vertices do not include gurus. There are two components featuring delegation cycles, specifically the cycles composed of the pairs 10, 11 and 11, 10, as well as 5, 6, 6, 7, and 7, 5. The final component also lacks a guru because agent 12 is a sink node, and thus abstains.
+
+We study a game theoretic model that generalizes the model of Escoffier and colleagues. In this model, a pure strategy for each agent, denoted as s_i, corresponds to selecting at most one outgoing arc. Therefore, we view s_i as an n-dimensional vector textbf{x}_i. Specifically, textbf{x}_i is a single-entry vector where the entry x_{ij} equals one if agent i delegates to agent j, and equals zero otherwise. If x_{ii} equals one, then agent i votes for herself, essentially delegating to herself, and textbf{x}_i equals the zero vector if agent i chooses to abstain. 
+
+This leads us to the delegation graph G_{x}, which is uniquely associated with a pure strategy profile x=(\x_1, \x_2, cdots, \x_n). To fully describe the game, we define the payoffs for each pure strategy profile x. Agent i has a utility u_{ij} ranging from zero to one if she has agent j as her guru. Due to the costs related to voting, such as time commitment and knowledge acquisition, it's possible for u_{ii} to be less than u_{ij} for some j not equal to i whom i trusts. If this were not the case, then liquid democracy would lose its relevance. We denote the utility of agent i in the delegation graph G_{x} by u_{i}(x)=u_{i,g(i)}. If an agent does not have a guru, its utility is zero. Our results remain valid even when agents without a guru receive positive utility. Therefore, only agents within a component of G_{x} that includes a guru can achieve positive utility.
+
+As an example, in the referenced figure, agent nine is a guru and receives utility u_{9,9}. Each agent i within the set \{1, 2, 3, 4\} has agent four as its guru and receives utility u_{i,4}. All remaining agents have no guru and consequently receive zero utility. 
+
+An agent is said to be playing a best response at a pure strategy x=(\x_1, \x_2, cdots, \x_n) if they cannot increase their utility by selecting a different or no outgoing arc. The strategy profile is a pure Nash equilibrium if every agent is playing a best response at x. Our focus is on comparing the social welfare of equilibria to the optimal welfare within the game. To achieve this, we define the social welfare of x as text{SW}(x) = \sum_{iin V} u_i(x) and let text{Opt}=\max_{x} \sum_{iin V} u_i(x) represent the optimal welfare across all strategy profiles. The price of stability is the worst ratio over all instances between the best welfare of a Nash equilibrium and the optimal social welfare.
+
+You might wonder why an equilibrium could have low social welfare. The issue lies in the transitive nature of delegation, as opposed to the non-transitive nature of trust. Agent i may delegate to an agent j where u_{ij} is large, but agent j might then re-delegate to an agent k where u_{ik} is small. In some cases, agent i could receive no utility if the transitive delegation leads to a delegation cycle or an abstaining voter. Unfortunately, not only can pure Nash equilibria result in low social welfare in the liquid democracy game, but they might not even exist.
+
+To illustrate this, we present the following lemma. There exists liquid democracy games where no pure strategy Nash equilibrium can be found. Let us consider three voters with utilities u_1 equal to one-half, one, zero; u_2 equal to zero, one-half, one; and u_3 equal to one, zero, one-half. A similar example was examined by Escoffier and colleagues. Assuming x is a pure Nash equilibrium and S represents the set of gurus in G_{x}, there are two possible cases. First, if the size of S is less than or equal to one, there exists an agent i with zero utility. This agent can deviate to vote for herself, thereby obtaining a utility of one-half which is greater than zero—a contradiction. Second, if the size of S is greater than or equal to two, one of the gurus can delegate its vote to another guru, obtaining a utility of one—which is greater than one-half—another contradiction. Thus, no pure Nash equilibrium exists.
+
+Next, we explore the concept of mixed strategy equilibria.
+
+Lemma that tells us to obtain performance guarantees, we must look beyond pure strategies. Since liquid democracy is a finite game, a mixed strategy Nash equilibrium always exists. This means we can find a mixed Nash equilibrium in the liquid democracy game and compare its welfare to the optimal welfare.
+
+In this context, a mixed strategy for agent i is a non-negative vector, x sub i, where the entries satisfy that the sum from j equals one to n of x sub i, j is less than or equal to one. Note that agent i abstains with the probability of one minus the sum from j equals one to n of x sub i, j. However, since abstaining is a weakly dominated strategy, we assume no voter abstains in either the optimal solution or the best Nash equilibria. Therefore, each x sub i becomes a unit-sum vector.
+
+Now, what is the utility u sub i of x of an agent for a mixed strategy profile x, which is represented as x equals open parenthesis x sub one, x sub two, and so on, up to x sub n, close parenthesis? It is simply the expected utility given the probability distribution over the delegation graphs generated by x. Specifically, u sub i of x equals the sum over all graphs G of the probability of x occurring for graph G times the utility of agent i for graph G. Here, the probability of x for graph G equals the product over the arcs open parenthesis i, j, close parenthesis in graph G of x sub i, j. This is because x sub i is a unit-vector and therefore every vertex has exactly one outgoing arc in each delegation graph generated. Furthermore, the utility of agent i in graph G is determined by the utility of agent i given its guru in the graph. 
+
+There are several equivalent ways to define this expected utility. For analysis, the most useful formulation is in terms of directed paths in the delegation graphs. Let mathcal P of open parenthesis i, j close parenthesis represent the set of all directed paths from i to j in a complete directed graph on vertex set V. Let the probability that g of i equals j given the mixed strategy profile x be denoted as probability sub x of g of i equals j. Then, the utility u sub i of x can be calculated as follows:
+
+u sub i of x equals the sum over all j in V of the probability that g of i equals j end parentheses times the utility u sub i, j. Furthermore, it equals the sum over all j in V of the probability that there exists a path from i to j times the probability that there exists an arc open parenthesis j, j close parenthesis times u sub i, j. Finally, it expands to the sum over all j in V of the further summation over all paths P in mathcal P open parenthesis i, j close parenthesis of the product over all elements a in P of x sub a, multiplied by x sub j, j, times the utility u sub i, j.
+
+To understand this, recall that x sub i is a unit-sum vector. Therefore, each delegation graph generated by the mixed strategy x has a uniform out-degree of one. This is achieved by selecting exactly one arc emanating from i according to the probability distribution x sub i. Consequently, j can be the guru of i if and only if the delegation graph contains a self-loop open parenthesis j, j close parenthesis and contains a unique path from i to j. The previously stated equality thus holds. Further, the choice of outgoing arc is independent at each vertex i. This implies the third equality.
+
+However, regrettably, no welfare guarantee is obtainable even with mixed strategy Nash equilibria.
+
+Now, lem states that the price of stability in liquid democracy games is zero. To prove this, consider an instance with three agents with utilities given as u sub one equals open parenthesis delta, one, zero, close parenthesis, u sub two equals open parenthesis zero, delta, one, close parenthesis, and u sub three equals open parenthesis one, zero, delta, close parenthesis. The optimal welfare is one plus two delta, obtained by the first and second agent voting, while the third agent delegates to the first agent.
+
+By a similar argument to the previous lemma, we know that no pure strategy Nash equilibrium exists. It is straightforward to verify that this game has a unique mixed strategy Nash equilibrium x, where x sub one equals open parenthesis delta, one minus delta, zero, close parenthesis, x sub two equals open parenthesis zero, delta, one minus delta, close parenthesis, and x sub three equals open parenthesis one minus delta, zero, delta, close parenthesis.
+
+The expected utility of agent one is then calculated as follows: 
+
+u sub one of x equals the summation over j in V of the further summation over paths P in mathcal P open parenthesis i, j close parenthesis of the product over all elements a in P of x sub a, multiplied by x sub j, j, times the utility u sub i, j. 
+
+This expands to: 
+
+equals x sub one, one, times u sub one, one, plus x sub one, two, times x sub two, two, times u sub one, two.
+
+This equals delta squared plus open parenthesis one minus delta close parenthesis times delta. 
+
+Which simplifies to delta.
+
+The case for agents two and three is symmetric. Therefore, the social welfare of this equilibrium is three delta. Thus, the price of stability is three delta divided by open parenthesis one plus two delta close parenthesis, which tends to zero as delta approaches zero. 
+
+Unfortunately, lemma lem appears to imply that no reasonable social welfare guarantees can be obtained for liquid democracy. However, this is not the case. Strong performance guarantees can be achieved by relaxing the incentive constraints. Specifically, we turn our attention to approximate Nash equilibria. A strategy profile x is an epsilon-Nash equilibrium if, for each agent i, the utility u sub i of x is greater than or equal to open parenthesis one minus epsilon close parenthesis times the utility of i given x and any other strategy profile hat x sub i. In the above context, we use the notation x sub minus i equals the set of x sub j for all j not equal to i. 
+
+Can we obtain good welfare guarantees for approximate Nash equilibria? We will prove that the answer is yes in the remainder of the paper. In particular, we present tight bounds on the price of stability for epsilon-Nash equilibria.
+
+Moving on to the price of stability of approximate Nash equilibria.
+
+So our task is to compare the social welfare of the best epsilon-Nash equilibrium with the social welfare of the optimal solution. Let's begin by investigating the optimal solution.
+
+Moving on to the subsection titled "An Optimal Delegation Graph."
+
+By the linearity of expectation, there is an optimal solution in which the agents use only pure strategies. In particular, there exists an optimal delegation graph maximizing social welfare. Moreover, this optimal graph has interesting structural properties. To explain this, we say that agent i is considered happy if she has strictly positive utility in a delegation graph G. In other words, the utility of agent i given by u sub i comma g of i is greater than zero. A component Q in G is deemed jolly if every vertex within Q, except possibly the guru, is happy.
+
+The key observation here is that there exists an optimal delegation graph in which every component is a jolly star.
+
+We now present Lemma, which we label Lemma OptLD. The lemma states that there is an optimal delegation graph that is the disjoint union of jolly stars.
+
+For the proof, let Q be a component in an optimal delegation graph G. We may assume Q contains a guru. To understand this, suppose Q contains an abstaining sink node j. The graph denoted as G hat, which is G union the edge from j to j, where j votes herself, is also considered optimal. Furthermore, suppose Q contains a cycle C with length at least 2. Consider an agent j within C. The graph G hat obtained by j voting for herself instead of delegating her vote remains optimal.
+
+Thus, we may assume each component contains a guru. Furthermore, we may assume each component is a star. If not, consider a component Q with guru j, which includes an agent i not delegating to j. Then, the graph G hat obtained by i directly delegating her vote to j is optimal.
+
+Finally, we may assume each star is jolly. Suppose agent i is not a happy agent in a star Q with guru j. Here, the utility u sub i j equals zero. However, if i changes her delegation and votes for herself, we again obtain an optimal solution. In this case, i will form a new singleton component, which is trivially a jolly star. This completes the proof, marked by QED.
+
+Lemma OptLD states that the optimal solution can be obtained by a pure strategy denoted as x star, whose delegation graph is the union of jolly stars. The center of each star is a guru in the optimal solution, and the leaves are the corresponding happy agents who delegated to the guru. We denote the set of gurus in the optimal solution by D star. D star is defined as the set of vertices i for which the variable x star sub i i equals one. Let L sub j be defined as the set of agents who delegate to guru j, excluding those in D star. This is illustrated in Figure star.
+
+Finally, it follows that the optimal solution has welfare given by the expression: the sum over j in D star of the quantity u sub j j plus the sum over i in L sub j of u sub i j.
+
+Moving on, we provide a description of the figure. The figure is a diagram illustrating a welfare optimal delegation graph that is the disjoint union of jolly stars. It shows several clusters of circles representing the jolly stars. Each cluster has a central node labeled as a guru, with surrounding nodes representing the happy agents delegating to that guru. Arrows indicate the delegation path from the agents to their respective guru. The clusters are labeled as L sub i, L sub j, and L sub k, representing different sets of agents delegating to distinct gurus i, j, and k.
+
+In this section, we address establishing a stable solution within the context of finding the best epsilon-Nash equilibrium. Our focus is on demonstrating the existence of a potentially stable solution denoted as x. The definition of this solution is inspired by the set D-star of gurus in the optimal solution. In the later section, we will prove that x is indeed an epsilon-Nash equilibrium and it also achieves high social welfare.
+
+To obtain x, we begin with several essential definitions. We define the standard set of feasible mixed strategies for an agent i as S sub i. This is the set of vectors x sub i in the non-negative n-dimensional real space such that the sum of x sub i j over all j in V equals one.
+
+Given a fixed strategy profile x sub negative i, which represents the strategies of all agents other than i, the corresponding best response for agent i is denoted as B sub i of x sub negative i. This is the argument that maximizes the utility function of agent i, u sub i, over the set S sub i.
+
+For each i in D-star, we denote a restricted set of mixed strategies as S superscript R sub i. This is the set of vectors x sub i in the non-negative n-dimensional real space such that the sum of x sub i j over all j in V equals one, and specifically, x sub i i is greater than or equal to epsilon.
+
+Then, for a fixed strategy profile x sub negative i, the best response for the agent i from amongst this restricted set of feasible strategies is denoted as B superscript R sub i of x sub negative i. It is defined as the argument that maximizes u sub i over the restricted set S superscript R sub i.
+
+Next, we recall Kakutani's Fixed Point Theorem, which provides a foundational result in our analysis. Kakutani's Fixed Point Theorem states that for a non-empty, compact, and convex subset K of m-dimensional real space, if there exists a set-valued function Phi from K to the power set of K such that for every x in K, Phi of x is non-empty and convex, and Phi has a closed graph, then Phi must have a fixed point. This means there exists an x-star in K such that x-star is contained in Phi of x-star. 
+
+A set-valued function Phi is said to have a closed graph if for every sequence of pairs x superscript k, y superscript k tending to x, y, with y superscript k in Phi of x superscript k, then y belongs to Phi of x.
+
+We now present the main theorem labeled as BR, which states that there exists a strategy profile x such that for every i in D-star, x sub i belongs to B superscript R sub i of x sub negative i, and for every j not in D-star, x sub j belongs to B sub j of x sub negative j.
+
+Let us now delve into the proof of this theorem. We define the feasible set of strategy profiles, denoted as Xi, to be the Cartesian product over all i in D-star of S superscript R sub i, and over all j not in D-star of S sub j. This is a subset of Euclidean space.
+
+For simplicity, assume that D-star consists of the elements one, two, through k. We define the set-valued function Phi from Xi to the power set of Xi by mapping any strategy profile x to the product of the best responses B superscript R sub 1 of x sub negative 1 through B superscript R sub k of x sub negative k, and B sub k plus 1 of x sub negative k plus 1 through B sub n of x sub negative n.
+
+Thus, for each x in Xi, Phi of x is indeed a subset of Xi. Proving the statement of the theorem is then equivalent to demonstrating that Phi has a fixed point.
+
+Observe that Phi satisfies the criteria of Kakutani's Fixed Point Theorem. The set Xi is non-empty, compact, and convex because it is a product of non-empty, compact, and convex sets S superscript R sub i and S sub j.
+
+Next, we verify that Phi of x is non-empty for all x. This holds true because for each agent i, the sets B superscript R sub i of x sub negative i are non-empty due to the continuity of the utility function u sub i, and as per the Weierstrass Extreme Value Theorem.
+
+Furthermore, for every x in Xi, the set Phi of x is convex. This is because, for every agent i in D-star and j not in D-star, the sets B superscript R sub i of x sub negative i and B sub j of x sub negative j are convex. Hence, Phi of x, being the Cartesian product of convex sets, is itself convex.
+
+We must now demonstrate the convexity of the sets B sub j of x sub negative j and B superscript R sub i of x sub negative i. The convexity of B sub j follows immediately by the multilinearity of the utility function u sub i. For an agent i in D-star, if y sub i and z sub i are elements in B superscript R sub i, then for any lambda between zero and one, and for any given strategy vector hat x sub i in S superscript R sub i, the utility achieved by the convex combination lambda y sub i plus one minus lambda z sub i with strategy profile x sub negative i is calculated as lambda times the utility of y sub i with strategy profile x sub negative i plus one minus lambda times the utility of z sub i with strategy profile x sub negative i. This must be greater than or equal to the utility with strategy hat x sub i and strategy profile x sub negative i.
+
+Furthermore, the vector lambda y sub i plus one minus lambda z sub i remains in the set S superscript R sub i since the sum with respect to the index i remains at least epsilon, and the sum across all indices j in V equals one. Thus, lambda y sub i plus one minus lambda z sub i belongs to B superscript R sub i of x sub negative i for any lambda between zero and one, implying B superscript R sub i of x sub negative i is indeed convex.
+
+Finally, Phi has a closed graph because each function u sub i of x sub i and x sub negative i is continuous in x sub i for any fixed x sub negative i, and both sets S superscript R sub i and S sub j are compact. Therefore, by Kakutani's Fixed Point Theorem, Phi indeed has a fixed point x. Consequently, parts a and b of the theorem hold true.
+
+We will now prove that the fixed point x from Theorem 1 gives our main result: there is an epsilon-Nash equilibrium with welfare ratio at least epsilon. First, let's show the incentive guarantees hold.
+
+In Lemma 1, we see that the fixed point x is indeed an epsilon-Nash equilibrium.
+
+Let me provide the proof. Take an agent j not included in D star. Then for any strategy, x hat sub j in S sub i, we have the utility of j with strategies x sub j and x sub negative j greater than or equal to the utility of j with strategies x hat sub j and x sub negative j, which is greater than or equal to one minus epsilon times the utility of i with strategies x hat sub i and x sub negative i. The incentive guarantee for j follows immediately.
+
+Next, consider an agent i included in D star. Take any strategy x hat sub i in S sub i and define a new strategy y sub i as follows. y sub i j equals epsilon plus one minus epsilon times x hat sub i i if j equals i. And, one minus epsilon times x hat sub i j if j does not equal i.
+
+Observe that y sub i is in S sub i to the power R because y sub i i is greater than or equal to epsilon and the sum over j in N of y sub i j equals epsilon plus one minus epsilon times the sum over j in V of x hat sub i j, which equals one.
+
+Now, for any path P from i to j where the sequence a sub i are the arcs, the probability of obtaining this path in the delegation graph generated by the strategy profile of y sub i and x sub negative i is exactly y sub a one times the product over all arcs a in P except a one of x sub a. Thus, the utility of i with strategies y sub i and x sub negative i is equal to the sum over j in V of the probability that g of i equals j given strategies y sub i and x sub negative i, multiplied by the utility of i j.
+
+This is equivalent to utility i i times y sub i i, plus the sum over j in V not equal i of utility i j times x sub j j, multiplied by the sum over paths P in P of i j of y sub a 1 times the product over arcs a in P except a 1 of x sub a.
+
+This quantity is greater than or equal to one minus epsilon times utility i i times x hat sub i i, plus one minus epsilon times the sum over j in V not equal i of utility i j times x sub j j, multiplied by the sum over paths P in P of i j of x hat sub a 1 times the product over arcs a in P except a 1 of x sub a.
+
+This is equal to one minus epsilon times the utility of i with strategies x hat sub i and x sub negative i. But x sub i is in B superscript R sub i of x sub negative i. Hence, the utility of i with strategies x sub i and x sub negative i is greater than or equal to the utility of i with strategies y sub i and x sub negative i because y sub i is in S sub i to the power R. It follows that the utility of i with strategies x sub i and x sub negative i is greater than or equal to one minus epsilon times the utility of i with x hat sub i and x sub negative i, hence satisfying the incentive guarantee for i. Thus, x is an epsilon-Nash equilibrium.
+
+Next, let's prove the social welfare guarantee holds for x.
+
+Theorem 2 states that for all epsilon in the range from zero to one, and for any instance of the liquid democracy game, there exists an epsilon-Nash equilibrium with social welfare at least epsilon times Opt.
+
+Here's the proof. It suffices to prove that x has social welfare at least epsilon times Opt. We have
+
+SW of x is the sum over j in V of the utility of j with strategies x. This is equal to the sum over j in D star of the utility of j with x, plus the sum over j in D star of the sum over i in L sub j of the utility of i with x.
+
+This is greater than or equal to the sum over j in D star of utility j j times x j j, plus the sum over j in D star of the sum over i in L sub j of utility i j times x j j.
+
+This is greater than or equal to the sum over j in D star of utility j j times epsilon, plus the sum over i in L sub j of utility i j times epsilon.
+
+This is equal to epsilon times the sum over j in D star of utility j j, plus the sum over i in L sub j of utility i j.
+
+This is equal to epsilon times Opt.
+
+The first inequality follows since each agent i in L sub j satisfies the utility of i with strategies x sub i and x sub negative i is greater than or equal to the utility of i with strategies x hat sub i and x sub negative i for all strategies x hat sub i in S sub i. In particular, the deviation x hat sub y sub i of delegating to the guru j with probability one implies utility of i with strategies x sub i and x sub negative i is greater than or equal to utility of i j times x sub j j.
+
+Finally, the second inequality holds as we have x sub j in S sub j to the power R for each j in D star. Therefore, x sub j j is greater than or equal to epsilon and the welfare guarantee holds.
+
+We can deduce from Theorem 2 that strong approximation guarantees can simultaneously be obtained for both social welfare and rationality. In particular, setting epsilon equal to one-half gives factor two approximation guarantees for both criteria.
+
+Corollary 1 states that for any instance of the liquid democracy game, there exists a one-half-Nash equilibrium with welfare at least one-half times Opt.
+
+We now prove upper bounds on the welfare guarantee obtainable by any epsilon-Nash equilibrium. In particular, we show that the bicriteria guarantee obtained in a referenced theorem is tight. 
+
+We state the theorem as follows: For all epsilon in the range from zero to one, there exist instances such that any epsilon-Nash equilibrium has welfare at most epsilon times Opt plus gamma for any gamma greater than zero.
+
+Now, let's proceed to the proof. Consider an instance with n plus two agents. Let agents one and two have identical utility functions such that the utility u sub i j equals delta if j equals one, and the utility is zero otherwise. The remaining agents, indexed from three through n plus two, have utilities defined as follows: the utility u sub i j equals one if j equals two, and zero otherwise. Observe that the optimal welfare, denoted as Opt, is equal to delta plus n. This is achieved by agents one and two voting while the remaining agents delegate their votes to agent two.
+
+Now, let x be an epsilon-Nash equilibrium. We claim that x sub two two is less than or equal to epsilon. To understand this, note that x sub one one is greater than or equal to one minus epsilon. If x sub one one is less than this value, then the utility for agent one with this equilibrium, denoted u sub one of x, is less than one minus epsilon times delta. This would contradict the fact that x is an epsilon-Nash equilibrium, as agent one could deviate and vote herself to obtain a utility of delta.
+
+Furthermore, if x sub one one is greater than or equal to one minus epsilon, it implies that x sub two one is also greater than or equal to one minus epsilon by a similar argument. Since the sum of x sub two j for all j in the set N equals one, we do have that x sub two two is less than or equal to epsilon.
+
+Thus, the social welfare of x is less than or equal to delta plus one minus epsilon times delta plus epsilon times Opt. This simplifies to two times one minus epsilon times delta plus epsilon times Opt. Letting gamma equal to two times one minus epsilon times delta gives the desired bound. Since delta can be made arbitrarily small, gamma can also be made arbitrarily small.
+
+In conclusion, together, the previously referenced theorem and the theorem we have proven here imply that the price of stability of epsilon-Nash equilibrium is exactly epsilon in a liquid democracy game.
+
+Moving on to the extensions and computational complexity.
+
+Moving on to model extensions, our bicriteria results extend to the settings of repeated games, weighted voters, and multiple delegates.
+
+Let's start with repeated games. Recollect that an underlying motivation for liquid democracy is that it can be applied repeatedly over time. Agents have the option of delegating to different agents at different times. Evidently, by repeating the delegation game over time, with different utility functions for the topics considered in different time periods, the same bicriteria guarantees hold.
+
+Next, considering weighted voters, in some electoral systems, different agents may have different voting powers. That is, the voters are weighted. In this case, the number of votes a guru casts is simply the sum of the weights of all the votes to which it was delegated. Our bicriteria guarantees then follow trivially.
+
+Finally, regarding multiple delegates, in some settings, it may be the case that an agent is allowed to nominate more than one delegate. There are two natural models for this. First, an agent nominates multiple delegates, but the mechanism can use only one of them. Second, an agent splits its voting weight up and assigns it to multiple delegates. In both cases, our techniques can be adapted and applied to give the same performance guarantees.
+
+Let's discuss the computational aspects in the context of the liquid democracy game. Recall that, to find an epsilon-Nash equilibrium with a provably optimal social welfare guarantee, we solved a fixed point theorem. Additionally, solving this fixed point theorem requires knowledge of the optimal set D star of gurus. But, obtaining D star is equivalent to finding an optimal solution to the liquid democracy game, and this problem is hard. 
+
+To address this, we have a theorem labeled as Theorem 1, which asserts that it is NP-hard to find an optimal solution to the liquid democracy game.
+
+Here is the proof. We apply a reduction from the problem known as "dominating set in a directed graph." Given a directed graph, labeled G equals the set V comma A, and an integer k, the problem asks if there is a set S, which is a subset of V, with cardinality k such that, for each element i not in S, there exists an arc in A from i to some j in S. This problem is NP-complete, and we now give a reduction to the liquid democracy game.
+
+In this reduction, given the directed graph G equals the set V comma A, let the set of agents in the game be V. Define the utility function of an agent by u subscript i j equals 1 if there is an arc from i to j in A and 0 otherwise. It immediately follows that there is a dominating set of cardinality at most k if and only if the liquid democracy game has a solution with social welfare at least n minus k. This completes the proof.
+
+The next question to consider is whether it is possible for agents to compute a good bicriteria solution in polynomial time. If we allow for sub-optimal approximation guarantees, then this is indeed achievable. The idea is simple: the characteristics required of the agents to ensure reasonable performance guarantees are narcissism and avarice. This is not an unreasonable assumption for both pirates and many of the inhabitants of Wonderland!
+
+First, since D star is unknown, each agent i narcissistically assumes that he himself is an optimal guru. Consequently, he will vote with probability p. Thus, he will delegate his vote with probability one minus p. He will do this avariciously, by greedily delegating to the agent i star, which is the agent that gives him the largest myopic utility. In other words, i star equals the agent j in V for which utility subscript i j is maximized.
+
+Theorem 2 states that for any epsilon in the range three-fourths to 1, the narcissistic-avaricious algorithm is linear time and produces an epsilon-Nash equilibrium with social welfare of at least one minus epsilon times the optimum.
+
+Here is the proof. Consider the incentive guarantee for agent i for the strategy profile z induced by the algorithm. As i votes with probability z subscript ii equals p and delegates to i star with probability z subscript i and i star equals one minus p, his utility is at least the sum of his voting utility times p and his delegation utility times one minus p times p. This is greater than or equal to one minus p times p times his myopic utility when he employs the strategy profile z. Hence, z is an epsilon-Nash equilibrium for epsilon equals one minus p times one minus p, which simplifies to one minus p plus p squared equals three-fourths plus p minus one-half squared. It follows that the narcissistic-avaricious algorithm can provide incentive guarantees only for epsilon in the range three-fourths to 1. Further, by solving the corresponding quadratic equation, to obtain such an epsilon-Nash equilibrium we simply select p equals one-half times the sum of one and the square root of one minus four times one minus epsilon.
+
+Now, let's evaluate the social welfare guarantee for the narcissistic-avaricious algorithm. We have that the social welfare equals the sum over all agents i in V of the utility u subscript i of the strategy profile induced by the algorithm. This is at least the sum over all i in V of one minus p times p times the utility for delegating to i star. This is greater than or equal to one minus p times p times the sum of the utilities. Consequently, we have a social welfare that equals one minus epsilon times the optimum.
+
+Since p equals one-half times the sum of one and the square root of one minus four times one minus epsilon, this gives a social welfare that is at least one minus epsilon times the optimum welfare. Therefore, as claimed, the narcissistic-avaricious algorithm outputs a solution whose welfare is at least one minus epsilon times the optimal welfare.
+
+Finally, observe that implementing the narcissistic-avaricious strategy requires that each agent i simply computes i star as the argmax over agent j in V of the utility u subscript i j. This computation can be done for every agent in linear time in the size of the input.
+
+We emphasize two points concerning Theorem 2. First, it only works for weaker incentive guarantees, namely epsilon in the range three-fourths to 1. Unlike the fixed point algorithm, it does not work for the range of epsilon between 0 and three-fourths. Second, the social welfare guarantee is one minus epsilon. This is a constant, but for the valid range of epsilon between three-fourths and 1, it is much worse than the epsilon guarantee obtained by the fixed point algorithm. A very interesting open problem is to find a polynomial time algorithm that matches the optimal bicriteria guarantees provided by Theorem 2 and applies for all epsilon greater than 0.
+
+Acknowledgements: We thank Bundit Laekhanukit for interesting discussions. We are also grateful to the reviewers for suggestions which greatly improved the paper.
+
+We have introduced a general game theoretic model for liquid democracy.
+
+Thanks for listening. This has been an audio narration of Pirates in Wonderland: Liquid Democracy has Bicriteria Guarantees. By Jonathan A. Noel, Mashbat Suzuki, and Adrian Vetta. Published on May 11, 2021. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

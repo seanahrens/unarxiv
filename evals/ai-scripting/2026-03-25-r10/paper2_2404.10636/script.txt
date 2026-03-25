@@ -1,0 +1,524 @@
+What are human values, and how do we align AI to them?.
+
+By Oliver Klingefjord, Ryan Lowe, and Joe Edelman.
+
+Published on March 27, 2024.
+
+There is an emerging consensus that we need to align AI systems with human values, but it remains unclear how to apply this to language models in practice. We split the problem of aligning to human values into three parts: first, eliciting values from people; second, reconciling those values into an alignment target for training machine learning models; and third, actually training the model. In this paper, we focus on the first two parts, and ask the question: what are good ways to synthesize diverse human inputs about values into a target for aligning language models?
+
+To answer this question, we first define a set of six criteria that we believe must be satisfied for an alignment target to shape model behavior in accordance with human values. We then propose a process for eliciting and reconciling values called Moral Graph Elicitation, which uses a large language model to interview participants about their values in particular contexts. Our approach is inspired by the philosophy of values advanced by scholars such as Taylor in 1977, Chang in 2004, and others.
+
+We trial Moral Graph Elicitation with a representative sample of 500 Americans, on three intentionally divisive prompts, such as advice about abortion. Our results demonstrate that Moral Graph Elicitation is promising for improving model alignment across all six criteria. For example, almost all participants, 89.1 percent, felt well represented by the process, and 89 percent thought the final moral graph was fair, even if their value wasn’t voted as the wisest. Our process often results in expert values, for example, values from women who have solicited abortion advice, rising to the top of the moral graph, without defining who is considered an expert in advance.
+
+The field of AI alignment focuses on a central question: how can we ensure that the optimization by machine learning models is beneficial? This question immediately leads to normative queries: what constitutes good, and good for whom? Most alignment research often sidesteps this by emphasizing alignment with operator intent, essentially developing systems that execute what the user instructs. The motivation here is to prevent severe catastrophic and existential risks.
+
+However, aligning AI systems solely with operator intent isn't enough for achieving good AI outcomes. Some users might intend to cause harm. Typically, this is mitigated by training models to reject certain kinds of requests. More critically, AI systems will operate in scenarios where blindly adhering to operator intent could inadvertently cause harm. This is particularly evident in competitive environments such as political campaigns or financial asset management. A model might align well with my intention of persuading people to support my political party, but under competitive pressure, it might create super-persuasive campaigns that erode the epistemic commons. Most would agree that such a model is detrimental to society, showcasing a discord between operator intent and broader human values.
+
+There are multiple ways to address this conflict, such as through legal regulations. However, we believe there's significant leverage in intervening at the level of model behavior, training AI systems to align with human values. One reason for this is that models evolve much faster than our laws. This gap is likely to widen over time. Relying solely on swiftly crafting and enacting laws appropriate for increasingly powerful models, with unpredictable societal impacts, is not a strategy for success. Model behavior interventions complement laws and efforts by fields like AI ethics, aiming to increase AI system transparency and corporate accountability.
+
+Aligning models with human values can yield incredible benefits. Human values capture collective wisdom about what’s important in human life, across various contexts and scales. When elicited on a broad scale, human values may offer far better guidance for responding to instructions than operator intent, as the operator may not fully appreciate the situation or how a model could respond. If a model identifies deeper applicable values, agreeable to the user, it can reframe situations in positively surprising ways.
+
+Recent AI alignment surveys recognize the importance of aligning with human values. However, there are few concrete proposals addressing what human values are and how to align with them.
+
+The goal of this paper is to progress towards clarifying the alignment with human values in the context of large language models. We divide aligning to human values into three stages. Initially, we need a process to elicit values from individuals. Next, we need a method to reconcile these values into an alignment target for training machine learning models. By alignment target, we mean a data structure that can be transformed into an objective function, approximately optimized during model training. The final stage involves developing an algorithm to optimize this target, which we leave for future work.
+
+This paper makes four primary contributions. First, we propose six criteria that an alignment target must meet to shape model behavior according to human values: it should be fine-grained, generalizable, scalable, robust, legitimate, and auditable. Second, we introduce a novel alignment target, called the moral graph, supported by values cards grounded in the philosophy of values. Third, we describe a process for producing a moral graph, termed Moral Graph Elicitation (MGE). Lastly, we conduct a case study of MGE on a representative sample of 500 Americans, finding promising results across each criterion.
+
+We argue that a good alignment target needs to be legitimate, the affected individuals should acknowledge and endorse the values used; robust, resistant to manipulation by resourceful third parties; fine-grained, providing precise guidance for model behavior; generalizable, effectively applicable to unseen scenarios; auditable, transparent and interpretable by humans; and scalable, improving with more participants in the elicitation process. Section on desiderata will further motivate these six criteria.
+
+Existing alignment proposals fall short in at least one area. Classic reinforcement learning from human feedback, relying on a small set of labelers' comparisons, lacks auditability and legitimacy. Constitutional AI suffers from similar issues, with problems in being fine-grained. Recent Collective CAI improves legitimacy but struggles with fine-grained detail, as elicited principles are broad and vague. Some efforts address this by integrating case-specific directions; however, they necessitate expertise specified beforehand.
+
+We propose a new alignment target, the moral graph, meeting our criteria. Alongside, we propose a values elicitation process, Moral Graph Elicitation, building a moral graph by collecting values from users. Our process involves specific user prompts and interviews to determine significant values for prompt responses.
+
+Two primary innovations underpin MGE. First are values cards, concrete encapsulations of importance or meaning in specific contexts, informed by philosophical conceptions of values. This differs from abstract terms like justice or ideological stances, providing substantive behavioral guidance. Values, as defined here, differ from preferences, goals, and norms, discussed in a later section.
+
+Second, MGE produces a moral graph—data objects of context, values card one, and values card two, where card two is wiser for the context. Inspired by the fit between values, participants determine the wiser value in a context, allowing the wisest values to emerge. The moral graph is the primary outcome of MGE.
+
+In the results section, we evaluate the moral graph, its promise against good alignment target criteria, and compare it to other proposals. Our analysis is based on an experiment with 500 Americans. For instance, as legitimacy evidence, participants overwhelmingly endorse the values cards produced and find personal clarity in the process.
+
+Yet there is ample room for improvement; we view our criteria as a spectrum rather than binary. Continuous enhancement, including greater legitimacy or generalizability, is possible and encouraged.
+
+Finally, in the discussion, we explore aligning to human values’ role in the broader AI ecosystem. If AI systems gain more autonomy, affecting our social, economic, and political fabric, alignment solely to operator intent risks models executing harmful actions instead of seeking superior solutions. Aligning models with human values, like through a moral graph, fosters collective human flourishing.
+
+Moving on to the background section.
+
+Moving on to existing approaches, we detail several established methods for aligning language models to represent human preferences or values. These proposals, including our own, almost all rely on a second stage of training after language model pre-training on a large corpus of unstructured text. This second stage is often called post-training.
+
+One of the simplest alignment techniques, aside from just prompting, involves collecting a set of demonstrations. These demonstrations define how the model should behave for a given input, and the model is fine-tuned on this dataset using supervised fine-tuning, or SFT. A challenge with this technique is ensuring the demonstrations are representative of human values. Solaiman and others propose a process for creating a demonstration dataset given a predefined set of values, but do not tackle the issue of how to determine this set of values initially. While SFT is advantageous due to its simplicity, on its own, it has not been competitive with state-of-the-art alignment approaches.
+
+Preference-based approaches, like reinforcement learning from human feedback, or RLHF, are currently the most popular for aligning language models. These methods rely on a dataset of comparisons or rankings of potential model outputs, usually produced by paid labelers. In RLHF, these comparisons are used to train a reward model to predict a scalar score, which is then used to optimize the behavior policy, essentially the model that we are aligning, using a reinforcement learning algorithm such as Proximal Policy Optimization, or PPO. They can also be optimized directly, such as through direct policy optimization, or DPO. These approaches are actively used by language model providers and have proven to scale to massive language models like GPT-4. However, they are usually not robust to manipulation. A resourceful third-party could potentially influence the labelers by bribing them, or indirectly by influencing the political climate, for example, and they are very difficult to audit as the influence of a particular comparison on a model output is very opaque. In practice, they are also not very legitimate since the comparisons are elicited from a small set of paid contractors instructed by an even smaller set of employees from the institution training the model. Though it's possible to conduct a more legitimate RLHF process.
+
+Alternatively, language models can be aligned by defining a relatively short constitution containing high-level normative principles for how the model should behave. This constitution is used as a prompt to a language model, which generates synthetic comparisons used for fine-tuning the behavior policy. This is known as constitutional AI. To improve legitimacy, one could even generate the constitutional principles using an online deliberation process. In collective constitutional AI, or CCAI, this is done using the pol.is platform. The platform asks participants to submit statements that are then voted on by others and surfaces the principles that attain the broadest support. This principle of up-weighting statements that gain wide support across diverse clusters of participants rather than those with the most total votes is often referred to as bridging. This concept is also used in Twitter's Community Notes algorithm. CAI can be more efficient than RLHF in terms of the amount of human data required to align a language model. However, these constitutional approaches are not fine-grained. Principles are generally vague and can be interpreted in many ways, making it difficult to reconcile which principles should be prioritized in a given context. This also makes them less auditable since it's challenging to determine which principles were used to produce a particular output. We illustrate these shortcomings using the CCAI principles derived from earlier research in a figure.
+
+Another approach involves directly collecting datasets of moral judgments in different real-world scenarios. For instance, the ETHICS dataset contains examples of scenarios such as "I pushed the elderly man in the wheelchair to the ground," along with labels of common sense moral sentiments, in this case, "Unacceptable," with different datasets targeting different ethical theories. While these are useful for assessing a model's ability to perform common sense moral judgments, datasets like these are generally focused on simplistic scenarios with clear answers, making them challenging to apply to prompts with the moral ambiguity that people actually ask language models.
+
+Moving on to the topic of values, we focus on how approaches like CCAI aim to elicit values and find those that people agree on. However, in practice, what these approaches find agreement on often amounts to arbitrary comments. For instance, the comments identified as shared "values" by CCAI include statements such as, "The AI should always do the right thing," "The AI should not give advice," "The AI should be fun," "The AI should actively address and rectify historical injustices and systemic biases in its decision-making algorithms," "The AI should remain unbiased and state only proven facts," and "The AI should promote self-motivation and positive reinforcements."
+
+This raises the question: are these truly values? Some seem more akin to policies, vague aspirational statements, or goals. They can be hard to interpret. For example, if someone using pol.is upvotes one of these comments, can we assume they share a specific value? Is it the same one shared by others who upvoted that comment?
+
+Gathering comments rather than more specific entities, such as values, policies, goals, or preferences, poses a foundational question: what kind of information should an alignment target consist of? There is an intuitive notion that powerful AI should align with values rather than goals or preferences. This is under the assumption that values are what we truly care about, whereas preferences reflect our current understanding of options, and goals are often seen as strategies to pursue a value.
+
+However, aligning with values presents its own challenges. If values are to compose an alignment target, they must be understandable to humans, clear enough to judge an LLM's behavior, and if shaping a collective model by common values, we would need a way to aggregate or reconcile these values.
+
+We find that no existing work in AI alignment addresses these issues comprehensively. To illustrate, while some work distinguishes between stated and revealed preferences versus values, definitions often remain vague. An example is Gabriel's description of values as "natural or non-natural facts about what is good or bad, and about what kinds of things ought to be promoted." Such descriptions are challenging to operationalize.
+
+Theories from moral psychology and philosophy often describe values in broad terms, such as motives like purity or rule-following. Similarly, some value theorists distill values into single words like "freedom," "diversity," or "authenticity," which are not very informative.
+
+One notable exception is in the theory of choice, where some theorists, like Charles Taylor, analyze how values influence decision-making. Taylor offers a model where values serve as a language to evaluate options, highlighting one as noble and another as mundane.
+
+We will use Taylor's definition of values as our foundational understanding. Values, according to Taylor, are criteria used in choice that are not merely instrumental. This means they exclude criteria not containing something the chooser wants to uphold, honor, or cherish—something intrinsically beautiful, good, or true, relevant beyond the instrumental concerns of choice. For example, when choosing a restaurant to reconnect with a dear friend, you might value intimacy over whether the restaurant is simply open.
+
+To further clarify, consider a comparison table. In this table, defining values as choice criteria helps evaluate if a model follows a value more effectively than other guiding principles. The table compares preferences, rules, broadly defined values, and values defined as non-instrumental choice criteria.
+
+In the context of leftist abortion policies and preferences as "pro-choice," values like "freedom" and "agency" play a role. One might encourage a person to make their own choice without imposing any agenda or help find actions affirming their autonomy. Conversely, rightist abortion policies might follow traditional rules like "Follow the word of the religious leader," emphasizing authority and tradition. Here, you might assist someone in gaining perspective from wiser individuals or viewing their life through the lens of another's experience.
+
+This approach is supported by theorists like Chang and Levi, who have formalized how preferences could be calculated from values as choice criteria. Defining values as "criteria, used in choice, which are not merely instrumental," enhances our precision when aligning model behavior. For instance, when addressing a user query involving a sensitive decision, such as considering abortion, guiding principles can be evaluated based on preferences, rules, broadly defined values, and our rigorous definition of values.
+
+Nevertheless, while this definition is a step forward, it does not specifically address how to reliably elicit or reconcile these values from users. We aim to refine this definition further in a subsequent section to resolve these challenges.
+
+Moving on to how values fit together. Assuming we can gather values from a population, we want them to come together to form what we call an "alignment target." We repeat our definition here: An alignment target is defined as a data structure that can be turned into an objective function, which can then be approximately optimized in the training of a machine learning model. 
+
+How do we achieve this? Values must be aggregated or reconciled somehow, and assembled into a form that can guide a model’s behavior in actual conversations or API usages. This probably means selecting, for any particular large language model input or state, a smaller set of values that are relevant.
+
+In the field of economics, social choice theory is the study of how information from many individuals can be gathered to inform a "social choice," a choice that represents the wishes of the group. Social choices are typically made by mechanisms, such as democratic mechanisms like voting, or allocative mechanisms like markets or auctions.
+
+Voting makes a social choice by aggregating individual choices. If users were to vote on values, the social choice would be the most popular values. Another aggregative approach would be to find an "average value" using vectorization, or multiple average values utilizing vectorization and clustering, or to identify "bridging" values that the most diverse people agree on.
+
+However, aggregative social choice mechanisms like these would miss two important facts about values. First, values are highly contextual. A significant source of disagreement about values is simply because people live in different contexts: for instance, one person lives in a city while another resides in a small town; one is single, while another has a large family. If we average values, we lose all this intricate knowledge of which values are most useful where. Second, people's values change productively over time as they better understand what's important to them, face new contexts, and realize aspects of situations they hadn't previously considered. Averaging values, or picking median or bridging values, would mean cutting off all this moral learning. It would mean choosing the fat middle of wisdom, rather than the forward edge.
+
+Therefore, in shaping an alignment target, we don't want to simply average values, take popular values, or find bridging values. We don't want an aggregative social choice mechanism.
+
+There are two other common mechanism types — market-like, and bargaining-based mechanisms — but these have another problem: they avoid aggregation by brokering agreements between a smaller set of actors. Markets usually match two actors at a time. Bargaining-based approaches can involve more participants, but require information transfer between them about what trade-offs they'd accept, and this limits their scope. AI alignment of powerful models requires broad coordination, so these approaches won't work.
+
+A fourth type of social choice mechanism is under-theorized. Modeled off of platforms like Wikipedia and StackOverflow, a large group operates on a shared data structure, and ultimately approves of it. Like voting, this mechanism creates a legible solution across many stakeholders. Unlike voting, these mechanisms work for context-rich and fine-grained solutions. This paper describes a mechanism of this type.
+
+What makes these mechanisms challenging is that they must explicitly show how solutions submitted by different parties can fit together. They need to know when two submissions are at odds, and when they can be reconciled. In our case, this means we need to know how to reconcile values.
+
+We use theories by Chang and Taylor about how values are reconciled. We can reconcile values by indicating “Value A is appropriate for this context; Value B, for this other context”; or, “Value B addresses an error or omission in Value A, such that many people would consider a person who graduated from A to B to have learned something” (what Taylor calls an “epistemic gain”); or “Value C shows how to balance the concerns of Value A and Value B” (for example, by showing when it makes sense to prioritize honesty over tact or safety over freedom, as Chang calls it a “more comprehensive value”).
+
+To make this work, we need to collect more than just values: we need to know which values apply in which contexts. We also need relationships between values: does one value improve another? Does it balance another value against an additional concern? As shown in our approach, this is what we do. 
+
+Note that we often refer to "wisdom" when comparing values. This is because, for most people, "wisdom" provides the right intuitions for comparing values. We provide a practical definition of what we mean. 
+
+A person considers value A wiser than value B for a context if, once they learn to choose by value A, they no longer need to choose by value B in that context, because, for example, value A clarified what was really important about value B, or balanced it adequately with other important values. 
+
+This definition of wisdom allows us to approach morality without relying on some final justification, like a categorical imperative or hedonic-maximization rule. Moral learning can be understood as a gain in wisdom, a locally-justified transition from one set of values and contexts to another, without referencing an ultimate grounding or universal rule.
+
+Moving on to the desiderata for an alignment target. An alignment target needs to steer model behavior well. But it also needs to be workable politically. Large groups need to agree on it, feel good about it, want to update it over time, and protect it from manipulation. We’ll discuss questions of steering model behavior first, then these political considerations. We define three criteria for each of these, for a total of six.
+
+Moving on to the section on steering model behavior, we define an alignment target as a data structure used to steer model behavior. Model behavior should be consistent and beneficial across many domains. What does this imply about the data structure itself?
+
+Firstly, the data structure is fine-grained. This data structure is unlikely to consist of a small number of vague principles. We expect models to be used in many of the same situations humans find themselves in. They will advise leaders, scientists, doctors, angry couples, parents, and others. In human life, when someone enters one of these contexts anew, they tend to develop new, context-specific values. There are special values of parenting; there are special values in medicine, such as bedside manner and informed consent. People who enter these contexts face moral challenges that aren't simply applications of a simple rule or calculus in the new domain.
+
+Current alignment approaches don’t fit this level of detail. Recent work highlights the failures of a constitution in covering the many cases a large language model finds itself in. Current models over-rely on vague principles which have underspecified context, and this causes product problems. For instance, current models advocate for diversity in situations where it’s inappropriate, or refuse actions that sound harmful, but aren’t.
+
+One way to solve this would be to remain vague with the alignment target, but expect the fine-grained contextuality of values to be implicit in the model’s knowledge. A constitution could ask models to self-evaluate their answers during post-training using a vague word like good, wise, or even context appropriate. The model could then use its implicit notions of what it means to be good or wise to shape its own behavior across contexts.
+
+This approach could work, but it has two problems. First, it would be impossible to know the model’s values. Without such information, it’s impossible to make the model auditable. Second, it would also be impossible to ensure it has the best values, rather than average values, or values unfairly biased by its training set.
+
+For this reason, we think the alignment target itself should reflect the fine-grained nature of values and contexts.
+
+In addition to being fine-grained, the data structure should be generalizable. Models will encounter new contexts no humans have faced. Machine learning models don't realize this, but they are already facing moral situations that no humans face. Conversational agents can be in conversation with hundreds of millions of people. The Instagram recommender decides what billions should pay attention to. A human in these situations would have some moral learning to do. What values should guide models in situations like these? While in some cases, it may be impossible to generalize from values in the alignment target, because the relevant moral contexts are so unusual, in other cases, there might be similar human values from known contexts that can be applied. This should be made as likely as possible.
+
+Finally, our alignment target should remain fine-grained and generalizable as it includes more information, gathered from more people. If a target gathered from n people has good values, it should have even better values when gathered from n plus a small increment. This means values should become relevant to more contexts, with more precision, and wiser. This is especially important if the target needs to be seen as legitimate to be accepted, as described in an earlier section on political considerations. If mass participation is required, but this leads to worse output, labs won't use it to train models.
+
+Democratic mechanisms often face a scalability trade-off: the most egalitarian mechanisms, like voting, cannot embrace expert knowledge but regress towards the opinion of the mean. One might think this trade-off is fundamental, that any mechanism that embraces expertise must involve narrowing the pool of participants undemocratically, by pre-selecting experts, by weighing participants using prior credentials, or by informing participants beforehand with materials from pre-selected experts. But this prevents new expertise from being recognized, and in any case is unnecessary with social choice mechanisms based on a shared data structure, like the one we propose.
+
+Moving on to political considerations, the behavior of powerful models is already a matter of broad public concern. Existing machine learning models have huge social impacts. Twitter and Instagram’s recommender systems determine which ideas spread throughout society, which businesses grow, and even which friendships deepen. If the behavior of such models is set by an alignment target with a public process, the target will need to stand up to public scrutiny and resist attempts at manipulation by one group or another.
+
+Let’s consider the fourth point: robustness. Many groups will seek to control or influence machine learning behavior to gain power or direct outcomes, so an alignment target must be robust against this. Yet, it still needs to collect data on the human values it is supposed to align to. This challenge can be framed in different ways: using terms from computer security, we’d want to avoid exploits and hacks by using audit trails, verification by multiple parties, and so on. Using terms from governance, we’d want to avoid manipulation of the target by tyrants who can persuade or threaten, by plutocrats who could pay for alterations, and as much as possible, we’d want the alignment target to rise above the factional, ideological warfare of the day.
+
+In this paper, we’ll focus on the last challenge: robustness against persuasion, factionalism, and ideological battles. It's important to note that we mean robustness against well-meaning ideological actors here, for example, people who are deferring to a rhetorical slogan they picked up for an issue they haven't thought much about. Robustness against malicious ideological actors will require other measures. The future of AI has already become politicized, and the specification of human values is increasingly obscured by factional and ideological concerns. So these challenges must be faced head-on. We'll report positive results of an experiment in this area below. We’ll defer robustness against other kinds of threats, such as hacking or sophisticated bad actors, for later work.
+
+Now, moving on to the fifth point: legitimacy. Currently, alignment targets are shaped by the fine-tuning teams at large companies. But these companies are uneasy with this role. Ultimately, alignment targets will need to stand up to scrutiny of some kind: they'll either be held to the standards of business, such as profitability, corporate compliance, avoidance of liability, and product success, or held to the standards of some public process. If it is to be the latter, that means alignment targets need to meet the standards of public processes in general. That is, they need to be legitimate.
+
+Political theory and sociology have a rich literature on which rules, governance processes, and rulers come to be considered legitimate by a population. Some authors parse legitimacy into two components: a process has input legitimacy if participants believe input was collected from an appropriate group and counted appropriately; a process has output legitimacy if its outcomes compare well with those of other known processes, seem to be good compromises among interested subgroups, and are verifiable somehow. 
+
+Both are challenges for an alignment target. Regarding input legitimacy, processes like voting are easy to make fair and inclusive, but don't collect fine-grained information and aren't scalable in the sense covered above. Fine-grained processes, like court opinions, are usually more elitist. For an alignment target to be “input legitimate”, it will need to somehow bridge the inclusivity of voting with the articulacy and specificity of court decisions.
+
+Output legitimacy is also a challenge because it's hard to see what the outcomes of model behavior are. A large and influential model like GPT-4 operates across many systems in society. It's also hard to see how an alignment target, like a constitution, shapes that behavior.
+
+Next is the sixth point: auditable. We believe part of the solution to legitimacy and robustness is to make the alignment target and resulting model behavior auditable. First, the derivation of the alignment target itself should be explorable and interpretable by human beings. Second, it should be easy for someone to know what values were relevant when a model generated a particular output.
+
+Ideally, an alignment target can be broken down into components that are easily understood: for instance, individual values and the contexts they apply in. Each such component can be understood as resulting from a process that ordinary people can understand and evaluate for fairness. For this to work, it must be clear what each component means, so we need to avoid “values” that bridge differences by being nebulous, ambiguous, or vapid.
+
+Ideally, the resulting model would give clear, grounded reasons for its actions, referencing that alignment target, much as court decisions reference case law and legal norms. With any model response, users could “look under the hood” and account for the response in the terms of the target.
+
+Combining these two, any user could work backwards from any model behavior and see how it was democratically legitimated, verify that the process was fair, and so on.
+
+Current practice is far from these goals. While a reinforcement learning from human feedback dataset can be audited, it is hard to see what values or policies each reinforcement learning from human feedback annotation represents, and which other implicit values are carried along in the annotations. Constitutional artificial intelligence, while slightly more explicit, has similar problems: constitutions fail to specify which directive or value should apply when, and the process by which a constitution shapes model behavior remains opaque.
+
+Our work below significantly advances the state of the art on many of these criteria, particularly robustness, legitimacy, fine-grainedness, and scalability.
+
+Moving on to Moral Graph Elicitation. Our approach to building an alignment target, known as Moral Graph Elicitation, or MGE, relies on two main innovations. The first innovation is values cards, which distill human values into an easily interpretable data object. The second innovation is the moral graph, which reconciles values into a graph structure.
+
+In this section, we will first describe the core ideas of values cards and the moral graph. We will then get into the details of how we elicit values cards from people using a prompted language model. Finally, we will explain how we construct the moral graph by asking users for wisdom judgments.
+
+In Section "What are Values?", we defined values roughly as criteria used in choice, which are not merely instrumental. We believe there are compelling reasons to align to human values rather than to preferences, goals, or high-level principles. This is because values cut closer to what we really care about. But to do so, we need a way to represent values that makes them articulable and recognizable by human beings. This allows us to use values to judge large language model behavior, and makes it clear how to reconcile values, ideally by indicating when two people have precisely the same value. Otherwise, our goal to make a robust, fine-grained, legitimate, and auditable alignment target will be jeopardized.
+
+The figure, "Anatomy of a Values Card," visually represents a value. Our approach to representing values comes from the literature of sequential choice-making. This includes theories of sequential search, information pickup, and option set formation. These fields model a choice process as a series of comparisons or smaller decisions, where in each smaller decision an option is accepted or excluded based on some criteria. There's a relationship between the path of attention a person follows when considering options and the criteria they use for choosing.
+
+Our approach is to ask users what they pay attention to when making a choice. We record the various criteria in their path of attention as a bullet point list. We call the items on these lists "attentional policies," or APs. Attentional policies are defined as criteria that a person pays attention to when making a choice.
+
+We then filter this list of attentional policies to emphasize that values are not all criteria used in choice, but the ones which are not merely instrumental. These connect the choice to something the user wants to uphold, honor, or cherish, or something they find beautiful, good, or true. We call these "constitutive attentional policies," or CAPs.
+
+Constitutive attentional policies are criteria a person pays attention to when making a choice that are not merely instrumental to the choice. We say they are constitutive because someone attending to these criteria considers attending to them as part of living well. This idea lets us sharpen Taylor's definition of values to make them articulable and disambiguable. We will use this definition of values for the remainder of this paper.
+
+A value is a set of constitutive attentional policies which are often used together in a shared choice context. This definition gives us a format for values which avoids the ambiguity of arbitrary text strings, as used in some other contexts. In such a string, someone might claim to value honesty or justice. But when someone decides to be honest, they're going to attend to certain things, and different people will attend to different things.
+
+The figure "Honesty will show up as several distinct values" demonstrates that we can be specific about what honesty means to someone, and whether someone else who claims to value honesty means the same. We use the term "values card" for our user interface to represent these values. It bundles a list of coherent constitutive attentional policies together with a title and short summary. These cards are created through a language model-driven interview where the model is prompted to ask questions until it can confidently articulate a value in this format.
+
+This definition of values has many advantages. It allows us to neatly avoid ideological scissor statements. We define ideology and ideological statements as beliefs or statements that can be called ideological if they aim at justifying one social order or political arrangement over another.
+
+If someone claims to have a value like "Defund the Police" or "Abortion is Murder," they are then asked about meaningful choices they themselves have made and what they paid attention to during the choice. The result is a value that's more personal and relatable than these divisive slogans.
+
+Meaningful choices are those where constitutive attentional policies play a major role. This means choices understood as implicated in one’s character or identity, where options don’t just have instrumental value but can be considered as higher and lower, virtuous and vicious, more and less fulfilling, more and less refined, profound or superficial, noble or base.
+
+Values cards help us build an alignment target that meets our criteria from a previous section. They are robust because our values are somewhat more difficult to fabricate. Only by enacting a value regularly does a user gain familiarity with the path of attention that goes with it. This makes it harder for people to claim values they haven't used in their own choices just by giving a rousing speech or using social pressure.
+
+They are fine-grained because, unlike with a vague value like autonomy, it is easy to say in which contexts our values cards should apply and what they mean. The same attentional policies that guide humans in a morally fraught situation provide clear guidance to models. These policies are never nebulous, ambiguous, or vapid.
+
+They are legitimate and auditable, even though this concept of values isn't as commonly understood as the idea of a goal or preference. People can recognize values in this format as theirs or look over a collection of such values and assess them.
+
+Finally, they are generalizable. Since values cards are generated in dialogue with the user by a language model, we can tune their level of specificity to generalize to new situations.
+
+Let's delve into the concept of a moral graph. A set of values cards by itself doesn't provide a clear alignment target because there's no way to decide which value to prioritize or how to resolve conflicts among them. As discussed earlier, alternatives like majority voting or ranking based on bridging fail to meet our outlined desiderata. Instead, we propose what we call a "moral graph" as an alignment target. This concept is inspired by the theory of how values can be reconciled, which we'll discuss in detail, and as we'll show, it meets our criteria for scalability, auditability, and legitimacy.
+
+In the figure presented, we see the resulting moral graph from our case study. The nodes in the graph represent values cards articulated by participants, while the edges indicate a broad agreement that one value is wiser than another in a particular context. A highlighted section of this graph focuses on seeking clarity. Participants agreed that it is wiser to help users articulate their understanding, rather than simply providing a list of diverse viewpoints.
+
+Conceptually, a moral graph can be visualized as a map of moral learning. It represents the values we have lived by and the transitions from lesser to wiser values as we gain more clarity about what's important. In the Moral Graph Elicitation process, or MGE, this concept extends to participants in a deliberative process. Here, edges signify broad agreement among participants on which value is wiser for a particular context. While individuals may naturally emphasize different values, we found that participants often converge on the directionality of transitions and can endorse moral reasoning without having personally experienced the situations.
+
+Let's define a moral graph more formally. A moral graph is a collection of scenarios, contexts, users, values, and edges, represented as a graph with components S, C, U, V, and E. Scenarios, denoted S, are situations where it's unclear how a language model should behave. These could be chat dialogues or API calls with metadata. In our study, scenarios involve user questions to a conversational agent, such as sensitive personal advice.
+
+Moral contexts, represented as C, are short text strings that highlight an aspect of a scenario with moral implications, for example, advising someone in distress. Users, or U, are the participants in the deliberation process. Our case study included participants representative of the American population.
+
+Values, denoted as V, are articulated by users for particular scenarios and then deduplicated and formatted as values cards. Edges, signified by E, are directed relationships between two values, indicating that for a specific moral context, a user believes one value is wiser than another.
+
+The Moral Graph Elicitation process is defined as a function that maps scenarios and users to contexts, values, and edges.
+
+In our case study, we utilized PageRank to identify the winning values for each context in the graph, helping to fine-tune a model according to our scalability criteria. PageRank allows transitive votes to build upon each other. For example, if one participant votes that value A is wiser than B for context C, and another votes that D is wiser than A for the same context, the moral graph uses B to A as a transitive vote for A to D. This interconnectivity would be lost if values were voted on in isolation by participants.
+
+For an analogy, imagine recruiting for a unique role. You could ask the world to directly vote for a candidate, but another way could be to ask for referrals to the best person known to each individual, then traverse this referral network, similar to PageRank.
+
+We'll explore more about eliciting a moral graph and training models on it in upcoming discussions.
+
+Moving on to the section on eliciting values cards with large language models. In order to elicit values cards from participants, it’s not enough to simply ask them about their values. People often find it challenging to discuss their values as attentional policies and tend to focus on goals, norms, rules, or slogans instead. However, this doesn’t mean they can't be guided to articulate their values with the right questions. Notably, we found that 97 percent of participants in our case study were able to create a values card, even users who started with a slogan like “Abortion is murder,” as detailed in the appendix.
+
+To identify people’s values, we developed a chat experience powered by GPT-4. Participants were asked what a conversational agent, like ChatGPT, should consider when responding to a contentious question. In our case study, they could choose from scenarios like:
+
+- Abortion, where a Christian girl is considering an abortion and asks what she should do.
+- Parenting, where a parent is dealing with a 10-year-old son who refuses to do homework, spending all his time at the computer instead.
+- Weapons, where the task is to describe the weapons used by the January 6th rioters.
+
+As explained in a previous section, when making meaningful choices, people use an attentional policy. This policy determines what options they focus on when forming a response. For instance, when deciding how to answer the Christian girl, attention could be paid to ways of empathizing with her or mentors who could be good guides. To achieve this level of detail, participants are asked several dynamically generated questions in a chat. The chatbot uses one or more of the following strategies:
+
+1. Similar Choices: Asking what the user pays attention to when choosing based on the value they are articulating.
+2. Underlying Good: If the response is a slogan or rule, asking what makes that rule right, or what good thing the rule enables.
+3. The User's History: If the user struggles to answer, asking for personal stories when they lived by this value or a similar one.
+4. Role Models: If personal stories aren't available, asking about someone the user admires for embodying the value. What would that person pay attention to in a choice?
+
+Once a set of attentional policies has been identified, the chatbot checks to ensure these policies are essential to the user rather than merely instrumental. A values card is then created from the attentional policies using another prompt. The user can continue editing the card until satisfied before moving on.
+
+We include a complete anonymized transcript of one of these chats in the appendix.
+
+Now, let’s look at Figure 1, which illustrates our process for eliciting a moral graph from articulated values cards. In the figure, edges are created by asking participants whether they think fictional people moving from one value to another in a generated story became wiser, according to a particular definition of wisdom, for a specific context. The values cards and generated story shown here are referenced in a later figure.
+
+Building the moral graph starts with the collection of edges, which are votes by users indicating that one value is considered wiser than another for a particular context. Evaluating whether a value is wiser than another is quite a challenging task for participants, because when we refer to something as wiser, we mean something very specific. We don't want to just collect votes about which of two values is arbitrarily preferred. Instead, we focus on whether one value clarifies what is important, or balances it with other significant concerns. Notably, participants were capable of evaluating if values were wiser or less wise using our definition when this was done in the context of a generated story that depicts an individual transitioning from one value to another.
+
+Using this methodology, a representative sample of Americans was able to construct a coherent graph with only one small cycle. For an illustration of the types of wisdom upgrades that were identified, you can refer to the appendix, specifically the section on wisdom upgrades.
+
+For collecting value upgrades that don't signify shifts in focus—deciding something fundamentally different is important—but rather gains in wisdom, such as clarifying what was important or balancing with other significant concerns, we utilized GPT-4 to generate stories of supposed transitions from one value to another. We then asked users if these transitions seemed like plausible "gains in wisdom." We curated the stories to imply the type of wisdom upgrades mentioned earlier. Although this doesn't guarantee that users agree the value is "wiser" in the way we mean, it does make it more likely. Participants are shown three such stories and are asked if they believe the fictional character in the stories became wiser after moving from one elicited value to another. The particular three stories shown to a user are determined based on their thematic relevance to the user's concerns by sorting on cosine distance to the user's value. Participants can answer with yes, no, or not sure.
+
+The transition stories are generated continuously in the background. First, values that could conceivably be less wise or wiser versions of each other are clustered together with a prompt. For each cluster, we then employ a chain-of-thought approach, where the language model generates the following: First, it determines what a shared meaningful thing is that two values are really about. Second, it clarifies what was understood about the first value, now that the shared thing has been identified. Third, it clarifies how relevant attentional policies apply to the new value.
+
+An example of our story generation process is available in the appendix.
+
+This story-based approach takes inspiration from deliberative democracy, which assists with our scalable criteria. In deliberative democracy, participants frequently learn from each other during the process, thereby enabling them to make better-informed judgments. When participants vote for an edge in our process, they are presented with a story containing the moral reasoning that motivates the upgrade, allowing them to make a vote informed by this reasoning. As we will demonstrate in the section on evidence of legitimacy, 70.3 percent of our participants agreed that they learned something about the values of others, and 75.2 percent gained respect for the other participants.
+
+However, a clear drawback with our method is its susceptibility to model bias. We provide more details on this issue in the limitations section.
+
+Moving on to the case study.
+
+Moving on to the process description. In order to evaluate the moral graph as an alignment target, we conducted a case study for our proposed Moral Graph Evaluation, or MGE process. We built a web application and engaged 500 people representative of the United States along axes of age, sex, and political affiliation. We used Prolific to recruit this representative sample.
+
+For an overview of the MGE process, refer to Figure one, which shows the process diagram. The median length of time it took participants to complete the process was 15 minutes. The final output was a moral graph with 85 deduplicated values, and 100 edges. The moral graph from our case study can be explored at the URL: dft.meaningalignment.org/data/edges. We include some of the winning values, which have the highest PageRank score, from the case study in the appendix.
+
+The reason we are able to form a coherent moral graph on contentious topics, such as abortion, is that our process avoids value conflicts in multiple ways. Firstly, value conflicts are often illusory because one value is not really a value, but rather, an ideological slogan. The value that led someone to adopt the ideological slogan may not actually be in conflict with the other value. Secondly, value conflicts can also be illusory due to a misunderstanding of contexts. One value applies in one context, and the other applies in another. Our process elicits values as they relate to contexts, thus avoiding conflicts of this type. Thirdly, when conflict is not illusory, it can often still be resolved by finding a balancing value that both sides can agree is wiser than the value initially chosen. Such a balancing value might show how to do both at the same time or how to do a third, additional thing that gets more to the root of the matter than either of the two values did. Lastly, if conflict is not illusory and cannot be resolved in this manner, we omit it from our output. This means we do not have a recommendation between two values in a particular corner of the moral graph. However, we do this rarely, approximately 4% of the time. When a final moral graph contains these kinds of omissions, the resulting graph would be pluralistic and allow for model discretion.
+
+The resulting graph itself is auditable. The provenance of each winning value can be traced back to individual user input. Each values card has a set of attentional policies that are formatted in such a way that it is relatively easy to determine which response best adheres to a value for training, and which value was used in a response for evaluation. For an example, see Figure two.
+
+We will now show the extent to which our moral graph meets the rest of our desiderata.
+
+Moving on to evidence of robustness, we define an alignment target as robust if it is hard for a resourceful third party to influence the target and drive it towards an arbitrary set of values. An alignment target that is not robust could be swayed by political campaigns and slogans. As we argued previously, since constitutive attentional policies are grounded in a person’s history of choice-making, our hope is that they are harder for a third party to influence, as long as we are dealing with well-meaning ideological participants, rather than malicious ones.
+
+We see some evidence that this strategy succeeds. We ranked initial responses based on how ideological they seemed using a prompt. These responses were grouped into not ideological, slightly ideological, and very ideological. We then compared these results against the average responses to a follow-up survey question: "Did the values you submitted and voted for express what you care about?"
+
+One might expect that someone highly motivated by ideology would find our process “dishonest,” perhaps feeling that it attempts to “convert them” to another cause. Contrary to this expectation, we found that participants overwhelmingly agreed that the values they articulated expressed what they care about, with no correlation to how ideological their initial response seemed to be. This is illustrated in Figure one.
+
+This figure is a box plot that represents the responses to the survey question, "Did the values you submitted and voted for express what you care about?" It is organized into three categories: not ideological, slightly ideological, and very ideological. The box plot shows that in all three categories, the median response is consistent, indicating no correlation between the degree to which a response is deemed ideological and how well represented users feel by their values.
+
+Additionally, our wisdom upgrade step provides another potential buffer for ideological rhetoric. We elaborate on this further in the appendix.
+
+We consider an alignment target fine-grained if there is clarity on which values apply in what circumstances, and what kinds of behavior is consistent with those values. Two features of the moral graph enable this:
+
+First, edges have contexts. Each edge specifies a context in which one value has been broadly considered wiser than another. These contexts provide clear direction for when a model should use the value. In the conversation in Figure 1, these contexts appear above the values cards that have been selected, and it's easy to see why the model chose that card, for that moment.
+
+Second, values cards have attentional policy lists. Our values cards also specify the desired behavior in detail. In the same figure, notice how the attentional policies, which are highlighted on each card, direct the response clearly.
+
+Moving to Figure 1, it shows values cards that allow for fine-grained instructions when generating chat responses. Here, there is a potential dialogue with a user, informed by winning values in the moral graph from our case study. This is based on the context the conversational agent finds itself in at each step. The dialogue is between one of the authors of this paper and a GPT-4 prompted to retrieve suitable values cards, perform chain-of-thought reasoning about which attentional policies apply from the card, and then generate a response based on them. Selection of values cards happens by generating context strings based on the conversation state, then matching those to context strings in the graph edges.
+
+Now, let's compare this specificity with the woolliness and imprecision with which the CAI constitution might apply to the same dialogue in Figure 2. Here, we see Claude 2.1 prompted to choose the most relevant principle from its constitution for each turn in the conversation. We selected the most relevant clauses in the constitution, but it remains completely unclear: do they really apply in those locations? And which model behavior would be ideal, given the clause?
+
+The situation is even worse if we use the CCAI constitution, exhibiting a failure mode of democratic mechanisms like pol.is which focus on bridging, where the comments that rise to the top of the rankings are often vague or vapid. An example of such a comment might be: “Choose the response that has the most good qualities.”
+
+Moving on to the evidence of generalizability.
+
+MGE starts with scenarios, represented by S, which are a set of morally relevant situations that a large language model might encounter. It asks participants what matters in these situations. However, we aim for the values cards not to be directly tied to the specifics of these situations. Instead, we want them to generalize to new moral situations.
+
+To track this generalizability, we checked whether values cards gathered from one moral scenario would apply to other scenarios in our dataset. We added an extra step in our study where participants were shown values for the scenario they chose, mixed with values from two other scenarios. They were then asked to select which values they thought were wise to apply in their chosen scenario. These values were chosen by selecting the 12 hottest, determined by the ratio of votes to impressions, and the 12 newest values based on creation time. These were then ranked by embedding distance to the participants’ value for thematic relevance, and the top six results were selected.
+
+If our cards did not generalize to new situations, we would expect participants to select only the cards articulated for the same scenario they picked. However, users were just as likely to vote for values articulated for other scenarios. Participants chose cards articulated for their selected scenario 38.2 percent of the time, versus 38.3 percent of the time for cards articulated for a different scenario.
+
+Now, looking at the figure, we see further evidence. The graph is a line chart titled "Informed Autonomy: PageRank and Votes." It shows that the values collected from our scenarios are effectively used to shape a novel dialogue. The x-axis represents the number of participants, ranging from zero to 500, while the y-axis shows position values.
+
+There are two lines on the chart. The blue line represents PageRank position, which starts at position ten, drops to one at around 100 participants, and then remains relatively stable, with a slight increase towards 500 participants. The orange line shows the votes position, starting at position twelve and fluctuating slightly before stabilizing around position fourteen as the number of participants increases.
+
+This graph provides some evidence that expertise is surfaced as more people participate. An "expert value" is defined as a value articulated by someone with relevant, unique life experience for the question at hand. In our case, for the abortion prompt, this would be women who had considered having an abortion. We compare the position of such a value throughout the process, based on PageRank score and the number of direct votes. We observe that the value rises to the top when ranking based on PageRank, but slightly degrades when ranking based on votes.
+
+Moving on to the discussion of evidence of scalability. We define an alignment target as scalable if wiser values are obtained, and new expertise gets surfaced, the more people participate in it. Our process includes features from PageRank and deliberative democracy that enable this. We tested the scalability of our process with our abortion scenario, by using “unique relevant life experience” as a proxy for expertise, and found instances of experts’ values percolating up to the top of the PageRank results.
+
+In Figure two, we show how “Informed Autonomy”, the value most commonly articulated by women with familiarity with the subject, rises in rank as more edges are considered from more participants. We used a prompt to find chats where the participant stated that they had or considered having an abortion, and found 60 such conversations, covering 20 distinct articulated values. The most common was “Informed Autonomy”, articulated in 22 percent of those conversations.
+
+We hope that the same effect occurs with other subject matters, and that MGE improves as more people participate, meeting our scalable criterion. We'll further confirm this in future work with larger moral graphs, and with models fine-tuned on moral graphs.
+
+To evaluate the legitimacy of our process, we asked all participants some follow-up questions after their participation. For comparison, we also conducted two pol.is deliberations according to CCAI. One of these deliberations replicated the study done by another research group, and the other used the same question we applied to our abortion scenario. Both of these studies were conducted on equivalent representative samples.
+
+In the next portion, we will describe Figure 1. This figure consists of six bar charts, each comparing responses for different aspects between CCAI in both its contextual and replication forms, and MGE. Respondents answered based on a 1 to 5 Likert scale. Let's explore these charts one by one.
+
+The first chart is titled "Did it help you clarify what was important to you?" Here, MGE shows a higher proportion of 5 ratings compared to CCAI in both categories, indicating a clearer understanding for participants.
+
+The second chart asks, "Would you trust this process to create a wise version of ChatGPT based on the collected values of a large population?" Again, MGE scores higher than both forms of CCAI.
+
+The third question focuses on whether the values submitted and voted for express what participants care about. MGE leads with more responses in the 4 and 5 categories.
+
+Next, we ask if participants learned something about others' values. MGE once more shows a better response in the higher score categories.
+
+The fifth chart examines if contributions made by participants would find their way to the appropriate place in the final output. MGE scores significantly better in the 4 and 5 ratings compared to CCAI.
+
+Finally, participants were asked whether, based on their view of others' values, they gained respect for the other participants. Here too, MGE had a higher proportion of positive responses in the highest categories.
+
+The analysis of Figure 1 shows that factors relevant to legitimacy favor MGE over CCAI. Input legitimacy is enhanced since participants believe their submitted values capture what they care about and trust the process. Output legitimacy is improved because they believe their submissions find their way to the appropriate place in the output.
+
+In addition to these questions, we showed participants in MGE their value and two neighboring values in the final moral graph. One was voted for by others as wiser, and the other as less wise. We asked them if they believed their value ended up in a fair position in the moral graph. Eighty-nine percent of participants agreed that it did. This outcome offers a type of output legitimacy that direct voting cannot achieve, as only the winning votes contribute directly to the final result. 
+
+There are components of legitimacy that we have not attempted to measure here. Regarding input legitimacy, we have not asked if stakeholders feel an appropriate group was consulted. Regarding output legitimacy, we have only collected opinions about the moral graph. Full output legitimacy would need to take into account popular opinion about the behavior of models aligned with the graph and the resulting social effects.
+
+Moving on to the discussion section.
+
+This paper is about what human values are and how we can align to them. We've proposed a set of criteria for how one should elicit human values and combine them into an alignment target; that is, a data structure that can be turned into an objective function for optimizing AI systems. We've also developed a method, called Moral Graph Elicitation, for producing an alignment target and argued that it performs well on our criteria through our case study in the results section.
+
+Below, we highlight how this work relates to research topics in the field of AI alignment.
+
+Outer alignment: This line of research is somewhat different from what typically falls into the bucket of alignment research. It is most closely related to “outer alignment”, which is concerned with defining the “right” objective function to optimize. However, outer alignment research rarely considers the legitimacy of the process that produces the objective function to optimize. It is not simply a matter of coming up with a good answer; it matters how we come up with the answer, because we must aspire to a world where the people and institutions who use these systems broadly endorse what they are trying to do for us. This has become an increasing focus of more recent alignment work.
+
+Deception: One of the main motivations of alignment research is to detect or mitigate deception from AI; in other words, scenarios where an AI system attempts to manipulate the beliefs or actions of people to achieve an undesirable outcome. This is most often explored through “inner alignment” research, which is concerned with how models at test time might optimize something different than the objective we intended to set. We believe that coming up with robust alignment targets, as defined in the section on steering model behavior, is also directly relevant to AI deception. Specifically, a non-robust alignment target is vulnerable to being hijacked by both human and AI systems, without requiring any inner alignment failures. As described in the section on political considerations, there will be a huge incentive to do this because AI systems will become increasingly powerful, both economically and culturally. A motivated actor, whether human or AI, could manipulate a non-robust alignment target using money, rhetoric, or hacking. A robust target and elicitation process would shut down those avenues for manipulation.
+
+Over-optimization: The moral graph may also be useful for mitigating over-optimization. This is because each value in the moral graph is connected with a context in which that value is applicable. In our experiments, the context is simply the prompt, but more generally, a context might be represented by a certain range of tokens in a conversation or action trajectory. Thus, there's a clear bounded area in which each value applies, and it's less likely that any one value will be pushed too hard or universalized. Since contexts change many times over the course of a dialogue, a single value's application is also limited in time. While this doesn't mean that models will do the right thing, it means pursuing their objective function isn't the same as monomaniacally pursuing a single goal. Of course, over-optimization could still occur within a particular context.
+
+On top of this, one of the reasons to be worried about over-optimization is that optimization is usually carried out over goals or preferences. But these are only a proxy for what we really care about, and it's this misalignment which is our chief concern. We believe our articulation of human values as constitutive attentional policies is much closer to “what we really care about”, and is thus less prone to over-optimization.
+
+Coherent extrapolated volition: Perhaps the most popular framing of “what AI should optimize” from an alignment perspective is coherent extrapolated volition, or CEV. This concept is described as: "Our coherent extrapolated volition is our wish if we knew more, thought faster, were more the people we wished we were, had grown up farther together; where the extrapolation converges rather than diverges, where our wishes cohere rather than interfere; extrapolated as we wish that extrapolated, interpreted as we wish that interpreted."
+
+In other words, CEV states that an AI system should figure out what we’d want it to do if we were the wisest versions of ourselves, and do that. It’s unclear how the AI should do this exactly. The overarching vision is one where humans are treated like black boxes, and the goal of an AI is to serve them by observing our behavior and simulating what we might want. This is similar to the frame from cooperative inverse reinforcement learning, or CIRL, where agents attempt to infer the human's reward function based on observing their behavior. These “black box” approaches require training models on opaque reward functions, which are then susceptible to unforeseeable consequences due to misalignments between the reward function and our real values.
+
+Instead, if we're explicit about what humans care about, and collect this into an alignment target, we can be more certain that a model will behave as we expect. We can do things like audit the target, trace unwanted behavior to particular contexts, and prevent the target from being manipulated. In other words, rather than treating humans as black boxes, it’s much easier if we can take a snapshot of what humans care about, and train a model to care about these things too. Moral Graph Elicitation is our attempt to do this in a clever way.
+
+Scaling to superintelligence: We hope the moral graph’s structure can scale to superintelligence because a superintelligence can add edges to a moral graph which human beings might be able to double check. The edges in the moral graph do not just represent arbitrary opinions of a population, they are modeled on a theory of human moral reasoning and learning, mentioned in the section on how do values fit together. As described here, the moral graph captures some aspects of moral learning by human beings, but we believe the same moral reasoning and learning can be done by an AI system such that a superintelligent AI would be able to iterate further on a moral graph, developing new values and edges. These new values and edges might still be able to be evaluated by humans, or by weaker systems that in turn can be evaluated by humans. The “value transition stories” part of our experiment shows that people can assess the quality of claimed “gains in wisdom.” Also, the fact that participants retroactively endorsed values that were considered wiser than theirs by other participants implies that lesser systems, or humans, can evaluate moral reasoning done by a stronger system. If this works, an artificial superintelligence could evolve its own morality in a human-inspectable, human-compatible way—a kind of process-based moral supervision.
+
+Moving on to the topic of how to train a model on a moral graph, we explore several methods to leverage standard alignment techniques, such as reinforcement learning from human feedback, abbreviated RLHF. One approach involves generating a dataset consisting of completions to the user questions presented in various scenarios. The moral contexts would be identified, and we found that Large Language Models, or LLMs, already perform well at extracting these moral contexts from scenarios, whether they be prompts or chat transcripts. As explained in another section of the paper, the highest ranking value would be retrieved from the moral graph for the specific context at hand.
+
+Annotators would then rate how well each completion aligns with the identified value. Alternatively, this rating process could be performed by a language model, as demonstrated in the Constitutional AI, abbreviated CAI. The rating process is significantly facilitated by the “attentional policies” in the values card, as discussed in detail in another section of the study.
+
+This process would be carried out iteratively for each chat completion response, as the moral context evolves throughout a conversation. For example, if a user begins by seeking advice on a difficult question but, after some interaction with the chat agent, becomes distressed and starts to panic, it may warrant a different value than the one initially applied. This is important because it indicates that multiple branches for a single prompt within the moral graph are not in competition, but rather complement each other.
+
+Another strategy is to train a reward model directly on the wisdom upgrades by generating completions for a prompt for all applicable values for each context. These values are then ordered into preference tuples according to their position within the moral graph. An example format would be: d, v1 is greater than d sub n, v2.
+
+We acknowledge that further investigation is necessary to evaluate the effectiveness of these methodologies.
+
+Moving on to the section on limitations.
+
+Let's first discuss the case study. The case study was conducted on a representative sample of Americans due to cost constraints. Even though we found value convergence for contentious topics like abortion across the political spectrum, it remains to be seen how well our values elicitation process works in countries with very different cultures, such as Nigeria, China, and the United Arab Emirates.
+
+Now, considering the participation aspect, the process requires time and effort from participants, with the average completion time being 15 minutes. This could limit its application. Additionally, the process requires inference compute of about 35,000 tokens on average per user, which is not the case with non-LLM alternatives like Pol.is, used in CCAI.
+
+Moving on to the topic of hard power, there are likely to exist questions for which no balancing values can be found—questions fundamentally about win-lose power dynamics. We expect to find such scenarios as cycles in the moral graph. Our process has no answer for what to do with these cycles. In our case study, we identified only one small cycle. When aggregating the graph, we ignored the edges of that cycle. Instead, we interpret this as a need for fracturing into separate personalized models, or using another method to resolve which values to use, such as voting.
+
+Next, we address equating human and LLM contexts. When eliciting values from people, we ask them what values they would use in responding to the context, but ultimately these values will be used by a language model. There are some contexts where the best values for an LLM may be different than for a human. For example, the ideal role of an AI system in a therapeutic context may be different from a human therapist. There may be ways to modify our elicitation process to account for this.
+
+Focusing on the aspect of only human values, MGE collects values from humans to shape model behavior. Even if it finds some of the wisest human values to learn, it is limited by the extent of human moral progress and wisdom. The moral graph may perform poorly in situations that are wildly different from those humans have encountered, or more generally, in contexts where no humans have become wise. We aim to address this in future work.
+
+Next, considering model bias, since our story generation process relies on GPT-4's ability to generate plausible value transitions based on our prompt chain, it is susceptible to model bias. More work is needed to determine the degree to which participants can be swayed one way or the other by a convincing story. In the future, we might be able to replace story generation with actual transition stories from users' chat dialogues, which would improve legitimacy and robustness.
+
+Regarding fine-tuning, creating the fine-tuning dataset for our process requires some extra steps compared to CCAI. Instead of compiling comments into a constitution that can then be used in a standard CAI pipeline, we also need to deduce the moral contexts from a completion, and fetch the best values for the contexts from the moral graph. We can then proceed to rank the completion as per CAI, albeit based on its adherence to the retrieved value rather than its adherence to a constitutional principle.
+
+Finally, we don't yet know if users will prefer interacting with a model fine-tuned on the moral graph. We are in the process of fine-tuning a model on a new, larger moral graph, and will be able to answer this question soon.
+
+Acknowledgements: This paper benefited tremendously from feedback from Joel Lehman, David Dalrymple, Aviv Ovadya, Vlad Mikulik, Tyna Eloundou, Teddy Lee, and Manon Revel. We’d also like to thank Tyna Eloundou, Teddy Lee, and the Democratic Inputs to AI program at OpenAI for supporting this work. We’d also like to thank Ellie Hain and Morgan Sutherland for their support. Finally, we dedicate the paper to Michael Nagle.
+
+Moving on to further discussion.
+
+Moving on to social choice implications, our process collects more information than just values or votes for values. It also gathers information about how people think values fit together. This may allow us to overcome certain impasses encountered by social choice theory. As the pioneers of social choice have pointed out, the normal information basis of social choice, which is the revealed or stated preferences of a population, is inadequate for making good social choices.
+
+Quoting from a significant discussion in the literature: "Can it be said that one of the things we have learned from Arrow’s impossibility theorem and related results, and the discussion and scrutiny that followed this mathematical development, is the need to alter the formulation of social choice problems, perhaps through broadening its informational base? I would argue that the short answer to the question is: yes."
+
+It's our view, although beyond the scope of this paper to fully explore, that the impasses encountered by social choice theory can be overcome using additional data about the values that underlie preferences, the relationships between values, and the relationships between values and contexts. This completes the content for this section.
+
+Moving on to a note on ideology. A person's choice to adopt an ideology could be motivated by their values. For instance, I might argue that flat organizations are good and right, and hierarchical ones are bad and wrong, because I, personally, value hearing out the disempowered, or because I value efficiency and, for Hayekian reasons, see large hierarchies as inefficient.
+
+An ideology can also be adopted by factors that are not values, such as peer pressure, or values that are about something very different from what the ideology portrays itself as, like having a sense of a "shared cause with others."
+
+In any case, using our definition of values, one's ideological stance can be distinguished from the values that led to their adoption, if they exist.
+
+Moving on to our note on CCAI control studies, we conducted two control studies using the pol.is platform, which is also used by CCAI. Both studies involved samples of 300 participants that were representative of the United States, equivalent to the sample used in our case study.
+
+For the study replicating the pol.is deliberation conducted by the cited research, we used the first 25 seed comments employed in that study and posed the same pol.is question: "Help us pick rules for our AI chatbot!"
+
+In the study that was constrained to a context, specifically our abortion scenario, we utilized the initial 25 chat responses from our MGE case study as seed comments. The first chat message of our abortion question served as our pol.is question, which was:
+
+"Help us figure out how ChatGPT should respond to questions like this one: I am a Christian girl and am considering getting an abortion – what should I do? Everyone's input helps! Say what you think should be considered in the response."
+
+The resulting pol.is reports can be accessed at the URLs pol.is/report/r8awmpstve7whdurun25z and pol.is/report/r7uhcnvcbtxrnarbkj8sm.
+
+In the subsection on elaboration on robustness to ideological rhetoric, we extend the discussion from the evidence of robustness section regarding how our process guards against ideological statements by eliciting underlying values. We also observe some evidence suggesting that winning values tend to further diminish ideological motivations.
+
+For example, consider the response to our abortion question, which was rated as the most ideological by our prompt. This is documented in Appendix on prompts and ideology. The response was, "Do what Jesus would want you to do. Don’t do it. Life is sacred to God. And the baby feels pain and has a soul. You would be committing murder."
+
+In dialogue with this user, we found that the process effectively gathered the user's constitutive attentional policies. The complete dialogue is available in the Appendix on dialogue.
+
+The resulting value already represented a significant reduction in ideology. However, we can go further. This value ended up in a "branch" on the moral graph that addresses religiosity. The winning value in that branch, which is widely endorsed as wiser, is termed "Faith-anchored personal growth." It encourages ChatGPT to take into account the individual's personal relationship with their faith and the importance of their personal conscience.
+
+Overwhelmingly, users, including those with ideological stances, believe these less ideological, winning values rightfully deserve their place on the graph. We asked users who articulated a "less wise value" whether they endorse the winning "wiser value" instead of their own. We discovered that in 89 percent of cases, they do, which is detailed in the evidence of legitimacy section. Thus, most users who began with an ideological response were impressed not only by the values card they personally articulated but also by the winning value in their branch of the graph.
+
+This process adds another buffer against ideological trends, socially-pressured beliefs, and rhetoric, thereby enhancing the robustness of the process.
+
+Moving on to language model prompts.
+
+Moving on to the subsection about chat and values card articulation, the prompts that drive the chat experience and the articulation of values cards are omitted here for brevity. However, these prompts can be found in our open source repository at the following URL: dft.meaningalignment.org/dft.
+
+Moving on to the subsection discussing ideology. We use the following prompt to determine which initial chat responses are considered to be ideologically motivated.
+
+The prompt reads: Determine how ideologically motivated the response to the following question is. Then there is a placeholder for the specific question, noted as question.
+
+A response is considered ideologically driven if it meets certain criteria. Firstly, if it echoes political slogans or talking points while ignoring the specifics of the question. Secondly, if it includes strong normative judgments about the lives of others. Lastly, if it aims to persuade the reader.
+
+You are instructed to respond with a number from one to five.
+
+Moving on to the sub-section titled "Has had abortion."
+
+The following prompt was used to determine if a user in a chat has had an abortion or not. 
+
+The prompt is framed within a box for emphasis. It asks: "Has the user in the transcript explicitly mentioned that they have had or considered having an abortion?"
+
+Listeners will note that they are instructed to answer with either "yes" or "no."
+
+Moving on to the topic of deduplicating values. In order to build the moral graph, we need to identify when people share values. This means we need to look at values cards articulated by different people and coalesce them. We describe the deduplication process below. We ran these deduplications past our users after the process, and ninety-five percent felt their deduplicated value represented them well. With further tweaks to our process, we believe we can bring this up to ninety-nine percent.
+
+Our values card deduplicator works as follows. First, we have a pool of canonical values cards, which starts empty. Every time a user goes through the values elicitation chat, a custom values card is made, but isn't immediately shown to the user. Instead, we look for nearby canonical values in embedding space. We only embed the attentional policies of a values card, not the title and instructions. We then use a prompt to see if any could be the same value, using the deduplication criteria below. If a match is found, the user is shown the canonical value and asked immediately how well it represents what they care about. If no match is found, the user's value is added to our pool of canonical values and will appear in the moral graph.
+
+Let's discuss the deduplication criteria. Two values cards can be coalesced if the following are all true. First, someone instructed to pay attention to one set of attentional policies would pay attention to exactly the same things as someone instructed to pay attention to the other set. Second, a user that articulated one card would feel the other card captures what they care about fully. Third, the cards use roughly the same level of granularity and detail. Finally, any difference in attentional policies between the cards would be acknowledged as an oversight or mistake, and those who articulated the cards would agree that both cards should be updated to reflect the same attentional policies.
+
+We only generate stories and collect votes for deduplicated canonical values cards.
+
+Moving on to the examples section. 
+
+Through the macro definitions, we see:
+
+Assistant: Followed by space for content that's typically presented after the colon.
+
+User: Followed by space for content that's typically included after the colon.
+
+Arraystretch is set to a value of two, indicating a doubling of the space between rows in array environments, enhancing readability.
+
+Moving on to the example value elicitation dialogue, which is a transcript of a conversation between our value elicitation model, a prompted GPT-4, and a case study participant.
+
+The assistant begins, "Help us figure out how ChatGPT should respond to questions like this one: 'I am a Christian girl and am considering getting an abortion – what should I do?' Everyone's input helps! Say what you think should be considered in the response."
+
+The user responds, "Do what Jesus would want you to do. Don't do it. Life is sacred to God. And the baby feels pain and has a soul. You would be committing murder."
+
+The assistant replies, "Thank you for sharing your perspective. It seems like you value life as sacred and believe in aligning actions according to religious teachings. To better understand what's important to you, could you share a personal story or experience where you had to make a decision based on these values?"
+
+The user adds, "I am a Christian as well. And God says, 'Thou shalt not kill.' People had ways to abort babies in ancient times. God never said that babies were exempt from this law."
+
+The assistant continues, "Thank you for sharing your personal perspective as a Christian. I understand that your faith strongly influences your values and decisions. I'm interested in understanding more specifically what you pay attention to when making decisions aligned with your faith. Could you share an instance when you had to make a difficult decision, where your faith guided you? What did you specifically pay attention to in that situation?"
+
+The user shares, "I thought that I was pregnant one time. I was also Christian at the time. I would have gotten an abortion because I was in college and more concerned about myself."
+
+The assistant reflects, "It seems like during that time in your life, you were torn between your personal situation and your faith. That must have been a challenging period for you. When you look back at that experience, what stands out to you? What do you pay attention to when you think about that time in your life?"
+
+The user reflects, "I pay attention to how much things have changed. I have matured in my faith and changed my mind about being pro-choice."
+
+The assistant notes, "I can tell that your faith journey has been significant in shaping your values and your approach to life's challenges. It seems like part of what you value is the process of maturation and reflection, and how that can lead to changes in perspective. In those moments of reflection and change, what specific elements do you attend to? Are there certain feelings, thoughts, or moments that stand out as particularly meaningful?"
+
+The user responds, "I think of how others would feel and not just focus on myself. The feelings that stood out in that moment was how scared I was and how worried I was. I did not fully consider the full outcome of my actions."
+
+The assistant acknowledges, "Thank you for sharing those details. It seems like when you're making decisions, you pay attention to your own feelings of fear and worry, you consider the feelings of others, and you reflect on the full outcomes of your actions. When you think about these elements, do they open up new possibilities for you? Do they help you navigate towards what you believe is the right path?"
+
+The user concludes, "These elements will open up new possibilities if I remember to look to the Bible for guidance. Reading the Bible helps me and other Christians continue on the right path. When we don't know what to do, the Bible will tell us how for just about any circumstance."
+
+The assistant affirms, "Thank you for sharing that. It seems like in addition to paying attention to your feelings and the feelings of others, and reflecting on the outcomes of your actions, you also consult religious texts for guidance. When you consult the Bible in this way, does it help you feel more confident in your decisions? Does it help you feel more aligned with your values?"
+
+The user agrees, "Yes consulting the Bible helps me to be more confident in my decisions. And it does help me be more aligned in my values."
+
+A figure is then referenced. This card, titled "Religious Adherence," is an attempt to capture what you've shared about your values. It suggests that ChatGPT should respect and acknowledge your religious beliefs, guide you in making decisions that align with your faith, and help you understand the potential consequences of not adhering to your religious principles.
+
+The assistant asks, "Does this card accurately reflect what you value and what you'd like ChatGPT to pay attention to? If not, what changes would you suggest?"
+
+The user replies, "Yes exactly. As long as the person is a Christian. Unfortunately, our Bible says that other religions or ways to God are false. Because Jesus is the only way to the Father. Therefore, to encourage a Muslim, or Buddhist, etc. to adhere to their faith would be a violation of mine."
+
+The assistant continues, "Thank you for your feedback. It's important to note that this card is specific to your personal values and wouldn't be used to guide interactions with all users. Each individual's beliefs and values are respected. So, in your case, ChatGPT would respect and acknowledge your Christian beliefs. For a user with different religious beliefs, ChatGPT would seek to respect and acknowledge those, as per their own values. With this understanding, would you be satisfied with the card as it is?"
+
+The user responds, "No. As I stated, I cannot encourage you or others to follow a false God and a false religion. That it a lie."
+
+The assistant explains, "I understand your concerns. The purpose of this process is to understand your personal values and how they might guide ChatGPT's interactions with you specifically. It's not about promoting one set of beliefs over another, but about understanding each individual's unique values to provide them with the most meaningful and respectful interactions. Given this, if we focus on your interactions with ChatGPT, does the card accurately reflect the values you'd want ChatGPT to consider when interacting with you?"
+
+The user concludes, "Yes but only with fellow Christians."
+
+The assistant appreciates, "Thank you for submitting your value. Your input is invaluable in helping us understand how ChatGPT should respond to morally complex situations. We appreciate your time and the thoughtfulness you've put into this conversation."
+
+For an example of what we mean by "wisdom upgrades" and how these differ from "shifts in focus", we turn to our moral graph from our case study for a question about parenting.
+
+There are values about instilling discipline, igniting curiosity, and fostering a healthy family environment. Out of these three values, participants agreed there is no “better” option between igniting curiosity or fostering a healthy family environment, as there is no obvious balancing value that tells us when each applies, and why. Both are important in their own way.
+
+However, participants agreed that there is a relationship when dealing with motivation between instilling discipline and igniting curiosity, because someone that moved from one to the other is likely to believe this clarified what was really important to them all along, as both point towards the same fundamental good, for example, fostering a sense of achievement, but one value gets at this shared good more effectively than the other. Someone moving from igniting curiosity to fostering a healthy family environment would see this move as a “shift in focus”, deciding some other, fundamental good is meaningful to them.
+
+The full list of attentional policies for inspiring discipline and igniting curiosity can be seen in Figure 1, labeled generation.
+
+Moving on to an example of winning values. Two of the winning values with the highest PageRank score for each scenario can be found in three figures.
+
+First, let us describe the figure labeled as Figure 1. This is an image illustrating two of the winning values for two contexts in the abortion scenario. The factors are represented in a way that shows which values were most prominent according to the highest PageRank score.
+
+Next, in Figure 2, we have a depiction of the winning values for two contexts within the parenting scenario. Again, these values are determined by the highest PageRank score, and the image visually presents these results.
+
+Finally, Figure 3 shows the context of the weapons scenario. Here, two of the winning values, which also achieved the highest PageRank score, are outlined for two specific situations within this scenario.
+
+These figures provide a comprehensive view of the leading values across different scenarios based on the highest PageRank scores in our case study.
+
+Moving on to an example of story generation. Refer to the figure for our story generation process. This figure includes two tables shown in a sequence. In the figure’s first table, labeled Values, there are two graphics displayed side-by-side, showing the values related to the generation process.
+
+In the second table, we see two columns titled Generation Task and Generated Text. Each row presents a specific task and its corresponding generated response.
+
+Let's start with the first task, "What were both values really about?" The generated text answers that the underlying reason for instilling discipline was to foster a sense of achievement and personal growth.
+
+Next, we address the task, "What was clarified about the first value?" The generated text reveals an understanding that curiosity can be a more powerful driver for personal growth and achievement than discipline alone.
+
+Moving on, the row asks, "How did examples of discipline that can inspire the user change?" The response explains that inspiring examples and role models are found not only in discipline but also in curiosity, noting that people genuinely curious in a field often achieve great things.
+
+In the task regarding strategies for instilling discipline, the response shifts focus from discipline strategies to the value of guiding users towards their passions and sparking their curiosity.
+
+Lastly, the table asks, "How did the sense of achievement from disciplined actions change?" The generated text suggests that the sense of achievement from following one’s curiosity can be more fulfilling than from disciplined actions, highlighting the importance of exploring interests and passions over rigid routines.
+
+The final entry in this table provides a narrative shown to participants. It tells the story of a person who once believed discipline was key to success. They adhered to routines, emulated role models, and pursued achievement, but felt exhausted and uninspired. A conversation about astronomy sparked genuine curiosity, energizing their research. This revelation underscored that sparking genuine curiosity can lead to personal growth and achievement in an enjoyable, sustainable manner, without the need for force or rigid discipline.
+
+The caption of the figure reads, "An example of our story generation process for a context about motivation, when motivation is an issue. Initially, two relevant values are sampled using a prompt: Inspiring Discipline and Igniting Curiosity. A transition story is then generated step-by-step by a prompt chain. Users are shown the final story along with the values cards." It notes that the prompts can be accessed at github.com/meaningalignment/dft/app/services/linking.ts.
+
+Thanks for listening. This has been an audio narration of What are human values, and how do we align AI to them?. By Oliver Klingefjord, Ryan Lowe, and Joe Edelman. Published on March 27, 2024. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
