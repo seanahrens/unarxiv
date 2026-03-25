@@ -114,6 +114,13 @@ export const ADMIN_CONTINUE =
 export const LINK_TO_ANOTHER_DEVICE =
   '[data-testid="link-to-another-device"], button:has-text("Link Profile to Another Device")';
 
+/**
+ * Shared selector for the paper error state (paper not found / load error).
+ * Prefers data-testid; falls back to .text-red-600 for pre-deploy runs.
+ */
+export const PAPER_ERROR =
+  '[data-testid="paper-error"], .text-red-600';
+
 /** Discovered in global-setup.ts and written to env */
 export function knownCompleteId(): string {
   const id = process.env.KNOWN_COMPLETE_ID;
