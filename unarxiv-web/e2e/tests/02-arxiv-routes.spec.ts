@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { cleanupTestPaper } from "../helpers/api";
-import { TEST_ARXIV_ID } from "../helpers/fixtures";
+import { TEST_ARXIV_ID, PAPER_ERROR } from "../helpers/fixtures";
 
 test.describe("ArXiv URL Routes", () => {
   test.afterAll(async () => {
@@ -42,7 +42,7 @@ test.describe("ArXiv URL Routes", () => {
   test("invalid paper ID shows error state", async ({ page }) => {
     await page.goto("/p?id=totally-invalid-id-xyz999");
     // Should show an error message, not a blank page or spinner
-    const errorMsg = page.locator(".text-red-600").first();
+    const errorMsg = page.locator(PAPER_ERROR).first();
     await expect(errorMsg).toBeVisible({ timeout: 10000 });
     const text = await errorMsg.textContent();
     expect(text?.trim().length).toBeGreaterThan(0);

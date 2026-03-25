@@ -21,6 +21,7 @@
 - [ ] /html/2602.21593 redirects to paper page
 - [ ] /pdf/2602.21593 redirects to paper page
 - [ ] Paper page renders with a non-empty title after redirect
+- [ ] Invalid paper ID (/p?id=totally-invalid-id-xyz999) shows error state
 
 ## 3. ArXiv Search Import [03-arxiv-search-import.spec.ts]
 
@@ -34,6 +35,8 @@
 
 - [ ] Homepage loads with at least one paper card visible
 - [ ] Clicking a paper card navigates to /p?id=... with a title
+- [ ] "Newly Added" navigation button is visible on the homepage
+- [ ] Clicking "Newly Added" from a collection page (/l?id=...) navigates back to /
 
 ## 5. Audio Playback [05-audio-playback.spec.ts]
 
