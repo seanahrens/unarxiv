@@ -52,6 +52,10 @@ def _expand_simple_macros(latex: str) -> str:
     Only handles \\newcommand{\\name}{replacement} with no arguments.
     This catches common patterns like \\newcommand{\\mistral}{Mistral 7B}.
     """
+    # First, strip color-gradient wrappers: \gradientRGB{text}{c1}{c2} -> text
+    # (used by papers to render colored system names, e.g. \ours)
+    latex = re.sub(r"\\gradientRGB\{([^}]*)\}\{[^}]*\}\{[^}]*\}", r"\1", latex)
+
     # Find all \newcommand{\name}{body} with no arguments (no [N])
     macros: dict[str, str] = {}
     for m in re.finditer(
@@ -60,8 +64,11 @@ def _expand_simple_macros(latex: str) -> str:
     ):
         cmd_name = m.group(1)
         replacement = m.group(2).strip()
-        # Only expand short text macros (not complex stuff)
-        if len(replacement) < 100 and "\\" not in replacement:
+        # Expand text macros that are plain text or end only with \xspace
+        clean = re.sub(r"\\xspace\s*$", "", replacement).strip()
+        if len(clean) < 100 and "\\" not in clean and clean:
+            macros[cmd_name] = clean
+        elif len(replacement) < 100 and "\\" not in replacement:
             macros[cmd_name] = replacement
 
     # Apply expansions (up to 3 passes for chained macros)
@@ -283,9 +290,28 @@ def _extract_authors(latex: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def _extract_body(latex: str) -> str:
-    """Extract text between \\begin{document} and \\end{document}."""
-    body = re.search(r"\\begin\{document\}(.*?)\\end\{document\}", latex, re.DOTALL)
-    return body.group(1) if body else latex
+    """Extract text between \\begin{document} and \\end{document}.
+
+    Also captures \\abstract{...} commands that appear in the preamble
+    (before \\begin{document}), which is common in modern conference templates
+    (NeurIPS, ICML, ICLR, arXiv templates) that use \\abstract{} as a
+    preamble command rather than a \\begin{abstract} environment.
+    """
+    doc_m = re.search(r"\\begin\{document\}(.*?)\\end\{document\}", latex, re.DOTALL)
+    body = doc_m.group(1) if doc_m else latex
+
+    # Check for \abstract{...} in the preamble (before \begin{document})
+    if doc_m:
+        preamble = latex[:doc_m.start()]
+        abs_m = re.search(r"\\abstract\s*\{", preamble)
+        if abs_m:
+            # Extract the full braced argument using brace-counting
+            abs_content = _extract_braced_arg(preamble, abs_m.end() - 1)
+            if abs_content:
+                # Prepend the abstract to the body as a \begin{abstract} block
+                body = r"\begin{abstract}" + abs_content + r"\end{abstract}" + "\n" + body
+
+    return body
 
 
 def _strip_pre_abstract_content(body: str) -> str:
@@ -297,12 +323,16 @@ def _strip_pre_abstract_content(body: str) -> str:
     excluded from narration.
     """
     # Find the start of the abstract or first section — whichever comes first
-    abstract_m = re.search(r"\\begin\{abstract\}", body)
+    # Handle both \begin{abstract} (environment form) and \abstract{ (command form)
+    abstract_env_m = re.search(r"\\begin\{abstract\}", body)
+    abstract_cmd_m = re.search(r"\\abstract\s*\{", body)
     section_m = re.search(r"\\(?:sub)*section\*?\{", body)
 
     first_body = None
-    if abstract_m:
-        first_body = abstract_m.start()
+    if abstract_env_m:
+        first_body = abstract_env_m.start()
+    if abstract_cmd_m and (first_body is None or abstract_cmd_m.start() < first_body):
+        first_body = abstract_cmd_m.start()
     if section_m and (first_body is None or section_m.start() < first_body):
         first_body = section_m.start()
 
@@ -461,9 +491,14 @@ def _convert_structure_to_speech(text: str) -> str:
     Unlike the old parser which uses intermediate marker tokens, we
     directly produce the spoken output in a single pass.
     """
-    # Abstract
+    # Abstract — handle both environment form and command form
     text = re.sub(r"\\begin\{abstract\}", "\n\nAbstract.\n\n", text)
     text = re.sub(r"\\end\{abstract\}", "\n\n", text)
+    # \abstract{content} command form (used in NeurIPS/ICML/ICLR preamble templates
+    # and in papers that \input the abstract from a separate file)
+    # Replace \abstract{ with "Abstract.\n\n" and let the closing brace be handled
+    # by the catch-all brace stripper downstream
+    text = re.sub(r"\\abstract\s*\{", "\n\nAbstract.\n\n", text)
 
     # Sections — produce spoken section headers
     text = re.sub(r"\\section\*?\{([^}]+)\}", r"\n\n\1.\n\n", text)
@@ -582,7 +617,11 @@ def _strip_citations(text: str) -> str:
     # For \ref, \autoref, \cref — these typically follow "Figure", "Section", etc.
     # We want to KEEP the reference word but remove the \ref command
     # "Figure~\\ref{fig:1}" → "Figure "
-    text = re.sub(r"\\(ref|autoref|cref|Cref|vref)\{[^}]*\}", "", text)
+    # Also handle starred variants: \ref*, \cref*
+    text = re.sub(r"\\(ref\*?|autoref|cref\*?|Cref\*?|vref)\{[^}]*\}", "", text)
+
+    # \hyperref[label]{text} → text (keep the link text, drop the label)
+    text = re.sub(r"\\hyperref\[[^\]]*\]\{([^}]*)\}", r"\1", text)
 
     # Remove URLs and hyperlinks (keep link text)
     text = re.sub(r"\\href\{[^}]*\}\{([^}]+)\}", r"\1", text)
@@ -755,9 +794,10 @@ def _normalize_text(text: str) -> str:
     # "(for example, )" or "(for example, ; )" — dangling intro after citation removal
     text = re.sub(r"\(\s*for example,[\s;,]*\)", "", text)
     text = re.sub(r"\(\s*that is,[\s;,]*\)", "", text)
-    # "in , reducing" → ", reducing"  (dangling "in" before comma)
-    text = re.sub(r"\bin\s*,", ",", text)
-    text = re.sub(r"\bin\s*\.", ".", text)
+    # "in , reducing" → ", reducing"  (dangling "in" before comma/period after citation removal)
+    # Use lookbehind for space/start-of-line to avoid eating compound words like "zoom-in,"
+    text = re.sub(r"(?<=\s)in\s*,", ",", text)
+    text = re.sub(r"(?<=\s)in\s*\.", ".", text)
     # "at ." → "."
     text = re.sub(r"\bat\s+\.", ".", text)
     # "from ." → "."
@@ -799,6 +839,14 @@ def _skip_braced_group(text: str, pos: int) -> int:
         depth += (text[i] == "{") - (text[i] == "}")
         i += 1
     return i
+
+
+def _extract_braced_arg(text: str, pos: int) -> str:
+    """Extract the content of a {...} group starting at pos, handling nesting."""
+    if pos >= len(text) or text[pos] != "{":
+        return ""
+    end = _skip_braced_group(text, pos)
+    return text[pos + 1:end - 1]
 
 
 def _skip_bracketed_group(text: str, pos: int) -> int:

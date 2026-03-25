@@ -1,0 +1,289 @@
+MinerU-Diffusion: Rethinking Document OCR as Inverse Rendering via Diffusion Decoding.
+
+By Hejun Dong, Junbo Niu, Bin Wang, and 3 more authors.
+
+Published on March 23, 2026.
+
+Introduction.
+
+In recent years, Vision-Language Models (VLMs) have become the dominant paradigm for document Optical Character Recognition (OCR). These models encode textual images into visual representations and generate structured text through left-to-right autoregressive decoding, achieving strong performance across benchmarks. Despite architectural unification and scaling, the decoding process remains strictly sequential. This design introduces efficiency and reliability bottlenecks when parsing long documents and complex layouts, particularly in highly structured scenarios such as tables and formulas.
+
+From the perspective of task formulation, a high-quality OCR system should primarily depend on authentic visual evidence to perform character-level recognition, rather than relying on semantic completion from a language model. However, autoregressive formulations implicitly cast OCR as language-conditioned reconstruction, where textual outputs are generated under strong linguistic priors. When visual signals are weak or semantic constraints are disrupted, models tend to over-rely on these priors, leading to semantic hallucinations and cumulative errors. Experiments on the Semantic Shuffle benchmark confirm that disrupting semantic structure causes substantial performance degradation in AR-based OCR systems. This fragility stems not merely from data or training strategy, but from the causal factorization inherent in autoregressive decoding.
+
+In contrast, Diffusion Language Models (DLMs), based on discrete diffusion processes, provide a modeling paradigm better aligned with the structural characteristics of document OCR tasks. Masked diffusion models assume conditional independence among tokens given partially observed sequences and visual inputs, which is reasonable in OCR scenarios where the mapping between image content and text is largely deterministic with limited semantic ambiguity. This property allows models to exploit the local consistency of visual signals and perform parallel decoding of long textual segments while maintaining global coherence and accuracy. Compared with autoregressive generation for open-ended text tasks, diffusion decoding naturally matches the deterministic nature of document OCR. Moreover, DLMs support parallel multi-token updates, significantly improving inference efficiency for long-document parsing. Although current diffusion-based VLMs still encounter issues such as instability in long sequences, repetition, and hallucination in high-resolution settings, these limitations can be progressively alleviated through improved model design and training strategies, making masked diffusion a promising and principled alternative for accurate and efficient document OCR modeling.
+
+Motivated by these observations, we formulate document OCR explicitly as an inverse rendering problem under visual conditioning, shifting from autoregressive causal decoding to diffusion-based decoding. We propose MinerU-Diffusion, a unified diffusion-based parsing framework tailored for document OCR. Centered on block-wise diffusion decoding and coupled with an uncertainty-driven curriculum learning strategy, MinerU-Diffusion enables global parallel reconstruction for document OCR. While maintaining high recognition accuracy, MinerU-Diffusion significantly improves long-sequence inference efficiency and effectively mitigates semantic hallucination and cumulative error propagation observed in autoregressive decoding. Extensive experiments demonstrate that MinerU-Diffusion achieves performance on par with state-of-the-art approaches across multiple challenging document parsing benchmarks and semantic perturbation settings, while attaining a more favorable balance among recognition accuracy, robustness, and decoding efficiency. More examples are provided in [app:examples]Appendix app:examples.
+
+Related Works.
+
+Driven by large-scale pre-training, document OCR has evolved from traditional modular pipelines toward end-to-end Vision-Language Models (VLMs) that generate structured text directly from pixels. Representative systems such as MinerU2.5 and PaddleOCR-VL formulate document OCR as sequence generation and rely on autoregressive (AR) decoders to produce text token by token. While this unified paradigm simplifies traditional pipelines and improves cross-domain generalization, it inherits structural limitations from causal left-to-right decoding. Inference latency scales linearly with output length, limiting efficiency in long-document scenarios. Moreover, the strong coupling between generation order and linguistic context encourages reliance on language priors, which may compromise robustness when visual evidence is ambiguous or semantic structure is disrupted. These limitations motivate alternative decoding paradigms that enable global dependency modeling and reduce dependence on unidirectional factorization.
+
+Diffusion Language Models (DLMs) offer a non-autoregressive generative framework based on discrete diffusion processes. In masked diffusion, tokens in a clean sequence (x0) are progressively replaced by mask tokens ([m MASK]) under a continuous corruption schedule (t ), yielding a noised sequence (xt). The forward process is defined as:
+
+The corresponding training objective can be derived from maximum likelihood estimation, resulting in an evidence lower bound (ELBO) on log of p sub theta(x) :
+
+where Q denotes the prompt and |x sub 0| is the sequence length.
+
+To enhance scalability, block diffusion models introduce block-wise attention mechanisms that balance the optimization stability of autoregressive (AR) training with the parallel sampling efficiency of diffusion-based generation. Their structured attention patterns naturally enable KV-cache reuse, alleviating the inference latency commonly observed in full-attention DLMs.
+
+Masked diffusion models are structurally well aligned with the characteristics of document OCR tasks. In document OCR, the target text typically exhibits a near-deterministic mapping to the textual content present in the image, with limited semantic ambiguity. Under this setting, the conditional independence assumption underlying masked diffusion—that each token can be predicted independently given the input and partially observed sequence, as illustrated in —becomes considerably more reasonable than in open-ended language generation. This alignment allows the model to decode long-range text spans in parallel without sacrificing consistency.
+
+Therefore, diffusion-based decoding is not merely an efficiency-oriented alternative to autoregressive methods. Instead, it constitutes a modeling paradigm that is inherently better matched to the structural properties of OCR, offering both theoretical justification and practical advantages for large-scale text recognition.
+
+Method.
+
+Problem Formulation: Inverse Rendering via Diffusion.
+
+We model document OCR as the inverse rendering of a unified structured token sequence:
+
+where V is a shared vocabulary encompassing text symbols, layout markers, table delimiters, and mathematical operators. This unified representation enables the encoding of heterogeneous document elements—such as paragraphs, tables, formulas, and reading order—within a single sequential interface.
+
+Although serialized as a one-dimensional sequence, y corresponds to an underlying two-dimensional document structure. The statistical dependencies between tokens arise primarily from spatial arrangement, layout regularities, and formatting constraints, rather than from an intrinsic causal generation order. Therefore, the serialization order should be viewed as an implementation artifact introduced for representation convenience, rather than a fundamental property of the document generation process. In this sense, OCR output is more naturally modeled as a spatially coupled discrete random field, rather than a strictly directional sequence.
+
+Document OCR can be framed as posterior inference over a latent structured token sequence, where the input document (x) serves as partial and noisy evidence, constraining both token identities and spatial positioning. Traditional OCR systems typically parameterize the posterior through autoregressive decompositions, which impose a fixed causal order and limit the ability to model document structure globally. In contrast, diffusion-based decoding methods introduce a discrete diffusion process that avoids a fixed causal ordering, enabling global iterative refinement under visual conditioning, which naturally aligns with the structural properties of OCR tasks. The conditional independence assumption inherent in masked diffusion models —that is, each token can be independently predicted given the input and partially observed sequence—becomes particularly reasonable in OCR, where the target text has a one-to-one correspondence with the text in the image. Through multiple denoising iterations, diffusion models jointly update all tokens across the entire sequence, circumventing the single-pass update limitation of autoregressive decoding, and providing a more structurally aligned approximation to the posterior distribution ( p(y x) ).
+
+ : Unified Diffusion Architecture for OCR.
+
+A straightforward implementation of discrete diffusion for OCR is to apply a full-attention dLM over the entire token sequence at each denoising step. However, when scaling to long structured documents, such a design suffers from fundamental structural and computational limitations.
+
+Full self-attention incurs quadratic complexity O(L squared) with respect to sequence length L , making it computationally expensive for long structured documents with thousands of tokens. Moreover, full-attention diffusion operates globally, which introduces positional instability as early denoising errors can propagate across the sequence. Unlike autoregressive decoding, global diffusion lacks structural anchoring and is prone to long-range drift. Additionally, document structures exhibit strong locality, with high intra-region consistency and weak long-range dependencies. Full-attention unnecessarily couples independent regions, conflicting with the spatially constrained posterior structure of document OCR.
+
+These observations suggest that purely full-attention diffusion is not structurally aligned with OCR. To address these limitations, we introduce , a block-attention dVLM that incorporates structural locality into posterior refinement, as illustrated. The output sequence is partitioned into B contiguous blocks:
+
+Rather than modeling the entire sequence as a monolithic denoising problem, we factorize the conditional posterior:
+
+where y to the power of ( less than b) denotes all preceding blocks. Within each block, diffusion operates locally:
+
+This hybrid factorization introduces coarse-grained autoregressive structure across blocks and parallel diffusion refinement within blocks. Block boundaries serve as structural anchors, preventing long-range alignment drift, while preserving parallel efficiency inside each block.
+
+At each denoising step, a structured attention mask is applied. Tokens can attend fully to tokens within the same block, causally to tokens in preceding blocks, and not to tokens in future blocks, as shown. Formally, the attention mask M sub ij is defined as:
+
+where b(i) denotes the block index of token i . This structured masking reduces unnecessary global coupling, stabilizes positional alignment, and ensures that decoding errors remain locally bounded.
+
+ conditions the diffusion process on native-scale visual features, ensuring that posterior refinement remains grounded in visual evidence. Compared to full-attention diffusion, block-attention reduces complexity from O(L squared) to O(B L' squared) . The causal structure across blocks enables efficient KV-caching during inference, while maintaining parallel decoding within each block. Overall, provides a structurally grounded and computationally scalable diffusion architecture tailored for document OCR.
+
+Two-Stage Curriculum Learning with Uncertainty-Driven Refinement.
+
+To fully leverage large-scale heterogeneous data and alleviate the performance bottleneck caused by noisy labels, we propose a two-stage curriculum learning framework to train the . Compared with autoregressive (AR) models that generate tokens in a fixed order, diffusion models can decode tokens in any order, introducing more intricate inter-token dependencies that make training less stable and more sensitive to noise—often requiring larger datasets and more carefully tuned training strategies. Furthermore, random masking modeling typically achieves lower data utilization efficiency compared to AR models at the same data scale. This is because AR models make predictions based on the complete prefix information at each step, while random masking disperses the supervisory signal, reducing the density of effective conditional information. To address this, we divide the dataset D into two subsets: D sub base , which is easier to train, and D sub hard , which is more challenging. We first train on D sub base to establish the foundational structure understanding, then fine-tune on D sub hard to improve the model's robustness to noisy labels and boundary precision. This framework effectively resolves the optimization complexity and low data utilization efficiency faced by diffusion models in any-order modeling.
+
+Stage I: Diversity-Driven Foundational Learning.
+
+In the first stage, our goal is to establish robust foundational representations and general parsing abilities across multiple document understanding tasks. To this end, we construct a large-scale, diverse, and balanced dataset D sub base through data curation and automated annotation refinement.
+
+This dataset satisfies:
+
+where p sub div(x) denotes a high-entropy data distribution covering diverse layouts, languages, document types, and visual styles.
+
+This stage emphasizes broad visual-semantic alignment, stable feature learning, and robust cross-domain generalization. Although D sub base contains moderate annotation noise, its large scale and diversity enable effective representation learning. From an optimization perspective, training on D sub base yields a relatively smooth loss landscape, facilitating stable convergence.
+
+Stage II: Uncertainty-Driven Boundary Refinement.
+
+After Stage I convergence, the model acquires strong general capabilities. However, performance is constrained by noisy supervision and limited exposure to complex edge cases. To overcome this limitation, we introduce an uncertainty-driven curriculum refinement stage.
+
+Hard Case Mining via Inference Consistency. 
+For each unlabeled or weakly labeled sample x , we perform T stochastic inference passes:
+
+where xi sub t represents stochastic factors such as sampling temperature or dropout.
+
+We define a task-specific consistency metric S( times , times ) : (1) PageIoU for layout, (2) CDM for formula, (3) TEDS for tables.
+
+The mean consistency score is computed as:
+
+Low values of C(x) indicate high prediction uncertainty.
+
+We select hard samples as:
+
+where tau is a task-dependent threshold.
+
+Expert Refinement and Dataset Construction. 
+Samples in D sub hard are processed through an AI-assisted human annotation pipeline to produce high-precision labels:
+
+The final fine-tuning dataset is constructed as:
+
+where D sub rand is a randomly sampled subset of D sub base , and alpha controls the regularization ratio.
+
+The Stage II optimization objective is defined as:
+
+where the sample weight is:
+
+with beta controlling the emphasis on hard samples.
+
+This adaptive weighting further encourages the model to focus on decision-boundary regions. The progressive curriculum mitigates optimization instability and performance ceilings caused by diffusion’s any-order modeling by organizing data from broad to difficult, enabling to overcome annotation noise and long-tail complexity for superior real-world document OCR performance.
+
+Experiments.
+
+In this section, we present a comprehensive quantitative evaluation of to demonstrate its effectiveness in document OCR tasks. More ablation studies and qualitative examples are provided in [app:attn]Appendix app:attn and [app:examples]Appendix app:examples.
+
+Experimental Setups.
+
+Data.
+
+All meta training data are derived from the MinerU2.5 dataset, with a total volume of approximately 7.5M samples. The dataset primarily focuses on Chinese and English document parsing tasks. Therefore, no dedicated evaluation was conducted for low-resource languages.
+
+Models and Optimization.
+
+Our experiments adopt a block-wise attention dVLM architecture. Specifically, we employ the SDAR-1.7B-Chat-b32 with a block size of 32. The remaining components follow the MinerU2.5 architecture, except that M-RoPE is removed. We first fine-tune the on the LLaVA-NeXT dataset for visual question answering (VQA) tasks. Based on this initialization, we further conduct specialized training for document optical character recognition (OCR). Additional optimization details are provided in [app:training_details]Appendix app:training_details.
+
+Evaluation.
+
+All experiments are conducted with a block size of 32 and a dynamic decoding strategy. The decoding threshold is set to T equals 0.95 , with top- k equals 0 , temperature equals 1.0 , and top- p equals 1.0 .
+
+For full document parsing and layout analysis, we evaluate our models on OmniDocBench v1.5. recognition is assessed using CC-OCR and OCRBench v2, while formula recognition is evaluated on UniMER-Test. The inference prompts for these tasks are summarized in [app:prompt_templates]Appendix app:prompt_templates.
+
+Unless otherwise stated, all OmniDocBench results use the same inference setting as above and follow the latest evaluation protocol on 1,355 pages with hybrid matching. On OmniDocBench, text is evaluated by edit distance , formulas by CDM , and tables by TEDS / TEDS-S . The Overall score is computed from the three core parsing metrics: Therefore, Reading Order and sub TEDS minus S are auxiliary metrics and are not included in Overall. Reading Order is only reported under the w/o GT Layout setting, where the model must jointly predict layout and content from the full page. In contrast, under w/ GT Layout, oracle layout regions are provided, so the evaluation mainly isolates recognition quality after removing layout detection errors.
+
+Full-Document Parsing Task Results.
+
+under the fully automatic setting without GT Layout, achieves an Overall score of 88.94, outperforming most AR-based models and demonstrating strong end-to-end parsing capability without relying on oracle layout information. When evaluated with GT Layout, further improves to 93.37 Overall, reaching a score that is close to top-tier AR-based systems and indicating high competitiveness in overall parsing performance. Meanwhile, the sizable gap between the two settings suggests that layout understanding remains a key bottleneck: can leverage accurate layout signals effectively, and its remaining weaknesses are primarily attributed to layout analysis, leaving clear room for improvement in layout prediction to further close the gap in fully automatic parsing.
+
+To complement the aggregate results , further breaks down the text edit distance over the nine OmniDocBench page types. Lower values indicate better page-level parsing quality.
+
+ 
+
+ 
+
+Element-Specific Parsing Task Results.
+
+ Recognition.
+
+We evaluate ’s table recognition performance on the table subsets of CC-OCR and OCRBench v2 , as shown. is competitive with other AR-based models on both table subsets. It achieves 81.18/88.66 (TEDS/TEDS-S) on OCRBench v2 and 73.77/82.06 on CC-OCR, matching or surpassing several strong AR baselines in the same evaluation setting and remaining close to the top group. In particular, the strong TEDS-S scores indicate that can reliably preserve table structure during diffusive decoding, demonstrating solid end-to-end table parsing capability and overall competitiveness among AR approaches.
+
+Formula Recognition.
+
+We evaluate formula recognition on UniMER-Test , with results summarized. achieves 91.6/91.6/92.0/96.8 on CPE/HWE/SCE/SPE, consistently demonstrating strong performance across complex, handwritten, and printed settings. Compared with other autoregressive (AR) baselines, is clearly competitive, substantially outperforming general-purpose models such as GPT-4o , and reaching similar ranges to strong AR systems on multiple subsets. The remaining gap to the best specialized pipeline (for example, MinerU2.5 ) is most visible on harder categories like CPE, suggesting future improvements should focus on more precise symbol-level modeling and structure-aware decoding for complex printed expressions.
+
+Ablation Study.
+
+Confidence Threshold vs. Decoding Parallelism.
+
+We systematically analyze the impact of dynamic confidence thresholds on decoding parallelism and inference efficiency. as the threshold increases from 0.5 to 0.99, both Tokens Per Forward (TPF) and Throughput Per Second (TPS) decrease monotonically: lower thresholds relax confirmation constraints, enabling greater parallel decoding and higher throughput, whereas thresholds above 0.95 cause decoding to approach near token-by-token generation, leading to a marked efficiency drop. The threshold thus serves as a controllable system-level knob that enables a continuous and predictable trade-off between efficiency and conservativeness. Compared with MinerU2.5 at matched accuracy (fixed at approximately 52 TPS), our method achieves 108.9 TPS at 93 percent+ accuracy (thr = 0.95), corresponding to a 2.1 times speedup, and reaches 164.8 TPS while maintaining over 90 percent accuracy (thr = 0.6), yielding a peak acceleration of approximately 3.2 times , thereby unlocking substantial parallelism without sacrificing quality.
+
+Decoding Parallelism vs Accuracy.
+
+This experiment analyzes the impact of decoding parallelism on model accuracy by varying the dynamic confidence threshold (0.5 to 0.99) under the w/ GT Layout setting. as the threshold increases, performance first improves, then saturates, and slightly declines: the Overall score rises from 87.61 (thr=0.5) to 93.37 (thr=0.95), indicating that moderately reducing parallelism mitigates low-confidence error propagation and enhances accuracy. However, further increasing the threshold to 0.99 leads to a slight drop, suggesting that overly conservative decoding weakens the benefits of parallel information interaction. At the task level, higher thresholds consistently improve structural consistency, benefiting text, table, and formula recognition (for example, TEDS improves from 81.10 to 90.99), as reduced parallelism alleviates structural error accumulation. Combined with the throughput analysis , these results reveal a clear accuracy to efficiency trade-off: lower thresholds favor speed, while higher thresholds improve stability at the cost of efficiency. Notably, at thr=0.95, MinerU-Diffusion achieves an Overall score of 93.37, comparable to MinerU2.5 while retaining superior decoding efficiency, making it an effective balance point between accuracy and efficiency.
+
+Decoding Strategy Comparisons.
+
+We compare static decoding with dynamic scheduling on OmniDocBench v1.5 , as summarized. Increasing the total decoding steps from 6 to 32 improves overall performance from 88.31 to 93.02, indicating that decoding fewer tokens per step reduces error accumulation, albeit at the cost of requiring more rounds of inference and thus lower throughput (21.86 TPS). In contrast, dynamic scheduling outperforms static step=6 in both overall and sub-task metrics (93.34 vs. 88.31) while achieving higher throughput (98.32 vs. 91.56 TPS), indicating that confidence-based adaptive token selection effectively reduces premature low-confidence commitments and balances efficiency with accuracy. As further shown, compared with strong AR baselines such as MinerU2.5 and PaddleOCR-VL , our approach achieves competitive parsing performance while maintaining high throughput, highlighting the potential of parallel generation strategies for complex document understanding.
+
+Full-Attn vs Block-Attn.
+
+To analyze the impact of attention mechanisms on efficiency and stability, we conducted ablation experiments on Full-Attn and Block-Attn Diffusion using LLaDA-MoE-7B-A1B-Instruct , trained on an OCR task. The main difference lies in the amount of attention computed per forward step. Full-Attn computes roughly L times L attention, leading to quadratic growth in memory and computational costs with longer sequences, which slows inference and can induce repetitive decoding in OCR. In contrast, Block-Attn computes roughly B times L attention per forward step, using a "self-regressive across blocks, diffusion within blocks" design, achieving near-linear scalability while maintaining bidirectional context modeling. Experimental results show Block-Attn reduces memory and latency significantly and better mitigates repetition in OCR generation, yielding stronger scalability and stability. A more detailed discussion of these ablation results is provided in [app:attn]Appendix app:attn.
+
+Two-Stage Curriculum Learning.
+
+To validate the proposed two-stage curriculum learning framework, we conduct systematic ablations on OmniDocBench v1.5, comparing Stage 1 only, Stage 2 only, and the full two-stage strategy. training dynamics (Accuracy, Loss, and Grad Norm) reveal that Stage 2 alone exhibits rapid early loss reduction but low accuracy and significant gradient oscillation, indicating high-variance optimization caused by emphasizing high-uncertainty samples without stable representation initialization. In contrast, Stage 1 achieves smooth and stable convergence with accuracy improving to around 85 percent, yet performance saturates due to limited boundary refinement. The full two-stage strategy integrates both advantages: Stage 1 establishes low-variance global representations under diverse data, while Stage 2 performs uncertainty-driven boundary refinement, enabling continued improvement beyond the Stage 1 plateau and achieving over 89 percent accuracy. under the challenging w/o gt layout setting, Stage 2 alone largely fails (35.712), whereas the full framework reaches 88.937, confirming that the progressive curriculum effectively mitigates optimization instability and performance ceilings induced by diffusion’s any-order modeling.
+
+Semantic Shuffle Analysis.
+
+Most modern VLM-based OCR systems follow a "vision encoder + autoregressive (AR) language decoder" pipeline: the image is converted into visual tokens, and an LM-style decoder generates the transcription token by token. Although this paradigm achieves strong OCR scores, it is often unclear whether these gains come from faithful visual reading or from the decoder's ability to "fill in" plausible text using linguistic priors and global context.
+
+To better isolate true visual decoding ability, and to validate our hypothesis, we construct Semantic Shuffle, a benchmark that removes semantic coherence while keeping the visual presentation comparable. Starting from 112 English document images in the FOX dataset , we shuffle a controlled proportion of words and re-render the resulting text into new document images with consistent formatting.
+
+experiments reveal a clear contrast between decoding paradigms. As the distortion level increases, the performance of AR decoders degrades sharply and consistently, indicating a heavy reliance on linguistic plausibility. In contrast, a diffusion-style decoder remains robust, maintaining nearly constant performance across distortion levels. These results suggest that AR decoders tend to reconstruct text using global language regularities when semantics are disrupted, whereas diffusion-based decoding aligns more directly with the visual signal under semantically invalid inputs.
+
+Conclusion.
+
+In this paper, we propose MinerU-Diffusion, a 2.5B-parameter diffusion-based framework for document OCR, replacing autoregressive decoding with block-level parallel diffusion decoding and confidence-guided scheduling to improve efficiency and scalability. A two-stage curriculum learning strategy stabilizes training and enhances boundary precision and robustness. Experiments across document, table, formula, and Semantic Shuffle benchmarks show competitive performance against AR baselines and stronger resilience to disrupted semantics, highlighting diffusion-based parallel decoding as a promising alternative for document ocr. We hope our work inspires future research on efficient and reliable diffusion-based decoding for document OCR.
+
+numbers
+
+ 
+
+Training Details.
+
+ uses a vision encoder initialized from Qwen2-VL-7B, a diffusion decoder initialized from SDAR-1.7B-Chat-b32, and an abstractor initialized from random parameters, and is trained in three phases summarized in: Stage-0 initializes multimodal alignment on generic image-text data, Stage-1 performs large-scale OCR adaptation on the easier subset D sub base , and Stage-2 further fine-tunes the model on the harder subset D sub hard .
+
+Stage-0: Modality Alignment.
+
+Stage-0 provides the initialization used before document-specific supervision is introduced. In Stage-0a, LLaVA-Pretrain is used to optimize only the MLP adaptor, while the remaining modules are frozen. This step aligns visual features with the language model input space and stabilizes subsequent OCR training. In Stage-0b, training is continued on LLaVA-NeXT-Data with all parameters unfrozen, improving multimodal instruction following and adaptation to longer visual contexts.
+
+this phase uses shorter sequences and no document augmentation. Its primary role is to provide a stable initialization for later large-scale OCR optimization.
+
+Stage-1: Large-Scale OCR Adaptation.
+
+Stage-1 constitutes the main OCR training phase and corresponds to the easier split D sub base . Training is conducted on the Layout and OCR mixture, which jointly covers page-level layout detection and element-level recognition for text, formulas, and tables. Layout samples use full-page images with relative coordinates, whereas recognition samples use cropped regions to preserve local detail without incurring the full-page token cost.
+
+The objective of this phase is to establish reliable OCR performance on standard document samples before emphasizing more difficult cases. Because masked diffusion is trained from partially observed targets rather than a fixed left-to-right prefix, optimization is more sensitive to label noise and heterogeneous data quality. Stage-1 therefore relies on scale, task diversity, and document augmentation to improve training stability. All parameters are updated in this phase. The sequence length is 12288, the batch size is 256, the learning rate is 4 times 10 to the power of minus 5 , and training lasts for 9 epochs.
+
+Stage-2: Hard-Case Specialization.
+
+Stage-2 starts from the Stage-1 checkpoint and shifts the sampling distribution toward the harder subset D sub hard . This subset contains samples on which the model remains comparatively unstable, including crowded layouts, ambiguous crop boundaries, structurally complex tables, and noisy supervision. Hard samples are mixed with a smaller replay portion drawn from the broader Stage-1 distribution so that baseline OCR coverage is preserved while failure cases are further reduced.
+
+This phase is intended to improve performance on the samples that dominate the residual error after Stage-1. Accordingly, the sequence length is increased to 16384 and the learning rate is reduced to 2 times 10 to the power of minus 5 , while the batch size is kept at 256 and the warmup ratio is increased to 0.1. All parameters remain trainable, and fine-tuning lasts for 4 epochs.
+
+Training Dynamics.
+
+the loss and gradient norm remain stable throughout Stage 0a, Stage 0b, Stage 1, and Stage 2. Stage 0a and Stage 0b converge rapidly during multimodal initialization, Stage 1 exhibits smooth long-horizon optimization on D sub base , and Stage 2 remains stable after introducing hard-case refinement. These dynamics are consistent with the curriculum design: a stable base solution is first established on broad OCR data, after which hard-case refinement improves performance while preserving optimization stability.
+
+Data Augmentation.
+
+Document-specific augmentation is enabled in both Stage-1 and Stage-2. Following the same augmentation taxonomy used in MinerU2.5, we inject four types of perturbations during OCR training: geometric changes, background disturbances, color shifts, and image degradation. In practice, this includes scaling, grid distortion, and rotation; background effects such as texture overlays, weather-like artifacts, watermarking, scanlines, and shadows; photometric changes such as brightness/contrast adjustment, illumination variation, and RGB shift; and degradation operators including PSF blur, motion-like blur, Gaussian blur, and light morphological corruption such as erosion or dilation.
+
+These transformations target common OCR noise. We mainly simulate uneven lighting, compression artifacts, scan traces, and cluttered backgrounds. As in MinerU2.5, spatial augmentation is not applied to layout detection samples, since it can alter the geometric supervision itself. Augmentation strength and sampling probability are instead tuned by task type, so that the model gains robustness without drifting too far from valid OCR targets.
+
+Practical Notes.
+
+For Stage-1 and Stage-2, the visual token budget is limited to 2048 tokens per image, and inputs are resized only when this budget is exceeded. Page-level layout detection and crop-level recognition are trained separately within the same unified model. This design aligns training with downstream usage: global structure is learned from full pages, whereas precise transcription and structure recovery are learned from native-content regions.
+
+Prompt Templates.
+
+This section summarizes the prompts used by at inference time. All OCR tasks share the same system prompt:
+
+Layout Detection.
+
+Layout detection uses the following prompt call:
+
+The input page image is resized to 1036 times 1036 before decoding. The returned sequence lists document elements in reading order. Each entry serializes the relative box coordinates, the semantic category, and the orientation tag, so that the page layout can be reconstructed directly from the decoded string. A representative prediction is shown below:
+
+Text Recognition.
+
+Text recognition uses the following prompt call:
+
+The image is processed at its original resolution whenever possible, with the visual token budget constrained to 4 to 2048 tokens. If this limit is exceeded, the image is resized accordingly. The model returns a plain text transcription without additional structural markers. A representative prediction is shown below:
+
+Formula Recognition.
+
+Formula recognition uses the following prompt call:
+
+The image remains at native resolution unless the visual token count exceeds the range of 4 to 2048 tokens, in which case resizing is applied. The decoded result is a LaTeX string representing the target expression. A representative prediction is shown below:
+
+ Recognition.
+
+ recognition uses the following prompt call:
+
+The original image resolution is preserved when the visual token count remains within 4 to 2048; otherwise, the image is proportionally rescaled. The model outputs the table in OTSL (Open Structure Language), which can be parsed into a structured table representation. A representative prediction is shown below:
+
+Full-Attn vs Block-Attn.
+
+This section expands and explains why Block-Attn is consistently preferable to Full-Attn for document OCR diffusion decoding.
+
+Why Full-Attn Is Inferior.
+
+We summarize the main disadvantages of Full-Attn in three aspects: Lower speed in both training and inference. With output length L and block size B , Full-Attn computes global pairwise attention over the entire target sequence, leading to quadratic attention cost per denoising step, whereas Block-Attn reduces this cost to a near-linear form in practice. During training, the effective context updated at each step also differs substantially. Following our implementation, Full-Attn processes roughly L squared/B token interactions per step, whereas Block-Attn only needs about 2L , which makes Block-Attn noticeably faster to train under the same block size. Fixed-length mismatch wastes computation. Full-Attn must predefine a global decoding length L , which is hard to match across documents with very different output lengths. When L is much larger than the actual target length, many decoding positions are allocated but never needed. When L is too small, the preset budget is exhausted before the target is completed. In both cases, the mismatch leads to inefficient use of computation. Fixed-length mismatch also harms generation quality. Empirically, Full-Attn works best when the preset length L is close to the actual target length N . When L less than N , the model may stop early or become unstable near the tail. When L N , generation is relatively stable. When L much greater than N , the model often fails to stop cleanly and keeps producing repeated rows or empty cells.
+
+Generation Quality under Length Mismatch.
+
+We next focus on the generation-quality issue caused by fixed-length mismatch in Full-Attn. As a reference, shows the training curves of Full-Attn on a table-only subset; its training loss exhibits a trend consistent with Block-Attn.
+
+We then provide three qualitative cases beyond the summary discussion . We select three tables with different lengths, namely a short table, a medium-length table, and a long table. For each case, we compare Full-Attn with preset lengths L equals 256 , 512 , and 1024 , together with Block-Attn at L equals 1024 .
+
+For readability, green text denotes normal content and red text denotes wrong content. The notation "..." denotes omitted intermediate content, "... 60 repeat for x times 62" denotes repeated content, and " 60 missing 62" marks missing tail content.
+
+For the short table , all tested Full-Attn lengths are already over-provisioned: L equals 256 and L equals 512 produce repeated empty rows, while L equals 1024 repeats much more severely. For the medium-length table , both L equals 256 and L equals 512 generate normally, whereas L equals 1024 introduces repeated rows after the valid content. For the long table , L equals 256 and L equals 512 are both truncated, while L equals 1024 reaches the tail but still repeats the final record.
+
+attncase style=mystyle, basicstyle= , numbers=none, literate=< 601 > 621, moredelim=**[is][[g]][[/g]], moredelim=**[is][][[/r]] 
+
+Qualitative Examples.
+
+This section presents qualitative examples illustrating the behavior of on representative document pages and diffusion decoding tasks. This section is structured as follows: show complete recognition examples from OmniDocBench, covering the full pipeline from the input page to layout prediction and rendered parsed output. visualize diffusion decoding for layout, text, table, and formula generation.
+
+Complete Recognition Examples.
+
+Examples demonstrating end-to-end parsing performance on diverse page types are provided , including academic literature, presentation slides, colorful report pages, newspapers, formula-dense exam solutions, and illustrated instructional pages. These examples show that can preserve complex academic elements such as tables, figures, captions, and equations, remain robust to watermark interference, maintain reading order on dense multi-column pages, and recover mixed text-image layouts with fine-grained blocks. Each case is shown in a consistent three-column format with the original page image, the predicted layout, and the rendered parsed output.
+
+Diffusion Decoding Examples.
+
+The diffusion decoding process on four representative tasks is illustrated. These examples show how the model progressively refines page structure, text content, table organization, and formula symbols during decoding. Each figure groups two samples from the same category to make the visual patterns directly comparable, with the raw cropped input shown above and the corresponding diffusion decoding visualization shown below.
+
+Thanks for listening. This has been an audio narration of MinerU-Diffusion: Rethinking Document OCR as Inverse Rendering via Diffusion Decoding. By Hejun Dong, Junbo Niu, Bin Wang, and 3 more authors. Published on March 23, 2026. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

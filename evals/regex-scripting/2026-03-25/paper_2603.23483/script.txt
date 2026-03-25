@@ -1,0 +1,149 @@
+SpecEyes: Accelerating Agentic Multimodal LLMs via Speculative Perception and Planning.
+
+By Haoyu Huang, Jinfa Huang, Zhongwei Wan, and 3 more authors.
+
+Published on March 24, 2026.
+
+Introduction.
+
+Multimodal large language models (MLLMs) have undergone a paradigm shift, from static, single-pass visual perception to dynamic, agentic interaction with the visual world. Early MLLMs encode an image once and generate a response in a single forward pass, treating vision as a passive input channel. Recent breakthroughs fundamentally alter this design: models actively invoke external perception tools ( zoom-, crop, OCR) to form iterative loops of perception, reasoning, and tool calling that progressively refine their understanding. This agentic paradigm excels in challenging visual tasks that require fine-grained inspection, multi-step compositional reasoning, and active information seeking .
+
+However, the mechanism that empowers agentic MLLMs simultaneously introduces a severe efficiency crisis. each query triggers a cascade of tool-calling steps, a quantity we term the agentic depth D , in which each step depends on the observation from the previous step. This strict data dependency inflicts a dual disaster on system performance: (i) Latency explosion: the end-to-end response time for a single query grows linearly with D , since each reasoning-and-tool cycle must complete before the next can begin; (ii) Concurrency collapse: because each query's tool-use chain mutates a per-query state, GPU batching is effectively nullified, the agentic model can only advance one step at a time per query, leaving massive hardware parallelism idle. Therefore, these effects render agentic MLLMs orders of magnitude slower than non-agentic counterparts, posing a fundamental barrier to real-world deployment.
+
+Existing approaches to efficient reasoning fall short of addressing this bottleneck. Token-level speculative decoding accelerates individual generation steps by letting a small draft model propose tokens for a larger model to verify. However, these methods still operate within a fixed reasoning trajectory: the agentic pipeline itself, the multi-turn loop of perception and reasoning, remains fully serial and every tool must still be invoked in sequence. Moreover, the additional draft/verification interaction often expands the generated traces (longer token sequences and extra turns), introducing non-trivial overhead that can offset the per-step speedup in practice. Similarly, multimodal token pruning and temporal compression reduce per-step compute within a fixed model, yet they do not eliminate the repeated tool invocations that dominate agentic latency. In short, all prior methods operate within the agentic loop, none question whether the loop itself is necessary for every query.
+
+In this paper, we make a conceptual leap: we lift the speculative paradigm from the token/semantic level to the agentic level. Our key observation is that a large fraction of queries directed at agentic MLLMs do not actually require deep tool-assisted reasoning. Instead, a lightweight, tool-free vision model can answer them correctly from the original image alone, provided we can reliably identify which queries fall into this category. This motivates a heterogeneous "think fast, think slow" architecture: a small non-agentic model rapidly generates speculative answers via "intuition" (fast thinking), while the large agentic model is reserved for queries that genuinely demand multi-step tool interaction (slow thinking).
+
+We instantiate this idea by introducing , an agentic-level speculative acceleration framework for multimodal reasoning. It comprises three tightly integrated components: (1) A four-phase speculative pipeline that routes each query through heuristic tool-use judgment, small-model speculation, confidence-based switching, and agentic fallback. (2) Cognitive gating via a novel answer separability metric S sub sep that measures the competitive margin among top- K logits, providing a calibration-free, scale-invariant decision boundary for trusting the small model's output. (3) A heterogeneous parallel serving architecture that runs the stateless small model concurrently and forwards only low-confidence queries to the agentic model, converting the speculative acceptance rate into multiplicative throughput gains. Extensive experiments on V* Bench, HR-Bench, and POPE show that preserves the full accuracy of the agentic pipeline while substantially reducing latency and improving throughput.
+
+We identify and formalize the stateful bottleneck of agentic MLLMs, showing that data dependency inherent in tool-use chains imposes a fundamental barrier to both per-query latency and system-level concurrency. We propose , the first framework that lifts speculative acceleration from the token level to the agentic level, bypassing entire tool-use loop for queries that do not require it while preserving full accuracy. We introduce cognitive gating based on answer separability among top- K logits, providing a label-free, scale-invariant criterion for small model to decide when to trust its own versus escalating to agentic model. We design a heterogeneous parallel funnel that exploits the stateless nature of the small model to achieve concurrent query processing, yielding throughput gains proportional to speculative acceptance rate.
+
+Related Work.
+
+Agentic Multimodal Large Language Models. Agentic reasoning in language models originates from tool-augmented frameworks that interleave action generation with external feedback . Building on this, multimodal large language models (MLLMs) have adopted a similar agentic paradigm, enabling active interleaving of perception and reasoning through external visual tools rather than relying on passive single-pass encoding. Early large-scale MLLMs established the backbone architectures upon which agentic extensions are built. DeepEyes demonstrates that reinforcement learning can train models to call perception tools during reasoning; subsequent work enables executable reasoning via code generation and visual manipulation , and further scales agentic depth through multi-turn interaction and self-reflection . Despite their effectiveness, these methods rely on deeply sequential perception–reasoning tool loops, incurring substantial latency and limited concurrency, a system-level bottleneck that prior work largely overlooks.
+
+Efficient Reasoning. Token-level speculative decoding accelerates generation by having a small draft model propose tokens for a larger model to verify. Recent extensions apply this idea to collaborative reasoning: SpecReason delegates simpler steps to a lightweight model verified via semantic consistency; RelayLLM dynamically invokes a stronger expert at critical steps; and SpecTemp and MSD reduce redundant visual processing in multimodal and interactive settings. Adaptive computation and early-exit methods further bypass layers for easier inputs. Yet all these methods accelerate steps within a fixed trajectory, agentic loop itself remains fully serial.
+
+Efficient Multimodal Perception. A parallel line of work reduces the per-step computational burden of multimodal perception. Frequency-based compression truncates high-frequency visual signals ; token pruning retains visually salient tokens via attention scores or multimodal relevance ; and dynamic sparsification optimizes retention across layers . Token merging reduces sequence length by combining redundant representations, and temporal redundancy across frames is exploited to merge or prune spatial tokens in video settings . KV-cache compression additionally reduces memory and decoding cost by evicting cached visual keys and values. Despite these gains, all such methods operate within a monolithic model and leave the sequential agentic pipeline intact, as the large model must still execute the full perception to reasoning loop. In contrast, targets efficiency at the agentic level: rather than accelerating individual operations within the pipeline, it speculatively bypasses entire tool-use loops via a lightweight, non-agentic model governed by a cognitive gating mechanism. This design breaks the rigid sequential dependency of existing agentic MLLMs, enabling heterogeneous parallel execution that maximizes hardware utilization with substantially improved latency and system-level throughput.
+
+Methodology.
+
+We begin by formalizing the stateful bottleneck inherent in agentic multimodal reasoning, then present SpecEyes, our four-phase speculative acceleration framework. We detail the cognitive gating mechanism that governs speculative bypass, and finally describe the heterogeneous parallel architecture that maximizes system throughput.
+
+Modeling the Stateful Bottleneck of Agentic MLLMs.
+
+Preliminaries. We formalize an agentic multimodal large language model (MLLM) as a stateful reasoning system A equals ( S, T, pi ) , where S denotes the state space, T equals sub 1, ..., t sub N is a finite set of perception tools ( Zoom-, Crop, OCR), and pi is policy that jointly selects tool invocations and generates reasoning tokens.
+
+Given a query q and an input image I , the model maintains a state trajectory sub 0, s sub 1, ..., s sub D over D reasoning steps. The initial state is s sub 0 equals (q, I) . At each step d , the policy produces an action a sub d equals pi (s sub d) that either invokes a tool t in T or emits a final answer. When a tool is invoked, the state transitions as:
+
+where t sub d(s sub d) applies the selected tool t sub d to the current visual context ( cropping a region of interest from I ) and f fuses the resulting observation into the next state. We refer to D as the agentic depth of the query.
+
+State Dependency and Sequential Bottleneck. A critical property of is that subsequent tool selections depend causally on prior observations. Concretely, let t sub d plus 1 approximately pi ( times given s sub d plus 1) be the tool chosen at step d plus 1 . Since s sub d plus 1 contains the output of t sub d , the Markov chain (s sub 0, a sub 0, s sub 1, a sub 1, ...) forms a strict data dependency:
+
+This dependency renders the agentic pipeline inherently sequential: step d plus 1 cannot begin until step d completes. Consequently, the end-to-end latency for a single query scales linearly with agentic depth:
+
+where c sub llm and c sub tool(t sub d) denote the latency of LLM inference and tool execution at step d , respectively.
+
+Throughput Implication. At the system level, this strict serialization also limits concurrency. Consider a serving scenario with a batch of B queries Q equals sub 1, ..., q sub B . Due to the stateful nature of each query, the large agentic model A can only process one tool-use loop at a time per query, resulting in a per-query occupancy of L sub agent(q sub i) . The maximum throughput is therefore bounded by:
+
+This bound becomes increasingly restrictive as the average agentic depth D grows, motivating our approach to speculatively eliminate unnecessary tool invocations.
+
+SpecEyes: Agentic-Level Speculative Reasoning.
+
+Our key insight is that not all queries require deep agentic reasoning. For a substantial fraction of inputs, a small non-agentic MLLM, denoted M sub S , can produce a correct answer without any tool invocation, directly from the original image I . SpecEyes exploits this observation through a four-phase pipeline that speculatively bypasses expensive tool chains whenever M sub S is sufficiently confident, and falls back to the full agentic model M sub L otherwise. We denote the small non-agentic model as M sub S and the large agentic MLLM as M sub L equals A . The step-by-step execution of these four consecutive phases is systematically detailed below.
+
+Phase I: Heuristic Tool-Use Judgment. Given a query q and image I , the large agentic model M sub L first determines whether tool invocation is necessary. We prompt M sub L with a lightweight binary classification head:
+
+where P sub judge is a prompt instructing the model to assess tool necessity, g equals 0 indicates that M sub L judges the query to be answerable from the global image alone, and g equals 1 indicates a potential need for tool-assisted perception. Queries with g equals 0 proceed directly to Phase II; queries with g equals 1 are immediately forwarded to Phase IV (agentic fallback). Although Phase I is executed by M sub L , it generates only a single binary token with no tool invocation, incurring negligible overhead. We use M sub L rather than M sub S because its tool-calling capability makes it a more reliable judge of tool necessity, yielding more accurate screening.
+
+Phase II: Speculative Prediction. For queries passing Phase I ( g equals 0 ), M sub S directly generates an answer y sub S along with the full output logit distribution:
+
+where to the power of (n) in R^| V| is the logit vector over the vocabulary V for the n th generated token. Crucially, this inference is stateless: it requires no tool execution and can be performed concurrently for all queries in the batch.
+
+Phase III: Small MLLM Confidence Switching. The logits from Phase II are passed to a cognitive gating function S sub sep (detailed in ) that quantifies the answer confidence of M sub S without requiring ground-truth labels. We compute a scalar separability score for the speculative answer y sub S :
+
+where tau is a threshold calibrated on a small held-out validation set. Accepted answers are returned immediately, completely bypassing the agentic pipeline; rejected queries proceed to Phase IV.
+
+Phase IV: Agentic Fallback. Queries that fail confidence switching are routed to the full agentic model M sub L , which executes the complete stateful perception-reasoning loop:
+
+The agentic model retains full access to all tools T and performs multi-step reasoning at the cost of sequential latency L sub agent(q) . By design, Phase IV serves as a safety net: routing low-confidence queries back to the full agentic pipeline substantially mitigates potential accuracy loss, even if a marginal performance gap relative to the baseline remains due to the imperfect nature of the gating mechanism.
+
+End-to-End Latency. Let beta in denote the tool-free screening ratio from Phase I and alpha in the cognitive gate acceptance rate from Phase III. All queries incur the judgment cost c sub J ; only the beta fraction passing Phase I additionally incurs the small model cost c sub S ; the remaining (1 minus beta alpha ) fraction forwarded to M sub L pays the full agentic cost L sub agent . Therefore, the expected per-query latency under is:
+
+where c sub J plus beta c sub S much less than L sub agent . When beta alpha is large ( beta alpha greater than 0.6 ), the expected latency is dominated by the lightweight front-end cost, yielding substantial speedups over the purely agentic baseline.
+
+Small MLLM Cognitive Gating via Answer Separability.
+
+The effectiveness of SpecEyes hinges critically on the quality of the confidence switching mechanism in Phase III. We now introduce the answer separability score S sub sep that serves as the cognitive gate.
+
+Limitations of Probability-Based Confidence. A common probability-based confidence for sequence generation aggregates per-token max-softmax probabilities via the geometric mean . Concretely, for the n -th generated token with logits to the power of (n) , we define the maximum softmax probability p sub max of to the power of (n) as:
+
+where sigma ( times ) denotes the softmax operator and V is the vocabulary. The overall confidence is computed as:
+
+which corresponds to the geometric mean of sub max of to the power of (n) . However, S sub log remains unreliable for gating: (1) it inherits the well-known miscalibration of softmax, where large logit magnitudes can yield overconfident probabilities; (2) token-wise p sub max of to the power of (n) can be spuriously high for low-entropy or nearly-deterministic positions (for example, punctuation, formatting tokens), and the geometric aggregation does not explicitly measure how well the top prediction is separated from strong competitors. These issues increase the risk of false acceptance in our speculative bypass.
+
+Answer Separability Score. Instead of relying on the raw softmax probability, we design a metric that measures the decision margin between the top prediction and its competitors. For the n th generated token with logit vector to the power of (n) , let sub to the power of (n) greater than or equal to sub to the power of (n) greater than or equal to ... greater than or equal to _[| V|] to the power of (n) be the sorted logits in descending order. We define the token-level separability by standardizing the leading logit against its nearest competitors, defined as:
+
+where mu sub K to the power of (n) and sigma sub K to the power of (n) are the mean and standard deviation of the top- K logits sub to the power of (n), ..., sub [K] to the power of (n) , and epsilon greater than 0 is a small constant for numerical stability. Intuitively, S sub sep to the power of (n) quantifies how far the leading logit stands apart from its nearest competitors: a large value indicates a clear decision boundary, while a small value signals ambiguity among top candidates. Compared to softmax probability, S sub sep to the power of (n) offers two key advantages: (i) it is scale-invariant, since both the numerator and denominator scale linearly with logit magnitude, neutralizing the calibration artifacts of softmax; (ii) it explicitly models the competitive landscape among top candidates via the variance term sigma sub K to the power of (n) , providing a more informative confidence signal.
+
+Token-to-Answer Aggregation. The token-level score S sub sep to the power of (n) must be aggregated across all | y sub S| generated tokens to obtain an answer-level confidence. We consider three natural aggregation strategies:
+
+where B is the index set of the bottom- r fraction of tokens with the smallest S sub sep to the power of (n) values, | B| equals r,| y sub S| for a ratio r in (0,1) chosen empirically. The aggregated score is then normalized via a sigmoid function.
+
+We adopt the min of aggregation as our default strategy, based on the following risk-theoretic argument:
+
+Let y sub S equals (y sub 1, ..., y_| y sub S|) be the speculative answer. Define the answer-level error event E equals cup sub n E sub n , where E sub n denotes the event that token y sub n is incorrect. Then:
+
+If each P( E sub n) is monotonically decreasing in S sub sep to the power of (n) , then thresholding on min of sub n S sub sep to the power of (n) ensures that every token exceeds the confidence threshold, thereby bounding the union probability P( E) most tightly among the three strategies. Intuitively, the min of strategy acts as a worst-case guard: it triggers fallback whenever any token in the answer exhibits low separability. This is conservative by design, prioritizing precision ( avoiding false acceptances) to preserve the accuracy guarantee of the agentic pipeline.
+
+Heterogeneous Parallelism for Throughput Acceleration.
+
+Beyond per-query latency reduction, enables system-level throughput gains by organizing the four phases into a heterogeneous parallel funnel, decoupling stateless concurrency from stateful execution.
+
+Batch-Parallel Front-End. We serve requests in batches of size B . Let beta in be the fraction of queries that Phase I screens as tool-free ( g equals 0 ) and alpha in be the acceptance rate of the cognitive gate among those candidates. Both screening (Phase I, latency c sub J ) and speculative inference (Phase II, latency c sub S ) are stateless single-turn forward passes and therefore fully batch-parallelizable, giving a parallel front-end cost of c sub J plus c sub S .
+
+Funnel-Shaped Serving. Accepted queries ( alpha beta B ) are returned immediately; the remaining residual set R , consisting of gating-rejected and tool-required queries, falls back to sequential agentic execution:
+
+Since c sub J plus c sub S much less than B, L sub agent for practical batch sizes, the batch time is dominated by the agentic fallback on the residual set of size | R| equals (1 minus beta alpha )B , yielding a throughput speedup of
+
+which is jointly governed by the screening ratio beta and the gate acceptance rate alpha .
+
+Experiment.
+
+Experiment Setups.
+
+Benchmarks and Baselines. We evaluate on three multimodal benchmarks spanning fine-grained perception, high-resolution understanding, and hallucination robustness. V* provides two multiple-choice subsets: Direct Attributes (115 questions) for attribute recognition and Relative Position (76 questions) for spatial reasoning. HR-Bench tests high-resolution perception with 4K and 8K subsets (800 questions each). POPE is a yes/no hallucination probe with Adversarial, Popular, and Random splits (3,000 questions each). The small non-agentic model M sub S is Qwen3-VL-2B ; the large agentic model M sub L is instantiated with DeepEyes and Thyme , both capped at 5 tool-use steps per query.
+
+Implementation Details. All models use greedy decoding (temperature 0), and all reported latencies include tool execution time. For cognitive gating, we set K equals 64 , epsilon equals 10 to the power of minus 6 , and adopt min-token aggregation; for the bottom aggregation variant, we set the bottom fraction to r equals 0.2 , inspired by. The gating threshold is selected by running M sub S once per benchmark to collect the empirical confidence distribution ( approximately 5 to 10,min offline), from which we evenly sample multiple operating points to characterize the accuracy to latency trade-off. All experiments run on a single NVIDIA A100 40,GB GPU.
+
+Main Results.
+
+ compares against the agentic baselines and SpecReason across all seven evaluation splits, using two agentic backbones (DeepEyes and Thyme ) paired with Qwen3-VL-2B as the tool-free speculative model. For each variant, we report the result at the best operating-point threshold that preserves the baseline level accuracy. Among the four confidence aggregation strategies, (min) consistently delivers the strongest accuracy to speed profile, validating the worst-case guard design in; we focus the discussion on this variant below.
+
+With DeepEyes, (min) achieves a 1.73 times average speedup while improving average accuracy from 81.39 percent to 84.26 percent. On V* Bench , it matches the baseline on Direct Attributes (90.43 percent, 1.53 times ) and boosts Relative Position from 82.89 percent to 89.47 percent at 1.90 times . POPE benefits most (2.13 to 2.19 times ) with accuracy consistently above baseline ( Adversarial: 78.43 percent, arrow ,85.13 percent), suggesting that bypassing unnecessary tool trajectories can also reduce hallucination errors. HR-Bench yields moderate speedups (1.08 to 1.13 times ) as queries more frequently demand fine-grained tool-assisted inspection.
+
+Replacing the backbone with Thyme confirms generalization: (min) yields a 1.42 times average speedup while raising accuracy from 82.29 percent to 83.99 percent. The per-benchmark pattern shows similarity: POPE benefits most (1.70 to 1.78 times ), V* enjoys solid gains (1.32 to 1.42 times ), and HR-Bench remains the bottleneck (0.95 to 1.01 times ). The marginal sub-1 times speedup on HR-Bench 8K arises because high-resolution inputs suppress both beta and alpha , keeping beta alpha low. In this regime, fixed cost of running M sub S slightly exceeds any savings, consistent with.
+
+In contrast, SpecReason consistently decelerates inference (0.37 to 0.61 times with DeepEyes; 0.43 to 0.53 times with Thyme), as the small model lacks structured tool-calling capability and incurs substantial token and turn overhead (414 tokens and 3.48 rounds on average). It also degrades sharply on POPE (as low as 49.10 percent). By contrast, lets accepted queries bypass the tool-use chain entirely, avoiding this overhead. The Qwen3-VL-2B (draft only) row establishes a speedup upper bound (4.13 times ) at notable accuracy cost (78.93 percent); captures most of this latency saving while preserving full reasoning quality.
+
+Analysis of Confidence Calibration.
+
+A reliable gating signal must be discriminative: confidence scores of correct answers should be stochastically higher than those of incorrect ones. visualises this property via kernel density estimates (KDE) of each confidence score on correct and incorrect samples from M sub S on V* , with each subplot annotated by Delta (peak distance between the two distributions) as a direct measure of discriminability. Both S sub log (a) and S sub sep^ mean (b) yield small Delta : the former suffers from softmax overconfidence, and the latter is diluted by averaging over all tokens, leaving the two distributions heavily overlapping. S sub sep^ bottom (d) improves Delta by focusing on the lowest-separability tokens, yet residual overlap remains in the mid-range. S sub sep^ min (c) achieves the largest Delta : incorrect samples collapse to a low-score peak, while correct samples form a sharp high-score mode, consistent with Proposition 1. shows that a single threshold to preserve accuracy while maximizing acceptance, explaining why (min) delivers a superior accuracy to speedup trade-off.
+
+Ablation Study.
+
+We conduct ablations to study the effects of three key hyperparameters in : the gating threshold, the serving batch size, and the separability computation parameter K .
+
+Ablation on Threshold. visualizes the accuracy to speedup trade-off as the gating threshold varies, using S sub sep^ min across all three benchmarks with both agentic backbones. Lowering the threshold monotonically increases the acceptance ratio and thus the speedup, while accuracy degrades gracefully. On V* and POPE, accuracy remains above or near the agentic baseline over a wide threshold range (0.94 to 0.99), confirming that a large fraction of queries can be safely bypassed. HR-Bench is more sensitive: speedup gains are modest, and accuracy begins to drop at thresholds below 0.97, reflecting the higher proportion of queries that genuinely require tool-assisted inspection. Across all settings, there exists a broad operating region where simultaneously improves over the baseline in both accuracy and speed, validating that the threshold is not a fragile hyperparameter but a smooth control knob for navigating the accuracy to efficiency Pareto front.
+
+Ablation on batch size. studies the effect of serving batch size while fixing the gating threshold to the operating point used in the main results. We observe that increasing batch size consistently improves the end-to-end speedup, while accuracy remains unchanged (batching only affects system execution, not model decisions). This trend is expected from our heterogeneous funnel design: the speculative stage is stateless and thus highly batchable, so its per-query overhead is effectively amortized as batch size grows. In contrast, the agentic fallback stage is dominated by per-query tool-use dependencies and remains largely sequential, which leads to diminishing marginal speedup gains at larger batch sizes. Across benchmarks, datasets with higher bypass rates (for example, V* and POPE) benefit more from batching, whereas HR-Bench saturates earlier due to a larger fraction of tool-required queries.
+
+Ablation on Top- K in separability computation. K acts as a control knob: increasing K monotonically improves speedup but degrades accuracy, mirroring the effect of lowering the gating threshold, as larger K includes tokens with weaker contrastive signal, thereby inflating confidence estimates. We set K equals 64 as a balanced default, which matches baseline accuracy on Direct Attributes (90.43 percent, 1.50 times ) and achieves a strong speedup on Relative Position (1.94 times , 89.47 percent), while overly large K over-optimizes for raw execution speed at the direct expense of overall reasoning accuracy.
+
+Conclusion and Future Work.
+
+In this paper, we present , an agentic-level speculative acceleration framework that lifts the speculation paradigm from individual tokens to the entire agentic pipeline. A lightweight, tool-free model speculatively answers queries that do not require multi-step tool use, governed by a cognitive gating mechanism based on answer separability and served through a heterogeneous parallel funnel that converts per-query latency savings into system-level throughput gains. Across three diverse image understanding benchmarks, reduces end-to-end latency by up to 3.35 times , while it is comparable with the agentic baseline in accuracy and delivers consistent throughput improvements under concurrent serving.
+
+Future Work. However, our speculative model currently operates at agentic depth D equals 0 (fully tool-free), limiting speedups on benchmarks ( HR-Bench) where most queries genuinely require tool assistance. A natural extension in future work is multi-depth speculation ( D equals 1, 2, ..., n ), allowing the speculative model a bounded number of lightweight tool calls before gating. This strategy intercepts queries at the earliest sufficient depth, further reducing unnecessary fallbacks to the heavy backbone.
+
+Thanks for listening. This has been an audio narration of SpecEyes: Accelerating Agentic Multimodal LLMs via Speculative Perception and Planning. By Haoyu Huang, Jinfa Huang, Zhongwei Wan, and 3 more authors. Published on March 24, 2026. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
