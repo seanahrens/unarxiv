@@ -56,11 +56,21 @@ Guidelines:
    to spoken English, and (c) describing figures and tables verbally. Every
    sentence in the source must produce a corresponding spoken sentence in the
    output. A listener should hear the paper as the authors wrote it.
-   CRITICAL: Narrate ALL content including the abstract as the authors' own words.
-   Do NOT describe or summarize content in third person. Do NOT say "The abstract
-   begins with...", "The authors state that...", "The section describes...", or
-   similar meta-descriptions. If the chunk begins with \begin{abstract}, read the
-   abstract text as if you are reading it aloud — not summarizing it from outside.
+   CRITICAL: You are a VOICE ACTOR reading this paper aloud, not a reviewer
+   summarizing it. The paper speaks in first person ("we find", "we propose",
+   "our method") — you must preserve that voice. NEVER switch to third person
+   to describe what "the authors" do. Banned patterns (NEVER write these):
+   - "The authors state that...", "The authors present...", "The authors describe..."
+   - "The paper discusses...", "The section shows...", "This paragraph covers..."
+   - "The study finds...", "The researchers demonstrate...", "The work proposes..."
+   - "Starting with the X paragraph, the authors..." (never announce paragraph labels)
+   - "The paragraph on X states that..." (never quote yourself narrating)
+   Instead, read the source text directly. If the source says "We find that X",
+   output "We find that X." If the source says "Our method outperforms Y", output
+   "Our method outperforms Y." If a figure caption says "Our pipeline: The goal
+   is...", read it as "Our pipeline: The goal is..." — not as a third-person
+   description of what the figure shows. This applies to ALL sections: abstract,
+   introduction, methods, results, discussion, and appendix alike.
 2. Figures and tables: Describe them with enough detail that a listener who
    cannot see them still understands ~75% of the meaning. Requirements:
    - Name specific data values, percentages, and numbers visible in the figure.
@@ -100,9 +110,12 @@ Guidelines:
    write `\ours`, `\benchname`, `\algname` in the output — always substitute the
    expansion or the plain word).
    Also remove: citation markers [1], [2,3], \\cite{}, \\citep{},
-   \\citealt{}; footnote reference commands; \\label{} commands; \\ref{}
-   commands (omit entirely — do NOT output tilde-separated ref names like
-   "~ref~ablation_qual" or "Figure~ref~foo"); section heading commands
+   \\citealt{}; footnote reference commands; \\label{} commands; ALL cross-
+   reference commands including \\ref{}, \\Cref{}, \\cref{}, \\autoref{},
+   \\pageref{}, \\eqref{} (omit entirely — do NOT output tilde-separated ref
+   names like "~ref~ablation_qual" or "Figure~ref~foo", and do NOT output the
+   bare word "Cref" or "cref" either — remove the entire reference including
+   surrounding whitespace); section heading commands
    (\\section{}, \\subsection{}, etc.) — do NOT output the heading as a
    standalone line or label. Also remove or skip all document metadata:
    \\title{}, \\author{}, \\affiliation{}, \\institute{}, \\email{},
@@ -113,13 +126,22 @@ Guidelines:
    appears to be a template example rather than the actual paper (e.g., sample
    citations, example text in multiple languages labeled as examples, placeholder
    instructions like "please see the general instructions"), skip it entirely.
-   Render URLs naturally: for simple domain URLs like "https://example.org/foo",
-   say "example.org/foo". Do NOT say "dot" or "slash" between URL components.
-   For URLs with mixed-case path components (e.g., GitHub repo URLs like
-   "https://github.com/NBISweden/MrBayes"), speak path components as words —
-   say "github.com/NBISweden/MrBayes", NOT "N-B-I-Sweden" or "M-r-B-a-y-e-s"
-   letter-by-letter. Only spell out letters when a path segment is a genuine
-   acronym already read as letters (e.g., "API", "ORCID").
+   Render URLs naturally: write the URL as-is without speaking punctuation.
+   CRITICAL: Do NOT say "dot", "slash", or "underscore" between URL components.
+   Examples:
+   - WRONG: "tree dot bio dot ed dot ac dot uk slash software slash figtree"
+   - RIGHT: "tree.bio.ed.ac.uk/software/figtree"
+   - WRONG: "huggingface dot co slash datasets slash EleutherAI slash my-model"
+   - RIGHT: "huggingface.co/datasets/EleutherAI/my-model"
+   - WRONG: "icytree dot org"
+   - RIGHT: "icytree.org"
+   This rule applies to EVERY URL in the chunk — do not apply it to some and
+   break it for others. For URLs with mixed-case path components (e.g., GitHub
+   repo URLs like "https://github.com/NBISweden/MrBayes"), speak path
+   components as words — say "github.com/NBISweden/MrBayes", NOT
+   "N-B-I-Sweden" or "M-r-B-a-y-e-s" letter-by-letter. Only spell out letters
+   when a path segment is a genuine acronym already read as letters (e.g.,
+   "API", "ORCID").
    Also skip visual formatting attributes of document elements: font size,
    font color, bold/italic style, background color, and similar visual design
    properties are invisible to listeners. E.g., if a LaTeX heading is formatted
@@ -217,15 +239,20 @@ Guidelines:
    or any other LaTeX math environment markers. Convert ALL mathematical notation
    to spoken English BEFORE writing the output.
 4. Remove citation markers like [1], [2,3], footnote references. Render URLs
-   naturally: say "democracylevels.org/system-card", not "democracylevels dot org
-   slash system-card". For URLs with mixed-case path components (e.g.,
-   "github.com/NBISweden/MrBayes"), speak path components as words — do NOT
-   spell letters individually. Also skip visual formatting attributes: font size,
-   font color, bold/italic descriptions of document elements are not spoken.
-   Remove any section heading labels (e.g., "Section: Introduction" or "End of
-   Section: X") if they appear as standalone lines in the draft.
-   Skip all document metadata if present: author lists with affiliations, email
-   addresses, title re-introductions. Those belong only in the header.
+   naturally — write the URL as-is without speaking punctuation. Do NOT say
+   "dot", "slash", or "underscore" between URL components:
+   - WRONG: "democracylevels dot org slash system-card"
+   - RIGHT: "democracylevels.org/system-card"
+   - WRONG: "icytree dot org"
+   - RIGHT: "icytree.org"
+   This rule applies to EVERY URL in the chunk. For URLs with mixed-case path
+   components (e.g., "github.com/NBISweden/MrBayes"), speak path components as
+   words — do NOT spell letters individually. Also skip visual formatting
+   attributes: font size, font color, bold/italic descriptions of document
+   elements are not spoken. Remove any section heading labels (e.g.,
+   "Section: Introduction" or "End of Section: X") if they appear as standalone
+   lines in the draft. Skip all document metadata if present: author lists with
+   affiliations, email addresses, title re-introductions.
 5. Natural transitions: Add spoken transitions like "Moving on to..." between
    topic shifts, but do NOT add "Welcome to this section" or "Today we will
    discuss..." framing. Your output will be concatenated with other sections.
@@ -481,8 +508,13 @@ def _strip_latex_artifacts(text: str) -> str:
         r'\\end\{(?:equation|align|gather|multline|eqnarray)\*?\}',
         '', text
     )
-    # Strip \ref{...} commands entirely (they produce unreadable ref names)
-    text = re.sub(r'\\ref\{[^}]*\}', '', text)
+    # Strip \ref{...} and related cross-reference commands entirely
+    # (includes \ref, \Cref, \cref, \autoref, \pageref, \eqref)
+    text = re.sub(r'\\[cC]?ref\{[^}]*\}', '', text)
+    text = re.sub(r'\\(?:autoref|pageref|eqref)\{[^}]*\}', '', text)
+    # Strip bare "Cref" or "cref" words that leaked through when LLM stripped the backslash
+    # e.g. "Appendix Cref" or "Table cref" should become "Appendix" / "Table"
+    text = re.sub(r'\b[Cc]ref\b', '', text)
     # Strip tilde-separated ref artifacts: e.g. ~ref~ablation_qual or Figure~ref~foo
     text = re.sub(r'~ref~\S*', '', text)
     # Strip backslash macros that leaked through (e.g. \ours, \benchname)

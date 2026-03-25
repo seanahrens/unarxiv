@@ -1,0 +1,183 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2025_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+% Packages
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{array} 
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{arydshln}
+\usepackage{xcolor}
+\usepackage{authblk}
+\usepackage{arydshln}
+\usepackage{arydshln}  % for dashed horizontal rules
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+
+% BEGIN ADDED BY US
+\usepackage{cleveref}
+\usepackage{spverbatim}
+% \newcommand{\fix}{\marginpar{FIX}}
+% \newcommand{\new}{\marginpar{NEW}}
+% \usepackage{tcolorbox}
+% \tcbuselibrary{skins,breakable}
+
+% A verbatim‑aware box for prompts
+\newtcblisting{promptbox}{
+  colback=gray!3,
+  colframe=gray!60,
+  boxrule=0.6pt,
+  arc=2pt,
+  breakable,
+  listing only,                 % verbatim mode
+  listing options={
+       basicstyle=\ttfamily\small,
+       breaklines=true,
+       breakindent=2em,          % hanging indent for wrapped lines
+       columns=fixed,            % preserve multiple spaces
+       emptylines=* ,            % keep blank lines you type
+       showstringspaces=false
+  },
+  left=2mm,right=2mm,top=1mm,bottom=1mm
+}
+
+\usepackage{listings}
+\lstset{
+  basicstyle=\small\ttfamily,    % Set font size and typewriter font
+  columns=flexible,             % Allow flexible column alignment
+  breaklines=true,              % Enable automatic line breaking
+  breakindent=0pt,              % Disable extra indentation for broken lines
+  resetmargins=true,            % Avoid interference from paragraph styles
+  keepspaces=true               % Preserve spaces in code (indentation)
+}
+\lstset{
+    basicstyle=\ttfamily,               % Default text font
+    keywordstyle=\color{blue},          % Style for first group of keywords
+    keywordstyle=[2]\color{red},        % Style for second group of keywords
+    keywords={INSERTPASSAGE, INSERTCORRECTANSWER, INSERTPROMPT, INSERTRESPONSE, INSERTEXAMPLES},        % First set of keywords (blue)
+    morekeywords=[2]{REDACTED},    % Second set of keywords (red)
+}
+
+\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0} %
+\newcommand{\cas}[1]{\textcolor{darkgreen}{\textbf{[Cas: #1]}}}
+\newcommand{\kyle}[1]{\textcolor{orange}{\textbf{[Kyle: #1]}}}
+\newcommand{\stella}[1]{\textcolor{blue}{Stella: #1}}
+% \usepackage{setspace}
+% END ADDED BY US
+
+
+% Title
+\title{Deep Ignorance: Filtering Pretraining Data Builds Tamper-Resistant Safeguards \\ into Open-Weight LLMs}
+
+% Authors
+\makeatletter
+\renewcommand\AB@affilsepx{\quad \protect\Affilfont}
+\renewcommand\Authsep{\quad }
+\renewcommand\Authands{\quad }
+
+\newcommand{\affilbreak}[1]{%
+    \renewcommand\AB@affilsepx{\\[\baselineskip]\protect\Affilfont}
+    #1
+    \renewcommand\AB@affilsepx{, \protect\Affilfont}
+}
+\makeatother
+
+\author[1*]{Kyle O'Brien}
+\author[2*]{Stephen Casper}
+
+\author[1]{\authorcr Quentin Anthony}
+\author[2]{Tomek Korbak}
+\author[2]{Robert Kirk}
+\author[2,3]{Xander Davies}
+\author[2]{Ishan Mishra}
+
+\author[2]{\authorcr Geoffrey Irving}
+\author[2,3]{Yarin Gal}
+\author[1]{Stella Biderman}
+
+\affil[1]{EleutherAI}
+\affil[2]{UK AI Security Institute}
+\affilbreak{\affil[3]{OATML, University of Oxford}}
+\affilbreak{\affil[*]{Equal Contribution}}
+\affil[ ]{\texttt{kyle@eleuther.ai} \hspace{0.5cm} \texttt{scasper@mit.edu}}
+
+% Preamble
+\usepackage{booktabs}
+% \usepackage[table]{xcolor}
+\usepackage{makecell}
+
+% Helpful macros for colored deltas
+\newcommand{\good}[1]{\textcolor{green!60!black}{\scriptsize(#1)}}
+\newcommand{\bad}[1]{\textcolor{red!70!black}{\scriptsize(#1)}}
+
+% \footnotetext{$^*$Equal contribution. For a list of author contributions, see \Cref{sec:contributions}.}
+
+
+% Kyle: Version for arXiv. Modified this to remove references to the paper being accepted to ICLR, which it hasn't (yet)! 
+\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+
+\begin{document}
+
+\maketitle
+
+
+\textit{Open weights allow global research communities to both advance capabilities and address model flaws by providing them with direct access to a critical AI component that is prohibitively expensive for most actors to develop independently. However, the open release of model weights could also pose risks of facilitating malicious or misguided use or perpetuating model flaws and biases. Once model weights are available for public download, there is no way to implement a wholesale rollback of all existing copies of the model.}
+
+- International AI Safety Report \citep{Bengio2025InternationalAS}
+
+\textit{Fine-tuning rarely alters the underlying model capabilities. A minimal transformation, which we call a `wrapper', is typically learned on top of the underlying model capabilities, creating the illusion that they have been modified. Further fine-tuning on a task where such hidden capabilities are relevant leads to sample-efficient `revival' of the capability.}
+
+- \citet{jain2023mechanistically}
+
+
+% Main content
+\input{sections/0_abstract}
+\newpage
+\tableofcontents
+% \newpage
+\input{sections/1_introduction}
+\input{sections/2_success_criteria}
+\input{sections/3_results_filtering}
+\input{sections/4_results_tamper_resistance}
+\input{sections/5_results_defense_in_depth}
+\input{sections/6_related_work}
+\input{sections/7_discussion}
+\input{sections/8_endmatter}
+\newpage
+% Bibliography
+\bibliography{iclr2025_conference}
+\bibliographystyle{iclr2025_conference}
+
+% Appendices
+\appendix
+\input{sections/appendix/released_models}
+\input{sections/appendix/modernbert_pretraining_filtering}
+\input{sections/appendix/flops}
+\section{Implementation Details}
+\input{sections/appendix/filter_training_and_eval}
+\input{sections/appendix/lm_training}
+\input{sections/appendix/wmdp_bio_robust}
+\input{sections/appendix/test_task_training}
+\input{sections/appendix/attack_comparisons_to_prior_work}
+\input{sections/appendix/sdf.tex}
+\input{sections/appendix/cmu_models.tex}
+\input{sections/appendix/wmdp_other_models}
+\input{sections/appendix/prompts.tex}
+\input{sections/appendix/filtered_data_analysis}
+
+
+
+
+\end{document}

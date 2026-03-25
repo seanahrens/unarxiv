@@ -1,0 +1,129 @@
+Molecular Clock Dating using MrBayes.
+
+By Chi Zhang.
+
+Published on March 17, 2016.
+
+This paper provides an overview and a tutorial of molecular clock dating using MrBayes, which is a software for Bayesian inference of phylogeny. Two modern approaches, total-evidence dating and node dating, are demonstrated using a dataset of Hymenoptera with molecular sequences and morphological characters. The similarity and difference of the two methods are compared and discussed. Besides, a non-clock analysis is performed on the same dataset to compare with the molecular clock dating analyses.
+
+Keywords include Bayesian phylogenetic inference, molecular clock dating, Markov chain Monte Carlo or MCMC, and MrBayes.
+
+In the introduction, the authors discuss MrBayes, which is a software for Bayesian phylogenetic inference. MrBayes has become widely used by biologists, and many new features have been implemented since version three point two. These features include species tree inference under the multi-species coalescent model, compound Dirichlet priors for branch lengths, marginal model likelihood estimation using stepping-stone sampling, topology convergence diagnostics using the average standard deviation of split frequencies, BEAGLE library support, and parallel computing using MPI.
+
+In addition to these features, this study focuses on the functionality of divergence time estimation using node dating and total-evidence dating approaches under relaxed molecular clock models. Both dating techniques are implemented in the Bayesian framework, incorporating the diversification process and fossil information in the priors. However, they exhibit significant differences.
+
+In node dating, only molecular sequences from extant taxa are used. One or more internal nodes of the extant taxa tree are calibrated by user-specified prior distributions, typically derived from the fossil record, to estimate the ages of all other nodes in the tree. In total-evidence dating, both extant and extinct taxa are included in the tree. Morphological characters are coded for fossil and extant taxa in a combined matrix with molecular sequences. The age of each fossil is assigned a prior distribution directly.
+
+Several steps are involved in a Bayesian molecular clock dating analysis. Importantly, these include partitioning the data, specifying evolutionary models, calibrating internal nodes or fossils, and setting priors for the tree and other parameters. These steps will be demonstrated in the tutorial section.
+
+Moving on to the Hymenoptera data section. The original data analyzed by Ronquist in 2012 and Zhang in 2016 includes 60 extant and 45 fossil Hymenoptera, which are wasps, ants, and bees, along with eight outgroup taxa. The data were divided into eight partitions as follows. First, morphology. Second, 12S and 16S. Third, 18S. Fourth, 28S. Fifth, first and second codon positions of CO1. Sixth, third codon positions of CO1, which were not used in the analyses. Seventh, first and second codon positions of both copies of EF1-alpha. And eighth, third codon positions of both copies of EF1-alpha.
+
+The full data takes days to run. For illustration purposes, the data is truncated into ten extant taxa, which include nine Hymenoptera and one Raphidioptera, and ten fossils, with 200 morphological characters, 100 sites from 16S, and 210 sites from EF1-alpha. 
+
+In the tutorial below, this dataset is analyzed by both total-evidence dating and node dating approaches under diversified sampling of extant taxa, as mentioned by Hohna in 2011 and Zhang in 2016, followed by a non-clock analysis under the compound Dirichlet prior for branch lengths, as referred to by Rannala in 2012 and Zhang in 2012.
+
+Moving on to the tutorial.
+
+Getting started.
+
+The program MrBayes is available from github.com/NBISweden/MrBayes. This includes pre-compiled executables for macOS and Windows, as well as source code for all platforms. The current version is 3.2.7, which is used here. The truncated dataset, named hym dot nex, is located in the doc slash tutorial folder within the release. For convenience, it is recommended to place this dataset in the same directory as the executable. For example, the executable might be named mb in macOS or Linux, or mb dot exe in Windows. The file hym dot nex is in the NEXUS format and can be opened by a text editor. The data matrix is located at the beginning, including both morphological characters and molecular sequences.
+
+Following the data block, users can write MrBayes commands within the mrbayes block, with each command ending with a semicolon. These commands will be executed automatically when the data is read in. The text within a pair of square brackets are comments and will be ignored by the program.
+
+In the terminal on macOS or Linux, or the command prompt on Windows, you should navigate to the folder containing the executable and the data file by using the cd command. To launch MrBayes, use dot slash mb for macOS or Linux, or mb dot exe for Windows. When you do this, the following header will appear: it reads MrBayes 3.2.7 x86 underscore 64, then in parentheses it says Bayesian Analysis of Phylogeny, followed by Distributed under the GNU General Public License. Following this, you will see the prompt MrBayes greater than symbol. 
+
+The prompt at the bottom indicates that MrBayes is running and ready for your commands. Simply use the command execute hym dot nex to read in the data.
+
+In this section on data partitions, when the data is read in, the commands for defining the partitions are also executed. The commands are as follows:
+
+First, the charset "MV" is defined to include positions one to two hundred. Next, the charset "16S" comprises positions two hundred one to three hundred. The charset "Ef1a" consists of positions three hundred one to five hundred ten. The charset "Ef1a12" is defined as positions three hundred one to five hundred ten, including every third position from three hundred two to five hundred ten. Lastly, "Ef1a3" includes every third position starting from position three hundred three up to position five hundred ten. 
+
+A partition named "four" is then created, which includes four elements: MV, 16S, Ef1a12, and Ef1a3. The set partition command is assigned to "four."
+
+In summary, we define four partitions: the morphological partition, the 16S partition, the first and second codon positions of Ef1 alpha, and the third codon positions of Ef1 alpha.
+
+Substitution models are used in this study. For the morphological partition, the authors employ the Mkv Model with variable ascertainment bias, meaning only variable characters are scored. This model assumes equal state frequencies and gamma rate variation across characters. Constant characters are excluded from consideration. Specifically, the following characters are excluded: numbers 7, 31, 61, 83, 107, 121, 122, 133, 182, 183, and 198.
+
+If instant change is only allowed between adjacent states, such as states 0 to 1 and 1 to 2, but not from state 0 to 2 directly, these characters are specified as ordered. The ordered characters include numbers 20, 23, 27, 30, 36, 41, 42, 44, 46, 48, 59, 65, 75, 78, 79, 89, 99, 112, 117, 134, 146, 157, 159, 171, 185, 191, 193, and 196. The other characters are thus allowed to change instantly from one state to another.
+
+Now, moving on to the molecular partitions. The general time-reversible model with gamma rate variation across sites, abbreviated as G-T-R plus Gamma, is employed. This model is referenced from earlier studies. Here, they apply it to partitions 2, 3, and 4 with six rate categories in a gamma distribution. The prior for the gamma shape parameter is set as exponential with a mean of 1.0, though it can be changed using the shape prior setting. However, they keep the default setup here.
+
+Different partitions are assumed to have independent substitution parameters, so the authors unlink them. Partition-specific rate multipliers are utilized to account for rate variation across different partitions, averaging to 1.0. They specify that state frequencies, reverse matrices, and shapes are to be unlinked for all partitions. Furthermore, variable rate priors are applied to all partitions.
+
+Moving on to the relaxed clock models. These models take into account evolutionary rate variation over time and among branches, which is now standard practice in dating analyses. Within MrBayes, three relaxed clock models are implemented: the compound Poisson process, abbreviated as CPP, autocorrelated lognormal known as TK02, and the independent gamma rate, or IGR. It's important to note, however, that the CPP model is computationally incompatible with total-evidence dating, which is why we will focus only on the IGR and TK02 models.
+
+The mean clock rate, which represents the mean substitution rate per site per million years, is assigned a prior with a lognormal distribution specified as lognormal with parameters negative seven and 0.6. This results in a mean calculated as exponential of negative seven plus the square of 0.6 divided by two, equaling 0.001. The standard deviation is found by taking the square root of the quantity exponential of 0.6 squared minus one, multiplied by exponential of negative two times seven plus 0.6 squared, which results in 0.0007. 
+
+There are several options available for the clock rate prior, including fixed, normal truncated at zero, lognormal, and gamma. The probability density functions for each of these, all featuring a mean of 0.001 and a standard deviation of 0.0007, are depicted in Figure one. In this figure, there are three curves representing different distributions. The purple curve illustrates the lognormal distribution with parameters negative 7 and 0.6. The red curve shows the gamma distribution with parameters 2 and 2000, and the blue curve represents the normal distribution with a mean 0.001 and standard deviation 0.0007. 
+
+The variation in relative clock rates, which are multiplied by the mean clock rate, is modeled differently according to the specific structure of each relaxed clock model. For the TK02 model, it assumes that the relative rate changes as Brownian motion on the log scale along branches, starting at 1.0 or 0.0 on the log scale at the tree's root. The rate at the end of a branch is distributed lognormally, with the mean equaling the rate at the branch's beginning, indicating that rates at different branches are autocorrelated.
+
+The IGR model, in contrast, assumes the relative rate for each branch follows an independent gamma distribution, maintaining a mean of 1.0. The variance in this model is proportional to the branch length.
+
+When all relative rates in the TK02 or IGR models are fixed to 1.0, it effectively becomes the strict clock model.
+
+Before undertaking total-evidence dating and node dating analyses, we first define the outgroup, fossil taxa, and some constraints for later use. It's crucial to understand that these constraints are not enforced until we explicitly set the topology prior. For the outgroup, it's specified as Raphidioptera. Fossil taxa are defined in a set including Asioxyela, Nigrimonticola, Xyelotoma, Undatoma, Dahuratoma, Cleistogaster, Ghilarella, Mesorussus, Prosyntexis, and Pseudoxyelocerus. Constraints include HymenFossil going from node 2 to the last node, Hymenoptera from node 2 to 10, Holometabola from node 1 to 10, Tenthredinidae from node 3 to 5, and CepSirOruApo from node 7 to 10.
+
+In the following section, we discuss total-evidence dating, where we assign priors for fossils from geological times. This step is typical in total-evidence dating, where the calibration is done at the level of fossil taxa instead of the internal nodes of the tree.
+
+For calibration, we have the following specified settings: Asioxyela has a uniform distribution between 228 and 242. Nigrimonticola and Xyelotoma both have a uniform range from 152 to 163. Undatoma is uniformly distributed from 145 to 152, and Dahuratoma is fixed at 134. Cleistogaster ranges from 168 to 191 uniformly, Ghilarella from 113 to 125, Mesorussus from 94 to 100, and Prosyntexis from 80 to 86. Finally, Pseudoxyelocerus is fixed at 182. The command specifying nodeagepr is necessary to enable these calibrations.
+
+The speciation, extinction, fossilization, and sampling process is explicitly modeled using the fossilized birth-death process. Diversified sampling is argued to be suitable for higher-level taxa, assuming that exactly one representative extant taxa per clade, descending from time x-cut, is sampled. The fossils are sampled with a non-zero rate before x-cut and zero after. A fossil can be either a tip or a sampled ancestor, as shown in the figure provided.
+
+The figure illustrates the fossilized birth-death process and diversified sampling of extant taxa. Exactly one representative taxa per clade, descending from time labeled as x-cut, is sampled, indicated by blue dots. The fossils are sampled at a constant rate between the most recent common ancestor time, t-mrca, and x-cut, shown by red dots.
+
+The model includes four parameters: the speciation rate lambda, the extinction rate mu, the fossil discovery rate psi, and the extant sample proportion rho. For inference, the parameters are reparametrized as d equals lambda minus mu, r equals mu divided by lambda, and s equals psi divided by the sum of mu and psi. Therefore, the latter two parameters range from zero to one. Rho is fixed at 0.0001, based on the living number of Hymenoptera, estimated at about ten divided by 0.0001, resulting in approximately 100,000.
+
+The following prior settings are calibrated: prset brlenspr equals clock with fossilization, prset samplestrat equals diversity, prset sampleprob is 0.0001, prset speciationpr is an exponential with a rate of 10, prset extinctionpr is a beta distribution with parameters 1 and 1, prset fossilizationpr is also a beta distribution with 1 and 1, and finally, prset treeagepr is an offset exponential with a minimal age of 300 and mean age of 390.
+
+The FBD prior is conditioned on the root age, which is essential to set properly. An alternative tree prior used in the total-evidence dating approach is the uniform prior, labeled clock:uniform. This assumes that the internal nodes are drawn from uniform distributions and that fossils are only tips of the tree, a method known as tip dating. The uniform prior, like the FBD prior, is conditioned on the root age and requires setting the treeagepr.
+
+When employing the molecular clock, it cannot root the tree properly, so enabling the constraint HymenFossil is necessary. This ensures the Hymenoptera with fossils form a monophyletic group, specified by prset topologypr equals constraint with HymenFossil.
+
+For the Markov chain Monte Carlo, or MCMC method, two independent runs and four chains, consisting of one cold and three hot, are used per run for 500,000 iterations, sampling every 100 iterations. The settings are as follows: mcmcp run number equals 2, chain number equals 4, generation number equals 500,000, sample frequency equals 100, mcmcp filename is hym.te, print frequency is 1000, diagnostic frequency is 5000, and mcmc executes the run. The output filenames are hym.te with different extensions. Chain states are printed to the screen every 1000 iterations, and convergence diagnostics are printed every 5000 iterations. The MCMC command executes the run.
+
+During the MCMC execution, the iteration number, likelihood values, and average standard deviation of split frequencies are printed. The average standard deviation of split frequencies should decrease towards zero, indicating the tree topologies from different runs are becoming similar and converging to the same distribution.
+
+To summarize the parameters and trees after the MCMC run, use the sump and sumt commands. By default, the first 25 percent of samples are discarded as burn-in, but this can be adjusted according to likelihood traces from the two runs. The effective sample size, or ESS, is crucial for judging if sufficient samples are collected. Ideally, ESS should be larger than 200 for all parameters, and increasing chain length or adjusting priors might be necessary to improve estimates.
+
+The consensus tree, which includes all fossils, is highly unresolved due to uncertainty in fossil placement. Redrawing an extant taxa tree by pruning the fossils will display node ages more clearly. The output filename is changed to avoid overwriting existing files.
+
+In the node dating method, the calibration of the internal nodes of the tree is conducted instead of assigning priors directly to the fossils. The morphological characters of the fossils are not utilized, hence they are removed from the analysis. 
+
+In the procedure, the following commands are used: the command delete fossils and exclude entries 24, 130, and 168. The calibration command is then specified with the entries. First, Tenthredinidae is set to have an offset gamma distribution with parameters 100, 150, and 25. Next, CepSirOruApo is calibrated using a truncated normal distribution with mean 140, variance 25, and cut-off at 175. Finally, the node age prior is set to be calibrated.
+
+The birth-death prior under diversified sampling, as described by Hohna in 2011, is applied to the time tree. In comparison to the fossilized birth-death prior mentioned previously, this method does not include a fossil sampling parameter. The priors for the root age, speciation, and extinction rates remain unchanged.
+
+In detail, the command sequence is as follows: brlenspr is set to clock birth-death, sample stratification is defined as diversity, the sample probability is set to zero point zero zero zero one, the speciation prior is exponentially distributed with a rate of ten, the extinction prior follows a beta distribution with parameters one and one, and the tree age prior uses an offset exponential distribution with parameters 300 and 390. Additionally, a uniform tree prior, indicated by clock uniform, is also applicable.
+
+It is necessary to ensure that the calibrated clade is monophyletic and that the constraints are enabled. Specifically, the constraint on Hymenoptera is employed to root the tree accurately. The command sequence for this includes topology prior set to constraint with Hymenoptera, Tenthredinidae, and CepSirOruApo.
+
+Furthermore, the output filename must be changed to prevent overwriting existing files. If the node dating analysis is continued following the total-evidence dating within the same MrBayes session, it is necessary to reset the starting values. However, the other settings are to remain consistent with those used in the total-evidence dating analysis. The exact command sequence is: mcmcp filename set to hym.nd, with startp being reset, and startt initialized as random.
+
+Lastly, we run an analysis without the molecular clock assumption and calibrations. The branch lengths are measured by genetic distance, which are expected substitutions per site. This is a typical analysis most people perform using MrBayes. We do not use fossils and do not constrain the topology, ensuring they are uniformly distributed.
+
+In the analysis, the specific commands used are as follows: delete fossils, set the prior for branch lengths as unconditioned gamma-Dirichlet with parameters one, one, one, one, and set the topology prior as uniform. We then run Markov Chain Monte Carlo with the filename 'hym.un', and subsequently, we summarize the parameters and the trees.
+
+The prior for branch lengths is specified as gamma-Dirichlet with parameters one, one, one, one. This assigns a gamma distribution with parameters one, one, which is equivalent to an exponential distribution with parameter one, for the tree length. It assigns a uniform Dirichlet distribution for the proportion of branch lengths.
+
+The compound Dirichlet prior was shown to help avoid overestimating the tree length and is now the default prior in MrBayes since version 3.2.3.
+
+In the results and discussion section, the authors summarize the posterior estimates of the parameters in separate files, which can be opened using a text editor. This information is also displayed on the screen. The partition rate multipliers are stored in files named hym dot asterisk dot pstat. The morphological partition, labeled m1, and the 16S partition, labeled m2, evolve at similar rates. However, the first and second codon positions of Ef1 alpha, labeled m3, evolve much slower than the third codon positions, labeled m4. This significant rate variation across partitions should be taken into account.
+
+Figure 4 presents two majority-rule consensus trees of extant taxa. Sub-figure a shows the tree from total-evidence dating, while sub-figure b shows it from node dating. Both are modeled under diversified sampling and an independent gamma rates model. The node heights are in units of million years, and the error bars indicate the 95 percent highest posterior density intervals. The numbers at the internal nodes represent the posterior probabilities of the corresponding clades.
+
+The consensus trees are further detailed in files named hym dot asterisk dot con dot tre. These can be visualized using software like FigTree or IcyTree available at tree dot bio dot ed dot ac dot uk slash software slash figtree and icytree dot org, respectively. Additional information about the node ages is contained in hym dot asterisk dot vstat, and the bipartition IDs are found in hym dot asterisk dot parts. The root ID is zero, which encompasses all taxa, while the ID for Hymenoptera excludes the outgroup Raphidioptera.
+
+The trees created from total-evidence dating and node dating using diversified sampling and an independent gamma rates model are displayed in Figure 4. The general topologies remain consistent, with some clades exhibiting greater uncertainty. The mean age of Hymenoptera, estimated at 250 million years from total-evidence dating, closely matches that from node dating, albeit with a relatively narrower highest posterior density interval.
+
+The total-evidence dating approach explicitly models fossilization and the sampling process, incorporating multiple information sources from the fossil record while accounting for fossil placement uncertainty. By contrast, the node dating approach excludes fossil morphologies, using a second interpretation of the fossil record as node calibrations. This approach represents an ideal platform for further model refinement in Bayesian molecular clock dating analysis.
+
+In comparing the non-clock tree found in Figure 5 with the clock trees in Figure 4, it's clear that the evolutionary rate is not consistent over time. The branches for Xyela and Onycholyda evolve at much slower rates compared to the Raphidioptera and Orussus/Vespidae clade, indicating dramatic rate changes between adjacent branches. Therefore, the independent gamma rates relaxed clock model appears more suitable than the autocorrelated TK02 model. Assuming a strict clock model does not seem reasonable. Further explorations, such as marginal likelihood estimation using stepping-stone sampling, could also be conducted to compare the independent gamma rates model with the TK02 model.
+
+In conclusion, this study provides a comparative overview of total-evidence dating and node dating analyses, and demonstrates the functionality of MrBayes using a Hymenoptera dataset. For discussions using the full data, please refer to additional studies by Ronquist in 2012 and Zhang in 2016.
+
+Figure 5 depicts a majority-rule consensus tree of extant taxa from a non-clock analysis under the gamma-Dirichlet prior. The branch lengths are measured by expected substitutions per site, and the numbers at the internal nodes are the posterior probabilities of the corresponding clades.
+
+I sincerely thank Johan Nylander for valuable discussions and for organizing a workshop of MrBayes using this tutorial.
+
+Thanks for listening. This has been an audio narration of Molecular Clock Dating using MrBayes. By Chi Zhang. Published on March 17, 2016. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
