@@ -1009,8 +1009,11 @@ def clean_latex(text: str) -> str:
     text = re.sub(r"\\[a-zA-Z]+\*?\{([^}]*)\}", r"\1", text)
     text = re.sub(r"\\[a-zA-Z]+\*?",             " ",   text)
     text = re.sub(r"[{}]",                        "",    text)
-    # Clean up stray bracket groups from tikz/optional args
-    text = re.sub(r"\[[^\]]{0,80}\]", "", text)
+    # Strip known LaTeX optional-arg artifacts (targeted, not catch-all,
+    # so prose brackets like [precautionarily] are preserved)
+    text = re.sub(r"\[[htbpH!]+\]", "", text)             # float placement
+    text = re.sub(r"\[\d+(?:[,;\s]*\d+)*\]", "", text)    # numeric markers
+    text = re.sub(r"\[[lcr|p]+\]", "", text)               # column specs
 
     return text
 

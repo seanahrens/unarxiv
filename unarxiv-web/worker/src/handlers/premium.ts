@@ -4,7 +4,7 @@
 
 import type { Env, Paper, PaperStatus } from "../types";
 import { paperToResponse } from "../types";
-import { baseAudioKey, legacyPremiumAudioKey } from "./r2paths";
+import { legacyBaseAudioKey, legacyPremiumAudioKey } from "./r2paths";
 import {
   getPaper,
   claimPaperForPremium,
@@ -377,7 +377,7 @@ export async function handleNarratePremium(
 
       // Copy base audio to versioned R2 path (simulates Modal producing a new file)
       const versionedR2Key = legacyPremiumAudioKey(id, ttsProvider ?? "free");
-      const baseAudio = await env.AUDIO_BUCKET.get(baseAudioKey(id));
+      const baseAudio = await env.AUDIO_BUCKET.get(legacyBaseAudioKey(id));
       if (baseAudio) {
         await env.AUDIO_BUCKET.put(versionedR2Key, baseAudio.body, {
           httpMetadata: { contentType: "audio/mpeg" },
@@ -740,7 +740,7 @@ export async function handleDeletePremiumVersions(request: Request, env: Env, pa
      status = CASE WHEN status = 'narrating' THEN 'narrated' ELSE status END
      WHERE id = ?`
   )
-    .bind(baseAudioKey(paperId), paperId)
+    .bind(legacyBaseAudioKey(paperId), paperId)
     .run();
 
   return json({ ok: true, deleted_versions: versions.results.length });

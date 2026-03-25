@@ -24,6 +24,7 @@ import {
 import { arxivSrcUrl, scrapeArxivMetadata } from "../arxiv";
 import { json, requireAdmin, getClientIp } from "./helpers";
 import { computeQualityRank } from "./premium";
+import { legacyBaseTranscriptKey } from "./r2paths";
 
 // ─── Narration Trigger ───────────────────────────────────────────────────────
 
@@ -196,7 +197,7 @@ export async function handleReprocessPaper(
   if (mode !== "narration_only") {
     // Delete old transcript (will be regenerated)
     try {
-      await env.AUDIO_BUCKET.delete(`transcripts/${id}.txt`);
+      await env.AUDIO_BUCKET.delete(legacyBaseTranscriptKey(id));
     } catch (e) {
       console.error(`Failed to delete transcript for ${id}:`, e);
     }
@@ -350,7 +351,7 @@ export async function handleGetTranscript(env: Env, id: string, url: URL): Promi
   }
 
   // Support ?version=<id> for version-specific transcripts
-  let r2Key = `transcripts/${id}.txt`;
+  let r2Key = legacyBaseTranscriptKey(id);
   const versionParam = url.searchParams.get("version");
   if (versionParam) {
     const versionId = parseInt(versionParam, 10);
@@ -541,8 +542,8 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     duration_seconds: body.duration_seconds,
   });
 
-  // On completion, record a narration_version and update best_version_id
-  if (body.status === "narrated" && body.audio_r2_key) {
+  // On completion, record a narration_version and optionally update best_version_id
+  if (body.status === "narrated" && (body.audio_r2_key || body.transcript_r2_key)) {
     const narrationTier = body.narration_tier ?? "base";
     const ttsProvider = body.tts_provider ?? null;
     const ttsModel = body.tts_model ?? null;
@@ -563,7 +564,7 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       tts_model: ttsModel,
       llm_provider: body.llm_provider ?? null,
       llm_model: body.llm_model ?? null,
-      audio_r2_key: body.audio_r2_key,
+      audio_r2_key: body.audio_r2_key ?? null,
       transcript_r2_key: body.transcript_r2_key ?? null,
       duration_seconds: body.duration_seconds ?? null,
       actual_cost: body.actual_cost ?? null,
@@ -574,8 +575,10 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       provider_model: body.provider_model ?? null,
     });
 
-    // Atomically upgrade best_version_id if this version is better
-    await updateBestVersionId(env.DB, body.arxiv_id, version.id);
+    // Only update best_version_id when the version has audio (script_only versions don't)
+    if (body.audio_r2_key) {
+      await updateBestVersionId(env.DB, body.arxiv_id, version.id);
+    }
   }
 
   return json({ ok: true });

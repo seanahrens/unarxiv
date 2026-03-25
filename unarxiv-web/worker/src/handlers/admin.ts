@@ -11,6 +11,9 @@ import {
   clearRatingsForPaper,
   hasAnyLowRatings,
   getAllLists,
+  getVersionsWithScores,
+  insertNarrationScore,
+  getScoreTrends,
 } from "../db";
 import { json, requireAdmin } from "./helpers";
 
@@ -202,4 +205,52 @@ export async function handleAdminStoreModelCoefficients(request: Request, env: E
     .run();
 
   return json({ ok: true, provider_model: body.provider_model });
+}
+
+// ─── Narration Versions + Scores ─────────────────────────────────────────────
+
+/** GET /api/admin/papers/:id/versions — all versions with latest score. */
+export async function handleAdminGetVersionsWithScores(request: Request, env: Env, paperId: string): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const versions = await getVersionsWithScores(env.DB, paperId);
+  return json({ versions });
+}
+
+/** GET /api/admin/score-stats — daily + summary score trends for the Quality Insights panel. */
+export async function handleAdminScoreStats(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+  const data = await getScoreTrends(env.DB);
+  return json(data);
+}
+
+/** POST /api/admin/scores — insert a narration quality score. */
+export async function handleAdminSubmitScore(request: Request, env: Env): Promise<Response> {
+  const authErr = requireAdmin(request, env);
+  if (authErr) return authErr;
+
+  let body: {
+    version_id: number;
+    scored_by?: string;
+    score_fidelity?: number | null;
+    score_citations?: number | null;
+    score_header?: number | null;
+    score_figures?: number | null;
+    score_tts?: number | null;
+    score_overall?: number | null;
+    notes?: string | null;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON" }, 400);
+  }
+
+  if (!body.version_id || typeof body.version_id !== "number") {
+    return json({ error: "version_id (number) required" }, 400);
+  }
+
+  const result = await insertNarrationScore(env.DB, body);
+  return json({ ok: true, id: result.id });
 }

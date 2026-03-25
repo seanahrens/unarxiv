@@ -31,7 +31,7 @@ import { VOICE_TIERS, getTierFromProvider } from "@/lib/voiceTiers";
 
 const PAGE_SIZE = 30;
 
-type SortKey = "created_at" | "title" | "rating" | "status";
+type SortKey = "created_at" | "title" | "rating" | "status" | "duration";
 type SortDir = "asc" | "desc";
 type StatusFilter = "all" | "narrated" | "narrating" | "failed" | "unnarrated";
 
@@ -178,6 +178,470 @@ function RatingsModal({
   );
 }
 
+interface NarrationVersionWithScore {
+  id: number;
+  paper_id: string;
+  narration_tier: string;
+  quality_rank: number;
+  tts_provider: string | null;
+  tts_model: string | null;
+  llm_provider: string | null;
+  llm_model: string | null;
+  audio_r2_key: string | null;
+  transcript_r2_key: string | null;
+  duration_seconds: number | null;
+  actual_cost: number | null;
+  created_at: string;
+  scored_by: string | null;
+  score_fidelity: number | null;
+  score_citations: number | null;
+  score_header: number | null;
+  score_figures: number | null;
+  score_tts: number | null;
+  score_overall: number | null;
+  notes: string | null;
+  scored_at: string | null;
+}
+
+function ScorePill({ value }: { value: number | null }) {
+  if (value == null) return <span className="text-stone-300">—</span>;
+  const pct = Math.round(value * 100);
+  const cls =
+    value >= 0.8
+      ? "bg-emerald-100 text-emerald-800"
+      : value >= 0.5
+      ? "bg-amber-100 text-amber-800"
+      : "bg-red-100 text-red-700";
+  return (
+    <span className={`inline-block px-1 rounded text-xs font-mono ${cls}`}>{pct}</span>
+  );
+}
+
+function ScriptsModal({
+  paperId,
+  paperTitle,
+  password,
+  onClose,
+}: {
+  paperId: string;
+  paperTitle: string;
+  password: string;
+  onClose: () => void;
+}) {
+  const [versions, setVersions] = useState<NarrationVersionWithScore[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/admin/papers/${paperId}/versions`, {
+      headers: { "X-Admin-Password": password },
+    })
+      .then((r) => r.json())
+      .then((d: { versions: NarrationVersionWithScore[] }) => setVersions(d.versions))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [paperId, password]);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="bg-surface rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-bold text-stone-900 mb-1">Script Versions</h3>
+        <p className="text-sm text-stone-500 mb-4 truncate">{paperTitle}</p>
+
+        {loading ? (
+          <div className="space-y-2 py-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height="32px" />
+            ))}
+          </div>
+        ) : versions.length === 0 ? (
+          <div className="text-center py-8 text-stone-400 text-sm">No versions yet</div>
+        ) : (
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-stone-100 text-left text-stone-400 uppercase tracking-wider">
+                  <th className="px-2 py-1.5">Tier</th>
+                  <th className="px-2 py-1.5">LLM</th>
+                  <th className="px-2 py-1.5">TTS</th>
+                  <th className="px-2 py-1.5 text-center">Fid</th>
+                  <th className="px-2 py-1.5 text-center">Cit</th>
+                  <th className="px-2 py-1.5 text-center">Hdr</th>
+                  <th className="px-2 py-1.5 text-center">Fig</th>
+                  <th className="px-2 py-1.5 text-center">TTS</th>
+                  <th className="px-2 py-1.5 text-center">Overall</th>
+                  <th className="px-2 py-1.5 text-right">Created</th>
+                  <th className="px-2 py-1.5"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {versions.map((v) => (
+                  <tr key={v.id} className="border-b border-stone-50 hover:bg-stone-50">
+                    <td className="px-2 py-1.5 font-mono text-stone-600">{v.narration_tier}</td>
+                    <td className="px-2 py-1.5 text-stone-500 max-w-[80px] truncate" title={v.llm_model ?? ""}>
+                      {v.llm_provider ?? "—"}
+                    </td>
+                    <td className="px-2 py-1.5 text-stone-500 max-w-[80px] truncate" title={v.tts_model ?? ""}>
+                      {v.tts_provider ?? "edge-tts"}
+                    </td>
+                    <td className="px-2 py-1.5 text-center"><ScorePill value={v.score_fidelity} /></td>
+                    <td className="px-2 py-1.5 text-center"><ScorePill value={v.score_citations} /></td>
+                    <td className="px-2 py-1.5 text-center"><ScorePill value={v.score_header} /></td>
+                    <td className="px-2 py-1.5 text-center"><ScorePill value={v.score_figures} /></td>
+                    <td className="px-2 py-1.5 text-center"><ScorePill value={v.score_tts} /></td>
+                    <td className="px-2 py-1.5 text-center font-semibold"><ScorePill value={v.score_overall} /></td>
+                    <td className="px-2 py-1.5 text-right text-stone-400 whitespace-nowrap">
+                      {new Date(v.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-2 py-1.5">
+                      {v.transcript_r2_key && (
+                        <a
+                          href={`/s?id=${paperId}&version=${v.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-700 transition-colors"
+                          title="View script"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="flex justify-end mt-4 pt-3 border-t border-stone-100">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Quality Insights Panel ───────────────────────────────────────────────────
+
+interface ScoreDailyRow {
+  date: string;
+  narration_tier: string;
+  avg_overall: number | null;
+  avg_fidelity: number | null;
+  avg_citations: number | null;
+  avg_header: number | null;
+  avg_figures: number | null;
+  avg_tts: number | null;
+  count: number;
+}
+
+interface ScoreSummaryRow {
+  narration_tier: string;
+  avg_overall: number | null;
+  avg_7d: number | null;
+  avg_prior_7d: number | null;
+  count_7d: number;
+  total_count: number;
+  avg_fidelity: number | null;
+  avg_citations: number | null;
+  avg_header: number | null;
+  avg_figures: number | null;
+  avg_tts: number | null;
+}
+
+interface ScoreStats {
+  daily: ScoreDailyRow[];
+  summary: ScoreSummaryRow[];
+}
+
+function trendLabel(current: number | null, prior: number | null): { symbol: string; delta: string; color: string } | null {
+  if (current == null || prior == null) return null;
+  const diff = current - prior;
+  const pp = Math.round(diff * 100);
+  if (Math.abs(pp) < 1) return { symbol: "→", delta: "~0pp", color: "text-stone-400" };
+  if (pp > 0) return { symbol: "↑", delta: `+${pp}pp`, color: "text-emerald-600" };
+  return { symbol: "↓", delta: `${pp}pp`, color: "text-red-500" };
+}
+
+function scoreColor(v: number | null): string {
+  if (v == null) return "bg-stone-100";
+  if (v >= 0.8) return "bg-emerald-400";
+  if (v >= 0.5) return "bg-amber-400";
+  return "bg-red-400";
+}
+
+/** SVG trend chart — daily avg_overall per tier over last 30 days */
+function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
+  const W = 600;
+  const H = 110;
+  const PAD = { top: 10, right: 8, bottom: 22, left: 28 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  // Build a unified date list across all tiers
+  const allDates = Array.from(new Set(daily.map((r) => r.date))).sort();
+
+  // Group rows by "base" vs "llm" (aggregate plus tiers)
+  const seriesMap: Record<string, Map<string, number | null>> = {
+    base: new Map(),
+    llm: new Map(),
+  };
+  for (const r of daily) {
+    const key = r.narration_tier === "base" ? "base" : "llm";
+    const existing = seriesMap[key].get(r.date);
+    if (existing == null) {
+      seriesMap[key].set(r.date, r.avg_overall);
+    } else if (r.avg_overall != null) {
+      seriesMap[key].set(r.date, ((existing ?? 0) + r.avg_overall) / 2);
+    }
+  }
+
+  const dateToX = (date: string) => {
+    const idx = allDates.indexOf(date);
+    if (allDates.length <= 1) return PAD.left + cW / 2;
+    return PAD.left + (idx / (allDates.length - 1)) * cW;
+  };
+  const scoreToY = (score: number) => PAD.top + (1 - score) * cH;
+
+  const renderSeries = (key: string, stroke: string, fill: string) => {
+    const points: { x: number; y: number; date: string }[] = [];
+    for (const date of allDates) {
+      const v = seriesMap[key].get(date);
+      if (v != null) points.push({ x: dateToX(date), y: scoreToY(v), date });
+    }
+    if (points.length === 0) return null;
+    const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+    return (
+      <g key={key}>
+        {points.length >= 2 && (
+          <polyline points={polylinePoints} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" />
+        )}
+        {points.map((p) => (
+          <circle key={p.date} cx={p.x} cy={p.y} r="3" fill={fill} stroke="white" strokeWidth="1" />
+        ))}
+      </g>
+    );
+  };
+
+  // Grid lines at 0.25, 0.5, 0.75
+  const gridLines = [0.25, 0.5, 0.75, 1.0];
+
+  // X-axis date labels (first + last)
+  const firstDate = allDates[0];
+  const lastDate = allDates[allDates.length - 1];
+  const fmtDate = (d: string) => d ? d.slice(5) : ""; // MM-DD
+
+  const hasBase = (seriesMap.base.size > 0);
+  const hasLlm = (seriesMap.llm.size > 0);
+
+  if (!hasBase && !hasLlm) {
+    return (
+      <div className="flex items-center justify-center h-20 text-xs text-stone-300">
+        No scored data in the last 30 days
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
+        {/* Grid lines */}
+        {gridLines.map((v) => (
+          <g key={v}>
+            <line
+              x1={PAD.left} y1={scoreToY(v)}
+              x2={PAD.left + cW} y2={scoreToY(v)}
+              stroke="#e7e5e4" strokeWidth="1"
+            />
+            <text x={PAD.left - 4} y={scoreToY(v) + 4} textAnchor="end" fontSize="8" fill="#a8a29e">
+              {Math.round(v * 100)}
+            </text>
+          </g>
+        ))}
+        {/* Y=0 baseline */}
+        <line x1={PAD.left} y1={scoreToY(0)} x2={PAD.left + cW} y2={scoreToY(0)} stroke="#d6d3d1" strokeWidth="1" />
+        {/* Series */}
+        {hasBase && renderSeries("base", "#78716c", "#78716c")}
+        {hasLlm && renderSeries("llm", "#7c3aed", "#7c3aed")}
+        {/* X-axis labels */}
+        {firstDate && (
+          <text x={dateToX(firstDate)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
+            {fmtDate(firstDate)}
+          </text>
+        )}
+        {lastDate && lastDate !== firstDate && (
+          <text x={dateToX(lastDate)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
+            {fmtDate(lastDate)}
+          </text>
+        )}
+      </svg>
+      {/* Legend */}
+      <div className="flex gap-4 justify-end mt-1">
+        {hasBase && (
+          <span className="flex items-center gap-1 text-xs text-stone-500">
+            <span className="inline-block w-3 h-0.5 bg-stone-500 rounded" />
+            Base
+          </span>
+        )}
+        {hasLlm && (
+          <span className="flex items-center gap-1 text-xs text-violet-600">
+            <span className="inline-block w-3 h-0.5 bg-violet-500 rounded" />
+            LLM
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Horizontal bar rows for each goal, one column per tier */
+function GoalBreakdown({ summary }: { summary: ScoreSummaryRow[] }) {
+  const base = summary.find((r) => r.narration_tier === "base");
+  const llm = summary.find((r) => r.narration_tier !== "base");
+
+  const goals: { label: string; key: keyof ScoreSummaryRow }[] = [
+    { label: "Fidelity", key: "avg_fidelity" },
+    { label: "Citations", key: "avg_citations" },
+    { label: "Header/Footer", key: "avg_header" },
+    { label: "Figures", key: "avg_figures" },
+    { label: "TTS", key: "avg_tts" },
+  ];
+
+  const Bar = ({ value }: { value: number | null }) => {
+    if (value == null) return <span className="text-stone-200 text-xs">—</span>;
+    const pct = Math.round(value * 100);
+    const barColor = value >= 0.8 ? "bg-emerald-400" : value >= 0.5 ? "bg-amber-400" : "bg-red-400";
+    return (
+      <div className="flex items-center gap-1.5 flex-1">
+        <div className="flex-1 bg-stone-100 rounded-full h-1.5 overflow-hidden">
+          <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+        </div>
+        <span className="text-xs text-stone-500 w-7 text-right font-mono">{pct}%</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="flex mb-1">
+        <div className="w-24 shrink-0" />
+        {base && <div className="flex-1 text-xs text-stone-400 text-center">Base</div>}
+        {llm && <div className="flex-1 text-xs text-violet-400 text-center">LLM</div>}
+      </div>
+      {goals.map(({ label, key }) => (
+        <div key={key} className="flex items-center gap-2 py-1">
+          <div className="w-24 shrink-0 text-xs text-stone-400">{label}</div>
+          {base && <Bar value={base[key] as number | null} />}
+          {llm && <Bar value={llm[key] as number | null} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function QualityInsightsPanel({
+  stats,
+  expanded,
+  onToggle,
+}: {
+  stats: ScoreStats;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const base = stats.summary.find((r) => r.narration_tier === "base");
+  const llm = stats.summary.find((r) => r.narration_tier !== "base");
+  const totalEvals = stats.summary.reduce((s, r) => s + r.total_count, 0);
+
+  const TierPill = ({ row, color }: { row: ScoreSummaryRow; color: string }) => {
+    const trend = trendLabel(row.avg_7d, row.avg_prior_7d);
+    const avg = row.avg_7d ?? row.avg_overall;
+    const pct = avg != null ? Math.round(avg * 100) : null;
+    return (
+      <span className={`inline-flex items-center gap-1 text-xs font-medium ${color}`}>
+        {row.narration_tier === "base" ? "Base" : "LLM"}
+        {pct != null && <span className="font-mono">{pct}%</span>}
+        {trend && <span className={trend.color}>{trend.symbol}</span>}
+      </span>
+    );
+  };
+
+  return (
+    <div className="mb-4 rounded-xl border border-stone-100 bg-surface overflow-hidden">
+      {/* Header row — always visible */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-stone-50 transition-colors text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="text-xs font-medium text-stone-400 uppercase tracking-wider">Quality Insights</span>
+          <span className="flex items-center gap-2.5">
+            {base && <TierPill row={base} color="text-stone-600" />}
+            {llm && <TierPill row={llm} color="text-violet-600" />}
+            {totalEvals > 0 && (
+              <span className="text-xs text-stone-300">{totalEvals} eval{totalEvals !== 1 ? "s" : ""}</span>
+            )}
+          </span>
+        </span>
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          className={`text-stone-300 transition-transform ${expanded ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {/* Expanded body */}
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-stone-50">
+          {/* Summary pills with delta */}
+          {(base || llm) && (
+            <div className="flex gap-4 pt-3 pb-2">
+              {[base, llm].filter(Boolean).map((row) => {
+                const r = row!;
+                const trend = trendLabel(r.avg_7d, r.avg_prior_7d);
+                const avg7d = r.avg_7d != null ? Math.round(r.avg_7d * 100) : null;
+                const isBase = r.narration_tier === "base";
+                return (
+                  <div key={r.narration_tier} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isBase ? "bg-stone-50" : "bg-violet-50"}`}>
+                    <span className={`text-xs font-semibold ${isBase ? "text-stone-600" : "text-violet-700"}`}>
+                      {isBase ? "Base" : "LLM"}
+                    </span>
+                    {avg7d != null && (
+                      <span className={`text-sm font-bold font-mono ${isBase ? "text-stone-800" : "text-violet-800"}`}>
+                        {avg7d}%
+                      </span>
+                    )}
+                    {trend && (
+                      <span className={`text-xs ${trend.color}`}>{trend.symbol} {trend.delta}</span>
+                    )}
+                    <span className="text-xs text-stone-300">{r.count_7d}ev/7d</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Trend chart */}
+          <ScoreTrendChart daily={stats.daily} />
+
+          {/* Goal breakdown */}
+          {stats.summary.length > 0 && <GoalBreakdown summary={stats.summary} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const externalLinks = [
   {
     label: "Modal Apps",
@@ -291,6 +755,9 @@ export default function AdminPage() {
   const [yourPaperIds, setYourPaperIds] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState<Set<string>>(new Set());
   const [ratingsModal, setRatingsModal] = useState<{ paperId: string; title: string } | null>(null);
+  const [scriptsModal, setScriptsModal] = useState<{ paperId: string; title: string } | null>(null);
+  const [scoreStats, setScoreStats] = useState<ScoreStats | null>(null);
+  const [showQualityPanel, setShowQualityPanel] = useState(false);
   const [reprocessMenuOpen, setReprocessMenuOpen] = useState(false);
   const reprocessMenuRef = useRef<HTMLDivElement>(null);
   const [actionError, setActionError] = useState("");
@@ -371,6 +838,11 @@ export default function AdminPage() {
       .then(setCollections)
       .catch(console.error);
 
+    fetch(`${API_BASE}/api/admin/score-stats`, { headers: { "X-Admin-Password": pw } })
+      .then((r) => r.json())
+      .then((d: ScoreStats) => setScoreStats(d))
+      .catch(console.error);
+
     let interval: ReturnType<typeof setInterval> | null = null;
     const start = () => { if (!interval) interval = setInterval(loadPapers, 5000); };
     const stop = () => { if (interval) { clearInterval(interval); interval = null; } };
@@ -428,6 +900,8 @@ export default function AdminPage() {
         case "status":
           return dir * ((STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3))
             || -((a.created_at || "").localeCompare(b.created_at || ""));
+        case "duration":
+          return dir * ((a.duration_seconds ?? 0) - (b.duration_seconds ?? 0));
         case "created_at":
         default:
           return dir * ((a.created_at || "").localeCompare(b.created_at || ""));
@@ -445,7 +919,7 @@ export default function AdminPage() {
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir(key === "created_at" ? "desc" : "asc"); }
+    else { setSortKey(key); setSortDir(key === "created_at" || key === "duration" ? "desc" : "asc"); }
   };
 
   const toggleSelect = useCallback((id: string) => {
@@ -641,6 +1115,15 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Quality Insights panel — shown when score data exists */}
+      {scoreStats && (scoreStats.daily.length > 0 || scoreStats.summary.length > 0) && (
+        <QualityInsightsPanel
+          stats={scoreStats}
+          expanded={showQualityPanel}
+          onToggle={() => setShowQualityPanel((v) => !v)}
+        />
+      )}
+
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <div className="flex rounded-lg border border-stone-200 overflow-hidden">
@@ -810,12 +1293,16 @@ export default function AdminPage() {
                     <SortArrow active={sortKey === "rating"} dir={sortDir} />
                   </span>
                 </th>
-                <th className="px-2 py-2 w-10 text-center">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5" className="inline opacity-60">
-                    <path d="M4 4h16v16H4z" rx="2" />
-                    <path d="M8 8h8M8 12h6" />
-                  </svg>
+                <th className="px-2 py-2 w-10 cursor-pointer select-none text-center" onClick={() => handleSort("duration")}>
+                  <span className="inline-flex items-center gap-0.5 text-stone-400 justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-60">
+                      <path d="M4 4h16v16H4z" rx="2" />
+                      <path d="M8 8h8M8 12h6" />
+                    </svg>
+                    <SortArrow active={sortKey === "duration"} dir={sortDir} />
+                  </span>
                 </th>
+                <th className="px-2 py-2 w-8 text-center text-stone-400">Hist</th>
                 <th className="px-2 py-2 w-8 cursor-pointer select-none text-center" onClick={() => handleSort("created_at")}>
                   <span className="inline-flex items-center gap-0.5 text-stone-400 justify-center">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -890,6 +1377,19 @@ export default function AdminPage() {
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
                       </svg>
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 text-center">
+                    {(paper.status === "narrated" || paper.status === "narrating") && (
+                      <button
+                        onClick={() => setScriptsModal({ paperId: paper.id, title: paper.title })}
+                        className="text-stone-400 hover:text-stone-600 transition-colors"
+                        title="View script versions"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M3 3h18v4H3z" /><path d="M3 10h18v4H3z" /><path d="M3 17h18v4H3z" />
+                        </svg>
+                      </button>
                     )}
                   </td>
                   <td className="px-2 py-1.5 text-center">
@@ -1097,6 +1597,15 @@ export default function AdminPage() {
           paperTitle={ratingsModal.title}
           password={password}
           onClose={() => setRatingsModal(null)}
+        />
+      )}
+
+      {scriptsModal && password && (
+        <ScriptsModal
+          paperId={scriptsModal.paperId}
+          paperTitle={scriptsModal.title}
+          password={password}
+          onClose={() => setScriptsModal(null)}
         />
       )}
     </div>

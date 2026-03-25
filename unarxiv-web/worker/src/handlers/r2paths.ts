@@ -1,26 +1,26 @@
 /**
  * Centralized R2 storage key conventions.
  *
- * Base (free) narrations use flat keys: audio/{id}.mp3
- * Premium versions use versioned keys: audio/{id}/v{versionId}.mp3
+ * All narrations (base and premium) now use versioned keys.
+ * Legacy flat keys are kept for backward-compatible reads of pre-versioning objects.
  */
 
-/** R2 key for the base (free) audio file. */
-export function baseAudioKey(arxivId: string): string {
+/** @deprecated Legacy flat path — backward-compat reads of pre-versioning narrations only. */
+export function legacyBaseAudioKey(arxivId: string): string {
   return `audio/${arxivId}.mp3`;
 }
 
-/** R2 key for a versioned (premium) audio file. */
+/** R2 key for a versioned audio file (base or premium). */
 export function versionedAudioKey(arxivId: string, versionId: string): string {
   return `audio/${arxivId}/v${versionId}.mp3`;
 }
 
-/** R2 key for the base (free) transcript. */
-export function baseTranscriptKey(arxivId: string): string {
+/** @deprecated Legacy flat path — backward-compat reads of pre-versioning narrations only. */
+export function legacyBaseTranscriptKey(arxivId: string): string {
   return `transcripts/${arxivId}.txt`;
 }
 
-/** R2 key for a versioned (premium) transcript. */
+/** R2 key for a versioned transcript (base or premium). */
 export function versionedTranscriptKey(arxivId: string, versionId: string): string {
   return `transcripts/${arxivId}/v${versionId}.txt`;
 }

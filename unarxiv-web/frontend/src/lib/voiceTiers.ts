@@ -23,6 +23,8 @@ export interface VoiceTier {
   rank: number;
   /** Number of plus icons (0 = base, 1–3 = upgrade tiers) */
   plusCount: 0 | 1 | 2 | 3;
+  /** Shortened description for mobile (after the lead phrase period) */
+  shortDescription: string;
   /** Estimated TTS processing seconds per 1K characters (for time estimates in UI) */
   secsPerKChar: number;
 }
@@ -32,6 +34,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     id: "plus3",
     label: "Most Lifelike Voice",
     description: "Most Lifelike Voice. Nearly human.",
+    shortDescription: "Most Lifelike Voice.",
     providerName: "ElevenLabs",
     voiceName: "Will",
     rank: 4,
@@ -42,6 +45,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     id: "plus2",
     label: "Polished Voice",
     description: "Polished Voice. Expressive. Pleasant.",
+    shortDescription: "Polished Voice. Expressive.",
     providerName: "OpenAI",
     voiceName: "Onyx",
     rank: 3,
@@ -52,6 +56,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     id: "plus1",
     label: "Basic Voice",
     description: "Basic Voice. Decent. A tinge botty.",
+    shortDescription: "Basic Voice. Decent.",
     providerName: "Microsoft",
     voiceName: "Eric",
     rank: 2,
@@ -62,6 +67,7 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
     id: "base",
     label: "Basic Voice",
     description: "Basic Voice. The default narration with no upgrades applied.",
+    shortDescription: "Basic Voice.",
     providerName: "Microsoft",
     voiceName: "Aria",
     rank: 1,

@@ -1013,3 +1013,162 @@ export async function updateScriptCharCount(db: D1Database, paperId: string, cha
     .bind(charCount, paperId)
     .run();
 }
+
+// ─── Narration Scores ─────────────────────────────────────────────────────────
+
+export interface NarrationScore {
+  id: number;
+  version_id: number;
+  scored_by: string;
+  score_fidelity: number | null;
+  score_citations: number | null;
+  score_header: number | null;
+  score_figures: number | null;
+  score_tts: number | null;
+  score_overall: number | null;
+  notes: string | null;
+  scored_at: string;
+}
+
+export interface NarrationVersionWithScore extends NarrationVersion {
+  scored_by: string | null;
+  score_fidelity: number | null;
+  score_citations: number | null;
+  score_header: number | null;
+  score_figures: number | null;
+  score_tts: number | null;
+  score_overall: number | null;
+  notes: string | null;
+  scored_at: string | null;
+}
+
+/** Get all narration versions for a paper with their latest score (LEFT JOIN). */
+export async function getVersionsWithScores(db: D1Database, paperId: string): Promise<NarrationVersionWithScore[]> {
+  const results = await db
+    .prepare(
+      `SELECT nv.*,
+              ns.scored_by, ns.score_fidelity, ns.score_citations,
+              ns.score_header, ns.score_figures, ns.score_tts, ns.score_overall,
+              ns.notes, ns.scored_at
+       FROM narration_versions nv
+       LEFT JOIN narration_scores ns ON ns.version_id = nv.id
+         AND ns.id = (SELECT MAX(id) FROM narration_scores WHERE version_id = nv.id)
+       WHERE nv.paper_id = ?
+       ORDER BY nv.created_at DESC`
+    )
+    .bind(paperId)
+    .all<NarrationVersionWithScore>();
+  return results.results;
+}
+
+export interface InsertNarrationScoreInput {
+  version_id: number;
+  scored_by?: string;
+  score_fidelity?: number | null;
+  score_citations?: number | null;
+  score_header?: number | null;
+  score_figures?: number | null;
+  score_tts?: number | null;
+  score_overall?: number | null;
+  notes?: string | null;
+}
+
+/** Insert a new narration quality score row. */
+export async function insertNarrationScore(db: D1Database, input: InsertNarrationScoreInput): Promise<{ id: number }> {
+  const result = await db
+    .prepare(
+      `INSERT INTO narration_scores
+         (version_id, scored_by, score_fidelity, score_citations, score_header,
+          score_figures, score_tts, score_overall, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id`
+    )
+    .bind(
+      input.version_id,
+      input.scored_by ?? "eval-agent",
+      input.score_fidelity ?? null,
+      input.score_citations ?? null,
+      input.score_header ?? null,
+      input.score_figures ?? null,
+      input.score_tts ?? null,
+      input.score_overall ?? null,
+      input.notes ?? null,
+    )
+    .first<{ id: number }>();
+  if (!result) throw new Error("insertNarrationScore: no row returned");
+  return result;
+}
+
+// ─── Score Trends ─────────────────────────────────────────────────────────────
+
+export interface ScoreDailyRow {
+  date: string;
+  narration_tier: string;
+  avg_overall: number | null;
+  avg_fidelity: number | null;
+  avg_citations: number | null;
+  avg_header: number | null;
+  avg_figures: number | null;
+  avg_tts: number | null;
+  count: number;
+}
+
+export interface ScoreSummaryRow {
+  narration_tier: string;
+  avg_overall: number | null;
+  avg_fidelity: number | null;
+  avg_citations: number | null;
+  avg_header: number | null;
+  avg_figures: number | null;
+  avg_tts: number | null;
+  total_count: number;
+  avg_7d: number | null;
+  count_7d: number;
+  avg_prior_7d: number | null;
+}
+
+/**
+ * Returns daily score averages (last 30 days, by tier) and all-time summary averages (by tier).
+ * Used by the admin Quality Insights panel.
+ */
+export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDailyRow[]; summary: ScoreSummaryRow[] }> {
+  const [dailyResult, summaryResult] = await Promise.all([
+    db.prepare(`
+      SELECT date(ns.scored_at) as date,
+             nv.narration_tier,
+             AVG(ns.score_overall)   as avg_overall,
+             AVG(ns.score_fidelity)  as avg_fidelity,
+             AVG(ns.score_citations) as avg_citations,
+             AVG(ns.score_header)    as avg_header,
+             AVG(ns.score_figures)   as avg_figures,
+             AVG(ns.score_tts)       as avg_tts,
+             COUNT(*)                as count
+      FROM narration_scores ns
+      JOIN narration_versions nv ON nv.id = ns.version_id
+      WHERE ns.scored_at >= date('now', '-30 days')
+      GROUP BY date(ns.scored_at), nv.narration_tier
+      ORDER BY date ASC
+    `).all<ScoreDailyRow>(),
+
+    db.prepare(`
+      SELECT nv.narration_tier,
+             AVG(ns.score_overall)   as avg_overall,
+             AVG(ns.score_fidelity)  as avg_fidelity,
+             AVG(ns.score_citations) as avg_citations,
+             AVG(ns.score_header)    as avg_header,
+             AVG(ns.score_figures)   as avg_figures,
+             AVG(ns.score_tts)       as avg_tts,
+             COUNT(*)                as total_count,
+             AVG(CASE WHEN ns.scored_at >= date('now','-7 days') THEN ns.score_overall END) as avg_7d,
+             SUM(CASE WHEN ns.scored_at >= date('now','-7 days') THEN 1 ELSE 0 END)         as count_7d,
+             AVG(CASE WHEN ns.scored_at >= date('now','-14 days')
+                       AND ns.scored_at < date('now','-7 days')
+                      THEN ns.score_overall END) as avg_prior_7d
+      FROM narration_scores ns
+      JOIN narration_versions nv ON nv.id = ns.version_id
+      GROUP BY nv.narration_tier
+    `).all<ScoreSummaryRow>(),
+  ]);
+
+  return { daily: dailyResult.results, summary: summaryResult.results };
+}

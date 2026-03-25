@@ -199,6 +199,27 @@ CREATE TABLE IF NOT EXISTS narration_versions (
 CREATE INDEX IF NOT EXISTS idx_nv_paper ON narration_versions(paper_id);
 CREATE INDEX IF NOT EXISTS idx_nv_quality ON narration_versions(paper_id, quality_rank DESC);
 
+-- Per-script quality scores from automated eval agent (migration 010)
+-- Each row is one evaluation run of one narration_version.
+-- scored_by: 'eval-agent' | 'human'
+-- Scores are 0.0–1.0 per goal; score_overall is a weighted composite.
+CREATE TABLE IF NOT EXISTS narration_scores (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    version_id       INTEGER NOT NULL REFERENCES narration_versions(id) ON DELETE CASCADE,
+    scored_by        TEXT NOT NULL DEFAULT 'eval-agent',
+    score_fidelity   REAL,   -- Goal 1: near-verbatim fidelity
+    score_citations  REAL,   -- Goal 2: citation/footnote stripping
+    score_header     REAL,   -- Goal 3: header/footer compliance
+    score_figures    REAL,   -- Goal 4: figure/table description quality
+    score_tts        REAL,   -- Goal 5: TTS formatting quality
+    score_overall    REAL,   -- weighted composite (0.0–1.0)
+    notes            TEXT,   -- eval agent findings / specific issues
+    scored_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_scores_version ON narration_scores(version_id);
+CREATE INDEX IF NOT EXISTS idx_scores_scored_at ON narration_scores(scored_at);
+
 -- ML cost model coefficients (migration 009)
 -- Trained by evals/cost_model/train.py and deployed via POST /api/admin/model-coefficients
 CREATE TABLE IF NOT EXISTS model_coefficients (

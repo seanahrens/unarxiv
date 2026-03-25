@@ -15,6 +15,7 @@ import os
 import tempfile
 import tarfile
 import time
+import uuid
 
 
 def _safe_extractall(tf: tarfile.TarFile, path: str) -> None:
@@ -42,6 +43,7 @@ image = (
     # Active parser_v2 modules
     .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py", copy=True)
     .add_local_file("source_download.py", "/app/source_download.py", copy=True)
+    .add_local_file("r2paths.py", "/app/r2paths.py", copy=True)
     .add_local_dir("parser_v2", "/app/parser_v2", copy=True, ignore=["test_data/*", "__pycache__/*"])
 )
 
@@ -172,12 +174,15 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             send_status(callback_url, secret, arxiv_id, status="narrating",
                         progress_detail="Downloading existing transcript...")
             print(f"Downloading existing transcript for {arxiv_id}...")
-            speech = _download_from_r2(f"transcripts/{arxiv_id}.txt")
+            from r2paths import legacy_base_transcript_key
+            speech = _download_from_r2(legacy_base_transcript_key(arxiv_id))
             if not speech:
                 raise RuntimeError(f"No transcript found in R2 for {arxiv_id}")
             print(f"Loaded transcript: {len(speech):,} chars")
         else:
             # --- Stage 1: Download, extract, process source ---
+            from r2paths import versioned_audio_key, versioned_transcript_key
+            version_id = uuid.uuid4().hex[:12]
             send_status(callback_url, secret, arxiv_id, status="narrating")
 
             pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
@@ -312,7 +317,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             transcript_path = os.path.join(work_dir, f"{arxiv_id}-transcript.txt")
             with open(transcript_path, "w") as f:
                 f.write(speech)
-            transcript_r2_key = f"transcripts/{arxiv_id}.txt"
+            transcript_r2_key = versioned_transcript_key(arxiv_id, version_id)
             print(f"Uploading transcript to R2: {transcript_r2_key}")
             upload_to_r2(transcript_path, transcript_r2_key, content_type="text/plain; charset=utf-8")
 
@@ -323,6 +328,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 status="narrated",
                 progress_detail="Script regenerated",
                 narration_tier="base",
+                transcript_r2_key=transcript_r2_key,
+                version_id=version_id,
             )
             print(f"Script-only done: {arxiv_id}")
             return
@@ -406,7 +413,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         print(f"Audio generated: {file_size / (1024*1024):.1f} MB, {duration_seconds}s")
 
         # --- Upload to R2 ---
-        r2_key = f"audio/{arxiv_id}.mp3"
+        r2_key = versioned_audio_key(arxiv_id, version_id)
         print(f"Uploading to R2: {r2_key}")
         upload_to_r2(output_path, r2_key)
 
@@ -419,6 +426,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             audio_size_bytes=file_size,
             duration_seconds=duration_seconds,
             narration_tier="base",
+            transcript_r2_key=transcript_r2_key,
+            version_id=version_id,
             script_char_count=len(tts_text),
             **_source_stats,
         )

@@ -144,13 +144,17 @@ function OptionCard({
 }) {
   const tier = VOICE_TIERS[estimate.option_id];
   const description = tier?.description ?? `${estimate.display_name}. ${estimate.tagline}`;
+  const shortDescription = tier?.shortDescription ?? description;
   const providerName = tier?.providerName ?? estimate.display_name;
   const plusCount = tier?.plusCount ?? 0;
 
-  // Split description into bold lead phrase + rest
-  const dotIdx = description.indexOf(".");
-  const leadPhrase = dotIdx >= 0 ? description.slice(0, dotIdx + 1) : description;
-  const rest = dotIdx >= 0 ? description.slice(dotIdx + 1).trim() : "";
+  // Split descriptions into bold lead phrase + rest
+  const splitDesc = (d: string) => {
+    const i = d.indexOf(".");
+    return { lead: i >= 0 ? d.slice(0, i + 1) : d, rest: i >= 0 ? d.slice(i + 1).trim() : "" };
+  };
+  const full = splitDesc(description);
+  const short = splitDesc(shortDescription);
 
   return (
     <div
@@ -223,8 +227,16 @@ function OptionCard({
             </button>
           )}
           <div className="flex-1 min-w-0 whitespace-nowrap">
-            <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{leadPhrase}</p>
-            {rest && <p className="text-xs text-stone-500 leading-snug">{rest}</p>}
+            {/* Mobile: short description */}
+            <div className="sm:hidden">
+              <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{short.lead}</p>
+              {short.rest && <p className="text-xs text-stone-500 leading-snug">{short.rest}</p>}
+            </div>
+            {/* Desktop: full description */}
+            <div className="hidden sm:block">
+              <p className={`text-xs font-bold leading-snug ${disabled ? "text-stone-400" : "text-stone-700"}`}>{full.lead}</p>
+              {full.rest && <p className="text-xs text-stone-500 leading-snug">{full.rest}</p>}
+            </div>
           </div>
           <div className="text-right flex flex-col items-end shrink-0">
             {inProgress ? (
@@ -1062,19 +1074,25 @@ export default function PremiumNarrationModal({
                 {(() => {
                   const t = VOICE_TIERS[selectedEstimate.option_id];
                   const desc = t?.description ?? selectedEstimate.display_name;
-                  const dotIdx = desc.indexOf(".");
-                  const leadPhrase = dotIdx >= 0 ? desc.slice(0, dotIdx + 1) : desc;
-                  const rest = dotIdx >= 0 ? desc.slice(dotIdx + 1).trim() : "";
+                  const shortDesc = t?.shortDescription ?? desc;
+                  const split = (d: string) => {
+                    const i = d.indexOf(".");
+                    return { lead: i >= 0 ? d.slice(0, i + 1) : d, rest: i >= 0 ? d.slice(i + 1).trim() : "" };
+                  };
+                  const f = split(desc);
+                  const s = split(shortDesc);
                   return (
                     <>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <PlusIcons count={t?.plusCount ?? 0} size={12} />
-                          <span className="text-sm font-semibold text-stone-800">{leadPhrase}</span>
+                          <span className="text-sm font-semibold text-stone-800 sm:hidden">{s.lead}</span>
+                          <span className="text-sm font-semibold text-stone-800 hidden sm:inline">{f.lead}</span>
                         </div>
                         <span className="text-xs text-stone-400">{t?.providerName ?? ""}</span>
                       </div>
-                      {rest && <p className="text-xs text-stone-500">{rest}</p>}
+                      <p className="text-xs text-stone-500 sm:hidden">{s.rest || null}</p>
+                      {f.rest && <p className="text-xs text-stone-500 hidden sm:block">{f.rest}</p>}
                     </>
                   );
                 })()}

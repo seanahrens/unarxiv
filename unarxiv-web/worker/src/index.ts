@@ -71,6 +71,9 @@ import {
   handleAdminLists,
   handleAdminCostTrainingData,
   handleAdminStoreModelCoefficients,
+  handleAdminGetVersionsWithScores,
+  handleAdminSubmitScore,
+  handleAdminScoreStats,
 } from "./handlers/admin";
 import { cleanup } from "./db";
 import { curateHuggingFaceTopPapers } from "./handlers/curation";
@@ -218,6 +221,21 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       method: "POST",
       pattern: /^\/api\/admin\/model-coefficients$/,
       handler: (req, env) => handleAdminStoreModelCoefficients(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/score-stats$/,
+      handler: (req, env) => handleAdminScoreStats(req, env),
+    },
+    {
+      method: "GET",
+      pattern: /^\/api\/admin\/papers\/([\w.-]+)\/versions$/,
+      handler: (req, env, _url, m) => handleAdminGetVersionsWithScores(req, env, m[1]),
+    },
+    {
+      method: "POST",
+      pattern: /^\/api\/admin\/scores$/,
+      handler: (req, env) => handleAdminSubmitScore(req, env),
     },
     {
       method: "DELETE",

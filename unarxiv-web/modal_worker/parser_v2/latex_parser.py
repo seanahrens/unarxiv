@@ -522,7 +522,7 @@ def _convert_lists(text: str) -> str:
             continue
 
         # Handle \item
-        item_m = re.match(r"\\item\s*(.*)", stripped)
+        item_m = re.match(r"\\item\s*(?:\[[^\]]*\])?\s*(.*)", stripped)
         if item_m:
             content = item_m.group(1)
             if in_list_type and in_list_type[-1] == "enum" and enum_counters:
@@ -591,6 +591,10 @@ def _strip_citations(text: str) -> str:
     # Clean up orphaned reference text pointing to nothing
     # "Figure " or "Table " at end of sentence or before comma
     text = re.sub(r"\b(Figure|Fig\.|Table|Eq\.|Equation)\s*~?\s*(?=[,.\s]|$)", "", text, flags=re.MULTILINE)
+
+    # Clean up parenthetical citation lists now empty except for "e.g."/"i.e."
+    # "(e.g. ; ; )" or "(e.g.)" → "" — the intro phrase is meaningless without citations
+    text = re.sub(r"\(\s*(?:e\.g\.|i\.e\.)\s*[;,\s]*\)", "", text)
 
     # Clean up empty parentheses/brackets left by dropped citations
     text = re.sub(r"\(\s*\)", "", text)
@@ -730,8 +734,11 @@ def _normalize_text(text: str) -> str:
     text = re.sub(r"\\[a-zA-Z]+\*?", " ", text)
     # Strip bare braces
     text = re.sub(r"[{}]", "", text)
-    # Strip orphaned optional arg brackets (short ones only)
-    text = re.sub(r"\[[^\]]{0,80}\]", "", text)
+    # Strip known LaTeX optional-arg artifacts (targeted, not catch-all,
+    # so prose brackets like [precautionarily] are preserved)
+    text = re.sub(r"\[[htbpH!]+\]", "", text)             # float placement: [htbp], [!t], [H]
+    text = re.sub(r"\[\d+(?:[,;\s]*\d+)*\]", "", text)    # numeric markers: [1], [2,3]
+    text = re.sub(r"\[[lcr|p]+\]", "", text)               # column specs: [c], [l|r]
     # Strip stray backslashes
     text = text.replace("\\", "")
     # Strip dollar signs
@@ -745,6 +752,9 @@ def _normalize_text(text: str) -> str:
     text = re.sub(r"\bsee\s*\.", ".", text)
     text = re.sub(r"\(see\s*\)", "", text)
     text = re.sub(r"such as\s*\.", ".", text)
+    # "(for example, )" or "(for example, ; )" — dangling intro after citation removal
+    text = re.sub(r"\(\s*for example,[\s;,]*\)", "", text)
+    text = re.sub(r"\(\s*that is,[\s;,]*\)", "", text)
     # "in , reducing" → ", reducing"  (dangling "in" before comma)
     text = re.sub(r"\bin\s*,", ",", text)
     text = re.sub(r"\bin\s*\.", ".", text)
@@ -752,6 +762,11 @@ def _normalize_text(text: str) -> str:
     text = re.sub(r"\bat\s+\.", ".", text)
     # "from ." → "."
     text = re.sub(r"\bfrom\s+\.", ".", text)
+
+    # Dangling "in/see Section" with no number → replace with readable phrase
+    # "in Section." → "in a later section."  (preserves sentence structure)
+    text = re.sub(r"\bin\s+Section\s*(?=[.,;:)])", "in a later section", text)
+    text = re.sub(r"\bsee\s+Section\s*(?=[.,;:)])", "see a later section", text)
 
     # "Figure" / "Table" etc. with no number following → remove
     text = re.sub(r"\b(Figure|Fig\.|Table|Section|Eq\.|Equation)\s*(?=[,.\s;:)]|$)", "", text, flags=re.MULTILINE)
