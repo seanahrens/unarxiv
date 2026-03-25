@@ -56,5 +56,7 @@ These items were identified in previous sessions and are explicitly deferred:
 
 ## Deploy Status
 
-- **Worker** (`unarxiv-api`): Deployed 2026-03-25 (see below)
+- **Worker** (`unarxiv-api`): Version `18fc4a30-ac07-4d4e-887d-0e8404976aa3` — deployed 2026-03-25
 - **Frontend** (`unarxiv-frontend`): No frontend changes; not redeployed
+
+**Note:** `wrangler.production.toml` (gitignored) still contains `QUEUE_BATCH_SIZE = "3"` — only the committed `wrangler.toml` was updated. Since the Worker never reads this var, the production deploy is unaffected. The production.toml should be cleaned up manually on next access.
