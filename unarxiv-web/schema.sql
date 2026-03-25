@@ -214,6 +214,7 @@ CREATE TABLE IF NOT EXISTS narration_scores (
     score_tts        REAL,   -- Goal 5: TTS formatting quality
     score_overall    REAL,   -- weighted composite (0.0–1.0)
     notes            TEXT,   -- eval agent findings / specific issues
+    parser_commit    TEXT,   -- short git commit hash of parser code that produced the script
     scored_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

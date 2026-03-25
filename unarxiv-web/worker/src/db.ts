@@ -1071,6 +1071,7 @@ export interface InsertNarrationScoreInput {
   score_tts?: number | null;
   score_overall?: number | null;
   notes?: string | null;
+  parser_commit?: string | null;
 }
 
 /** Insert a new narration quality score row. */
@@ -1079,8 +1080,8 @@ export async function insertNarrationScore(db: D1Database, input: InsertNarratio
     .prepare(
       `INSERT INTO narration_scores
          (version_id, scored_by, score_fidelity, score_citations, score_header,
-          score_figures, score_tts, score_overall, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          score_figures, score_tts, score_overall, notes, parser_commit)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING id`
     )
     .bind(
@@ -1093,6 +1094,7 @@ export async function insertNarrationScore(db: D1Database, input: InsertNarratio
       input.score_tts ?? null,
       input.score_overall ?? null,
       input.notes ?? null,
+      input.parser_commit ?? null,
     )
     .first<{ id: number }>();
   if (!result) throw new Error("insertNarrationScore: no row returned");
@@ -1102,7 +1104,10 @@ export async function insertNarrationScore(db: D1Database, input: InsertNarratio
 // ─── Score Trends ─────────────────────────────────────────────────────────────
 
 export interface ScoreDailyRow {
-  date: string;
+  /** Parser commit hash (7-char) when available, else YYYY-MM-DD date string. */
+  period: string;
+  /** ISO timestamp of the earliest score in this group — used for x-axis ordering. */
+  period_start: string;
   narration_tier: string;
   avg_overall: number | null;
   avg_fidelity: number | null;
@@ -1134,7 +1139,8 @@ export interface ScoreSummaryRow {
 export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDailyRow[]; summary: ScoreSummaryRow[] }> {
   const [dailyResult, summaryResult] = await Promise.all([
     db.prepare(`
-      SELECT date(ns.scored_at) as date,
+      SELECT COALESCE(ns.parser_commit, date(ns.scored_at)) as period,
+             MIN(ns.scored_at)       as period_start,
              nv.narration_tier,
              AVG(ns.score_overall)   as avg_overall,
              AVG(ns.score_fidelity)  as avg_fidelity,
@@ -1145,9 +1151,9 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
              COUNT(*)                as count
       FROM narration_scores ns
       JOIN narration_versions nv ON nv.id = ns.version_id
-      WHERE ns.scored_at >= date('now', '-30 days')
-      GROUP BY date(ns.scored_at), nv.narration_tier
-      ORDER BY date ASC
+      WHERE ns.scored_at >= date('now', '-90 days')
+      GROUP BY COALESCE(ns.parser_commit, date(ns.scored_at)), nv.narration_tier
+      ORDER BY period_start ASC
     `).all<ScoreDailyRow>(),
 
     db.prepare(`

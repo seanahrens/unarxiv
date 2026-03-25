@@ -240,6 +240,7 @@ export async function handleAdminSubmitScore(request: Request, env: Env): Promis
     score_tts?: number | null;
     score_overall?: number | null;
     notes?: string | null;
+    parser_commit?: string | null;
   };
   try {
     body = await request.json();

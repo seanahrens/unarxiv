@@ -334,7 +334,8 @@ function ScriptsModal({
 // ─── Quality Insights Panel ───────────────────────────────────────────────────
 
 interface ScoreDailyRow {
-  date: string;
+  period: string;       // commit hash (7-char) or YYYY-MM-DD date fallback
+  period_start: string; // ISO timestamp for ordering
   narration_tier: string;
   avg_overall: number | null;
   avg_fidelity: number | null;
@@ -380,7 +381,16 @@ function scoreColor(v: number | null): string {
   return "bg-red-400";
 }
 
-/** SVG trend chart — daily avg_overall per tier over last 30 days */
+/** Format a period key for x-axis display.
+ * If it's a 7-char hex commit hash, show as-is.
+ * If it's a YYYY-MM-DD date, show MM-DD. */
+function fmtPeriod(p: string): string {
+  if (!p) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(p)) return p.slice(5); // date → MM-DD
+  return p.slice(0, 7); // commit hash → first 7 chars
+}
+
+/** SVG trend chart — avg_overall per parser version/commit per tier */
 function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   const W = 600;
   const H = 110;
@@ -388,36 +398,38 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   const cW = W - PAD.left - PAD.right;
   const cH = H - PAD.top - PAD.bottom;
 
-  // Build a unified date list across all tiers
-  const allDates = Array.from(new Set(daily.map((r) => r.date))).sort();
+  // Build ordered period list, sorted by period_start (chronological)
+  const periodOrder = Array.from(
+    new Map(daily.map((r) => [r.period, r.period_start])).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1])).map(([p]) => p);
 
-  // Group rows by "base" vs "llm" (aggregate plus tiers)
+  // Group rows by "base" vs "llm", keyed by period
   const seriesMap: Record<string, Map<string, number | null>> = {
     base: new Map(),
     llm: new Map(),
   };
   for (const r of daily) {
     const key = r.narration_tier === "base" ? "base" : "llm";
-    const existing = seriesMap[key].get(r.date);
+    const existing = seriesMap[key].get(r.period);
     if (existing == null) {
-      seriesMap[key].set(r.date, r.avg_overall);
+      seriesMap[key].set(r.period, r.avg_overall);
     } else if (r.avg_overall != null) {
-      seriesMap[key].set(r.date, ((existing ?? 0) + r.avg_overall) / 2);
+      seriesMap[key].set(r.period, ((existing ?? 0) + r.avg_overall) / 2);
     }
   }
 
-  const dateToX = (date: string) => {
-    const idx = allDates.indexOf(date);
-    if (allDates.length <= 1) return PAD.left + cW / 2;
-    return PAD.left + (idx / (allDates.length - 1)) * cW;
+  const periodToX = (period: string) => {
+    const idx = periodOrder.indexOf(period);
+    if (periodOrder.length <= 1) return PAD.left + cW / 2;
+    return PAD.left + (idx / (periodOrder.length - 1)) * cW;
   };
   const scoreToY = (score: number) => PAD.top + (1 - score) * cH;
 
   const renderSeries = (key: string, stroke: string, fill: string) => {
-    const points: { x: number; y: number; date: string }[] = [];
-    for (const date of allDates) {
-      const v = seriesMap[key].get(date);
-      if (v != null) points.push({ x: dateToX(date), y: scoreToY(v), date });
+    const points: { x: number; y: number; period: string }[] = [];
+    for (const period of periodOrder) {
+      const v = seriesMap[key].get(period);
+      if (v != null) points.push({ x: periodToX(period), y: scoreToY(v), period });
     }
     if (points.length === 0) return null;
     const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
@@ -427,7 +439,9 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
           <polyline points={polylinePoints} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" />
         )}
         {points.map((p) => (
-          <circle key={p.date} cx={p.x} cy={p.y} r="3" fill={fill} stroke="white" strokeWidth="1" />
+          <circle key={p.period} cx={p.x} cy={p.y} r="3" fill={fill} stroke="white" strokeWidth="1">
+            <title>{p.period}</title>
+          </circle>
         ))}
       </g>
     );
@@ -436,10 +450,9 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   // Grid lines at 0.25, 0.5, 0.75
   const gridLines = [0.25, 0.5, 0.75, 1.0];
 
-  // X-axis date labels (first + last)
-  const firstDate = allDates[0];
-  const lastDate = allDates[allDates.length - 1];
-  const fmtDate = (d: string) => d ? d.slice(5) : ""; // MM-DD
+  // X-axis labels: first, last, and any in between if space allows (max 5)
+  const firstPeriod = periodOrder[0];
+  const lastPeriod = periodOrder[periodOrder.length - 1];
 
   const hasBase = (seriesMap.base.size > 0);
   const hasLlm = (seriesMap.llm.size > 0);
@@ -447,7 +460,7 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   if (!hasBase && !hasLlm) {
     return (
       <div className="flex items-center justify-center h-20 text-xs text-stone-300">
-        No scored data in the last 30 days
+        No scored data yet
       </div>
     );
   }
@@ -474,28 +487,33 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
         {hasBase && renderSeries("base", "#78716c", "#78716c")}
         {hasLlm && renderSeries("llm", "#7c3aed", "#7c3aed")}
         {/* X-axis labels */}
-        {firstDate && (
-          <text x={dateToX(firstDate)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
-            {fmtDate(firstDate)}
+        {firstPeriod && (
+          <text x={periodToX(firstPeriod)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
+            {fmtPeriod(firstPeriod)}
           </text>
         )}
-        {lastDate && lastDate !== firstDate && (
-          <text x={dateToX(lastDate)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
-            {fmtDate(lastDate)}
+        {lastPeriod && lastPeriod !== firstPeriod && (
+          <text x={periodToX(lastPeriod)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
+            {fmtPeriod(lastPeriod)}
           </text>
         )}
+        {periodOrder.slice(1, -1).map((p) => (
+          <text key={p} x={periodToX(p)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
+            {fmtPeriod(p)}
+          </text>
+        ))}
       </svg>
       {/* Legend */}
       <div className="flex gap-4 justify-end mt-1">
         {hasBase && (
-          <span className="flex items-center gap-1 text-xs text-stone-500">
-            <span className="inline-block w-3 h-0.5 bg-stone-500 rounded" />
+          <span className="flex items-center gap-1 text-xs" style={{ color: "#78716c" }}>
+            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#78716c" }} />
             Base
           </span>
         )}
         {hasLlm && (
-          <span className="flex items-center gap-1 text-xs text-violet-600">
-            <span className="inline-block w-3 h-0.5 bg-violet-500 rounded" />
+          <span className="flex items-center gap-1 text-xs" style={{ color: "#7c3aed" }}>
+            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#7c3aed" }} />
             LLM
           </span>
         )}
@@ -518,7 +536,12 @@ function GoalBreakdown({ summary }: { summary: ScoreSummaryRow[] }) {
   ];
 
   const Bar = ({ value }: { value: number | null }) => {
-    if (value == null) return <span className="text-stone-200 text-xs">—</span>;
+    if (value == null) return (
+      <div className="flex items-center gap-1.5 flex-1">
+        <div className="flex-1" />
+        <span className="text-xs text-stone-300 w-7 text-right font-mono">—</span>
+      </div>
+    );
     const pct = Math.round(value * 100);
     const barColor = value >= 0.8 ? "bg-emerald-400" : value >= 0.5 ? "bg-amber-400" : "bg-red-400";
     return (
