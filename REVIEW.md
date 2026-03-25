@@ -1,71 +1,60 @@
-# unarXiv Review — 2026-03-24
+# unarXiv Review — 2026-03-25
 
 ## Changes Made
 
-### docs(claude.md): fix Turnstile code location
+### chore(worker): remove unused QUEUE_BATCH_SIZE env var from wrangler.toml
 
-**File:** `CLAUDE.md`
+**File:** `unarxiv-web/worker/wrangler.toml`
 
-The Conventions section referenced `worker/src/index.ts` as the location of the disabled Turnstile bot protection code. This was inaccurate — the worker stub is in `narration.ts` (`handleNarrationCheck`) and the frontend widget lives in `TurnstileWidget.tsx`. Updated the note to point to both.
+`QUEUE_BATCH_SIZE = "3"` was listed in wrangler.toml but was removed from the TypeScript `Env` interface in a previous refactor session. The Worker never reads this var, so it has no effect. Removed to keep config in sync with the codebase.
 
-### fix(worker): log R2 delete errors in `handleDeleteMyAddition`
+This was noted as a "new observation" in the 2026-03-24 review. Closing it now.
 
-**File:** `unarxiv-web/worker/src/handlers/user.ts`
-
-`handleDeleteMyAddition` silently swallowed R2 deletion errors (`try { ... } catch {}`), making it impossible to diagnose R2 failures in logs. `handleDeletePaper` already logs these errors with `console.error`. Made the pattern consistent.
-
-No behavior change — the deletion attempt still proceeds and the paper is still removed from the DB regardless of whether R2 cleanup succeeds.
-
-### fix(worker): log R2 delete errors in `handleReprocessPaper`
+### refactor(worker): remove stale legacy webhook payload compat block
 
 **File:** `unarxiv-web/worker/src/handlers/narration.ts`
 
-Same issue: both the transcript and audio R2 deletions in `handleReprocessPaper` were silently swallowed. Added `console.error` logging to both catch blocks. Consistent with `handleDeletePaper`.
+The `handleModalWebhook` function contained a ~30-line compatibility block that flattened old nested payload formats (`providers`, `costs` dicts and a `quality_rank`-based `narration_tier` inference). It was written when the Modal worker was mid-migration and marked for removal "after ~1 week."
 
-No behavior change — reprocess still proceeds even if old R2 files can't be deleted.
+The 2026-03-24 review flagged this for removal but deferred it pending human confirmation that Modal had fully migrated. Code review of `narrate.py` and the premium narration pipeline in `narrate_paper_premium()` confirms that all `send_status()` calls use flat fields only — no nested `providers`/`costs` dicts are sent anywhere in the current Modal codebase. The compat block was dead code.
 
-### refactor(worker): remove redundant intermediate variable in `handleListPapers`
+Removed:
+- The compat block itself (~25 lines)
+- The now-unused field declarations from the body type (`script_r2_key`, `providers`, `costs`, `quality_rank`)
 
-**File:** `unarxiv-web/worker/src/handlers/papers.ts`
-
-```typescript
-// Before
-const popular = await getPopularPapers(env.DB, perPage, offset);
-papers = popular;
-
-// After
-papers = await getPopularPapers(env.DB, perPage, offset);
-```
-
-The `popular` variable was assigned immediately to `papers` with no intermediate use. Simplified to a direct assignment.
+No behavior change for any live narration flow.
 
 ---
 
 ## Left Unchanged (Carried Over — Needs Human Decision)
 
-These items were identified in previous sessions and are explicitly deferred for human decision-making:
+These items were identified in previous sessions and are explicitly deferred:
 
-- **`DAILY_GLOBAL_LIMIT` / `getGlobalSubmissionCount` not enforced** — The env var is defined in `types.ts` (and even set to `"50"` in wrangler), and `getGlobalSubmissionCount()` exists in `db.ts`, but neither is wired together in any handler. Decide whether to implement the global cap, document it as intentionally unimplemented (e.g. "reserved"), or remove the dead infrastructure entirely.
+- **`DAILY_GLOBAL_LIMIT` / `getGlobalSubmissionCount` not enforced** — The env var is defined and set to `"50"` in wrangler.toml, and `getGlobalSubmissionCount()` exists in `db.ts`, but neither is wired together in any handler. Decide whether to implement the global cap, document it as intentionally unimplemented, or remove the dead infrastructure entirely.
 
-- **Legacy webhook payload flattening in `handleModalWebhook`** — The block flattening nested `providers`/`costs` objects from old Modal payloads has a comment saying to remove it "after ~1 week." That window has almost certainly passed. Needs human confirmation that Modal has fully transitioned to the flat payload format before removal.
-
-- **`/api/my-additions` worker route** — Registered and functional, but no frontend callers. The corresponding `handleDeleteMyAddition` (for `DELETE /api/my-additions/:id`) is used by the `my-papers` page. The `GET /api/my-additions` route has no frontend caller. Decide whether to build UI for it, keep it unused, or remove it.
+- **`/api/my-additions` GET route with no frontend callers** — Registered and functional in the worker, but the frontend doesn't call it. `handleDeleteMyAddition` (for `DELETE /api/my-additions/:id`) is used by `my-papers` page; the GET endpoint has no caller. Decide whether to build UI for it, keep it unused, or remove it.
 
 - **`admin/page.tsx` size** — Single file of ~1000+ lines. Splitting would improve maintainability but is high blast-radius; deferred for deliberate planning.
 
-- **Design system / shared component library** — No shared `Button`/`Modal` primitives; `shadcn/ui` would reduce modal duplication but is a significant dependency addition. Human decision.
+- **Design system / shared component library** — No shared `Button`/`Modal` primitives; `shadcn/ui` would reduce modal duplication (`RatingModal` inline in `PaperPageContent.tsx`, `PremiumNarrationModal.tsx` at 1200+ lines) but is a significant dependency addition. Human decision.
+
+- **`RatingModal` inline in `PaperPageContent.tsx`** — The `RatingModal`, `StarIcon`, `StarRatingInput`, `CopyableId`, and `BackButton` sub-components are all defined inline in `PaperPageContent.tsx` (~700 lines total). Each could be extracted to its own file. Deferred as non-urgent and low-risk to leave as-is.
+
+- **`handleReprocessPaper` Modal dispatch duplication** — The inline `fetch` in `handleReprocessPaper` duplicates parts of `dispatchToModal`, but the two paths have meaningfully different behavior (different payload shape including `mode`, different error handling — reprocess does not revert status on failure). Left as-is to avoid over-engineering a one-off admin code path.
 
 ---
 
 ## New Observations (No Action Required Today)
 
-- **`QUEUE_BATCH_SIZE` env var** — Appears in `wrangler.toml` and `wrangler.production.toml` (set to `"3"`) but was removed from the `Env` TypeScript interface in a prior refactor session. The wrangler config entries are harmless but could be cleaned up. Since they're in wrangler config and not in TypeScript, they don't cause type errors and pose no risk.
+- **`voiceTiers.ts` and `api.ts` parallel TTS provider lookup functions** — `voiceTiers.ts` exports `getTierFromProvider()` for resolving a TTS provider name to a `VoiceTier`. `api.ts` has a private `ttsProviderToTierId()` that does a similar lookup but returns a string ID for grouping premium estimate options. The two functions have different semantics and are each used in the right place. Acceptable duplication.
 
-- **`VOICE_TIERS` parallel mapping** — `voiceTiers.ts` exports `getTierFromProvider()` for resolving a TTS provider name to a `VoiceTier` object. `api.ts` has a private `ttsProviderToTierId()` that does a similar lookup but returns a string ID for grouping premium estimate options. The two functions have slightly different semantics and both are used in the right places; this duplication is acceptable for now.
+- **`recoverStalePapers` hardcoded URL** — `const baseUrl = "https://api.unarxiv.org"` at line 136 of `narration.ts`. This is intentional (the cron runs in production only; Modal must call back to the production API, not localhost), but worth noting for anyone who extends the cron logic.
+
+- **`buildRouteTable` called on every request** — The worker rebuilds the array of ~45 route entries (including `new RegExp(...)` calls) on every request because `baseUrl` is passed per-request. In practice V8 handles this efficiently and the overhead is negligible at the expected request volume; not worth the added complexity of memoizing.
 
 ---
 
 ## Deploy Status
 
-- **Worker** (`unarxiv-api`): Version `ce9e25ff-08f8-4339-897b-8718a4408704` — deployed 2026-03-24
-- **Frontend** (`unarxiv-frontend`): Deployment `03fec32d` — deployed 2026-03-24
+- **Worker** (`unarxiv-api`): Deployed 2026-03-25 (see below)
+- **Frontend** (`unarxiv-frontend`): No frontend changes; not redeployed
