@@ -427,7 +427,6 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     llm_provider?: string;
     llm_model?: string;
     transcript_r2_key?: string;
-    script_r2_key?: string; // Modal sends this instead of transcript_r2_key
     actual_cost?: number;
     llm_cost?: number;
     tts_cost?: number;
@@ -440,41 +439,11 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     actual_input_tokens?: number;
     actual_output_tokens?: number;
     provider_model?: string;
-    // Modal sends nested objects for premium narration callbacks
-    providers?: { llm?: string; llm_model?: string; tts?: string; tts_voice?: string };
-    costs?: { llm_cost_usd?: number; tts_cost_usd?: number; total_cost_usd?: number };
-    quality_rank?: number;
     version_id?: string;
   }>();
 
   if (!body.arxiv_id || !body.status) {
     return json({ error: "arxiv_id and status required" }, 400);
-  }
-
-  // Legacy fallback: flatten nested provider/cost objects from old Modal payloads.
-  // New Modal sends flat fields + explicit version_type. Remove this block after
-  // all in-flight narrations from the old Modal code have completed (~1 week).
-  if (body.providers) {
-    console.warn(`[webhook] Legacy nested 'providers' payload for ${body.arxiv_id} — update Modal`);
-    if (!body.tts_provider && body.providers.tts) body.tts_provider = body.providers.tts;
-    if (!body.tts_model && body.providers.tts_voice) body.tts_model = body.providers.tts_voice;
-    if (!body.llm_provider && body.providers.llm) body.llm_provider = body.providers.llm;
-    if (!body.llm_model && body.providers.llm_model) body.llm_model = body.providers.llm_model;
-  }
-  if (body.costs) {
-    if (body.actual_cost == null && body.costs.total_cost_usd != null) body.actual_cost = body.costs.total_cost_usd;
-    if (body.llm_cost == null && body.costs.llm_cost_usd != null) body.llm_cost = body.costs.llm_cost_usd;
-    if (body.tts_cost == null && body.costs.tts_cost_usd != null) body.tts_cost = body.costs.tts_cost_usd;
-  }
-  // Legacy: Modal used to send script_r2_key instead of transcript_r2_key
-  if (!body.transcript_r2_key && body.script_r2_key) {
-    body.transcript_r2_key = body.script_r2_key;
-  }
-  // Legacy: infer narration_tier from quality_rank/tts_provider if Modal didn't send it explicitly
-  if (!body.narration_tier && body.quality_rank != null && body.quality_rank > 0) {
-    console.warn(`[webhook] Legacy quality_rank-based narration_tier inference for ${body.arxiv_id}`);
-    const provider = body.tts_provider ?? "";
-    body.narration_tier = provider === "elevenlabs" ? "plus3" : provider === "openai" ? "plus2" : "plus1";
   }
 
   // Update script_char_count if provided (from script generation phase)
