@@ -403,7 +403,7 @@ def _strip_non_prose(text: str) -> str:
 
     # Remove figure, table, bibliography environments entirely
     text = re.sub(
-        r"\\begin\{(figure|table|icmlauthorlist|thebibliography)[*]?\}.*?\\end\{\1[*]?\}",
+        r"\\begin\{(figure|table|longtable|icmlauthorlist|thebibliography)[*]?\}.*?\\end\{\1[*]?\}",
         "", text, flags=re.DOTALL,
     )
     # Also strip from first \bibitem onward
@@ -678,6 +678,12 @@ def _handle_math(text: str) -> str:
     - Inline math ($...$): Attempt to convert to spoken form
     - Superscripts/subscripts: Remove notation artifacts
     """
+    # Convert LaTeX escaped dollar signs to "dollar" BEFORE inline math regex.
+    # In LaTeX, \$ is a literal currency dollar sign (e.g. \$137 for USD 137).
+    # If not pre-converted, \$...\$ spans are incorrectly treated as math delimiters,
+    # causing hyphens within the span to become "minus" and large spans to be deleted.
+    text = text.replace("\\$", "dollar ")
+
     # Remove display math
     text = re.sub(r"\\\[.*?\\\]", "", text, flags=re.DOTALL)
     text = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL)
@@ -759,7 +765,6 @@ def _normalize_text(text: str) -> str:
     text = text.replace("\\\\", " ")
     text = text.replace("\\_", " ")
     text = text.replace("\\#", "")
-    text = text.replace("\\$", "dollar ")
     text = re.sub(r"\\&", " and ", text)
     text = text.replace("\\%", " percent")
 

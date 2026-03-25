@@ -1,0 +1,354 @@
+\documentclass{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PREAMBLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%===============================================================================
+% Encoding and language
+%===============================================================================
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+%===============================================================================
+% Core text, layout, and typography
+%===============================================================================
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{lscape}
+\usepackage{float}
+
+%===============================================================================
+% Mathematics and theorem environments
+%===============================================================================
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{bm}
+
+%===============================================================================
+% Tables and arrays
+%===============================================================================
+\usepackage{makecell}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{siunitx}
+
+\sisetup{
+  round-mode = places,
+  round-precision = 2,
+  detect-all
+}
+
+% \newcolumntype{C}{>{\centering\arraybackslash}X}
+
+%===============================================================================
+% Figures and captions
+%===============================================================================
+\usepackage{graphicx}
+% \usepackage{subfigure}
+\usepackage{subcaption}
+
+%===============================================================================
+% Lists, boxes, and utilities
+%===============================================================================
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{dashrule}
+\usepackage{etoolbox}
+\usepackage{lipsum}
+\usepackage{pifont}
+
+\tcbuselibrary{breakable}
+\tcbuselibrary{skins,breakable}
+
+%===============================================================================
+% Color and links
+%===============================================================================
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\definecolor{Flagging}{HTML}{D97C7C}
+\definecolor{Counts}{HTML}{8BB3E6}
+\definecolor{Extraction}{HTML}{8FD3B0}
+\definecolor{linkgrey}{RGB}{90,90,90}
+
+\definecolor{OliveGreenDark}{HTML}{556B2F}
+\definecolor{RedDark}{HTML}{8B1A1A}
+\definecolor{flagred}{RGB}{214,39,40}
+\definecolor{flagblue}{RGB}{31,119,180}
+\definecolor{flaggreen}{RGB}{44,160,44}
+
+\usepackage{xcolor}
+\definecolor{myred}{RGB}{200,0,0}
+
+%===============================================================================
+% TOC and appendix handling
+%===============================================================================
+\usepackage{etoc}
+\usepackage[toc,page,header]{appendix}
+% \usepackage{minitoc}
+
+% Make the "Part I" text invisible
+\renewcommand{\thepart}{}
+\renewcommand{\partname}{}
+
+\usepackage{enumitem}
+
+%===============================================================================
+% Code, todos, and annotations
+%===============================================================================
+\usepackage[textsize=tiny]{todonotes}
+
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    breakatwhitespace=true,
+    columns=fullflexible
+}
+
+\usepackage{minted}
+
+%===============================================================================
+% ICML style
+%===============================================================================
+% Appendix TOC HACK: Save the TOC command before ICML kills it
+\let\oldaddcontentsline\addcontentsline
+
+\usepackage[preprint]{icml2026}
+\let\addcontentsline\oldaddcontentsline
+
+%===============================================================================
+% Project/status macros
+%===============================================================================
+\newcommand{\published}{\textcolor{OliveGreen!75}{\Large$\bullet$}}
+\newcommand{\preprint}{\textcolor{SpringGreen!75}{\Large$\bullet$}}
+\newcommand{\extractionphase}{\textcolor{YellowOrange!75}{\Large$\bullet$}}
+\newcommand{\notstarted}{\textcolor{Bittersweet!75}{\Large$\bullet$}}
+
+\newcommand{\deflagging}{\textcolor{Flagging}{\Large$\bullet$}}
+\newcommand{\decounts}{\textcolor{Counts}{\Large$\bullet$}}
+\newcommand{\deextraction}{\textcolor{Extraction}{\Large$\bullet$}}
+
+\newcommand{\bestM}[1]{\textbf{#1}}       % Best model per row (Black Bold)
+\newcommand{\secondM}[1]{\underline{#1}}  % Second-best model per row (Underline)
+\newcommand{\highP}[1]{{\color{OliveGreen}#1}} % Highest pathogen value per column
+\newcommand{\lowP}[1]{{\color{red!70!black}#1}} % Lowest pathogen value per column
+
+\newcommand{\SP}[1]{\textcolor{magenta}{[Shrey: #1]}}
+\newcommand{\ROK}[1]{\textcolor{orange}{[Ryan: #1]}}
+\newcommand{\ES}[1]{\textcolor{purple}{[Liza: #1]}}
+
+% Coloured tick / cross symbols
+\newcommand{\IN}{\textcolor{OliveGreenDark}{\textbf{\checkmark}}}
+\newcommand{\EX}{\textcolor{RedDark}{\textbf{\texttimes}}}
+
+% Macro for main project name
+\newcommand{\name}{AgentSLR}
+
+\newcommand{\dashtext}[2][\linewidth]{%
+  \par\medskip
+  \noindent
+  \makebox[#1]{%
+    \hdashrule{0.45\linewidth}{0.4pt}{3pt 3pt}%
+    \hspace{0.6em}%
+    \textit{#2}%
+    \hspace{0.6em}%
+    \hdashrule{0.45\linewidth}{0.4pt}{3pt 3pt}%
+  }%
+  \medskip\par
+}
+
+% Attempt to make hyperref and algorithmic work together better:
+\providecommand{\theHalgorithm}{\arabic{algorithm}}
+
+\newcommand{\myred}[1]{\textcolor{myred}{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THEOREMS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ICML TITLE BLOCK
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\icmltitlerunning{Automating Systematic Literature Reviews in Epidemiology with Agentic AI}
+
+\makeatletter
+\def\printAffiliationsAndNotice{%
+  \global\icml@noticeprintedtrue%
+  {\let\thefootnote\relax
+   \footnotetext{%
+     \hspace*{-\footnotesep}%
+     \textsuperscript{*}Equal contribution.\\
+     Correspondence to:
+     \texttt{shreyansh.padarha@oii.ox.ac.uk, adam.mahdi@oii.ox.ac.uk}.%
+   }%
+  }%
+}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DOCUMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TITLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\twocolumn[
+\icmltitle{
+AgentSLR: Automating Systematic Literature Reviews\\ in Epidemiology with Agentic AI
+}
+
+\icmlsetsymbol{equal}{*}
+
+\begin{icmlauthorlist}
+
+\icmlauthor{Shreyansh Padarha}{equal,ox}
+\icmlauthor{Ryan Othniel Kearns}{equal,ox}
+\icmlauthor{Tristan Naidoo}{sph}
+\icmlauthor{Lingyi Yang}{nott}
+\icmlauthor{\L{}ukasz Borchmann}{snow}
+\icmlauthor{Piotr B\l{}aszczyk}{ind}
+\icmlauthor{Christian Morgenstern}{sph}
+\icmlauthor{Ruth McCabe}{sph}
+\icmlauthor{Sangeeta Bhatia}{sph}
+\icmlauthor{Philip H. Torr}{ox}\\
+\icmlauthor{Jakob Foerster}{ox}
+\icmlauthor{Scott A. Hale}{ox}
+\icmlauthor{Thomas Rawson}{ox}
+\icmlauthor{Anne Cori}{sph}
+\icmlauthor{Elizaveta Semenova}{sph}
+\icmlauthor{Adam Mahdi}{ox}
+\end{icmlauthorlist}
+
+\icmlcorrespondingauthor{Shreyansh Padarha}{shreyansh.padarha@oii.ox.ac.uk}
+\icmlcorrespondingauthor{Adam Mahdi}{adam.mahdi@oii.ox.ac.uk}
+
+\icmlkeywords{AI for Science, Agents, LLMs, Systematic Reviews, Epidemiology}
+
+\icmlaffiliation{ox}{University of Oxford}
+\icmlaffiliation{sph}{School of Public Health, Imperial College London}
+\icmlaffiliation{nott}{University of Nottingham}
+\icmlaffiliation{snow}{Snowflake AI Research}
+\icmlaffiliation{ind}{Independent}
+
+\begin{center}
+{
+\textsuperscript{1}University of Oxford \quad
+\textsuperscript{2}Imperial College London \quad \\ 
+\textsuperscript{3}University of Nottingham \quad
+\textsuperscript{4}Snowflake AI Research \quad
+\textsuperscript{5}Independent \quad
+}
+\end{center}
+
+\vskip 0.2in
+
+\begin{center}
+\href{https://oxrml.com/agent-slr}{\color{linkgrey}\raisebox{-0.2\height}{\includegraphics[height=12pt]{figures/icons/website.png}}\hspace{8pt}\texttt{oxrml.com/agent-slr}}
+\quad\quad
+\href{https://huggingface.co/datasets/OxRML/AgentSLR}{\color{linkgrey}\raisebox{-0.2\height}{\includegraphics[height=12pt]{figures/icons/dataset.png}}\hspace{8pt}\texttt{OxRML/AgentSLR}}
+\quad\quad
+\href{https://github.com/OxRML/AgentSLR}{\color{linkgrey}\raisebox{-0.2\height}{\includegraphics[height=12pt]{figures/icons/code.png}}\hspace{8pt}\texttt{OxRML/AgentSLR}}
+\end{center}
+
+\vskip 0.2in
+]
+
+\printAffiliationsAndNotice
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TABLE OF CONTENTS HACK
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Appendix TOC Hack: Table of contents (hidden but recorded)
+\setcounter{tocdepth}{3}
+\etocsettocstyle{}{}
+\etocsetnexttocdepth{-2}
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MAIN TEXT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{content/abstract}
+
+\input{content/s1_introduction}
+\input{content/s2_pipeline}
+\input{content/s3_methods}
+\input{content/s4_1_results}
+\input{content/s4_2_results_data_validation}
+\input{content/s5_model_ablations}
+\input{content/s6_discussion}
+\input{content/s7_related_work}
+\input{content/s8_limitations}
+\input{content/s9_conclusion}
+\input{content/sx_acknowledgment_impact_stament}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REFERENCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \bibliography{references}
+\bibliographystyle{icml2026}
+
+\input{main.bbl}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\appendix
+\onecolumn
+
+% Appendix TOC Hack
+% Suppress "Part" prefix for appendix
+\renewcommand{\partname}{}
+\renewcommand{\thepart}{}
+\part{Appendix} % LB: Required for the hack to work
+
+\etocsettocstyle{\setlength{\parskip}{0pt}}{}
+\etocsetnexttocdepth{2}
+\localtableofcontents
+
+\clearpage
+
+\input{content/appendices/A_article_extraction}
+\input{content/appendices/B_screening_criteria_prompts}
+\input{content/appendices/C_data_extraction}
+\input{content/appendices/D_report_generation}
+\input{content/appendices/E_evaluation_constructs}
+\input{content/appendices/F_pipeline_statistics}
+\input{content/appendices/G_extended_evaluation_results}
+\input{content/appendices/H_model_ablations}
+\input{content/appendices/I_living_systematic_reviews}
+\input{content/appendices/J_extended_validation_results}
+\input{content/appendices/K_PERG_pipeline}
+\input{content/appendices/L_annotation_tool}
+
+\end{document}

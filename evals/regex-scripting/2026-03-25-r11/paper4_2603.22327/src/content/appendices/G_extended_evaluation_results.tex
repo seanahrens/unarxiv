@@ -1,0 +1,359 @@
+\clearpage
+\section{Extended  Results}\label{app:pipeline_stage_eval}
+This section reports disaggregated results across pathogens and stages for \name{} (\texttt{gpt-oss-120b}), presented in \cref{sec:PERG_data_evaluation}.
+
+\subsection{Article Screening}
+\label{app:extended_results_article_screening}
+
+\subsubsection*{Title and Abstract Screening}
+Table~\ref{tab:abstract_screening_metrics} summarises title-and-abstract screening performance across seven pathogens, showing moderate overall recall ($0.72$) alongside high precision ($0.79$), for an overall $F_1$ of $0.74$. This pattern suggests the abstract-stage screening is tuned toward specificity, prioritising the rejection of irrelevant studies at the cost of more false negatives. Performance is broadly consistent across pathogens, with the strongest balance for MERS ($F_1$ of $0.78$) and the weakest for Marburg ($F_1$ of $0.69$).
+
+
+\begin{table}[h]
+\centering
+\caption{\textbf{Precision, recall, and $F_1$ for title-and-abstract screening across seven pathogens with \name{} (\texttt{gpt-oss-120b}).} Metrics summarise how well the abstract-stage classifier retained studies judged relevant under PERG screening criteria, reported for each pathogen and overall. Overall performance (precision $0.79$, recall $0.72$; $F_1$ $0.74$) reflects a specificity-oriented triage step that prioritises avoiding false inclusions, with lower recall indicating that some relevant studies may require recovery at the full-text stage. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:abstract_screening_metrics}
+\renewcommand{\arraystretch}{1}
+\setlength{\tabcolsep}{8pt}
+{\footnotesize
+\begin{tabular}{l|ccc}
+\toprule
+\textbf{Pathogen} & $P$ & $R$ & $F_1$ \\
+\midrule
+Marburg & 0.80 & 0.64 & 0.69 \\
+Ebola & 0.74 & 0.75 & 0.75 \\
+Lassa & 0.82 & 0.72 & 0.75 \\
+SARS & 0.78 & 0.76 & 0.77 \\
+Zika & 0.73 & 0.77 & 0.75 \\
+MERS & 0.83 & 0.74 & 0.78 \\
+Nipah & 0.84 & 0.66 & 0.70 \\
+\midrule
+Overall & 0.79 & 0.72 & 0.74 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+
+\subsubsection*{Full-text Screening}
+Table~\ref{tab:fulltext_screening_metrics} compares three full-text screening strategies and highlights a clear precision–recall trade-off. Human abstract $\rightarrow$ AI full-text achieves the strongest overall performance (precision $0.83$, recall $0.92$), while the fully automated two-stage pipeline (AI abstract $\rightarrow$ AI full-text) shows lower recall ($0.81$), consistent with error propagation from abstract gating. Direct AI full-text screening improves recall ($0.89$) but reduces precision ($0.68$), reflecting a recall-maximising approach when abstracts are treated as an information bottleneck.
+
+\begin{table}[h]
+\centering
+\caption{\textbf{Full-text screening performance on \name{} (\texttt{gpt-oss-120b}) under three operational strategies for identifying relevant articles.} Metrics compare a two-stage AI pipeline (AI abstract$\rightarrow$AI full-text), a mixed workflow (human abstract$\rightarrow$AI full-text), and direct AI full-text screening, reported for each pathogen and overall. Results show the trade-off between recall preservation and precision control: human abstract gating yields the highest overall $F_1$ score ($0.87$), while direct AI full-text maximises recall ($0.89$) at the cost of precision ($0.68$), consistent with abstracts acting as an information bottleneck. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\footnotesize
+\label{tab:fulltext_screening_metrics}
+\renewcommand{\arraystretch}{1}
+\setlength{\tabcolsep}{6pt}
+{\footnotesize
+\begin{tabular}{l|ccc|ccc|ccc}
+\toprule
+\multirow{2}{*}{\textbf{Pathogen}}
+& \multicolumn{3}{c|}{\makecell{\textbf{AI Screen (Abstract)}\\$\rightarrow$\\\textbf{AI Screen (Full-text)}}}
+& \multicolumn{3}{c|}{\makecell{\textbf{Human Screen (Abstract)}\\$\rightarrow$\\\textbf{AI Screen (Full-text)}}}
+& \multicolumn{3}{c}{\makecell{~\\\textbf{AI Screen (Direct Full-text)}\\~}} \\
+\cline{2-10}
+\rule{0pt}{9pt}
+& $P$ & $R$ & $F_1$
+& $P$ & $R$ & $F_1$
+& $P$ & $R$ & $F_1$ \\
+\midrule
+Marburg & 0.75 & 0.76 & 0.75 & 0.77 & 0.83 & 0.80 & 0.64 & 0.82 & 0.69 \\
+Ebola & 0.73 & 0.84 & 0.77 & 0.86 & 0.97 & 0.91 & 0.67 & 0.93 & 0.72 \\
+Lassa & 0.79 & 0.78 & 0.78 & 0.83 & 0.94 & 0.88 & 0.71 & 0.91 & 0.77 \\
+SARS & 0.71 & 0.85 & 0.76 & 0.80 & 0.95 & 0.86 & 0.64 & 0.91 & 0.68 \\
+Zika & 0.66 & 0.79 & 0.69 & 0.81 & 0.91 & 0.85 & 0.64 & 0.85 & 0.67 \\
+MERS & 0.76 & 0.83 & 0.79 & 0.83 & 0.96 & 0.88 & 0.69 & 0.95 & 0.76 \\
+Nipah & 0.87 & 0.84 & 0.85 & 0.89 & 0.90 & 0.90 & 0.74 & 0.88 & 0.79 \\
+\midrule
+Overall & 0.75 & 0.81 & 0.77 & 0.83 & 0.92 & 0.87 & 0.68 & 0.89 & 0.73 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\clearpage
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Data Extraction}\label{app:data_extraction_extended}
+In this section, we provide complete disaggregated results for our data extraction evaluations comparing \name{} extractions against our ground-truth-labelled datasets. The ground-truth-labelled datasets are provided open-source from the Pathogen Epidemiology Review Group, available through the R \texttt{epireview} package or on GitHub at \href{https://github.com/mrc-ide/epireview/tree/main/inst/extdata}{https://github.com/mrc-ide/epireview/tree/main/inst/extdata}.
+
+As of March 2026, owing to PERG's continual progress through SLRs on nine priority pathogens, ground-truth extraction data is available in a standardised format for four pathogens: Lassa, Ebola, SARS, and Zika. For each pathogen, we evaluate classification measures for each of the \textit{Flagging}, \textit{Count}, and \textit{Extraction} metrics defined formally in \Cref{app:data_extraction_extended_methods}.
+
+\subsubsection*{Parameters}
+
+\Cref{tab:parameters_extended_flagging_count} presents the results for parameter extraction Flagging and Count metrics. These results are used to produce the aggregate data presented in the main body text (\Cref{tab:data_extraction_metrics} in \Cref{sec:pipeline_experimental_results}). For flagging relevant parameters, \name{} performs consistently across all pathogens with high recall ($0.92$ average), though precision is lower and more variable ($0.51$ average). The results suggest that while \name{} is able to identify nearly all relevant extractions, this coverage comes at the cost of many false positive flags that may propagate errors to later sub-stages. In terms of overall parameter extraction counts, the performance flips in favour of precision ($0.83$) now at the expense of lower recall ($0.47$). The discrepancy with parameter flagging performance is understandable, as \name{} is capable of disregarding flagged parameters when provided with the option for structured extraction via tool calls. Our data suggests that when \name{} produces a final extraction, this extraction is likely correct, however the system often fails to produce all required extractions according to ground-truth data. An article may have multiple extractions of the same parameter class, and in these cases \name{} can underestimate the number of extractions required.
+
+\begin{table}[h]
+
+\centering
+\caption{\textbf{Flagging and Count classification metrics for parameter extraction with \name{} (\texttt{gpt-oss-120b}).} $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:parameters_extended_flagging_count}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{l|cccccccccccc}
+\toprule
+\bf Metric & \multicolumn{3}{c}{\textbf{Lassa}} & \multicolumn{3}{c}{\textbf{Ebola}} & \multicolumn{3}{c}{\textbf{SARS}} & \multicolumn{3}{c}{\textbf{Zika}} \\
+ & $P$ & $R$ & $F_1$ & $P$ & $R$ & $F_1$ & $P$ & $R$ & $F_1$ & $P$ & $R$ & $F_1$ \\
+\midrule
+\bf Flagging & 0.56 &
+0.98 &
+0.71 &
+0.60 &
+0.92 &
+0.72 &
+0.50 &
+0.81 &
+0.62 &
+0.40 &
+0.96 &
+0.57 \\
+\midrule
+\bf Count & 1.00 &
+0.35 &
+0.51 &
+0.79 &
+0.47 &
+0.59 &
+0.80 &
+0.61 &
+0.69 &
+0.72 &
+0.47 &
+0.57 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{table}[h]
+\setlength{\tabcolsep}{3pt}
+\centering
+\caption{\textbf{Field-level precision, recall, and $F_1$ for Extraction on parameters with \name{} (\texttt{gpt-oss-120b}).} \textit{Group} corresponds to the sub-stage of parameter extraction where the field is collected. The final row shows averages across all fields. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:parameters_detailed_metrics}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{ll|ccc|ccc|ccc|ccc}
+\toprule
+\bf Group & \bf Field & \multicolumn{3}{c}{\textbf{Lassa}} & \multicolumn{3}{c}{\textbf{Ebola}} & \multicolumn{3}{c}{\textbf{SARS}} & \multicolumn{3}{c}{\textbf{Zika}} \\
+ & & $P$ & $R$ & $F_1$ & $P$ & $R$ & $F_1$ & $P$ & $R$ & $F_1$ & $P$ & $R$ & $F_1$ \\
+\midrule
+\multirow{4}{*}{\textbf{Value}} & value & 0.22 & 0.22 & 0.22 & 0.20 & 0.20 & 0.20 & 0.23 & 0.23 & 0.23 & 0.14 & 0.14 & 0.14 \\
+ & unit & 0.50 & 0.43 & 0.46 & 0.62 & 0.35 & 0.44 & 0.69 & 0.61 & 0.65 & 0.65 & 0.43 & 0.52 \\
+ & method & 1.00 & 0.89 & 0.94 & 0.48 & 0.78 & 0.59 & 0.76 & 0.83 & 0.79 & 0.86 & 0.80 & 0.83 \\
+\cmidrule{2-14}
+ & Average & 0.57 & 0.51 & 0.54 & 0.44 & 0.44 & 0.41 & 0.56 & 0.56 & 0.56 & 0.55 & 0.46 & 0.50 \\
+\midrule
+\multirow{5}{*}{\textbf{Uncertainty}} & value type & 0.38 & 0.43 & 0.40 & 0.30 & 0.33 & 0.32 & 0.35 & 0.57 & 0.43 & 0.12 & 0.22 & 0.16 \\
+ & statistical approach & -- & -- & -- & -- & -- & -- & -- & -- & -- & 0.44 & 0.66 & 0.53 \\
+ & single type uncertainty & 1.00 & 1.00 & 1.00 & 0.98 & 0.94 & 0.96 & 0.81 & 0.95 & 0.88 & 0.97 & 0.99 & 0.98 \\
+ & paired uncertainty & 0.25 & 0.40 & 0.31 & 0.59 & 0.72 & 0.65 & 0.39 & 0.88 & 0.54 & 0.46 & 0.90 & 0.61 \\
+\cmidrule{2-14}
+ & Average & 0.54 & 0.61 & 0.57 & 0.62 & 0.67 & 0.64 & 0.52 & 0.80 & 0.62 & 0.50 & 0.69 & 0.57 \\
+\midrule
+\multirow{4}{*}{\textbf{Population}} & population sex & 0.86 & 0.67 & 0.75 & 0.62 & 0.79 & 0.69 & 0.59 & 0.75 & 0.66 & 0.59 & 0.70 & 0.64 \\
+ & population group & 0.14 & 0.11 & 0.12 & 0.24 & 0.33 & 0.28 & 0.23 & 0.25 & 0.24 & 0.54 & 0.54 & 0.54 \\
+ & population sample type & 0.86 & 0.67 & 0.75 & 0.32 & 0.41 & 0.36 & 0.58 & 0.63 & 0.60 & 0.37 & 0.36 & 0.37 \\
+\cmidrule{2-14}
+ & Average & 0.62 & 0.48 & 0.54 & 0.40 & 0.51 & 0.44 & 0.47 & 0.54 & 0.50 & 0.50 & 0.54 & 0.52 \\
+\midrule
+\textbf{Overall} & & 0.58 & 0.53 & 0.55 & 0.49 & 0.54 & 0.50 & 0.51 & 0.63 & 0.56 & 0.51 & 0.57 & 0.53 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+For Extraction, complete field-level results are presented in \Cref{tab:parameters_detailed_metrics}. The aggregate results, presented in the main text, show parameter extractions to have moderate quality across all pathogens, with little variation among them. Analysing the results at the field-level reveals patterns in \name{}'s handling of different data modalities as well as different types of epidemiological context. The system performs worst on value fields, with population fields also showing relatively weak performance, compared to other groups. We suspect the difficulty with population context arises from the large numbers of valid options for many fields (notably population group and population sample type), with many of these options having precise interpretations in epidemiological literature. Without fine-tuning, \texttt{gpt-oss-120b} may struggle to apply these interpretations in a complex tool-calling environment. On the other hand, classification is near perfect for single type uncertainty, and generally strong for method (with the exception of Ebola). We also note that fields with unrestricted domains, like value, are much harder to classify correctly. Seeing the much improved results in our expert validation experiment (\Cref{sec:human_expert_validation}), we suspect at least some of this difficulty to stem from our exact-match criteria being overly punitive of equivalent numbers in different formats.
+
+
+\subsubsection*{Transmission Models}
+\Cref{tab:models_detailed_metrics} presents the complete results for Flagging, Count, and Extraction evaluations of transmission models across the four priority pathogens. Screening performance was strong across all pathogens for article flagging, with recall ranging from $0.86$ to $0.99$ and precision from $0.86$ to $0.96$, indicating reliable identification of modelling studies. Model count extraction achieved consistently high recall ($0.97$--$1.00$) but notably lower precision ($0.48$--$0.60$), suggesting a systematic tendency to overestimate the number of models reported per article rather than failing to identify them.
+
+
+\begin{table}[b!]
+\setlength{\tabcolsep}{3pt}
+\centering
+\caption{\textbf{Precision, recall, and $F_1$ metrics for transmission model screening and extraction across four pathogens with \name{} (\texttt{gpt-oss-120b}).} \textit{Screening} includes article flagging and model count accuracy. \textit{Extraction} evaluates field-level accuracy for matched model pairs, covering core structural characteristics (model type, stochastic vs deterministic, theoretical vs data-fitted, code availability) and more complex multi-value fields (transmission routes, assumptions, interventions). Strong performance is observed for core model characteristics, while extraction of assumptions, interventions, and transmission routes remains more challenging. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:models_detailed_metrics}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{l|cccccccccccc}
+\toprule
+ & \multicolumn{3}{c}{\textbf{Lassa}} & \multicolumn{3}{c}{\textbf{Ebola}} & \multicolumn{3}{c}{\textbf{SARS}} & \multicolumn{3}{c}{\textbf{Zika}} \\
+ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\multicolumn{13}{l}{\textbf{Flagging}} \\
+Article Flagging
+& 0.95 & 0.99 & 0.97
+& 0.92 & 0.92 & 0.92
+& 0.86 & 0.86 & 0.86
+& 0.87 & 0.89 & 0.88 \\
+\midrule
+\multicolumn{13}{l}{\textbf{Counts}} \\
+Model Count
+& 0.60 & 1.00 & 0.75
+& 0.50 & 1.00 & 0.67
+& 0.49 & 0.97 & 0.65
+& 0.48 & 0.98 & 0.65 \\
+\midrule
+\multicolumn{13}{l}{\textbf{Extraction}} \\
+Model Type
+& 0.89 & 0.89 & 0.89
+& 0.89 & 0.89 & 0.89
+& 0.77 & 0.77 & 0.77
+& 0.88 & 0.88 & 0.88 \\
+\midrule
+Compartmental Type
+& 0.00 & 0.00 & 0.00
+& --- & --- & ---
+& 0.80 & 0.80 & 0.80
+& 0.83 & 0.83 & 0.83 \\
+\midrule
+Stochastic vs Deterministic
+& 1.00 & 1.00 & 1.00
+& 0.75 & 0.85 & 0.80
+& 0.76 & 0.78 & 0.77
+& 0.82 & 0.79 & 0.81 \\
+\midrule
+Theoretical vs Data-Fitted
+& 0.78 & 0.78 & 0.78
+& 0.88 & 0.88 & 0.88
+& 0.62 & 0.62 & 0.62
+& 0.81 & 0.81 & 0.81 \\
+\midrule
+Code Available
+& 1.00 & 0.89 & 0.94
+& 0.85 & 0.84 & 0.84
+& 1.00 & 1.00 & 1.00
+& 0.82 & 0.76 & 0.79 \\
+\midrule
+Transmission Routes
+& 1.00 & 0.94 & 0.97
+& 0.13 & 0.15 & 0.14
+& 0.26 & 0.32 & 0.29
+& 0.68 & 0.74 & 0.71 \\
+\midrule
+Assumptions
+& 0.29 & 0.46 & 0.36
+& 0.27 & 0.46 & 0.34
+& 0.21 & 0.39 & 0.28
+& 0.31 & 0.52 & 0.39 \\
+\midrule
+Interventions
+& 0.54 & 0.64 & 0.58
+& 0.48 & 0.69 & 0.56
+& 0.46 & 0.79 & 0.58
+& 0.32 & 0.69 & 0.43 \\
+\midrule
+\textbf{Overall}
+& 0.70 & 0.78 & 0.73
+& 0.62 & 0.77 & 0.67
+& 0.61 & 0.75 & 0.66
+& 0.66 & 0.81 & 0.71 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+Field-level extraction showed a clear gradient in task difficulty. Core structural characteristics were extracted with high accuracy: model type classification and the theoretical versus data-fitted distinction achieved balanced precision and recall between $0.62$ and $0.89$ across pathogens, while single-value fields such as stochastic versus deterministic modelling and code availability frequently exceeded $0.75$ and reached perfect scores for some pathogens. In contrast, more complex or multi-value fields exhibited substantially lower performance. Transmission route extraction was particularly challenging for Ebola and SARS, while assumptions and interventions showed modest precision and recall across all pathogens. Overall, across screening and extraction tasks, precision ranged from $0.61$ to $0.70$ and recall from $0.75$ to $0.81$, indicating that the system reliably captures core model characteristics, with remaining limitations concentrated in the extraction of nuanced descriptive details.
+
+
+
+
+\subsubsection*{Outbreaks}
+
+
+\begin{table}[t!]
+\centering
+\caption{\textbf{Precision, recall, and $F_1$ for outbreak screening and extraction with \name{} (\texttt{gpt-oss-120b}) across major feature categories, evaluated against expert-curated PERG database.} \textit{Screening} measured article flagging (identifying papers containing outbreaks) and outbreak count accuracy (extracting the correct number of outbreaks per paper). \textit{Extraction} evaluated field-level accuracy for matched outbreak pairs across four epidemiological categories: temporal features (start/end dates), geographic features (country, specific location), case burden (confirmed cases, deaths), and epidemiological context (detection mode, pre-outbreak status, ongoing status, asymptomatic transmission). Overall metrics represent the average across all extraction fields. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\label{tab:outbreak_aggregated_metrics}
+\begin{tabular}{ll|ccc|ccc}
+\toprule
+ \multirow{2}{*}{\bf Metric} & \multirow{2}{*}{\bf Field}
+ & \multicolumn{3}{c}{\textbf{Lassa}}
+ & \multicolumn{3}{c}{\textbf{Zika}} \\
+ & & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\bf Flagging & Article Flagging & 0.69 & 0.82 & 0.75 & 0.58 & 0.71 & 0.64 \\
+\midrule
+\bf Counts & Outbreak Counts & 0.83 & 1.00 & 0.91 & 0.49 & 0.45 & 0.47 \\
+\midrule
+\multirow{4}{*}{\textbf{Extraction}} & Temporal Features & 0.83 & 0.74 & 0.78 & 0.85 & 0.82 & 0.83 \\
+ & Geographic and Spatial Features & 0.75 & 0.78 & 0.76 & 0.75 & 0.75 & 0.75 \\
+ & Case Burden & 0.82 & 0.75 & 0.79 & 0.93 & 0.93 & 0.93 \\
+ & Epidemiological Context and Metadata & 0.93 & 0.70 & 0.80 & 0.84 & 0.67 & 0.75 \\
+\midrule
+\textbf{Overall} &  & 0.85 & 0.73 & 0.79 & 0.84 & 0.78 & 0.81 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\begin{table}[b!]
+\centering
+\caption{\textbf{Detailed (expanded) precision, recall, and $F_1$ for outbreak feature extraction by category for \name{} (\texttt{gpt-oss-120b}).} Each row shows field-level performance within the four major epidemiological categories. Temporal and case burden features showed consistently high performance, while location-specific fields and epidemiological context features showed greater variability. Overall metrics represent the average across all 13 extraction fields. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:outbreak_detailed_metrics}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{l|cccccc}
+\toprule
+ & \multicolumn{3}{c}{\textbf{Lassa}} & \multicolumn{3}{c}{\textbf{Zika}} \\
+ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\multicolumn{7}{l}{\textbf{Temporal Features}} \\
+Start Year & 0.89 & 0.80 & 0.84 & 0.90 & 0.82 & 0.86 \\
+Start Month & 0.78 & 0.78 & 0.78 & 0.80 & 0.80 & 0.80 \\
+Start Day & 0.86 & 0.67 & 0.75 & 0.95 & 0.95 & 0.95 \\
+End Month & 0.78 & 0.78 & 0.78 & 0.65 & 0.65 & 0.65 \\
+End Day & 0.86 & 0.67 & 0.75 & 0.95 & 0.86 & 0.90 \\
+\textbf{Average} & 0.83 & 0.74 & 0.78 & 0.85 & 0.82 & 0.83 \\
+\midrule
+\multicolumn{7}{l}{\textbf{Geographic and Spatial Features}} \\
+Outbreak Country & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+Location & 0.50 & 0.56 & 0.53 & 0.50 & 0.50 & 0.50 \\
+\textbf{Average} & 0.75 & 0.78 & 0.77 & 0.75 & 0.75 & 0.75 \\
+\midrule
+\multicolumn{7}{l}{\textbf{Case Burden}} \\
+Confirmed Cases & 0.75 & 0.60 & 0.67 & 0.86 & 0.86 & 0.86 \\
+Deaths & 0.90 & 0.90 & 0.90 & 1.00 & 1.00 & 1.00 \\
+\textbf{Average} & 0.83 & 0.75 & 0.79 & 0.93 & 0.93 & 0.93 \\
+\midrule
+\multicolumn{7}{l}{\textbf{Epidemiological Context and Metadata}} \\
+Mode of Detection & 0.71 & 0.50 & 0.59 & 0.50 & 0.41 & 0.45 \\
+Pre-outbreak Status & 1.00 & 0.30 & 0.46 & 1.00 & 0.41 & 0.58 \\
+Ongoing Status & 1.00 & 1.00 & 1.00 & 0.86 & 0.86 & 0.86 \\
+Asymptomatic Transmission & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+\textbf{Average} & 0.93 & 0.70 & 0.76 & 0.84 & 0.67 & 0.72 \\
+\midrule
+\textbf{Overall} & 0.85 & 0.73 & 0.79 & 0.84 & 0.78 & 0.81 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+Similar to transmission models, applying the evaluation framework described in Appendix~\ref{app:additional_evaluation_details}, we analysed outbreak extraction performance across two priority pathogens, Lassa and Zika (Table~\ref{tab:outbreak_aggregated_metrics}). Screening performance differed between pathogens and screening subtasks. For Lassa, article flagging achieved moderate precision ($0.69$) and strong recall ($0.82$), indicating that most outbreak-containing papers were identified, although a non-trivial fraction of flagged papers were false positives. For Zika, article flagging was more balanced (precision $0.58$, recall $0.71$), suggesting improved sensitivity relative to precision, but still leaving missed outbreak descriptions and over-inclusion of non-outbreak papers. Outbreak counting remained strong for Lassa (precision $0.83$, recall $1.00$), while Zika outbreak counting was substantially lower (precision $0.49$, recall $0.45$), consistent with continued difficulty in reliably enumerating outbreak events in the Zika corpus.
+
+
+% \newpage
+Field-level extraction performance, grouped by epidemiological feature categories, revealed consistent strengths and persistent weaknesses (Table~\ref{tab:outbreak_detailed_metrics}). Temporal features remained robust across both pathogens (Lassa: precision $0.83$, recall $0.74$; Zika: precision $0.85$, recall $0.82$), with high precision for start year ($0.89$) and start day ($0.86$) in Lassa, and strong start day accuracy in Zika (precision $0.95$, recall $0.95$). Case burden metrics showed overall extraction (Lassa: precision $0.83$, recall $0.75$; Zika: precision $0.93$, recall $0.93$), with high accuracy for deaths (Lassa: $0.90$/$0.90$; Zika: $1.00$/$1.00$).
+
+Geographic extraction continued to show a split between coarse and fine granularity. Outbreak country identification was perfect for both pathogens ($1.00$ precision and recall), while specific location extraction was notably weaker (Lassa: precision $0.50$, recall $0.56$; Zika: precision $0.50$, recall $0.50$), consistent with variability in how places are described in scientific text. Epidemiological context fields showed the greatest variability: for Lassa, mode of detection was moderate ($0.71$ precision, $0.50$ recall) and pre-outbreak status exhibited high precision but low recall ($1.00$/$0.30$), indicating frequent omission of this attribute. Ongoing status was extracted perfectly for Lassa ($1.00$/$1.00$) but showed moderate performance for Zika ($0.86$/$0.86$). For Zika, mode of detection ($0.50$/$0.41$) and pre-outbreak status ($1.00$/$0.41$) remained challenging, although asymptomatic transmission was extracted perfectly for both pathogens ($1.00$/$1.00$). The overall extraction performance averaged $0.85$ precision and $0.73$ recall for Lassa, and $0.84$ precision and $0.78$ recall for Zika, suggesting reliable field-level accuracy with remaining gaps concentrated in context-dependent and location-specific attributes.
+
+
+\clearpage

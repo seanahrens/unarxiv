@@ -1,0 +1,1854 @@
+\newpage
+
+\section{Agentic Data Extraction Process}
+\label{app:data_extraction_details}
+
+After screening, the finalised pool of relevant articles underwent rigorous data extraction. This extraction stage employs a structured tool-calling framework to extract three categories of data: epidemiological parameters, transmission models and outbreak data from full-text articles. Each category followed a multi-stage workflow with validation on each tool output.
+
+% (Figure~\ref{fig:data_extraction_flowchart})
+
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/pipeline/data_extraction_flowchart_box.pdf}
+%     \caption{\textbf{Data extraction flowchart showing screening and extraction workflows for epidemiological parameters, outbreak data, and transmission models. }Each extraction category follows a multi-stage pipeline with specialised validation: parameter extraction includes excerpt isolation and population stratification before aggregation; outbreak and model extraction proceed from screening directly to structured value extraction with characteristic tagging.}
+%     \label{fig:data_extraction_flowchart}
+% \end{figure}
+
+% \clearpage
+
+\subsection{Parameters}\label{app:parameters_extended_extraction_process}
+
+\paragraph{Valid Epidemiological Parameters for Extraction}
+Epidemiological parameters are quantitative summaries of how an infection behaves in a population, such as its rate of spread, the delays between key stages of infection, the infection and fatality rates, and risk factors across demographic groups. We used PERG's data entry tool, a REDCap survey, as the reference list of epidemiological quantities that human reviewers would extract from the literature.\footnote{\url{https://redcap.imperial.ac.uk/surveys/?s=CEX3YKW8W47NMFA4}} This gave a fixed catalogue of 47 \textit{parameter types} that cover mutation processes, transmission intensity, delay distributions in humans and mosquitoes, severity, seroprevalence, and risk factors. These higher-order groupings are labelled \textit{parameter classes}, and \name{} defines data extraction criteria at the parameter class-level. \Cref{tab:perg_parameter_types} lists all parameter types targeted by our pipeline, together with brief definitions that match the guidance given to human experts.
+
+\begin{footnotesize}
+\begin{longtable}
+{p{0.32\textwidth}p{0.18\textwidth}p{.45\textwidth}}
+    \caption{\textbf{Valid parameters for extraction, according to PERG's process.}}
+    \label{tab:perg_parameter_types}\\
+        \toprule
+        \bf Parameter type & \bf Parameter class & \bf Description \\\midrule
+        Attack rate & Attack rate & Proportion of a population that becomes infected during an outbreak. \\
+        \addlinespace
+        Secondary attack rate & Attack rate & Proportion of contacts of a primary case who become infected. \\
+        \addlinespace
+        Doubling time & Doubling time & Time required for the number of infections to double. \\
+        \addlinespace
+        Growth rate & Growth rate & Exponential rate at which new infections increase over time. \\
+        \addlinespace
+        Evolutionary rate & Mutations & Rate of genetic change in a population over time, typically substitutions per site per year. \\
+        \addlinespace
+        Mutation rate & Mutations & Frequency at which new genetic mutations arise per site per replication cycle. \\
+        \addlinespace
+        Substitution rate & Mutations & Speed at which mutations become fixed in a population’s genome. \\
+        \addlinespace
+        Generation time & Human delay & Average interval between infection in a case and infection in a secondary case. \\
+        \addlinespace
+        Serial interval & Human delay & Time between symptom onset in a primary and secondary case. \\
+        \addlinespace
+        Latent period & Human delay & Time from infection to becoming infectious. \\
+        \addlinespace
+        Incubation period & Human delay & Time from infection to symptom onset. \\
+        \addlinespace
+        Infectious period & Human delay & Duration during which an infected person can transmit the pathogen. \\
+        \addlinespace
+        Time in care & Human delay & Average duration of hospitalisation or clinical care. \\
+        \addlinespace
+        Symptom onset $\rightarrow$ admission to care & Human delay & Time from symptom onset to hospital or clinical admission. \\
+        \addlinespace
+        Symptom onset $\rightarrow$ discharge / recovery & Human delay & Time from symptom onset to recovery or discharge. \\
+        \addlinespace
+        Symptom onset $\rightarrow$ death & Human delay & Time from symptom onset to death. \\
+        \addlinespace
+        Admission $\rightarrow$ discharge / recovery & Human delay & Time from hospital admission to recovery or discharge. \\
+        \addlinespace
+        Admission $\rightarrow$ death & Human delay & Time from hospital admission to death. \\
+        \addlinespace
+        Other human delay & Human delay & Other reported delays related to human infection or response. \\
+        \addlinespace
+        Overdispersion & Overdispersion & Measure of variation in the distribution of individual infectiousness. \\
+        \addlinespace
+        Human-to-human & Relative contribution & Proportion of total transmission attributable to human-to-human spread. \\
+        \addlinespace
+        Zoonotic-to-human & Relative contribution & Proportion of total transmission from animal or vector sources to humans. \\
+        \addlinespace
+        Basic (R0) & Reproduction number & Average number of secondary cases from one case in a fully susceptible population. \\
+        \addlinespace
+        Effective (Re) & Reproduction number & Average number of secondary cases in a population with partial immunity or interventions. \\
+        \addlinespace
+        Case fatality rate (CFR) & Severity & Proportion of diagnosed cases that result in death. \\
+        \addlinespace
+        Infection fatality rate (IFR) & Severity & Proportion of all infections (symptomatic and asymptomatic) that result in death. \\
+        \addlinespace
+        Proportion of symptomatic cases & Severity & Proportion of infections that develop symptoms. \\
+        \addlinespace
+        IgM & Seroprevalence & Proportion of individuals with detectable IgM antibodies, indicating recent infection. \\
+        \addlinespace
+        IgG & Seroprevalence & Proportion of individuals with IgG antibodies, indicating past infection or immunity. \\
+        \addlinespace
+        PRNT & Seroprevalence & Proportion with neutralising antibodies detected by plaque reduction neutralization test. \\
+        \addlinespace
+        HAI/HI & Seroprevalence & Proportion with antibodies detected by hemagglutination inhibition assay. \\
+        \addlinespace
+        IFA & Seroprevalence & Proportion with antibodies detected by immunofluorescence assay. \\
+        \addlinespace
+        Unspecified & Seroprevalence & Seroprevalence reported without specifying assay type. \\
+        \addlinespace
+        Risk factors & Risk factors & Host, environmental, or behavioural characteristics associated with infection risk. \\
+    \bottomrule
+\end{longtable}
+\end{footnotesize}
+
+% \begin{figure*}
+%     \centering
+%     \includegraphics[width=0.7\linewidth]{figures/pipeline/parameter_extraction_flowchart.pdf}
+%     \caption{Parameter extraction flowchart showing the five-stage pipeline: (1) binary screening to identify parameter presence, (2) excerpt extraction to isolate relevant text spans, (3) structured value extraction with uncertainty quantification, (4) population characteristic tagging for stratification, and (5) conditional aggregation across comparable population strata.}
+%     \label{fig:parameter_extraction_flowchart}
+% \end{figure*}
+
+\paragraph{Multi-Stage Parameter Extraction Pipeline}
+Parameter extraction utilises a five-step workflow that mirrors how a careful human reader would process scientific articles. Starting from full-text contents, we identify relevant estimates in the text, extract them into a standardised format, and collect relevant metadata about population context and parameter uncertainty.
+
+For our first step, we ask a reasoning language model with tool calling (in our implementation, \texttt{gpt-oss-120b}) to ``screen'' each article for each parameter class. The reasoning model is provided with a tool to extract (potentially discontiguous) quotations from the source text that relate to the parameter class. We provide specific details for each parameter class as displayed in \cref{tab:parameter_class_screening_details}, which are copied quotations from the parameter extraction documentation from the \texttt{priority-pathogens} codebase \cite{nashPrioritypathogens2026}, accessible at \href{https://github.com/mrc-ide/priority-pathogens/wiki/Parameter-Data}{https://github.com/mrc-ide/priority-pathogens/wiki/Parameter-Data}.
+
+% N.B. do not edit the Screening Details column for language -- these represent prompts we send to the LLM and are part of the experimental methodology
+
+\begin{footnotesize}
+\begin{longtable}{p{0.2\textwidth}p{0.75\textwidth}}
+    \caption{\textbf{Screening details for each parameter class.} This is inputted into the {``Parameter Class Screening Details''} section of the \textcolor{blue!70!black}{\textbf{\sffamily{Parameter Screening Prompt}}} below.} \\
+        \toprule
+        \bf Parameter Class & \bf Screening Details \\
+        \midrule
+        Attack rate & The attack rate is the proportion of an at-risk population contracting the disease during a specified time interval. It is often reported as a percentage or rate, e.g. 52 people per 10,000 people. \\
+        \addlinespace
+
+        Growth rate & The epidemic growth rate is a key metric that reflects how quickly the number of infections is changing day by day in a population. It is a time-dependent measure, usually expressed as a percentage or a rate per unit of time (e.g. per day), and is crucial for monitoring the speed and trajectory of an outbreak. \\
+        \addlinespace
+
+        Human delay & These parameters all refer to time intervals in the natural history of infection of the host. \\
+        \addlinespace
+
+        Mutation rate & Mutation rates, like substitution rate or evolutionary rate, describe the speed at which genetic changes accumulate in a population. \\
+        \addlinespace
+
+        Relative contribution & This parameter is intended for pathogens (e.g. MERS) where there is both human to human (h2h) and animal to human (a2h) transmission, and aims to capture the relative magnitude of these two routes of infections in humans. We expect these to be proportions or percentages. E.g. a study might estimate 60\% of infections in humans to be from h2h infection. \\
+        \addlinespace
+
+        Reproduction number & We are extracting either the basic reproduction number R0 or the effective reproduction number Re. \\
+        \addlinespace
+
+        Risk factors & We are extracting general information about risk factors in the included papers. We are extracting both univariate (naive) and multivariate (adjusted) risk factors, even if they are both available. \\
+        \addlinespace
+
+        Seroprevalence & These parameters refer to estimations of seroprevalence in the paper. This may also be referred to as antibody prevalence. These parameters will all be expressed in a proportion or percentage of the population. \\
+        \addlinespace
+
+        Severity & Severity refers to either the case fatality ratio or the infection fatality ratio. The case fatality ratio is the proportion of cases who end up dying of the disease. Note this depends on the case definition used, as the denominator is people identified as ``cases''. The infection fatality ratio is the proportion of infections who end up dying of the disease. \\
+        \bottomrule
+    \label{tab:parameter_class_screening_details}
+\end{longtable}
+\end{footnotesize}
+
+The model is also provided with the study objectives from \cref{app:study_objectives} and instructed to only extract parameters ``estimated from or fitted to actual data''. If no relevant information is found, the model is told to refrain from calling the tool. The full prompt for this step is templatised as follows:
+
+%%% TEXT EXTRACTION PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Parameter Screening Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{gray!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an expert epidemiologist extracting epidemiological parameters from scientific articles. You will be provided with the processed text of a scientific article. Your task is to extract information about epidemiological parameters according to the provided schema.}}
+\end{tcolorbox}
+
+% Study Objectives
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{orange!60!black}{Study Objectives}}}
+
+\vspace{2pt}
+{\small
+% \textbf{Study Objectives}
+
+\textit{See study objectives in \cref{app:study_objectives}.}}
+\end{tcolorbox}
+
+% Summary Extraction Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Summary Extraction Task Definition}}}
+
+\vspace{2pt}
+{
+\small
+% \textbf{Summary extraction task}
+
+For your first task, you will be provided with the full text of a scientific article and a specific type of parameter. We are only extracting parameters that are estimated from or fitted to actual data. For transmission models, if it is only a theoretical model and they have just chosen parameters from other studies/randomly, then please don’t extract these.
+
+\vspace{1em}
+
+Your task is to scan the provided text and determine whether this article estimates any parameters of the provided type. If it does, you must use the provided tool to extract relevant summaries from the text about this parameter. If the article makes no mention of the parameter, simply do not call the tool.
+
+\vspace{1em}
+
+If there are multiple pieces of information about the same parameter, return them as separate list items. You will need to call the tool multiple times if there are multiple separate parameter estimates of the provided type.
+
+\vspace{1em}
+
+In future steps, we will be using the provided summaries to extract structured information about the parameter, including:
+\begin{enumerate}[label=(\alph*), leftmargin=*, itemsep=-3pt]
+    \item The estimated value
+    \item Uncertainty intervals
+    \item Sample study population
+\end{enumerate}
+
+Please make sure your summaries provide all of this information if it is provided. Please be thorough: err on the side of extracting more information rather than less.
+
+}
+\end{tcolorbox}
+
+% Full-text Input partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Parameter Class Screening Details}}}
+
+\vspace{2pt}
+{\small\textit{
+See the details provided for each parameter class in \cref{tab:parameter_class_screening_details}.
+}}
+\end{tcolorbox}
+
+% Screening Instructions partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Full Text}}}
+
+\vspace{2pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Full Text: \{\{fulltext\}\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+% The tool is provided to the language model in JSON schema format, like so:
+
+% \begin{minted}[breaklines, fontsize=\small, bgcolor={gray!10}]{json}
+% \begin{lstlisting}[language=json]
+% {
+%     "type": "function",
+%     "name": "extract_parameter_summaries",
+%     "description": "Extract summaries about parameter estimates found in the input text.",
+%     "parameters": {
+%         "type": "object",
+%         "properties": {
+%             "summaries": {
+%                 "type": "array",
+%                 "items": {
+%                     "type": "object",
+%                     "properties": {
+%                         "value_info": {
+%                             "type": "string",
+%                             "description": "Information about the value of the parameter, including units and uncertainty bounds."
+%                         },
+%                         "population_info": {
+%                             "type": "string",
+%                             "description": "Information about the study population of the parameter. This must include demographic details such as age, sex, and sample size, as well as the location where the study was conducted, if provided."
+%                         }
+%                     },
+%                     "required": ["value_info", "population_info"]
+%                 },
+%                 "description": "A list of summaries about parameter estimates found in the input text."
+%             }
+%         },
+%         "required": ["summaries"]
+%     }
+% }
+% \end{lstlisting}
+
+Our next steps are executed for each value of the \texttt{summaries} array returned by the model's tool call. We prompt the model in a new context, omitting the full text, to focus the model on the relevant text snippets from \texttt{summaries} and to save both inference time and API cost. If no relevant parameters are identified for a given article, \texttt{summaries} will be empty, and the extraction process will terminate.
+
+Otherwise, we move to our second step, value extraction. At this step, the model utilises the \texttt{value\_info} of the parameter to extract structured information about its value and uncertainty bounds. As before, we provide instructions for using the tool for each parameter class. These are listed below:
+
+% \begin{tcolorbox}[
+%     enhanced,
+%     breakable,
+%     colback=white,
+%     colframe=black!30,
+%     boxrule=0.8pt,
+%     arc=2pt,
+%     left=0pt, right=0pt, top=0pt, bottom=0pt,
+%     title={\small\textbf{Value Extraction Details}},
+%     fonttitle=\sffamily,
+%     coltitle=black!70!black,
+%     colbacktitle=black!15,
+%     attach boxed title to top left={yshift=-2mm, xshift=4mm},
+%     boxed title style={boxrule=0.5pt, arc=1pt}
+% ]
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    enforce breakable,
+    colback=violet!5,
+    colframe=violet!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{violet!60!black}{Value Extraction Details for Attack rate}}}
+
+\vspace{2pt}
+{\small
+If the attack rate is reported as a percentage, extract the percentage in the \texttt{value} field and set \texttt{unit} to \texttt{percentage}. If the attack rate is reported as a rate, extract the numerator in the \texttt{value} field and set \texttt{rate\_denominator} to the denominator of the rate.
+
+Please extract attack rates as written in the paper.
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    enforce breakable,
+    colback=violet!5,
+    colframe=violet!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{violet!60!black}{Value Extraction Details for Growth rate}}}
+
+\vspace{2pt}
+{\small
+Please extract growth rates from the paper. Populate the \texttt{value} field with a numerical value as it is specified in the paper. If the paper provides a percentage value like $33\%$, record this value as \texttt{0.33}. Populate the \texttt{unit} field with one of the provided units according to the tool schema.
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    enforce breakable,
+    colback=violet!5,
+    colframe=violet!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{violet!60!black}{Value Extraction Details for Human delay}}}
+
+\vspace{2pt}
+{\small
+\textbf{Delay type}
+
+The \texttt{delay\_type} field records the specific type of time interval. It can take one of the following values:
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item \texttt{generation\_time}: The generation time is the time interval between infector exposure to infection and infectee exposure to infection. It may be used in reproduction number estimation, but given the difficulties in its observation, it may be replaced by the serial interval (see below).
+    \item \texttt{serial\_interval}: The serial interval is the time interval between infector symptom onset and infectee symptom onset. It is frequently used in reproduction number estimation, as a substitute for the generation time.
+    \item \texttt{latent\_period}: The latent period is the time interval between exposure to infection and becoming infectious. It is sometimes used interchangeably with the incubation period (see below). It may also be referred to as the latency period or the pre-infectious period.
+    \item \texttt{incubation\_period}: The incubation period is the time interval between exposure to infection and symptom onset. It often coincides with the latent period, but may be shorter (symptom onset before infectiousness, e.g. SARS) or longer (infectiousness before symptom onset, e.g. Covid-19). It may also be referred to as the intrinsic incubation period (in the context of vector-borne diseases) or a subclinical infection.
+    \item \texttt{infectious\_period}: The infectious period is the time interval during which the host remains infectious. It directly follows the latent period (see above). It may also be referred to as the infective period, the contagious period, the transmission period or the communicability period.
+    \item \texttt{time\_in\_care}: The time in care is the time interval between admission to care and discharge from care or death. Unless there is a delay in receiving care, it directly follows the time from symptom to careseeking. It may vary according to health outcome and is typically highly skewed. It may also be referred to as the length of stay (LOS).
+\end{itemize}
+
+Human delays other than the six listed above may also be reported, for example the time from symptom onset to recovery, symptom onset to death, time from seeking care to admission to care etc. We allow \texttt{delay\_type} to take on one of these other time interval values:
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item \texttt{admission\_\_to\_\_death}
+    \item \texttt{admission\_\_to\_\_discharge\_or\_recovery}
+    \item \texttt{symptom\_onset\_\_to\_\_admission}
+    \item \texttt{symptom\_onset\_\_to\_\_death}
+    \item \texttt{symptom\_onset\_\_to\_\_discharge\_or\_recovery}
+\end{itemize}
+
+In the case that \textit{none} of the above values apply to a human delay parameter you have found, set \texttt{delay\_type = 'other'} and record the type of delay in the \texttt{delay\_type\_note} field.
+
+\vspace{1em}
+
+\textbf{Value and unit}
+
+Use the \texttt{value} and \texttt{unit} fields to record the parameter estimate (e.g. $x$ hours, days, weeks, or other).
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    enforce breakable,
+    colback=violet!5,
+    colframe=violet!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{violet!60!black}{Value Extraction Details for Mutation rate}}}
+
+\vspace{2pt}
+{\small
+For this task, we extract parameters estimated from pathogen genetic sequences. If no parameters were derived from genetic sequences, then this section can be skipped \textit{even if sequencing was performed and reported}.
+
+\vspace{1em}
+
+\texttt{substitution\_rate}, \texttt{evolutionary\_rate}, and \texttt{mutation\_rate} are different \texttt{parameter\_type} values for describing the speed at which genetic changes accumulate in a population. When selecting the \texttt{parameter\_type}, choose the value type and units based on the wording used by the authors in the article. If there are multiple terms used for the same measure (e.g. substitution rate is used in the text, evolutionary rate is used in the table), choose either the most frequently used term or default to \texttt{substitution\_rate} (if the units are substitutions per site per year). These values are often in the supplemental material. So if genetic sequences or phylogenetic analyses are presented, check the supplement. We are not extracting parameters associated with selection pressure or synonymous/nonsynonymous mutations, unless based on data or methodological limitations they have only been able to calculate substitution rate from nonsynonymous mutations (in that case specify this in the `Gene' field, similar to \textit{in vitro} experiments - see next bullet point). If substitution rates are calculated for subgroups (e.g. `clades,' `strains,' `branches', etc), report the global estimate and indicate disaggregated data is available in the Parameter Disaggregation section.
+
+\vspace{1em}
+
+As always, the \texttt{unit} value is very important for these parameters. The most common unit is \texttt{substitutions\_per\_site\_per\_year}. If units are not clear or they do not match the available options in the drop-down menu, set to \texttt{unspecified}.
+
+\vspace{1em}
+
+Fill the \texttt{genome\_site} field with the portion of the pathogen's genome used to estimate any extracted parameters (e.g. reproduction number, growth rate, substitution rate). This can be a gene, a gene segment, a codon position, or a more generic description (e.g. `whole genome' or `intergenic positions'). If parameter values are independently estimated for different portions of the genome, please enter each on a separate parameter value form. If a mutation rate is estimated by \textit{in vitro} experiments of recombinant variants (for example, measuring the rate of mutation in an inserted gene, such as green fluorescent protein [GFP]), enter the name of the inserted gene used, even though this gene might not be naturally occurring in the virus's genome. In addition, they may measure different types of mutations (SNPs vs indels) during \textit{in vitro} experiments. If this is the case, enter the type of mutation used to calculate the rate (ex. GFP-SNP, to signify that SNP mutations in the GFP gene were used to calculate the mutation rate).
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    enforce breakable,
+    colback=violet!5,
+    colframe=violet!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{violet!60!black}{Value Extraction Details for Severity}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}
+    \item \texttt{parameter\_type} -- we extract case fatality ratios (CFR), infection fatality ratios (IFR), and the proportion of cases that are symptomatic and asymptomatic.
+    \begin{itemize}
+        \item Case fatality ratio (\texttt{CFR}) -- the proportion of cases who end up dying of the disease. Note this depends on the case definition used, as the denominator is people identified as ``cases''. All CFRs should be extracted, even when a subset of the population is selected (e.g. severe cases); make sure to describe the population denominator in the context and notes.
+        \item Infection fatality ratio (\texttt{IFR}) -- the proportion of infections who end up dying of the disease (harder to calculate but less context dependent).
+        \item Symptomatic proportion of infections -- the proportion of total infections that are symptomatic.
+        \item Asymptomatic proportion of infections -- the proportion of total infections that are asymptomatic.
+    \end{itemize}
+    \item Parameter value -- we don't do any calculation ourselves i.e. if a paper quotes number of deaths and number of cases, but not a CFR, we don't calculate the CFR.
+    \item Ratio/prevalence values -- please extract the \texttt{numerator} and \texttt{denominator} that generate the severity ratio. In line with the rule of 3, only extract the numerator and denominator of the central CFR value, even if disaggregated numerators and denominators are available. If there is no central value, do not extract any numerator or denominator. If the numerator and denominator are presented, but the percentage severity is not, extract the numerator, denominator and context, but leave the central value blank.
+    \item \texttt{method} -- we extract information about the method used to calculate CFR (or IFR), mainly whether it is:
+    \begin{itemize}
+        \item a ``\texttt{naive}'' method, i.e. percentage mortality which computes total deaths divided by total cases (or infections); this is wrong because there may be many cases or infections who do not have final status information, so the naive estimate is typically an underestimate of true CFR (or IFR).
+        \item an \texttt{adjusted} method, which somehow accounts for infections or cases with unknown final status (e.g. calculates deaths / (deaths + recoveries) or does something more fancy).
+        \item an \texttt{unknown} method.
+    \end{itemize}
+    \item \texttt{value\_type}: mean, median, shape, etc. Please note that it may be the case that multiple measures of central tendency are provided, especially when the entire distribution of a parameter is presented. To avoid extracting multiple measures of centrality for the same parameter and to avoid bias, only one parameter \texttt{value\_type} can be extracted. Central parameter types are prioritised based on the available uncertainty types in the following way:
+    \begin{itemize}
+        \item When SD/variance/CIs are available: extract \texttt{mean}.
+        \item Else when only IQR/CrIs are available: extract \texttt{median}.
+        \item If \texttt{mode} is presented, this should be prioritised \textit{after} the \texttt{mean} or \texttt{median}.
+        \item If Weibull distribution parameters are presented: prioritise extraction of the \texttt{shape} rather than mean/CIs or median/CrIs. We can get mean/CIs from shape/scale analytically but can only get shape/scale from mean/CIs numerically.
+    \end{itemize}
+    \item \texttt{statistical\_approach} -- if the central parameter estimates are summarised directly from empirical data, select \texttt{observed\_sample\_statistic}. If the central parameter is estimated using a transmission model, select \texttt{estimated\_model\_parameter}. Due to limited data sources, the Oropouche systematic review \textit{only} was extended to include \texttt{case\_study} data.
+\end{itemize}
+}
+\end{tcolorbox}
+
+% \end{tcolorbox}
+
+The full prompt for the value extraction step is templatised below, incorporating text from both the parameter class screening details and the value extraction details.
+
+%%% VALUE EXTRACTION PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Value Extraction Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{gray!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an expert epidemiologist extracting epidemiological parameters from scientific articles. You will be provided with the processed text of a scientific article. Your task is to extract information about epidemiological parameters according to the provided schema.}}
+\end{tcolorbox}
+
+% Study Objectives
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{orange!60!black}{Study Objectives}}}
+
+\vspace{2pt}
+{\small
+% \textbf{Study Objectives}
+
+\textit{See study objectives in \cref{app:study_objectives}.}}
+\end{tcolorbox}
+
+% Summary Extraction Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Value Extraction Task Definition}}}
+
+\vspace{2pt}
+{
+\small
+\textbf{Value extraction task}
+
+For your next task, you will be provided with excerpts from a scientific article and a specific type of parameter. We are only extracting parameters that are estimated from or fitted to actual data. For transmission models, if it is only a theoretical model and they have just chosen parameters from other studies/randomly, then please don’t extract these.
+
+\vspace{1em}
+
+Scan the provided text and for the requested parameter and return all estimated parameter values using the provided tool. You will need to call the tool multiple times if there are multiple separate estimates.
+
+}
+\end{tcolorbox}
+
+% Full-text Input partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Parameter Class Screening Details}}}
+
+\vspace{2pt}
+{\small
+\textbf{\{\{\texttt{parameter\_class}\}\}: parameter value extraction}
+
+\vspace{1em}
+
+\{\{\textit{Screening details from \cref{tab:parameter_class_screening_details}}\}\}
+
+\vspace{1em}
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    enforce breakable,
+    colback=violet!5,
+    colframe=violet!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{violet!60!black}{Value Extraction Details for \{\texttt{parameter\_class}\}}}
+
+\textit{See the specific details of value extraction above.}
+}
+\end{tcolorbox}
+
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Value Excerpts}}}
+
+\vspace{2pt}
+{\small
+The following are excerpts from the scientific article about parameter value:
+
+\vspace{1em}
+
+\{\{\texttt{value\_info}\}\}
+
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+The tool provided to the language model is distinct per parameter class. In \cref{tab:value_extraction_schemas}, we specify the schemas utilised for these tool calls.
+
+\begin{footnotesize}
+\begin{longtable}{p{0.15\textwidth}p{0.15\textwidth}p{0.08\textwidth}p{0.23\textwidth}p{0.25\textwidth}}
+    \caption{\textbf{Schemas used for value extraction tool calls for each parameter class.} Here ``--'' means that any values of the correct type are allowed.}\label{tab:value_extraction_schemas} \\
+        \toprule
+        \bf Parameter class & \bf Variable & \bf Type & \bf Allowed values & \bf Description \\
+        \midrule
+        Attack rate & value & Float & -- & The value of the attack rate. \\
+        & unit & Enum & percentage; rate & The unit of the provided attack rate. \\
+        & type & Enum & primary; secondary & Whether primary or secondary attack rate. \\
+        & rate denominator & Integer; Null & -- & The denominator of the value, if the parameter is provided as a rate. \\
+        \addlinespace
+        Doubling time & value & Float & -- & The value of the doubling time, in days. \\
+        \addlinespace
+        Growth rate & value & Float & -- & The value of the growth rate. \\
+        & unit & Enum & per hour; per day; per week; per month; per year; other; unspecified & The unit of the provided growth rate. \\
+        \addlinespace
+        Human delay & value & Float & -- & The value of the human delay parameter. \\
+        & delay type & Enum & admission to death; admission to discharge or recovery; generation time; incubation period; infectious period; serial interval; symptom onset to admission; symptom onset to death; symptom onset to discharge or recovery; time in care; other & The specific delay parameter reported. \\
+        \addlinespace
+        Mutation rate & value & Float & -- & The value of the mutation rate parameter. \\
+        & type & Enum & evolutionary rate; mutation rate; substitution rate & The specific mutation rate parameter reported. \\
+        & unit & Enum & substitutions per site per year; mutations per genome per generation; percentage; other; unspecified & The unit of the mutation rate parameter value. \\
+        & genome site & String & -- & The specific genome site or region associated with the mutation rate value. \\
+        \addlinespace
+        Overdispersion & value & Float & -- & The value of the overdispersion parameter \\
+        & unit & Enum & no units; max number of cases superspreading & The unit of the overdispersion parameter \\
+        \addlinespace
+        Relative contribution & value & Float & -- & The value of the relative contribution parameter. \\
+        & type & Enum & human-to-human; zoonotic-to-human & The type of relative contribution reported. \\
+
+        \addlinespace
+        Reproduction number & value & Float & -- & The value of the reproduction number parameter. \\
+        & type & Enum & basic R0; effective Re & The type of reproduction number reported. \\
+        & transmission & Enum & human; mosquito; unspecified; other & The type of transmission for this reproduction number estimate. \\
+        & method & Enum & branching process; growth rate; compartmental model; next generation matrix; empirical; genomic; other & The method used to obtain the reproduction number estimate. \\
+        \addlinespace
+        Risk factors & name & List[Enum] & age; close contact; breastfeeding; comorbidity; contact with animal; environmental; funeral; hospitalisation; household contact; humidity; non-household contact; occupation; prior immunity to arboviruses; rainfall; sex; social gathering; temperature; other & The name of the risk factor. \\
+        & outcome & List[Enum] & death in general population; Guillain Barre Syndrome; infection; low birthweight; microcephaly; miscarriage or stillbirth; other neurological symptoms in general population; premature birth; serology; severe disease in general population; spillover risk; recovery; Zika congenital syndrome or other birth defects; other & The outcome for which the risk factor was evaluated. \\
+        & occupation & List[Enum] & abattoir services; correctional facilities; education; funeral and burial services; healthcare; laboratory; livestock and animal herders; public transport; quarantine facilities; veterinary; other; unspecified & If \texttt{name} is set to `occupation', the occupation(s) that correspond(s) most closely to that described in the paper. \\
+        & significant & Enum & significant; not significant; unspecified & Whether the risk factor is significant or not. \\
+        & adjusted & Enum & adjusted; not adjusted; unspecified & Whether the estimates of the risk factors are adjusted or unadjusted. \\
+        \addlinespace
+        Seroprevalence & value & Float & -- & The seroprevalence value as a proportion between 0.0 and 1.0. \\
+        & parameter type & Enum & IgG; IgM; PRNT; HAI; IFA; unspecified & The type of seroprevalence parameter. \\
+        & numerator & Integer; Null & The numerator used to calculate the seroprevalence value. If not provided, set to \texttt{Null}. \\
+        & denominator & Integer; Null & The denominator used to calculate the seroprevalence value. If not provided, set to \texttt{Null}. \\
+
+        \addlinespace
+        Severity & value & Float & -- & The value of the severity parameter as a proportion between 0.0 and 1.0. \\
+        & numerator & Integer; Null & -- & The numerator of the CFR or IFR parameter, if provided. \\
+        & denominator & Integer; Null & -- & The denominator of the CFR or IFR parameter, if provided. \\
+        & parameter type & Enum & CFR; IFR; proportion of symptomatic cases; proportion of asymptomatic cases & The type of severity parameter reported. \\
+        & method & Enum; Null & naive; adjusted; unknown & The method used to calculate the CFR or IFR. \\
+        \bottomrule
+\end{longtable}
+\end{footnotesize}
+
+Following value extraction, all parameters move to our third step: population context extraction. We extract population context with the same prompt and tool for all parameter classes (see below).  
+
+%%% POPULATION CONTEXT PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Population Extraction Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{gray!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an expert epidemiologist extracting epidemiological parameters from scientific articles. You will be provided with the processed text of a scientific article. Your task is to extract information about epidemiological parameters according to the provided schema.}}
+\end{tcolorbox}
+
+% Study Objectives
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{orange!60!black}{Study Objectives}}}
+
+\vspace{2pt}
+{\small
+% \textbf{Study Objectives}
+
+\textit{See study objectives in \cref{app:study_objectives}.}}
+\end{tcolorbox}
+
+% Population Extraction Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Population Extraction Task Definition}}}
+
+\vspace{2pt}
+{
+\small
+% \textbf{Population extraction task}
+
+For your next task, you will be provided with excerpts from a scientific article and an estimated parameter that has been extracted from that article. Your task is to scan the provided text and extract relevant sample population information for the given parameter. You will use the provided tool, which sets the schema you should follow when returning population information.
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Population Excerpts}}}
+
+\vspace{2pt}
+{\small
+The following are excerpts from the scientific article about parameter population context:
+
+\vspace{1em}
+
+\{\{\texttt{population\_info}\}\}
+
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+\newpage
+The population tool call is schematised as follows:
+
+\begin{footnotesize}
+\begin{longtable}%[H]
+    {p{0.22\textwidth}p{0.08\textwidth}p{0.3\textwidth}p{0.28\textwidth}}
+    \caption{\textbf{The schema for the population context extraction tool call.}}
+    \label{tab:population_tool_call} \\
+    %\begin{tabular}
+        \toprule
+        \bf Variable & \bf Type & \bf Allowed values & \bf Description \\
+        \midrule
+        population sex & Enum & female; male; both; unspecified & The sex composition of your study population. If you have 99 men and 1 woman you would still put both in this option. \\
+        \addlinespace
+        
+        population sample type & Enum & community based; hospital based; household based; housing estate based; population based; school based; travel based; trade or business based; contact based; mixed settings; other; unspecified & How was the study conducted? \\
+        \addlinespace
+        population group & Enum & healthcare workers; farmers; outdoor workers; animal workers; butchers; abattoir workers; pregnant women; children; sex workers; people who inject drugs; household contacts of survivors; persons under investigation; general population; persons with symptoms; mixed settings; unspecified; other & Demographic i.e. who was sampled? \\
+        \addlinespace
+        population sample size & Integer; Null & -- & Number of participants/samples tested etc. \\
+        \addlinespace
+        population age min & Integer; Null & -- & These must be number fields. If your sample is people over 18 you would put age min = 18 and leave age max blank. \\
+        \addlinespace
+
+        population age max & Integer; Null & -- & These must be number fields. If your sample is people over 18 you would put age min = 18 and leave age max blank. \\
+        \addlinespace
+
+        population countries & List[String] & -- & Where was the study undertaken? \\
+        \addlinespace
+
+        population location & String & -- & Location reported i.e. Kerry Town Ebola Treatment Centre. \\
+        \addlinespace
+
+        method moment value & Enum & start outbreak; mid outbreak; end outbreak; post outbreak; endemic; unspecified & When in the outbreak was this study undertaken? \\
+        \bottomrule
+    %\end{tabular}
+\end{longtable}
+\end{footnotesize}
+
+\clearpage
+
+
+For our final step, if we have multiple extractions of the same class for an article, we ask the language model to aggregate parameters that should be reported as ranges over population disaggregations. Our aggregation logic follows PERG's \textit{rule of three}, which specifies certain pathogen-specific conditions for when aggregated reporting is appropriate. These are detailed to the language model in the instruction prompt below, which is provided identically for all parameter classes.
+
+\bigskip
+
+%%% AGGREGATION PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Aggregation Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{blue!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an expert epidemiologist extracting epidemiological parameters from scientific articles. You will be provided with the processed text of a scientific article. Your task is to extract information about epidemiological parameters according to the provided schema.}}
+\end{tcolorbox}
+
+% Study Objectives
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{orange!60!black}{Study Objectives}}}
+
+\vspace{2pt}
+{\small
+% \textbf{Study Objectives}
+
+\textit{See study objectives in \cref{app:study_objectives}.}}
+\end{tcolorbox}
+
+% Population Extraction Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Aggregation Task Definition}}}
+
+\vspace{2pt}
+{
+\small
+\textbf{Aggregation task}
+
+For your next task, you will be provided with a list of parameters already extracted from an epidemiological study. Your task is to provide \textit{aggregations} of these parameter values when suitable.
+
+\vspace{1em}
+
+\textbf{Aggregation context}
+
+Some epidemiological papers have a huge level of parameter disaggregation (e.g. age, sex, location) and so we have established different rules to ease our meta-review process. For non-location-related disaggregations, please remember the \textbf{rule of three}. If there are three or more disaggregations for a parameter, e.g. Rt values for three or more age groups, extract these as a \textbf{range} and specify that disaggregated data is available and what the parameter is disaggregated by.
+
+Each pathogen has different rules on location, which we state here:
+\begin{itemize}
+    \item marburg; ebola; MERS: Location is included within the rule of three.
+    \item lassa; SARS; zika; nipah: Please \textit{do not aggregate} values if the disaggregation is by location as much as possible and do not apply the rule of three for geographic regions down to admin level 2 (sub-regions) of a country. However, please respect the rule of three for estimates by neighborhood for example.
+\end{itemize}
+
+If the provided parameters do not contain adequate population information to perform an aggregation, then do not return any aggregated values.
+
+If you decide that an aggregation is necessary, use the provided tool to submit aggregated values according to the tool's schema. Provide the \texttt{lower\_bound} and \texttt{upper\_bound} of the parameter values, and list the types of population disaggregation (like ``age'', ``sex'', etc.) in the \texttt{disaggregated\_by} field. Fill the \texttt{aggregated\_ids} list with all of the \texttt{id}s from the parameters you aggregated.}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Extracted parameters}}}
+
+\vspace{2pt}
+{\small
+\textbf{Extracted parameters}: \{\{\texttt{parameters}\}\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+% The aggregation tool call is presented in JSON syntax format like so:
+
+% \begin{minted}[breaklines, fontsize=\small, bgcolor={gray!10}]{json}
+% {
+%     "type": "function",
+%     "name": "extract_aggregated_parameters",
+%     "description": "Aggregate extracted parameters according to population information.",
+%     "parameters": {
+%         "type": "object",
+%         "properties": {
+%             "lower_bound": {
+%                 "type": "number",
+%                 "description": "The lower bound of the aggregated parameter.",
+%             },
+%             "upper_bound": {
+%                 "type": "number",
+%                 "description": "The upper bound of the aggregated parameter.",
+%             },
+%             "disaggregated_by": {
+%                 "type": "array",
+%                 "items": {
+%                     "type": "string"
+%                 },
+%                 "description": "Description of how the parameter was disaggregated by population characteristics.",
+%             },
+%             "aggregated_ids": {
+%                 "type": "array",
+%                 "items": {
+%                     "type": "string"
+%                 },
+%                 "description": "UUIDs of the aggregated parameters.",
+%             }
+%         },
+%         "required": [
+%             "lower_bound", "upper_bound", "disaggregated_by", "aggregated_ids"
+%         ],
+%     },
+% }
+% \end{minted}
+
+% On top of these excerpts, parameter-specific extractors converted free text into structured JSON outputs. Each parameter class had a dedicated extractor in code (for example the \texttt{SeverityExtractor} for case fatality rate, infection fatality rate, and the proportion of symptomatic or asymptomatic infections), which exposed a tool such as \texttt{extract\_severity\_value}. These tools enforced strict rules, such as: the \texttt{value} field had to be a proportion between 0 and 1, and the optional \texttt{method} field could only take values in \texttt{["naive", "adjusted", "unknown"]}. Invalid combinations were flagged as errors and led to another tool call, giving the model a chance to correct its output before the estimate was accepted.
+
+% Each accepted parameter value was then paired with a population description extracted from nearby text. A separate population tool used a controlled vocabulary for age groups (0--4, 5--17, 18--49, 50--64, 65+, all ages) and flexible fields for geography, clinical characteristics, and time period to produce a population vector describing the group to which the estimate applied. When several estimates within the same article shared compatible population descriptors, an aggregation tool proposed combined summary values while preserving the disaggregated estimates for downstream analysis. All five steps were coordinated by the \texttt{ExtractionRunner} class, which loaded full text data, applied screening decisions, and ran the complete workflow for each requested parameter class while logging all outputs to structured JSONL files.
+
+\clearpage
+
+
+
+\subsection{Models}
+
+\paragraph{Valid transmission models for extraction}
+Epidemiological transmission models are mathematical frameworks that simulate how infectious diseases spread through populations by mechanistically describing the interactions between infected and susceptible individuals. We extract models that mechanistically represent disease transmission dynamics, excluding purely statistical analyses, regression-based forecasting without transmission mechanisms, and risk factor studies. Table~\ref{tab:model_characteristics} defines the categories of model characteristics extracted in this study, organised into structural properties, epidemiological features, assumptions, intervention categories, and reproducibility indicators.
+
+\begin{footnotesize}
+\begin{table}[H]
+    \centering
+    \caption{\textbf{Model characteristic categories targeted by the extraction pipeline.}}
+    \label{tab:model_characteristics}
+    \begin{tabular}{p{0.25\textwidth}p{0.65\textwidth}}
+        \toprule
+        \bf Category & \bf Description \\
+        \midrule
+        Structural Properties & 
+        Model type (compartmental, agent-based, branching process) and compartmental architecture (SIS, SIR, SEIR, etc.). Whether the model is stochastic or deterministic. \\
+        
+        Epidemiological Features & 
+        Primary transmission routes (airborne, direct contact, vector-borne, sexual). Spatial heterogeneity and spillover dynamics from animal reservoirs. \\
+        
+        Behavioural Assumptions & 
+        Mixing patterns (homogeneous or heterogeneous), age-dependent susceptibility, cross-immunity between pathogens, and temporal variation in transmission rates. \\
+        
+        Theoretical vs. Fitted & 
+        Whether the model was fitted to actual data or uses parameters from literature or arbitrary values. \\
+        
+        Intervention Categories & 
+        Control measures evaluated including vaccination, quarantine, vector control, treatment, contact tracing, behaviour changes, and various vector management strategies. \\
+        
+        Reproducibility Indicators & 
+        Code availability, programming language used, data sharing status, and presence of documentation (README). \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\end{footnotesize}
+
+\paragraph{Model extraction schema}
+Table~\ref{tab:model_extraction_schema} defines the complete extraction schema with field specifications, data types, allowed values, and descriptions. The schema uses controlled vocabularies to ensure consistency and enable structured analysis of modelling approaches across the literature.
+
+\begin{footnotesize}
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{>{\raggedright\small}p{.19\textwidth}>{\raggedright\small}p{.09\textwidth}>{\raggedright\small}p{.30\textwidth}>{\raggedright\arraybackslash\small}p{.32\textwidth}}
+    \caption{\textbf{Model extraction schema with field specifications, data types, allowed values, and descriptions.}}\label{tab:model_extraction_schema} \\
+    \toprule
+    \bf Field Name & \bf Type & \bf Allowed Values & \bf Description \\
+    \midrule
+    % \endfirsthead
+    
+    % \multicolumn{4}{c}%
+    % {{\bfseries Table \thetable\ continued from previous page}} \\
+    % \toprule
+    % \bf Field Name & \bf Type & \bf Allowed Values & \bf Description \\
+    % \midrule
+    % \endhead
+    
+    % \midrule
+    % \multicolumn{4}{r}{{Continued on next page}} \\
+    % \endfoot
+    
+    % \bottomrule
+    % \endlastfoot
+    
+    model\_type & Enum & Compartmental; Branching process; Agent/Individual based; Other; Unspecified & Primary modeling framework used for transmission dynamics. \\
+    \addlinespace
+    
+    compartmental\_type & Enum & SIS; SIR; SEIR; SEIR-SEI; SAIR-SEI; Not compartmental; Other compartmental & Specific compartmental model architecture if applicable. Use ``Not compartmental'' for non-compartmental models. \\
+    \addlinespace
+    
+    stoch\_deter & Enum; Null & Stochastic; Deterministic & Whether the model is stochastic or deterministic. Only extract if explicitly stated. Null if not specified. \\
+    \addlinespace
+    
+    transmission\_route & List[Enum] & Airborne or close contact; Human to human (direct contact); Human to human (direct non-sexual contact); Vector/Animal to human; Sexual; Unspecified & Primary pathway(s) through which pathogen transmission occurs. Multiple routes can be selected. \\
+    \addlinespace
+    
+    uncertainty\_was\_considered & Boolean; Null & True; False & Whether uncertainty was considered through stochasticity, multiple models, or parameter variation (e.g. sensitivity analyses, Bayesian analysis). Null if not specified. \\
+    \addlinespace
+    
+    spatial\_model & Boolean; Null & True; False & Whether the model explicitly incorporated spatial or geographic heterogeneity. Null if not specified. \\
+    \addlinespace
+    
+    spillover\_included & Boolean; Null & True; False & Whether the model explicitly modelled spillover (e.g. animal reservoir component, contribution to force of infection from zoonosis). Null if not specified. \\
+    \addlinespace
+    
+    assumptions & List[Enum] & Homogeneous mixing; Latent period is same as incubation period; Heterogeneity in transmission rates (between human groups; between groups; between human and vector; over time); Age dependent susceptibility; Cross-immunity between Zika and dengue; Other; Unspecified & Key structural and behavioural assumptions. Should be explicitly described in the paper or clear from model equations. Multiple assumptions can be selected. \\
+    \addlinespace
+    
+    theoretical\_model & Boolean & True; False & Whether the model was NOT fitted to data (parameters from literature or arbitrary values). True if not fitted; False if fitted to actual data. \\
+    \addlinespace
+    
+    interventions\_type & List[Enum] & Vaccination; Quarantine; Vector/Animal control; Treatment; Contact tracing; Hospitals; Treatment centres; Safe burials; Behaviour changes; Wolbachia replacement/suppression; Genetically modified mosquitoes; Mechanical removal of breeding sites; Pesticides/larvicides; Insecticide-treated nets; Indoor residual spraying; Other; Unspecified & Categories of control measures evaluated or incorporated in the model(s). Multiple interventions can be selected. \\
+    \addlinespace
+    
+    code\_available & Boolean & True; False & Whether model implementation code was made publicly available. \\
+    \addlinespace
+    
+    coding\_language & Enum; Null & R; Python; Matlab; Julia; C++; Other & Programming language(s) used for model implementation if code is available. Null if not specified. \\
+    \addlinespace
+    
+    is\_data\_used\_available & Enum; Null & Yes (as an attachment; with a DOI; on Github; on another platform); Not available; Unspecified & Whether input data used for the model was shared and how it was shared. Null if not specified. \\
+    \addlinespace
+    
+    readme\_included & Boolean; Null & True; False & Whether a README or detailed documentation accompanied the code repository. Null if not applicable. \\
+    \addlinespace
+    
+    notes & String; Null & -- & Additional context or notes about the extracted model. Free text field. \\
+    \bottomrule
+\end{longtable}
+\renewcommand{\arraystretch}{1.0}
+\end{footnotesize}
+
+\paragraph{Multi-stage model extraction pipeline}
+Model extraction employs a two-stage agentic workflow operating on full-text article content. Unlike parameter extraction, which requires fine-grained text excerpting and value parsing, model extraction focuses on identifying the presence of dynamic transmission models and characterising their structural properties using controlled vocabularies.
+
+In the first stage, a binary screening step identifies articles containing dynamic transmission models while excluding purely statistical analyses, regression-based forecasting, and risk factor studies without transmission dynamics (see the ``Model Screening Prompt'' below). The language model returns a simple ``True'' or ``False'' response indicating whether the article contains models suitable for extraction.
+
+For articles passing this screen, the extraction stage deploys a structured tool-calling approach where the language model iteratively invokes an \texttt{extract\_model\_data} function once per distinct model identified in the article (see the ``Model Extraction Prompt'' below). Each tool call populates the standardised schema defined in Table~\ref{tab:model_extraction_schema}.
+
+The schema enforces controlled vocabularies for all fields through strict JSON validation. Multiple-select fields (\texttt{transmission\_route}, \texttt{assumptions}, \texttt{interventions\_type}) accept arrays of values from predefined enumerations, while single-select fields enforce unique values or null for optional characteristics. Validation logic rejects outputs violating vocabulary constraints or logical rules. For example, a non-compartmental \texttt{model\_type} must have \texttt{compartmental\_type} set to ``Not compartmental'', this prompts the model to correct errors before proceeding.
+
+The complete extraction workflow is coordinated by the \texttt{ModelExtractionRunner} class, which loads full-text data, applies screening decisions, manages iterative tool calls with validation feedback, and logs all outputs to structured CSV files.
+
+%%% MODEL SCREENING PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Model Screening Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{orange!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an epidemiologist specializing in infectious disease modeling. Determine if this article contains dynamic transmission models for infectious disease.}}
+\end{tcolorbox}
+
+% Screening Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Screening Task Definition}}}
+
+\vspace{2pt}
+{\small
+\textbf{Include (respond ``True''):}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Compartmental models (SIR, SEIR, etc.)
+\item Agent-based or individual-based models
+\item Branching process models
+\item Network transmission models
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Exclude (respond ``False''):}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Pure statistical/regression analyses
+\item Time series forecasting without mechanistic transmission
+\item Risk factor analyses without transmission dynamics
+\item Seroprevalence studies without modeling
+\end{itemize}
+
+\vspace{4pt}
+Respond with only ``True'' or ``False''.
+}
+\end{tcolorbox}
+
+% Full Text
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Full Text}}}
+
+\vspace{2pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Full Text: \{\{fulltext\}\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+\vspace{-3pt}
+
+\clearpage
+
+%%% MODEL EXTRACTION PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Model Extraction Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{orange!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an epidemiologist specializing in infectious disease modeling. Extract information about transmission models from scientific articles.}}
+\end{tcolorbox}
+
+% Study Objectives
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray}{Study Objectives}}}
+
+\vspace{2pt}
+{\small
+\textbf{Study Objectives}
+
+This systematic review collates transmission models, outbreaks and parameters for \{\{pathogen\}\}.
+}
+\end{tcolorbox}
+
+% Extraction Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Extraction Task Definition}}}
+
+\vspace{2pt}
+{\small
+\textbf{Model extraction task}
+
+Extract \textbf{ALL dynamic transmission models} described in the article that were actually used or implemented.
+
+\vspace{6pt}
+Do \textbf{not} extract:
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Models only mentioned as possible alternatives without implementation
+\item Regression-only analyses
+\item Purely statistical forecasting
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Tool Calling:}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Call \texttt{extract\_model\_data} \textbf{once per model} identified in the article
+\item After extracting all model/s, stop calling the tool (no completion call needed)
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Schema Requirements:}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \texttt{transmission\_route}, \texttt{assumptions}, \texttt{interventions\_type} are \textbf{arrays} (multiple-select)
+\item All other fields are \textbf{single values} (single-select)
+\item Use \texttt{null} for optional single-select fields when not stated
+\item Use \texttt{["Unspecified"]} for required arrays when not stated
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Full Text
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Full Text}}}
+
+\vspace{2pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Full Text: \{\{fulltext\}\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+The language model uses the \texttt{extract\_model\_data()} tool (provided to it) to populate the schema defined in Table~\ref{tab:model_extraction_schema}. The tool enforces strict JSON validation with controlled vocabularies for all fields, rejecting invalid outputs and prompting corrections. The complete tool specification follows standard OpenAI function calling conventions with enum constraints for single-select fields and array validation for multiple-select fields.
+
+\clearpage
+\subsection{Outbreaks}
+
+\paragraph{Valid outbreak data for extraction}
+Outbreak data capture the epidemiological characteristics of concluded epidemic events, including temporal bounds, geographic scope, transmission sources, case counts stratified by confirmation status, and demographic breakdowns. We extracted outbreak information as stated in articles, without performing additional calculations or inferring missing values.
+
+Following extraction guidelines suggested by PERG,\footnote{\url{https://github.com/mrc-ide/priority-pathogens/wiki/Outbreak-data}} outbreak inclusion criteria varied by pathogen based on reporting completeness and literature volume. For Marburg and Lassa, all reported outbreaks were captured regardless of size. For Zika, only outbreaks with at least 10 confirmed, probable, or suspected cases were extracted, reflecting the assumption that smaller events may not be systematically documented and contribute minimally to population-level immunity estimates. Table~\ref{tab:outbreak_field_descriptions} defines the outbreak characteristics and their meanings in natural language.
+
+\begin{footnotesize}
+\begin{longtable}{p{.35\textwidth}p{.65\textwidth}}
+\caption{\textbf{Outbreak field descriptions and meanings.}}
+\label{tab:outbreak_field_descriptions} \\
+\toprule
+\bf Outbreak Characteristic & \bf Description \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}%
+{{\bfseries Table \thetable\ continued from previous page}} \\
+\toprule
+\bf Outbreak Characteristic & \bf Description \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+
+Outbreak start day & Day of outbreak onset (1--31). Extracted as stated in paper. \\
+Outbreak start month & Month of outbreak onset. Extracted as stated in paper. \\
+Outbreak start year & Year of outbreak onset. Extracted as stated in paper. \\
+Outbreak end day & Day of outbreak conclusion (1--31). Extracted as stated in paper. \\
+Outbreak end month & Month of outbreak conclusion. Extracted as stated in paper. \\
+Outbreak end year & Year of outbreak conclusion. Extracted as stated in paper. \\
+Outbreak duration (months) & Duration of outbreak in months. ONLY extracted if explicitly stated in paper; not calculated. \\
+Outbreak is currently ongoing & Whether outbreak was concluded or ongoing at time of publication. \\
+Outbreak country & Country where outbreak occurred, using WHO standard country names. Refers to reporting country rather than infection source for imported cases. \\
+Outbreak location & Specific geographic location within country (city, district, province) as written in paper. Multiple locations separated by semicolons. \\
+Outbreak location type & Administrative or geographic unit type of outbreak location. \\
+Outbreak source & Known or suspected source of outbreak introduction. \\
+Mode of detection & Primary method(s) used to identify and confirm cases. \\
+Method of case definition & Criteria used to classify cases. Extracted as described in paper. \\
+Pre-outbreak baseline & Baseline disease status in affected area prior to outbreak. Rarely reported. \\
+Cases confirmed & Number of laboratory-confirmed cases (e.g. via molecular testing). \\
+Cases probable & Number of probable cases as defined in paper. Definition may vary across studies. \\
+Cases suspected & Number of suspected cases as defined in paper. Definition may vary across studies. \\
+Cases unspecified & Number of cases where confirmation status was not specified. \\
+Cases asymptomatic & Number of asymptomatic infections as defined in paper. \\
+Cases severe & Number of severe cases or hospitalizations as stated in paper. \\
+Deaths & Number of deaths attributed to outbreak. \\
+Asymptomatic transmission described & Whether article explicitly described or discussed asymptomatic transmission. \\
+Population size (geographical area) & Total population of affected geographic area. Rarely reported. \\
+Type of cases (sex disaggregation) & Case type for which sex disaggregation was reported. \\
+Male cases & Number of cases in males for specified case type. \\
+Proportion male cases & Proportion (0.0--1.0) or percentage (0--100) of cases in males. \\
+Female cases & Number of cases in females for specified case type. \\
+Proportion female cases & Proportion (0.0--1.0) or percentage (0--100) of cases in females. \\
+Notes & Additional context or clarifications about outbreak characteristics. \\
+\end{longtable}
+ 
+\end{footnotesize}
+
+\paragraph{Outbreak extraction schema}
+Table~\ref{tab:outbreak_extraction_schema} defines the complete extraction schema with field specifications, data types, allowed values, and descriptions. The schema uses controlled vocabularies to ensure consistency and enable structured analysis of outbreak characteristics across the literature.
+
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{>{\raggedright\small}p{.30\textwidth}>{\raggedright\small}p{.12\textwidth}>{\raggedright\small}p{.25\textwidth}>{\raggedright\arraybackslash\small}p{.25\textwidth}}
+    \caption{\textbf{Outbreak extraction schema with field specifications, data types, allowed values, and descriptions.}}\label{tab:outbreak_extraction_schema} \\
+    \toprule
+    \bf Field Name & \bf Type & \bf Allowed Values & \bf Description \\
+    \midrule
+    \endfirsthead
+    
+    \multicolumn{4}{c}%
+    {\small{\bfseries Table \thetable\ continued from previous page}} \\
+    \toprule
+    \bf Field Name & \bf Type & \bf Allowed Values & \bf Description \\
+    \midrule
+    \endhead
+    
+    \midrule
+    \multicolumn{4}{r}{{Continued on next page}} \\
+    \endfoot
+    
+    \bottomrule
+    \endlastfoot
+    
+    outbreak\_start\_day & Integer; Null & 1-31 & Day of outbreak onset. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_start\_month & String (Enum); Null & Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec & Month of outbreak onset. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_start\_year & Integer; Null & Integer year & Year of outbreak onset. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_end\_day & Integer; Null & 1-31 & Day of outbreak conclusion. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_end\_month & String (Enum); Null & Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec & Month of outbreak conclusion. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_end\_year & Integer; Null & Integer year & Year of outbreak conclusion. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_duration\_months & Float; Null & Numeric value & Duration in months. ONLY if explicitly stated; not calculated. Null if not stated. \\
+    \addlinespace
+    
+    outbreak\_is\_currently\_ongoing & Boolean & True; False & Whether outbreak was concluded (False) or ongoing (True) at publication. \\
+    \addlinespace
+    
+    outbreak\_country & String (Enum) & WHO standard country names (195 member states) & Country where outbreak occurred. MUST match WHO standard names. \\
+    \addlinespace
+    
+    outbreak\_location & String; Null & Free text & Specific location within country. Multiple locations separated by semicolons. Null if not provided. \\
+    \addlinespace
+    
+    outbreak\_location\_type & String; Null & Free text (e.g. district, province, county, state, hospital) & Type of administrative or geographic unit. Null if not specified. \\
+    \addlinespace
+    
+    outbreak\_source & String (Enum); Null & Domestic animal; Wild animal; Date palm sap; Unknown; Other & Known or suspected source of outbreak introduction. Null if not provided. \\
+    \addlinespace
+    
+    mode\_of\_detection & String (Enum); Null & Molecular (PCR etc); Symptoms; Confirmed + Suspected; Unspecified & Primary method used to identify and confirm cases. Null if not provided. \\
+    \addlinespace
+    
+    method\_of\_case\_definition & String; Null & Free text & Criteria used to classify cases as described in paper. Null if not provided. \\
+    \addlinespace
+    
+    pre\_outbreak & String (Enum); Null & Disease-free baseline; Endemic equilibrium; Unspecified; Probable & Baseline disease status prior to outbreak. Null if not provided. \\
+    \addlinespace
+    
+    cases\_confirmed & Float; Null & Non-negative numeric & Number of laboratory-confirmed cases. Null if not provided. \\
+    \addlinespace
+    
+    cases\_probable & Float; Null & Non-negative numeric & Number of probable cases. Null if not provided. \\
+    \addlinespace
+    
+    cases\_suspected & Float; Null & Non-negative numeric & Number of suspected cases. Null if not provided. \\
+    \addlinespace
+    
+    cases\_unspecified & Float; Null & Non-negative numeric & Number of cases with unspecified confirmation status. Null if not provided. \\
+    \addlinespace
+    
+    cases\_asymptomatic & Float; Null & Non-negative numeric & Number of asymptomatic infections. Null if not provided. \\
+    \addlinespace
+    
+    cases\_severe & Float; Null & Non-negative numeric & Number of severe cases or hospitalizations. Null if not provided. \\
+    \addlinespace
+    
+    deaths & Float; Null & Non-negative numeric & Number of deaths attributed to outbreak. Null if not provided. \\
+    \addlinespace
+    
+    asymptomatic\_transmission\_described & Boolean & True; False & Whether article explicitly described or discussed asymptomatic transmission. \\
+    \addlinespace
+    
+    population\_size\_geographical\_area & Float; Null & Non-negative numeric & Total population of affected geographic area. Null if not provided. \\
+    \addlinespace
+    
+    type\_cases\_sex\_disagg & String (Enum); Null & Confirmed; Suspected; Other; Unspecified & Case type for which sex disaggregation was reported. Null if not provided. \\
+    \addlinespace
+    
+    male\_cases & Float; Null & Non-negative numeric & Number of male cases for specified case type. Null if not provided. \\
+    \addlinespace
+    
+    prop\_male\_cases & Float; Null & Numeric (0.0-1.0 or 0-100) & Proportion or percentage of cases in males. Null if not provided. \\
+    \addlinespace
+    
+    female\_cases & Float; Null & Non-negative numeric & Number of female cases for specified case type. Null if not provided. \\
+    \addlinespace
+    
+    prop\_female\_cases & Float; Null & Numeric (0.0-1.0 or 0-100) & Proportion or percentage of cases in females. Null if not provided. \\
+    \addlinespace
+    
+    notes & String; Null & Free text & Additional context or clarifications about outbreak characteristics. Null if not needed. \\
+    
+\end{longtable}
+\renewcommand{\arraystretch}{1.0}
+
+\paragraph{Multi-stage outbreak extraction pipeline}
+Outbreak extraction employs a two-stage workflow operating on full-text article content. The first stage applies binary screening to identify articles reporting concluded, real-world outbreak events with defined case counts, excluding ongoing outbreaks, modelled scenarios, routine surveillance, and single case reports (see the ``Outbreak Screening Prompt'' below). The language model returns a simple ``True'' or ``False'' response indicating whether the article contains outbreaks suitable for extraction.
+
+
+For articles passing this screen, the extraction stage deploys a structured tool-calling approach where the language model iteratively invokes an \texttt{extract\_outbreak\_data} function once per distinct outbreak identified in the article (see the ``Outbreak Extraction Prompt'' below). Outbreaks are considered distinct if they differ by location, time period, or both. Each tool call populates the standardised schema defined in Table~\ref{tab:outbreak_extraction_schema}.
+
+
+The schema enforces controlled vocabularies for categorical fields through strict JSON validation. The required fields must be provided (\texttt{outbreak\_is\_currently\_ongoing}, \texttt{outbreak\_country}, \texttt{asymptomatic\_transmission\_described}), while all other fields accept null values when data are not stated in the article. The \texttt{outbreak\_country} field enforces WHO standard country names, and the \texttt{outbreak\_location} field prohibits commas, requiring semicolon separators for multiple locations to avoid parsing ambiguities. Validation logic rejects outputs violating vocabulary constraints or data type rules, prompting the model to correct errors before proceeding.
+
+The complete extraction workflow is coordinated by the \texttt{OutbreakExtractionRunner} class, which loads full-text data, applies screening decisions, manages iterative tool calls with validation feedback, and logs all outputs to structured JSONL files for downstream analysis.
+
+
+%%% OUTBREAK SCREENING PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Outbreak Screening Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{orange!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an epidemiologist conducting systematic review of infectious disease outbreaks. Determine if this article reports concluded, real-world outbreak events with defined case counts.}}
+\end{tcolorbox}
+
+% Screening Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Screening Task Definition}}}
+
+\vspace{2pt}
+{\small
+\textbf{Include (respond ``True''):}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Discrete outbreak events with ALL of: specific location, defined time period, and case counts
+\item Outbreak investigations describing a bounded epidemic event
+\item Case series (2 or more cases) from a specific outbreak
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Exclude (respond ``False''):}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Ongoing outbreaks at time of publication
+\item Modeled, simulated, or forecasted outbreaks
+\item Routine surveillance or annual disease burden (e.g., ``X cases per year'')
+\item Seroprevalence or risk factor studies without outbreak context
+\item Single case reports
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Key Question:} Can you identify a specific outbreak event (not general disease occurrence) with a start/end period and case count?
+
+\vspace{4pt}
+Respond with only ``True'' or ``False''.
+}
+\end{tcolorbox}
+
+% Full Text
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Full Text}}}
+
+\vspace{2pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Full Text: \{\{fulltext\}\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+% \clearpage
+
+
+%%% OUTBREAK EXTRACTION PROMPT %%%
+
+% Extraction Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=blue!5,
+    colframe=blue!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+    breakable
+]
+{\small\textbf{\textcolor{blue!60!black}{Extraction Task Definition}}}
+
+\vspace{2pt}
+{\small
+\textbf{Outbreak extraction task}
+
+Extract concluded outbreaks with defined case counts from the article. Call \texttt{extract\_outbreak\_data} once for each distinct outbreak (different location, time, or both).
+
+\vspace{6pt}
+\textbf{Important Notes:}
+
+We are extracting everything as presented in the paper, even if you think it is an error by the author(s).
+
+Extract data EXACTLY as stated in the paper. Do NOT perform calculations, convert units, or infer missing values.
+
+DO NOT use commas in any field. If you need to separate items within a field, please use a semicolon.
+
+\vspace{6pt}
+\textbf{Tool Calling Rules:}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Call \texttt{extract\_outbreak\_data} once per distinct outbreak
+\item Outbreaks are distinct if they differ by location, time, or both
+\item After extracting all outbreaks, stop calling the tool (no completion call needed)
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Schema Requirements:} Only three fields are required:
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \texttt{outbreak\_is\_currently\_ongoing}: true or false
+\item \texttt{outbreak\_country}: Must be valid WHO country name
+\item \texttt{asymptomatic\_transmission\_described}: true or false
+\end{itemize}
+
+All other fields: Use null when not stated in the paper.
+
+\vspace{4pt}
+\textbf{Extraction Rules:}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Only select values that appear in the allowed lists for categorical fields
+\item Extract dates as separate components (day, month, year)
+\item Do NOT calculate \texttt{outbreak\_duration\_months}; only extract if explicitly stated
+\item If you receive a validation error message, correct the tool call and try again
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Field-Specific Guidance:}
+
+\textbf{Location:}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \texttt{outbreak\_country}: MUST match WHO standard names exactly (e.g., ``United States of America'' not ``USA'', ``Viet Nam'' not ``Vietnam'')
+\item \texttt{outbreak\_location}: Extract as written; use semicolons not commas (e.g., ``Lagos; Abuja'')
+\end{itemize}
+
+\textbf{Case Counts:} Extract all categories as reported
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \texttt{cases\_confirmed}: Laboratory-confirmed cases
+\item \texttt{cases\_probable}: Probable cases (clinical diagnosis)
+\item \texttt{cases\_suspected}: Suspected cases under investigation
+\item \texttt{cases\_unspecified}: Cases without clear classification
+\item \texttt{cases\_asymptomatic}: Asymptomatic cases identified
+\item \texttt{cases\_severe}: Severe cases OR hospitalizations (note if hospitalizations in notes)
+\item \texttt{deaths}: Reported deaths
+\end{itemize}
+
+\textbf{Mode of Detection:} Select ONE
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item ``Molecular (PCR etc)'' Laboratory confirmation (PCR, ELISA, culture, etc.)
+\item ``Symptoms'': Clinical/syndromic diagnosis only
+\item ``Confirmed + Suspected'': Both lab-confirmed and clinical cases
+\item ``Unspecified'': Not clearly stated
+\end{itemize}
+
+\textbf{Sex Disaggregation:} When provided, extract:
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \texttt{male\_cases} / \texttt{female\_cases}: Counts
+\item \texttt{prop\_male\_cases} / \texttt{prop\_female\_cases}: Proportion/percentage as reported
+\item \texttt{type\_cases\_sex\_disagg}: Which case type is disaggregated (Confirmed/Suspected/Other/Unspecified)
+\end{itemize}
+
+\textbf{Pre-Outbreak Baseline:}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item ``Disease-free baseline'': No previous cases
+\item ``Endemic equilibrium'': Disease was endemic
+\item ``Probable'': Suggested but not definitive
+\item ``Unspecified'': Not discussed
+\end{itemize}
+
+\textbf{Dates:} Provide as separate components (day, month, year). Partial dates are acceptable (e.g., only month and year).
+
+\textbf{Duration:} ONLY extract if paper explicitly states duration. Do NOT calculate from dates.
+
+\textbf{Notes:} Use this field for important context, data quality issues, or special circumstances.
+
+\vspace{4pt}
+\textbf{Pathogen-Specific Rules:}
+\vspace{-4pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item Zika, RVF: Only extract outbreaks with 10 or more cases
+\item Marburg, Lassa, Nipah: Extract all outbreaks
+\item OROV: Include even single case reports
+\end{itemize}
+}
+\end{tcolorbox}
+
+\clearpage
+
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Outbreak Extraction Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{orange!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are an epidemiologist conducting systematic review of infectious disease outbreaks. Extract structured data about concluded outbreak events from scientific articles.}}
+\end{tcolorbox}
+
+% Study Objectives
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Study Objectives}}}
+
+% \vspace{2pt}
+{\small
+% \textbf{Study Objectives}
+
+This systematic review collates transmission models, outbreaks and parameters for \{\{pathogen\}\}.
+}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=blue!5,
+    colframe=blue!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+    breakable
+]
+{\small\textbf{\textcolor{blue!60!black}{Extraction Task Definition}}
+\textit{See Extraction Task Definition details above.}
+}
+\end{tcolorbox}
+
+% Full Text
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+
+{\small\textbf{\textcolor{gray!70!black}{Full Text}}}
+
+\vspace{2pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Full Text: \{\{fulltext\}\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+The language model uses the \texttt{extract\_outbreak\_data()} tool (provided to it) to populate the schema defined in Table~\ref{tab:outbreak_extraction_schema}. The tool enforces strict JSON validation with controlled vocabularies for categorical fields, rejecting invalid outputs and prompting corrections. The complete tool specification follows standard OpenAI function calling conventions with enum constraints for single-select fields and null acceptance for optional fields.
+
+\paragraph{Provenance extraction} 
+Following successful extraction of parameters, models, and outbreaks, a provenance stage systematically mapped each extracted value to supporting textual excerpts from the article, ensuring complete traceability and grounding of all characteristics in source material. For each extracted record (parameter estimate, model descriptor, or outbreak summary), the provenance extraction invoked a dedicated tool (\texttt{extract\_parameter\_provenance}, \texttt{extract\_model\_provenance}, or \texttt{extract\_outbreak\_provenance}) that received the complete set of previously extracted characteristics and identified verbatim quotes, equation references, or table citations justifying each value selection. For multi-select fields (e.g. transmission routes, assumptions, interventions in models; multiple locations in outbreaks), each selected option required independent textual support. This additional stage enabled potential validation of extraction quality, provided transparency for subsequent data synthesis, and formed an audit trail linking structured outputs to primary literature, with all provenance traces logged to structured files for downstream analysis.
+
+\clearpage

@@ -1,0 +1,68 @@
+\clearpage
+\section{The PERG Review Pipeline (Human Reference Workflow)}
+\label{app:perg_pipeline}
+
+The \emph{Pathogen Epidemiology Review Group (PERG)} is an expert-led effort (started in 2019) whose goal is to maintain a definitive, curated source of epidemiological parameters for pathogens prioritised for epidemic preparedness. In practice, PERG delivers this through systematic literature reviews and meta-analyses targeting the WHO priority pathogens, with the explicit aim of supporting outbreak response and modelling when time is short and parameter choices matter. 
+
+The scope is defined by the WHO priority pathogens framing: diseases that ``pose the greatest public health risk due to their epidemic potential and/or whether there is no or insufficient countermeasures." Examples highlighted in PERG onboarding include CCHF virus, Ebola virus, Marburg virus, Lassa virus, Middle East respiratory syndrome coronavirus (MERS-CoV), Severe Acute Respiratory Syndrome coronavirus 1 (SARS-CoV-1), Nipah virus, Rift Valley fever, and Zika virus. 
+
+PERG’s workflow is end-to-end: it starts from a protocolised literature search, then moves through screening (title \& abstract, then full text), structured extraction into REDCap (including quality-assessment fields guided by the PERG wiki), meta-analysis, and finally the write-up of a review that can be used by modellers and public health teams. 
+
+\subsection*{Step 1: Paper search (protocol-driven, pathogen-specific)}
+PERG begins from a registered systematic review protocol (PROSPERO ID:  CRD42023393345), and uses a standardised query template that is then tailored to each pathogen. The core idea is to search broadly across the epidemiological concepts that tend to matter during outbreak response: transmission and epidemiology terms, transmission modelling (with explicit exclusion of imaging-related “model” matches), severity outcomes (e.g. CFR), key delays (e.g. incubation period, serial interval, generation time), transmission heterogeneity and superspreading/overdispersion, transmissibility measures (e.g. growth rate and reproduction numbers), serology/serosurveys, evolutionary signals (mutation/substitution/evolution), outbreak/cluster terminology and risk factors. The query is written with wildcards to capture term variants, and then adjusted where needed to avoid cross-contamination with neighbouring literatures (for example, excluding SARS-CoV-2 when the target is SARS-CoV-1).
+
+% \begin{lstlisting}[basicstyle=\small\ttfamily, breaklines=true, backgroundcolor=\color{gray!10}]
+% pathogen AND ((transmissi* OR epidemiolog*) 
+% OR (model* NOT imag*) 
+% OR ("severity" OR "case fatality ratio*" OR "CFR" OR "case fatality rate*" 
+%     OR "mortality rate$" OR "attack rate$") 
+% OR ("infectious period" OR "serial interval*" OR "incubation period*" 
+%     OR "generation time*" OR "generation interval*" OR "latent period" OR "latency") 
+% OR ("heterogeneit*" OR "superspread*" OR "super spread*" OR "super-spread*" OR "overdispers*") 
+% OR ("infectivity" OR "infectiousness" OR "growth rate*" OR "reproduction number$" 
+%     OR "reproductive number$" OR "R0" OR "reproduction ratio" OR "reproductive rate") 
+% OR ("pre-existing immunity" OR "serological" OR "serology" OR "serosurvey*") 
+% OR ("evolution*" OR "mutation$" OR "substitution$") 
+% OR (outbreak$ OR cluster$ OR epidemic$) 
+% OR ("risk factor*"))
+% \end{lstlisting}
+
+\subsection*{Step 2: Title and abstract screening (broad triage against explicit criteria)}
+The first screening pass is based on titles and abstracts. The emphasis here is not on perfect specificity, but on ensuring the pool remains wide enough to avoid missing relevant evidence that is only clearly described later in the paper. PERG’s \textbf{inclusion criteria} are simple but concrete: studies must be English-language, peer-reviewed original research (systematic reviews and meta-analyses are flagged rather than treated as primary extraction targets), and must involve human data. A paper is kept if it contains \emph{any one} of several types of useful information, including: quantitative descriptions of a human outbreak (size, year, location, duration, spatial scale), a mathematical or statistical model of transmission, estimates of key transmission or timing quantities (e.g., $R$, $R_0$, $R_t$, growth rate, generation time, serial interval, incubation or latent period, other delays), severity metrics (CFR, attack rate), evolutionary rates, overdispersion/superspreading, risk factors (together with the measure), seroprevalence, relative contributions of human-to-human vs zoonotic transmission, and, where relevant, vector-related quantities such as mosquito delays or mosquito reproduction numbers.
+
+PERG’s \textbf{exclusion criteria} are equally explicit: non-English items; posters, conference proceedings, correspondence, and abstract-only records; in-vitro-only studies; solely animal studies (unless the paper provides clearly relevant transmission quantities); and small case studies with fewer than 10 cases.
+
+\subsection*{Step 3: Full-text review (confirm ``extractability")}
+Articles passing abstract screening move to full-text review. PERG applies the same conceptual criteria, but with a different mindset: reviewers scan the entire paper to confirm that there is \emph{something extractable}, i.e. not just that the topic is on-target. Importantly, PERG explicitly runs both title and abstract screening and this stage with \textbf{two reviewers}, reflecting the goal of consistency and defensible inclusion decisions when judgement calls are required.
+
+\subsection*{Step 4: Parameter extraction (read, highlight, enter structured fields)}
+Once a paper is included, PERG's extraction process is deliberately hands-on. Reviewers (i) check which papers they have been assigned, (ii) download and read the PDF, highlighting everything they may want to extract as they go, and then (iii) enter the extracted information into a REDCap web database (PERG maintains pathogen-specific REDCap projects).
+
+PERG structures extraction into four broad blocks:
+\vspace{-10pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item  \textit{Article metadata.} Basic bibliographic information such as title, DOI, journal, and related identifiers are recorded. 
+    \item  \textit{What the paper contains:} outbreaks, models, parameters. PERG extracts (i) outbreak descriptions where present, (ii) mathematical models of transmission (these are not limited to SIR-type models; they can be theoretical and not necessarily fitted to data), and (iii) epidemiological parameter estimates. Parameter families include genomic/evolutionary quantities (mutation/evolution rates), reproduction numbers ($R_0$, $R_t$, and human-only or vector-related variants where relevant), human delays (serial interval, incubation period, time-to-death, etc.), severity (CFR/IFR), seroprevalence (e.g. IgG/IgM markers), risk factors (with attention to whether effects are statistically significant and adjusted), relative contributions (human-to-human vs animal-to-human), attack rates (including secondary attack rates), and overdispersion (e.g. the negative binomial $k$ parameter). 
+    \item \textit{Associated context for interpretation.} PERG captures the contextual details that make parameter estimates comparable (or not): sex (male/female/both/unspecified), sample size, setting (general population vs hospital), subgroup (children, pregnant, etc.), age ranges, country and more specific location, study start/end dates, and whether the study was conducted before/mid/after an outbreak.
+    \item \textit{Structured outbreak fields (when applicable)}. In addition to “is there an outbreak?”, PERG-style extraction treats outbreaks as structured entities. In our draft’s PERG-aligned outbreak guidance, outbreak characteristics include temporal bounds (start/end day/month/year; whether ongoing), geographic scope (country plus sub-location), outbreak source, mode of detection, case definition method, case counts by confirmation status (confirmed/probable/suspected/unspecified), asymptomatic and severe cases when reported, deaths, and (when available) demographic breakdown such as sex-disaggregated counts. A key principle is that these values are extracted \emph{as stated in the paper}, without calculating missing quantities or inferring unreported fields.
+\end{itemize}
+
+
+Across all extraction types, PERG points reviewers to the PERG wiki for “how to extract this specific thing” guidance, so that extraction decisions remain consistent across pathogens and across reviewers.
+
+%\subsection*{Step 5: Quality assessment (QA) recorded alongside extraction}
+%QA is recorded alongside extraction, using a small set of standard questions with parameter-specific guidance in the wiki. The QA questions are organised around three themes. First, \emph{is the methodological/statistical approach suitable?} (Q1: is it clear and reproducible; Q2: is it robust and appropriate for the stated aim). Second, \emph{are the assumptions and inputs appropriate?} (Q3: clear and reproducible; Q4: justified). Third, \emph{are the data appropriate for the chosen approach, and are data issues handled well?} (Q5: clearly described and reproducible; Q6: issues clearly discussed/acknowledged; Q7: issues accounted for in the methodological approach).
+
+\subsection*{Step 5: Meta-analysis}
+After extraction and quality assessment, PERG moves into synthesis and reporting. PERG maintains shared tooling for priority pathogens, including codebases that step through cleaning the extracted database, transforming quantities into a common format where needed, performing meta-analysis, and producing plots and summary tables. These outputs feed directly into the final PERG systematic review and meta-analysis write-up.
+
+\subsection*{Step 6: Write-up}
+The final stage is to turn the extracted REDCap database and the meta-analysis outputs into a PERG review that can be used in practice. In PERG, meta-analysis is implemented through shared, pathogen-focused tooling (the \texttt{priority-pathogens} and \texttt{epireview} codebases), which steps through cleaning and transforming the extracted data, running the statistical synthesis, and producing the figures and summary tables. These tables and plots then provide the backbone of the manuscript: the review documents what evidence was found for each parameter family (and in what contexts), presents the quantitative summaries produced by the meta-analysis, and translates them into a curated resource for outbreak modelling and public health decision-making. In PERG’s framing, this write-up is not just a paper draft: it is the mechanism by which extracted parameters become a stable, citable reference for the WHO priority pathogens, with the longer-term aim of supporting an evolving “live” resource as evidence accumulates.
+
+
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.5\linewidth]{figures/fig1i.png}
+%     \caption{\textbf{PERG pipeline:} image PLACEHOLDER}
+%     \label{fig:data_extraction_flowchart}
+% \end{figure}

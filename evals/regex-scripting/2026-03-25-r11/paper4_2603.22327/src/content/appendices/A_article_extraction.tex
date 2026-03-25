@@ -1,0 +1,211 @@
+\section{Article Search and Retrieval}\label{app:search_queries}
+
+This section details the search query construction, database-specific adaptations, and PDF retrieval strategy used for article acquisition across priority pathogens in the \name~pipeline. Following the Pathogen Epidemiology Review Group (PERG) methodology\footnote{\url{https://github.com/mrc-ide/priority-pathogens/wiki/Search-terms}}, we developed a standardised base query structure that captures core epidemiological domains including transmission dynamics, disease severity, temporal parameters, transmission heterogeneity, and evolutionary characteristics.
+
+Different bibliographic databases support different search capabilities, requiring tailored query implementations. We maintain two versions of each pathogen query: one for PubMed and Europe PMC (which support wildcard truncation operators using \texttt{*}), and another for OpenAlex (which requires fully expanded term variants).
+
+\subsection{Base Search Query (PubMed and Europe PMC)}
+
+The base query for PubMed and Europe PMC uses Boolean operators with truncation symbols to capture morphological term variations:
+
+\begin{lstlisting}[basicstyle=\small\ttfamily, breaklines=true, backgroundcolor=\color{gray!10}]
+[PATHOGEN_IDENTIFIER] AND (
+    (transmissi* OR epidemiolog*) OR 
+    (model* NOT imag*) OR 
+    (severity OR "case fatality ratio*" OR CFR OR "case fatality rate*" 
+        OR "mortality rate*" OR "attack rate*") OR 
+    ("infectious period*" OR "serial interval*" OR "incubation period*" 
+        OR "generation time*" OR "generation interval*" OR "latent period*" 
+        OR latency) OR 
+    (heterogeneit* OR superspread* OR "super spread*" OR super-spread* 
+        OR overdispersion OR overdispersed OR over-dispersion OR over-dispersed 
+        OR "over dispersion" OR "over dispersed") OR 
+    (infectivity OR infectiousness OR "growth rate*" OR "reproduction number*" 
+        OR "reproductive number*" OR R0 OR "reproduction ratio*" 
+        OR "reproductive rate*") OR 
+    ("pre-existing immunity" OR serological OR serology OR serosurvey*) OR 
+    (evolution* OR mutation* OR substitution*) OR 
+    (outbreak* OR cluster* OR epidemic*) OR 
+    ("risk factor*")
+    [ADDITIONAL_TERMS]
+) [EXCLUSION_CRITERIA]
+\end{lstlisting}
+
+\subsection{OpenAlex Adapted Queries}
+
+Because the OpenAlex API does not support wildcard operators\footnote{\url{https://docs.openalex.org/how-to-use-the-api/get-lists-of-entities/search-entities}} and strips these characters during query processing, we expanded all truncated terms into their common morphological variants:
+
+\begin{lstlisting}[basicstyle=\small\ttfamily, breaklines=true, backgroundcolor=\color{gray!10}]
+[PATHOGEN_IDENTIFIER] AND (
+    (transmission OR transmissibility OR transmissible OR transmitted 
+        OR transmitting OR transmit OR epidemiology OR epidemiological 
+        OR epidemiologic) OR 
+    (model OR models OR modeling OR modelling OR modeled OR modelled 
+        NOT (image OR images OR imaging)) OR 
+    (severity OR "case fatality ratio" OR "case fatality ratios" OR CFR 
+        OR "case fatality rate" OR "case fatality rates" OR "mortality rate" 
+        OR "mortality rates" OR "attack rate" OR "attack rates") OR 
+    ("infectious period" OR "infectious periods" OR "serial interval" 
+        OR "serial intervals" OR "incubation period" OR "incubation periods" 
+        OR "generation time" OR "generation interval" OR "generation intervals" 
+        OR "latent period" OR "latent periods" OR latency) OR 
+    (heterogeneity OR heterogeneous OR superspread OR superspreader 
+        OR superspreaders OR superspreading OR "super spread" 
+        OR "super spreader" OR "super spreaders" OR "super spreading" 
+        OR overdispersion OR overdispersed OR "over dispersion" 
+        OR "over dispersed") OR 
+    (infectivity OR infectiousness OR "growth rate" OR "growth rates" 
+        OR "reproduction number" OR "reproduction numbers" 
+        OR "reproductive number" OR "reproductive numbers" OR R0 
+        OR "reproduction ratio" OR "reproduction ratios" 
+        OR "reproductive rate" OR "reproductive rates" 
+        OR "basic reproduction number") OR 
+    ("pre-existing immunity" OR serological OR serology OR serosurvey 
+        OR serosurveys OR seroprevalence OR serosurveillance) OR 
+    (evolution OR evolutionary OR evolving OR evolved OR mutation 
+        OR mutations OR mutant OR mutants OR mutate OR mutated 
+        OR substitution OR substitutions) OR 
+    (outbreak OR outbreaks OR cluster OR clusters OR clustering 
+        OR epidemic OR epidemics OR pandemic OR pandemics) OR 
+    ("risk factor" OR "risk factors")
+    [ADDITIONAL_TERMS]
+) [EXCLUSION_CRITERIA]
+\end{lstlisting}
+
+\subsection{Pathogen-Specific Query Modifications}
+
+Table~\ref{tab:search_queries} summarises the pathogen-specific modifications applied across all database implementations. Most pathogens require only customised identifiers to ensure relevant literature retrieval. However, the queries for SARS explicitly exclude COVID-19 literature to prevent cross-contamination with SARS-CoV-2 studies. Similarly, queries for Zika include vector-specific epidemiological parameters (extrinsic incubation period, vector competence) that are essential for capturing mosquito-borne transmission dynamics. For Rift Valley fever, Crimean-Congo hemorrhagic fever (CCHF) and MERS, we incorporated additional virus-specific identifiers and spelling variants to enhance retrieval comprehensiveness. Despite these modifications, all databases share consistent pathogen identifiers and exclusion criteria, differing only in their use of wildcard forms (PubMed/Europe PMC) versus expanded term variants (OpenAlex).
+
+\begin{table*}[h]
+\footnotesize
+\caption{\textbf{Pathogen-specific modifications to the standardised search query}. All databases share consistent pathogen identifiers and exclusion criteria; PubMed/Europe PMC use wildcard forms while OpenAlex uses expanded variants.}
+\label{tab:search_queries}
+\begin{center}
+\begin{tabular}{lp{5cm}p{3.2cm}p{3.5cm}}
+\toprule
+\textbf{Pathogen} & \textbf{\texttt{PATHOGEN\_IDENTIFIER}} & \textbf{\texttt{ADDITIONAL\_TERMS}} & \textbf{\texttt{EXCLUSION\_CRITERIA}} \\
+\midrule
+Marburg virus & Marburg virus & --- & --- \\
+Ebola virus & Ebola & --- & --- \\
+Lassa virus & Lassa & --- & --- \\
+SARS-CoV-1 & SARS OR SARS-CoV-1 OR ``Severe acute respiratory syndrome" & --- & NOT (COVID-19 OR SARS-CoV-2) \\
+Zika virus & zika & OR (``extrinsic incubation period" OR ``EIP" OR ``vector competence" OR ``vectorial capacity")\textsuperscript{†} & --- \\
+Nipah virus & Nipah & --- & --- \\
+MERS-CoV & MERS OR MERS-CoV OR ``Middle East respiratory syndrome" OR ``Middle East Respiratory Syndrome Coronavirus"\textsuperscript{‡} & --- & --- \\
+Rift Valley fever virus & ``Rift valley fever" OR RVF OR ``Rift Valley Fever Virus" OR RVFV\textsuperscript{‡} & --- & --- \\
+CCHF virus & ``Crimean Congo haemorrhagic fever" OR ``Crimean-Congo hemorrhagic fever" OR CCHF OR ``CCHF virus" OR CCHFV\textsuperscript{‡} & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{-2mm}
+{\small \textsuperscript{†}Vector-specific terms capture mosquito transmission parameters unique to arboviral epidemiology.}\\
+{\small \textsuperscript{‡}Expanded identifiers include alternative spellings (American/British English), virus-specific nomenclature, and common abbreviations for comprehensive coverage.}
+\end{table*}
+
+\subsection{Metadata Extraction and Deduplication}
+
+We extract bibliographic metadata from each database as summarised in Table~\ref{tab:metadata_fields}. OpenAlex provides direct PDF URLs and internal work identifiers, PubMed supplies standardised medical literature identifiers (PMID: PubMed ID; PMCID: PubMed Central ID), and Europe PMC offers full-text availability metadata. The Digital Object Identifier (DOI) serves as a persistent identifier across databases.
+
+We implement a hierarchical five-level deduplication strategy:
+
+\begin{enumerate}
+\item \textbf{DOI-based}: Normalised DOI strings (case-insensitive, URL prefixes stripped);
+\item \textbf{PMID-based}: Numeric PMID extraction and normalisation;
+\item \textbf{PMCID-based}: Normalised PMC identifiers (uppercase, ``PMC'' prefix standardised);
+\item \textbf{OpenAlex ID-based}: Internal OpenAlex work identifiers;
+\item \textbf{Title-year combination}: Normalised title strings (lowercase, alphanumeric only) paired with publication year.
+\end{enumerate}
+
+When duplicate records are detected, identifier fields (DOI, PMID, PMCID, OpenAlex ID, URLs) preserve all non-null values while narrative fields (title, abstract, journal) retain the first non-null value. Source provenance is marked as ``Both" when records appear in multiple databases.
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{minipage}{0.48\textwidth}
+    \centering
+    \caption{\textbf{Metadata fields extracted during article search.} PMID: PubMed ID; PMCID: PubMed Central ID; DOI: Digital Object Identifier.}
+    \label{tab:metadata_fields}
+    \begin{footnotesize}
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Field} & \textbf{Description} \\
+    \midrule
+    article\_id & Generated unique identifier \\
+    source & Database origin \\
+    pmid & PubMed Identifier \\
+    pmcid & PubMed Central Identifier \\
+    doi & Digital Object Identifier \\
+    title & Article title \\
+    authors & Semicolon-delimited author list \\
+    journal & Publication venue \\
+    year & Publication year \\
+    abstract & Article abstract \\
+    url & Canonical article URL \\
+    openalex\_id & OpenAlex work identifier \\
+    openalex\_pdf\_url & Direct PDF link from OpenAlex \\
+    pathogen & Target pathogen \\
+    query & Search query used \\
+    harvested\_at & ISO 8601 timestamp \\
+    \bottomrule
+    \end{tabular}
+    \end{footnotesize}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+    \centering
+    \caption{\textbf{Additional fields populated during PDF retrieval attempts.}}
+    \label{tab:download_fields}
+    \begin{footnotesize}
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Field} & \textbf{Description} \\
+    \midrule
+    downloaded & Boolean success flag \\
+    downloaded\_path & Filesystem path to PDF \\
+    download\_source & Source that provided PDF \\
+    download\_attempted\_at & ISO 8601 timestamp \\
+    download\_error & Error messages from attempts \\
+    \bottomrule
+    \end{tabular}
+    \end{footnotesize}
+\end{minipage}
+\end{table}
+
+\subsection{PDF Retrieval}\label{app:article_download}
+
+We attempt PDF downloads through multiple open access sources using a cascading retrieval strategy. Before attempting downloads, available identifiers (PMID, PMCID, DOI) are cross-referenced using NCBI's PMC ID Converter API\footnote{\url{https://www.ncbi.nlm.nih.gov/pmc/tools/id-converter-api/}} to maximise source compatibility. The system then attempts downloads from up to four sources in priority order (Table~\ref{tab:download_sources}), stopping at the first successful retrieval.
+
+\subsubsection{Implementation Details}
+
+Downloads employ HTTP streaming to temporary files with 64~KB chunks and validate each file through two stages: (1) magic byte verification (\texttt{\%PDF} header), and (2) content inspection for HTML access denial pages. Files exceeding 500~MB or failing validation are immediately discarded. Thread-pool parallelism with 16 workers processes downloads concurrently while respecting per-source rate limits. In-memory caches keyed by normalised identifiers store both successful PDF URLs and negative markers to eliminate redundant API calls. Progress is checkpointed every 50 records for crash recovery.
+
+Successfully validated PDFs are saved with standardised filenames following identifier priority (PMID $\rightarrow$ PMCID $\rightarrow$ DOI hash $\rightarrow$ title hash). Metadata is augmented with download provenance including source, timestamp, and error diagnostics.
+
+\begin{table}[t]
+\centering
+\caption{\textbf{PDF retrieval sources in cascading priority order.} Sources are queried sequentially until success or exhaustion. Identifier cross-referencing via NCBI PMC ID Converter API precedes all download attempts (10 req/s, cached).}
+\label{tab:download_sources}
+\begin{small}
+\begin{tabular}{clcc}
+\toprule
+\textbf{Priority} & \textbf{Source \& Endpoint} & \textbf{Rate Limit} & \textbf{Cached} \\
+\midrule
+1 & \textbf{OpenAlex Direct PDF URL} & 30 req/s & No \\
+  & \quad Metadata field \texttt{openalex\_pdf\_url} & & \\
+\midrule
+2 & \textbf{Europe PMC Fulltext API} & 20 req/s & Yes \\
+  & \quad \texttt{ebi.ac.uk/europepmc/webservices/rest/search} & & \\
+\midrule
+3 & \textbf{Unpaywall API} & 50 req/s & Yes \\
+  & \quad \texttt{api.unpaywall.org/v2/\{DOI\}?email=\{EMAIL\}} & & \\
+\midrule
+4 & \textbf{OpenAlex DOI Lookup} & 30 req/s & Yes \\
+  & \quad \texttt{api.openalex.org/works/https://doi.org/\{DOI\}} & & \\
+\bottomrule
+\end{tabular}
+\end{small}
+\end{table}
+
+\subsection{Final Quality Control}
+
+After retrieval, we applied deduplication and quality filtering that removes: records lacking abstracts, duplicate article IDs, duplicate DOIs (retaining first occurrence) and records with file validation failures.

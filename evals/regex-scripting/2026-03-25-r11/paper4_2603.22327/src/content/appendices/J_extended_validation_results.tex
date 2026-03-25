@@ -1,0 +1,150 @@
+\clearpage
+\section{Extended Expert Validation Results}
+
+Six epidemiology researchers contributed to our validation survey. We collected $62$ submissions for parameters, $50$ for models, and $31$ for outbreaks. \Cref{tab:expert_validation_results} reports all metrics collected from the survey. The main text reports the aggregate statistics (the ‘Overall’ rows for each data type) in the first two columns columns of \Cref{fig:expert_validation_results}.
+
+% \begin{figure}[H]
+%     \centering
+%     \caption{\textbf{Full expert-rated flagging precision and extraction accuracy results by parameter class and extraction field.}}
+%     \label{fig:extended_validation_results}
+%     \includegraphics[width=\linewidth]{figures/results/expert_survey_extended.pdf}
+% \end{figure}
+
+
+
+{\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{10.8cm} S[table-format=1.2, round-mode=places, round-precision=2]}
+\caption{\textbf{Extended expert validation results.} Results are reported as expert-rated flagging precision and expert-rated extraction accuracy. Within each section, rows are ordered from overall scores to subgroup scores and then field-level scores.}
+\label{tab:expert_validation_results} \\
+\toprule
+\textbf{Item} & {\textbf{Score}} \\
+\midrule
+\endfirsthead
+
+\multicolumn{2}{l}{\textit{Table \thetable\ continued from previous page}} \\
+\toprule
+\textbf{Item} & {\textbf{Score}} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{2}{r}{\textit{Continued on next page}} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+\multicolumn{2}{l}{\textbf{Parameters}} \\
+\addlinespace[0.2em]
+Overall --- Flagging precision & 0.66 \\
+Overall --- Extraction accuracy & 0.77 \\
+
+\addlinespace[0.35em]
+\textit{Precision by class} & {} \\
+\quad Attack rate & 0.25 \\
+\quad Growth rate & 1.00 \\
+\quad Human delay & 0.62 \\
+\quad Reproduction number & 1.00 \\
+\quad Seroprevalence & 0.50 \\
+\quad Severity & 0.57 \\
+
+\addlinespace[0.35em]
+\textit{Accuracy by group} & {} \\
+\quad Value & 0.89 \\
+\quad Uncertainty & 0.76 \\
+\quad Population & 0.59 \\
+\quad Aggregation & 0.83 \\
+
+\addlinespace[0.35em]
+\textit{Value fields} & {} \\
+\quad Value & 0.81 \\
+\quad Unit & 0.96 \\
+\quad Type & 0.88 \\
+\quad Bounds & 0.79 \\
+\quad Value type & 0.90 \\
+\quad Statistical approach & 0.97 \\
+
+\addlinespace[0.35em]
+\textit{Uncertainty fields} & {} \\
+\quad Single-type uncertainty & 0.88 \\
+\quad Paired uncertainty & 0.84 \\
+\quad Distribution type & 0.57 \\
+
+\addlinespace[0.35em]
+\textit{Population fields} & {} \\
+\quad Sample type & 0.74 \\
+\quad Population group & 0.49 \\
+\quad Sample size & 0.66 \\
+\quad Sex & 0.50 \\
+\quad Age range & 0.58 \\
+\quad Countries & 0.82 \\
+\quad Locations & 0.71 \\
+\quad Method moment value & 0.23 \\
+
+\addlinespace[0.35em]
+\textit{Aggregation fields} & {} \\
+\quad Aggregation & 0.83 \\
+
+\addlinespace[0.6em]
+\multicolumn{2}{l}{\textbf{Models}} \\
+\addlinespace[0.2em]
+Overall --- Flagging precision & 0.40 \\
+Overall --- Extraction accuracy & 0.83 \\
+
+\addlinespace[0.35em]
+\textit{Field accuracy} & {} \\
+\quad Model type & 0.89 \\
+\quad Compartmental type & 0.89 \\
+\quad Stochastic or deterministic & 0.70 \\
+\quad Theoretical model & 0.84 \\
+
+\addlinespace[0.6em]
+\multicolumn{2}{l}{\textbf{Outbreaks}} \\
+\addlinespace[0.2em]
+Overall --- Flagging precision & 0.61 \\
+Overall --- Extraction accuracy & 0.80 \\
+
+\addlinespace[0.35em]
+\textit{Accuracy by group} & {} \\
+\quad Temporal & 0.62 \\
+\quad Geographical & 0.87 \\
+\quad Case burden & 0.85 \\
+\quad Epidemiological & 0.85 \\
+
+\addlinespace[0.35em]
+\textit{Temporal fields} & {} \\
+\quad Start year & 0.84 \\
+\quad Start month & 0.70 \\
+\quad Start day & 0.62 \\
+\quad End year & 0.50 \\
+\quad End month & 0.60 \\
+\quad End day & 0.56 \\
+\quad Duration in months & 0.50 \\
+
+\addlinespace[0.35em]
+\textit{Geographical fields} & {} \\
+\quad Country & 0.95 \\
+\quad Location & 0.80 \\
+
+\addlinespace[0.35em]
+\textit{Case burden fields} & {} \\
+\quad Confirmed cases & 0.88 \\
+\quad Suspected cases & 0.64 \\
+\quad Asymptomatic cases & 1.00 \\
+\quad Severe cases & 1.00 \\
+\quad Deaths & 0.71 \\
+
+\addlinespace[0.35em]
+\textit{Epidemiological fields} & {} \\
+\quad Mode of detection & 0.82 \\
+\quad Pre-outbreak status & 0.82 \\
+\quad Asymptomatic transmission described & 0.89 \\
+
+\end{longtable}
+}
+
+For flagging (sub-task) precision, models and outbreaks are reported only at the overall level (as in the main text). For parameters, precision is averaged over flagging decisions made for each parameter class. The random subsample of articles assigned gave six relevant parameter classes: attack rate, growth rate, human delay, reproduction number, seroprevalence, and severity. The remaining two parameter classes, mutation rate and relative contribution, were absent from the sample. Since there is a flagging decision made for each parameter class on each article, each parameter class-level precision is calculated over the same sample size ($N=62$).
+
+For extraction accuracy, the aggregate statistics are normalised over groups of similar fields. For example, outbreaks have clusters of fields related to temporal features (start date, end date, and duration), geographical features (country and location), case burden (case counts and fatalities) and epidemiological factors (mode of detection, status pre-outbreak, and asymptomatic transmission). We normalise at the group level to treat each aspect of the extraction as equally important, in order to avoid overemphasising groups with larger numbers of metadata fields. We omit group-level normalisation for models owing to the smaller number of validated fields.
+
+The disaggregated statistics reveal findings that are masked in the average statistics. For example, among parameter classes, \name{} performs worst on flagging attack rate (experts reported several instances where the system confused attack rate with seroprevalence information). At the field level, \name{} struggles the most with understanding parameter population context and with the temporal outbreak features (group accuracy $0.62$). Parameter population fields are multiple-choice selections with many options (see \Cref{tab:population_tool_call}), and these designations often have specific interpretations in epidemiology. For example, ``persons under investigation'' is a population group of patients exhibiting clinical and epidemiological risk factors, a definition that an LLM may struggle to apply consistently in different article contexts.

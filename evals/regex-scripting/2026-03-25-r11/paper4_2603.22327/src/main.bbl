@@ -1,0 +1,266 @@
+\begin{thebibliography}{52}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bean et~al.(2025)Bean, Kearns, Romanou, Hafner, Mayne, Batzner, Foroutan, Schmitz, Korgul, Batra, Deb, Beharry, Emde, Foster, Gausen, Grandury, Han, Hofmann, Ibrahim, Kim, Kirk, Lin, Liu, Luettgau, Magomere, Rystrøm, Sotnikova, Yang, Zhao, Bibi, Bosselut, Clark, Cohan, Foerster, Gal, Hale, Raji, Summerfield, Torr, Ududec, Rocher, and Mahdi]{bean2025measuring}
+Bean, A.~M., Kearns, R.~O., Romanou, A., Hafner, F.~S., Mayne, H., Batzner, J., Foroutan, N., Schmitz, C., Korgul, K., Batra, H., Deb, O., Beharry, E., Emde, C., Foster, T., Gausen, A., Grandury, M., Han, S., Hofmann, V., Ibrahim, L., Kim, H., Kirk, H.~R., Lin, F., Liu, G. K.-M., Luettgau, L., Magomere, J., Rystrøm, J., Sotnikova, A., Yang, Y., Zhao, Y., Bibi, A., Bosselut, A., Clark, R., Cohan, A., Foerster, J., Gal, Y., Hale, S.~A., Raji, I.~D., Summerfield, C., Torr, P. H.~S., Ududec, C., Rocher, L., and Mahdi, A.
+\newblock Measuring what matters: Construct validity in large language model benchmarks.
+\newblock \emph{The Thirty-ninth Annual Conference on Neural Information Processing Systems Datasets and Benchmarks Track}, 2025.
+
+\bibitem[Bergstrom \& Gross(2026)Bergstrom and Gross]{bergstrom2026screening}
+Bergstrom, C.~T. and Gross, K.
+\newblock Screening, sorting, and the feedback cycles that imperil peer review.
+\newblock \emph{PLoS biology}, 24\penalty0 (2):\penalty0 e3003650, 2026.
+
+\bibitem[Borah et~al.(2017)Borah, Brown, Capers, and Kaiser]{borah2017analysis}
+Borah, R., Brown, A.~W., Capers, P.~L., and Kaiser, K.~A.
+\newblock Analysis of the time and workers needed to conduct systematic reviews of medical interventions using data from the prospero registry.
+\newblock \emph{BMJ open}, 7\penalty0 (2):\penalty0 e012545, 2017.
+
+\bibitem[Cao et~al.(2025{\natexlab{a}})Cao, Arora, Cento, Manta, Farahani, Cecere, Selemon, Sang, Gong, Kloosterman, et~al.]{ottosrCao2025automation}
+Cao, C., Arora, R., Cento, P., Manta, K., Farahani, E., Cecere, M., Selemon, A., Sang, J., Gong, L.~X., Kloosterman, R., et~al.
+\newblock Automation of systematic reviews with large language models.
+\newblock \emph{medRxiv}, pp.\  2025--06, 2025{\natexlab{a}}.
+
+\bibitem[Cao et~al.(2025{\natexlab{b}})Cao, Sang, Arora, Chen, Kloosterman, Cecere, Gorla, Saleh, Drennan, Teja, et~al.]{ottoSRPromptPaper}
+Cao, C., Sang, J., Arora, R., Chen, D., Kloosterman, R., Cecere, M., Gorla, J., Saleh, R., Drennan, I., Teja, B., et~al.
+\newblock Development of prompt templates for large language model--driven screening in systematic reviews.
+\newblock \emph{Annals of Internal Medicine}, 178\penalty0 (3):\penalty0 389--401, 2025{\natexlab{b}}.
+
+\bibitem[Chai et~al.(2021)Chai, Lines, Gucciardi, and Ng]{chai2021research}
+Chai, K.~E., Lines, R.~L., Gucciardi, D.~F., and Ng, L.
+\newblock Research screener: a machine learning tool to semi-automate abstract screening for systematic reviews.
+\newblock \emph{Systematic Reviews}, 10\penalty0 (1):\penalty0 93, 2021.
+
+\bibitem[Clark et~al.(2020)Clark, Glasziou, Del~Mar, Bannach-Brown, Stehlik, and Scott]{clark2020full}
+Clark, J., Glasziou, P., Del~Mar, C., Bannach-Brown, A., Stehlik, P., and Scott, A.~M.
+\newblock A full systematic review was completed in 2 weeks using automation tools: a case study.
+\newblock \emph{Journal of Clinical Epidemiology}, 121:\penalty0 81--90, 2020.
+
+\bibitem[Clarke(2017)]{clarke2017evidence}
+Clarke, M.
+\newblock Evidence aid: using systematic reviews to improve access to evidence for humanitarian emergencies., 2017.
+
+\bibitem[{Cuomo-Dannenburg} et~al.(2024){Cuomo-Dannenburg}, McCain, McCabe, Unwin, Doohan, Nash, Hicks, Charniga, Geismar, Lambert, Nikitin, Skarp, Wardle, Kont, Bhatia, Imai, {van Elsland}, Cori, Morgenstern, Morris, Forna, Dighe, Cori, Hamlet, Lambert, Whittaker, Morgenstern, Geismar, Nikitin, Jorgensen, Knock, Unwin, {Cuomo-Dannenburg}, Thompson, Routledge, Skarp, Hicks, Fraser, Charniga, McCain, Geidelberg, Cattarino, Kont, Baguelin, Imai, Moghaddas, Doohan, Nash, McCabe, {van Elsland}, Bhatia, Radhakrishnan, Cucunuba~Perez, and Wardle]{cuomo-dannenburgMarburgVirusDisease2024}
+{Cuomo-Dannenburg}, G., McCain, K., McCabe, R., Unwin, H. J.~T., Doohan, P., Nash, R.~K., Hicks, J.~T., Charniga, K., Geismar, C., Lambert, B., Nikitin, D., Skarp, J., Wardle, J., Kont, M., Bhatia, S., Imai, N., {van Elsland}, S., Cori, A., Morgenstern, C., Morris, A., Forna, A., Dighe, A., Cori, A., Hamlet, A., Lambert, B., Whittaker, C., Morgenstern, C., Geismar, C., Nikitin, D., Jorgensen, D., Knock, E., Unwin, E., {Cuomo-Dannenburg}, G., Thompson, H., Routledge, I., Skarp, J., Hicks, J., Fraser, K., Charniga, K., McCain, K., Geidelberg, L., Cattarino, L., Kont, M., Baguelin, M., Imai, N., Moghaddas, N., Doohan, P., Nash, R., McCabe, R., {van Elsland}, S., Bhatia, S., Radhakrishnan, S., Cucunuba~Perez, Z., and Wardle, J.
+\newblock {Marburg} virus disease outbreaks, mathematical models, and disease parameters: A systematic review.
+\newblock \emph{The Lancet Infectious Diseases}, 24\penalty0 (5):\penalty0 e307--e317, 2024.
+
+\bibitem[Doohan et~al.(2024)Doohan, Jorgensen, Naidoo, McCain, Hicks, McCabe, Bhatia, Charniga, {Cuomo-Dannenburg}, Hamlet, Nash, Nikitin, Rawson, Sheppard, Unwin, {van Elsland}, Cori, Morgenstern, {Imai-Eaton}, Morris, Forna, Dighe, Vicco, Hartner, Cori, Hamlet, Lambert, Cracknell~Daniels, Whittaker, Morgenstern, Santoni, Geismar, Nikitin, Jorgensen, Dee, Knock, Unwin, {Cuomo-Dannenburg}, Thompson, Dorigatti, Routledge, Wardle, Skarp, Hicks, Parchani, Fraser, Charniga, McCain, Drake, Geidelberg, Cattarino, Kusumgar, Kont, Baguelin, {Imai-Eaton}, Guzman, Doohan, Lietar, Christen, Nash, Fitzjohn, Sheppard, Johnson, McCabe, {van Elsland}, Bhatia, Leuba, {Ruybal-Pesantez}, Radhakrishnan, Rawson, Naidoo, and Cucunuba~Perez]{doohanLassaFeverOutbreaks2024}
+Doohan, P., Jorgensen, D., Naidoo, T.~M., McCain, K., Hicks, J.~T., McCabe, R., Bhatia, S., Charniga, K., {Cuomo-Dannenburg}, G., Hamlet, A., Nash, R.~K., Nikitin, D., Rawson, T., Sheppard, R.~J., Unwin, H. J.~T., {van Elsland}, S., Cori, A., Morgenstern, C., {Imai-Eaton}, N., Morris, A., Forna, A., Dighe, A., Vicco, A., Hartner, A.-M., Cori, A., Hamlet, A., Lambert, B., Cracknell~Daniels, B., Whittaker, C., Morgenstern, C., Santoni, C., Geismar, C., Nikitin, D., Jorgensen, D., Dee, D., Knock, E., Unwin, E., {Cuomo-Dannenburg}, G., Thompson, H., Dorigatti, I., Routledge, I., Wardle, J., Skarp, J., Hicks, J., Parchani, K., Fraser, K., Charniga, K., McCain, K., Drake, K., Geidelberg, L., Cattarino, L., Kusumgar, M., Kont, M., Baguelin, M., {Imai-Eaton}, N., Guzman, P.~P., Doohan, P., Lietar, P., Christen, P., Nash, R., Fitzjohn, R., Sheppard, R., Johnson, R., McCabe, R., {van Elsland}, S., Bhatia, S., Leuba, S., {Ruybal-Pesantez}, S., Radhakrishnan, S., Rawson, T., Naidoo, T., and Cucunuba~Perez, Z.
+\newblock {Lassa} fever outbreaks, mathematical models, and disease parameters: A systematic review and meta-analysis.
+\newblock \emph{The Lancet Global Health}, 12\penalty0 (12):\penalty0 e1962--e1972, 2024.
+
+\bibitem[Gartlehner et~al.(2024)Gartlehner, Kahwati, Hilscher, Thomas, Kugley, Crotty, Viswanathan, Nussbaumer-Streit, Booth, Erskine, Konet, and Chew]{gartlehner2024data}
+Gartlehner, G., Kahwati, L., Hilscher, R., Thomas, I., Kugley, S., Crotty, K., Viswanathan, M., Nussbaumer-Streit, B., Booth, G., Erskine, N., Konet, A., and Chew, R.
+\newblock Data extraction for evidence synthesis using a large language model: A proof-of-concept study.
+\newblock \emph{Research Synthesis Methods}, 15\penalty0 (4):\penalty0 576--589, 2024.
+
+\bibitem[Gates et~al.(2018{\natexlab{a}})Gates, Johnson, and Hartling]{gates2018technologyAbstrackr}
+Gates, A., Johnson, C., and Hartling, L.
+\newblock Technology-assisted title and abstract screening for systematic reviews: a retrospective evaluation of the abstrackr machine learning tool.
+\newblock \emph{Systematic Reviews}, 7\penalty0 (1):\penalty0 45, 2018{\natexlab{a}}.
+
+\bibitem[Gates et~al.(2018{\natexlab{b}})Gates, Vandermeer, and Hartling]{gates2018technologyRobotReviewer}
+Gates, A., Vandermeer, B., and Hartling, L.
+\newblock Technology-assisted risk of bias assessment in systematic reviews: a prospective cross-sectional evaluation of the robotreviewer machine learning tool.
+\newblock \emph{Journal of Clinical Epidemiology}, 96:\penalty0 54--62, 2018{\natexlab{b}}.
+
+\bibitem[He et~al.(2020)He, Yi, and Zhu]{he2020estimation}
+He, W., Yi, G.~Y., and Zhu, Y.
+\newblock Estimation of the basic reproduction number, average incubation time, asymptomatic infection rate, and case fatality rate for {COVID}-19: Meta-analysis and sensitivity analysis.
+\newblock \emph{Journal of Medical Virology}, 92\penalty0 (11):\penalty0 2543--2550, 2020.
+
+\bibitem[Homiar et~al.(2025)Homiar, Thomas, Ostinelli, Kennett, Friedrich, Cuijpers, Harrer, Leucht, Miguel, Rodolico, et~al.]{homiar2025development}
+Homiar, A., Thomas, J., Ostinelli, E.~G., Kennett, J., Friedrich, C., Cuijpers, P., Harrer, M., Leucht, S., Miguel, C., Rodolico, A., et~al.
+\newblock Development and evaluation of prompts for a large language model to screen titles and abstracts in a living systematic review.
+\newblock \emph{BMJ Mental Health}, 28\penalty0 (1), 2025.
+
+\bibitem[Jonker \& Volgenant(1987)Jonker and Volgenant]{jonker1987shortest}
+Jonker, R. and Volgenant, A.
+\newblock A shortest augmenting path algorithm for dense and sparse linear assignment problems.
+\newblock \emph{Computing}, 38\penalty0 (4):\penalty0 325--340, 1987.
+
+\bibitem[Khraisha et~al.(2024)Khraisha, Put, Kappenberg, Warraitch, and Hadfield]{khraisha2024can}
+Khraisha, Q., Put, S., Kappenberg, J., Warraitch, A., and Hadfield, K.
+\newblock Can large language models replace humans in systematic reviews? {E}valuating {GPT}-4's efficacy in screening and extracting data from peer-reviewed and grey literature in multiple languages.
+\newblock \emph{Research Synthesis Methods}, 15\penalty0 (4):\penalty0 616--626, 2024.
+
+\bibitem[Kwa et~al.(2025)Kwa, West, Becker, Deng, Garcia, Hasin, Jawhar, Kinniment, Rush, {von Arx}, Bloom, Broadley, Du, Goodrich, Jurkovic, Miles, Nix, Lin, Parikh, Rein, Sato, Wijk, Ziegler, Barnes, and Chan]{kwaMeasuringAIAbility2025}
+Kwa, T., West, B., Becker, J., Deng, A., Garcia, K., Hasin, M., Jawhar, S., Kinniment, M., Rush, N., {von Arx}, S., Bloom, R., Broadley, T., Du, H., Goodrich, B., Jurkovic, N., Miles, L.~H., Nix, S., Lin, T., Parikh, N., Rein, D., Sato, L. J.~K., Wijk, H., Ziegler, D.~M., Barnes, E., and Chan, L.
+\newblock Measuring {{AI}} ability to complete long tasks.
+\newblock \emph{{CoRR}}, abs/2503.14499, 2025.
+
+\bibitem[Kwon et~al.(2023)Kwon, Li, Zhuang, Sheng, Zheng, Yu, Gonzalez, Zhang, and Stoica]{kwon2023efficient}
+Kwon, W., Li, Z., Zhuang, S., Sheng, Y., Zheng, L., Yu, C.~H., Gonzalez, J.~E., Zhang, H., and Stoica, I.
+\newblock Efficient memory management for large language model serving with {{PagedAttention}}.
+\newblock In \emph{Proceedings of the {{ACM SIGOPS}} 29th Symposium on Operating Systems Principles}, 2023.
+
+\bibitem[Lai et~al.(2025)Lai, Liu, Bai, Liu, Pan, Luo, Hou, Zhao, Xia, Tian, et~al.]{lai2025language}
+Lai, H., Liu, J., Bai, C., Liu, H., Pan, B., Luo, X., Hou, L., Zhao, W., Xia, D., Tian, J., et~al.
+\newblock Language models for data extraction and risk of bias assessment in complementary medicine.
+\newblock \emph{npj Digital Medicine}, 8\penalty0 (1):\penalty0 74, 2025.
+
+\bibitem[Lu et~al.(2024)Lu, Lu, Lange, Foerster, Clune, and Ha]{lu2024aiscientist}
+Lu, C., Lu, C., Lange, R.~T., Foerster, J., Clune, J., and Ha, D.
+\newblock The {AI} {S}cientist: Towards fully automated open-ended scientific discovery.
+\newblock \emph{arXiv preprint arXiv:2408.06292}, 2024.
+
+\bibitem[Mahmoudi et~al.(2025)Mahmoudi, Chang, Lee, Ghaffarzadegan, and Jalali]{mahmoudi2025critical}
+Mahmoudi, H., Chang, D., Lee, H., Ghaffarzadegan, N., and Jalali, M.~S.
+\newblock Critical assessment of large language models’({ChatGPT}) performance in data extraction for systematic reviews: Exploratory study.
+\newblock \emph{{JMIR} {AI}}, 4\penalty0 (1):\penalty0 e68097, 2025.
+
+\bibitem[Marshall \& Wallace(2019)Marshall and Wallace]{marshall2019toward}
+Marshall, I.~J. and Wallace, B.~C.
+\newblock Toward systematic review automation: a practical guide to using machine learning tools in research synthesis.
+\newblock \emph{Systematic Reviews}, 8\penalty0 (1):\penalty0 163, 2019.
+
+\bibitem[McCain et~al.(2026)McCain, Vicco, Morgenstern, Rawson, Naidoo, Bhatia, Dee, Doohan, Fraser, Hartner, et~al.]{mccain2026systematic}
+McCain, K., Vicco, A., Morgenstern, C., Rawson, T., Naidoo, T.~M., Bhatia, S., Dee, D.~P., Doohan, P., Fraser, K., Hartner, A.-M., et~al.
+\newblock A systematic review and meta-analysis of {Zika} virus epidemiology.
+\newblock \emph{Nature Health}, pp.\  1--13, 2026.
+
+\bibitem[Mehand et~al.(2018)Mehand, Al-Shorbaji, Millett, and Murgue]{Mehand2018_WHO_RnD_Blueprint_review}
+Mehand, M.~S., Al-Shorbaji, F., Millett, P., and Murgue, B.
+\newblock The {WHO} {R\&D} blueprint: 2018 review of emerging infectious diseases requiring urgent research and development efforts.
+\newblock \emph{Emerging Infectious Diseases}, 24\penalty0 (9):\penalty0 e1--e8, 2018.
+
+\bibitem[Michelson \& Reuter(2019)Michelson and Reuter]{michelson2019significant}
+Michelson, M. and Reuter, K.
+\newblock The significant cost of systematic reviews and meta-analyses: a call for greater involvement of machine learning to assess the promise of clinical trials.
+\newblock \emph{Contemporary Clinical Trials Communications}, 16:\penalty0 100443, 2019.
+
+\bibitem[{Mistral AI}(2025)]{mistralaiMistralOCR32025}
+{Mistral AI}.
+\newblock Mistral {{OCR}} 3, 2025.
+
+\bibitem[Morgenstern et~al.(2025)Morgenstern, Rawson, Routledge, Kont, {Imai-Eaton}, Skarp, Doohan, McCain, Johnson, Unwin, Naidoo, Dee, Parchani, Cracknell~Daniels, Vicco, Drake, Christen, Sheppard, Leuba, Hicks, McCabe, Nash, Santoni, {Cuomo-Dannenburg}, {van Elsland}, Bhatia, Cori, Morris, Forna, Dighe, Vicco, Hartner, Cori, Hamlet, Lambert, Cracknell~Daniels, Whittaker, Morgenstern, Santoni, Geismar, Nikitin, Jorgensen, Dee, Knock, Unwin, {Cuomo-Dannenburg}, Thompson, Dorigatti, Routledge, Wardle, Skarp, Hicks, Parchani, Fraser, Charniga, McCain, Drake, Geidelberg, Cattarino, Kusumgar, Kont, Baguelin, {Imai-Eaton}, Perez~Guzman, Doohan, Lietar, Christen, Nash, Fitzjohn, Sheppard, Johnson, McCabe, {van Elsland}, Bhatia, Leuba, {Ruybal-Pesantez}, Radhakrishnan, Rawson, Naidoo, and Cucunuba~Perez]{morgensternSevereAcuteRespiratory2025}
+Morgenstern, C., Rawson, T., Routledge, I., Kont, M., {Imai-Eaton}, N., Skarp, J., Doohan, P., McCain, K., Johnson, R., Unwin, H. J.~T., Naidoo, T., Dee, D.~P., Parchani, K., Cracknell~Daniels, B.~N., Vicco, A., Drake, K.~O., Christen, P., Sheppard, R.~J., Leuba, S.~I., Hicks, J.~T., McCabe, R., Nash, R.~K., Santoni, C.~N., {Cuomo-Dannenburg}, G., {van Elsland}, S., Bhatia, S., Cori, A., Morris, A., Forna, A., Dighe, A., Vicco, A., Hartner, A.-M., Cori, A., Hamlet, A., Lambert, B., Cracknell~Daniels, B., Whittaker, C., Morgenstern, C., Santoni, C., Geismar, C., Nikitin, D., Jorgensen, D., Dee, D., Knock, E., Unwin, E., {Cuomo-Dannenburg}, G., Thompson, H., Dorigatti, I., Routledge, I., Wardle, J., Skarp, J., Hicks, J., Parchani, K., Fraser, K., Charniga, K., McCain, K., Drake, K., Geidelberg, L., Cattarino, L., Kusumgar, M., Kont, M., Baguelin, M., {Imai-Eaton}, N., Perez~Guzman, P., Doohan, P., Lietar, P., Christen, P., Nash, R., Fitzjohn, R., Sheppard, R., Johnson, R., McCabe, R., {van Elsland}, S., Bhatia,
+  S., Leuba, S., {Ruybal-Pesantez}, S., Radhakrishnan, S., Rawson, T., Naidoo, T., and Cucunuba~Perez, Z.
+\newblock Severe acute respiratory syndrome ({{SARS}}) mathematical models and disease parameters: A systematic review.
+\newblock \emph{The Lancet Microbe}, 6\penalty0 (9), 2025.
+
+\bibitem[Naidoo et~al.(2025)Naidoo, Nash, Morgenstern, Doohan, McCabe, Lambert, Sheppard, Santoni, Rawson, {Ruybal-Pes{\'a}ntez}, Unwin, {Cuomo-Dannenburg}, McCain, Hicks, Cori, and Bhatia]{naidooEpireviewToolsUpdate2025}
+Naidoo, T., Nash, R., Morgenstern, C., Doohan, P., McCabe, R., Lambert, J., Sheppard, R., Santoni, C., Rawson, T., {Ruybal-Pes{\'a}ntez}, S., Unwin, J.~H., {Cuomo-Dannenburg}, G., McCain, K., Hicks, J., Cori, A., and Bhatia, S.
+\newblock \emph{Epireview: {{Tools}} to Update and Summarise the Latest Pathogen Data from the {{Pathogen Epidemiology Review Group}} ({{PERG}})}, 2025.
+
+\bibitem[Nash et~al.(2026)Nash, Morgenstern, Bhatia, Sheppard, Hicks, {Cuomo-Dannenburg}, McCabe, McCain, Vicco, Doohan, and Naidoo]{nashPrioritypathogens2026}
+Nash, R., Morgenstern, C., Bhatia, S., Sheppard, R., Hicks, J., {Cuomo-Dannenburg}, G., McCabe, R., McCain, K., Vicco, A., Doohan, P., and Naidoo, T.
+\newblock \emph{Priority-Pathogens}, 2026.
+
+\bibitem[Nash et~al.(2024)Nash, Bhatia, Morgenstern, Doohan, Jorgensen, McCain, McCabe, Nikitin, Forna, {Cuomo-Dannenburg}, Hicks, Sheppard, Naidoo, {van Elsland}, Geismar, Rawson, Leuba, Wardle, Routledge, Fraser, {Imai-Eaton}, Cori, and Unwin]{nashEbolaVirusDisease2024}
+Nash, R.~K., Bhatia, S., Morgenstern, C., Doohan, P., Jorgensen, D., McCain, K., McCabe, R., Nikitin, D., Forna, A., {Cuomo-Dannenburg}, G., Hicks, J.~T., Sheppard, R.~J., Naidoo, T., {van Elsland}, S., Geismar, C., Rawson, T., Leuba, S.~I., Wardle, J., Routledge, I., Fraser, K., {Imai-Eaton}, N., Cori, A., and Unwin, H. J.~T.
+\newblock {Ebola} virus disease mathematical models and epidemiological parameters: A systematic review.
+\newblock \emph{The Lancet Infectious Diseases}, 24\penalty0 (12):\penalty0 e762--e773, 2024.
+
+\bibitem[Oami et~al.(2024)Oami, Okada, and Nakada]{oami2024performance}
+Oami, T., Okada, Y., and Nakada, T.-a.
+\newblock Performance of a large language model in screening citations.
+\newblock \emph{JAMA Network Open}, 7\penalty0 (7):\penalty0 e2420496--e2420496, 2024.
+
+\bibitem[{OpenAI} et~al.(2025){OpenAI}, Agarwal, Ahmad, Ai, Altman, Applebaum, Arbus, Arora, Bai, Baker, Bao, Barak, Bennett, Bertao, Brett, Brevdo, Brockman, Bubeck, Chang, Chen, Chen, Cheung, Clark, Cook, Dukhan, Dvorak, Fives, Fomenko, Garipov, Georgiev, Glaese, Gogineni, Goucher, Gross, Guzman, Hallman, Hehir, Heidecke, Helyar, Hu, Huet, Huh, Jain, Johnson, Koch, Kofman, Kundel, Kwon, Kyrylov, Le, Leclerc, Lennon, Lessans, {Lezcano-Casado}, Li, Li, Lin, Liss, {Lily}, {Liu}, Liu, Lu, Lu, Martinovic, McCallum, McGrath, McKinney, McLaughlin, Mei, Mostovoy, Mu, Myles, Neitz, Nichol, Pachocki, Paino, Palmie, Pantuliano, Parascandolo, Park, Pathak, Paz, Peran, Pimenov, Pokrass, Proehl, Qiu, Raila, Raso, Ren, Richardson, Robinson, Rotsted, Salman, Sanjeev, Schwarzer, Sculley, Sikchi, Simon, Singhal, Song, Stuckey, Sun, Tillet, Toizer, Tsimpourlas, Vyas, Wallace, Wang, Wang, Watkins, Weil, Wendling, Whinnery, Whitney, Wong, Yang, Yang, Yasunaga, Ying, Zaremba, Zhan, Zhang, Zhang, Zhang, and
+  Zhao]{openai2025gptoss120bgptoss20bmodel}
+{OpenAI}, Agarwal, S., Ahmad, L., Ai, J., Altman, S., Applebaum, A., Arbus, E., Arora, R.~K., Bai, Y., Baker, B., Bao, H., Barak, B., Bennett, A., Bertao, T., Brett, N., Brevdo, E., Brockman, G., Bubeck, S., Chang, C., Chen, K., Chen, M., Cheung, E., Clark, A., Cook, D., Dukhan, M., Dvorak, C., Fives, K., Fomenko, V., Garipov, T., Georgiev, K., Glaese, M., Gogineni, T., Goucher, A., Gross, L., Guzman, K.~G., Hallman, J., Hehir, J., Heidecke, J., Helyar, A., Hu, H., Huet, R., Huh, J., Jain, S., Johnson, Z., Koch, C., Kofman, I., Kundel, D., Kwon, J., Kyrylov, V., Le, E.~Y., Leclerc, G., Lennon, J.~P., Lessans, S., {Lezcano-Casado}, M., Li, Y., Li, Z., Lin, J., Liss, J., {Lily}, {Liu}, Liu, J., Lu, K., Lu, C., Martinovic, Z., McCallum, L., McGrath, J., McKinney, S., McLaughlin, A., Mei, S., Mostovoy, S., Mu, T., Myles, G., Neitz, A., Nichol, A., Pachocki, J., Paino, A., Palmie, D., Pantuliano, A., Parascandolo, G., Park, J., Pathak, L., Paz, C., Peran, L., Pimenov, D., Pokrass, M., Proehl, E., Qiu, H., Raila,
+  G., Raso, F., Ren, H., Richardson, K., Robinson, D., Rotsted, B., Salman, H., Sanjeev, S., Schwarzer, M., Sculley, D., Sikchi, H., Simon, K., Singhal, K., Song, Y., Stuckey, D., Sun, Z., Tillet, P., Toizer, S., Tsimpourlas, F., Vyas, N., Wallace, E., Wang, X., Wang, M., Watkins, O., Weil, K., Wendling, A., Whinnery, K., Whitney, C., Wong, H., Yang, L., Yang, Y., Yasunaga, M., Ying, K., Zaremba, W., Zhan, W., Zhang, C., Zhang, B., Zhang, E., and Zhao, S.
+\newblock Gpt-oss-120b \& gpt-oss-20b {{Model Card}}, 2025.
+
+\bibitem[Orton et~al.(2011)Orton, Lloyd-Williams, Taylor-Robinson, O'Flaherty, and Capewell]{orton2011use}
+Orton, L., Lloyd-Williams, F., Taylor-Robinson, D., O'Flaherty, M., and Capewell, S.
+\newblock The use of research evidence in public health decision making processes: systematic review.
+\newblock \emph{PloS one}, 6\penalty0 (7):\penalty0 e21704, 2011.
+
+\bibitem[Page et~al.(2021)Page, McKenzie, Bossuyt, Boutron, Hoffmann, Mulrow, Shamseer, Tetzlaff, Akl, Brennan, et~al.]{page2021prisma}
+Page, M.~J., McKenzie, J.~E., Bossuyt, P.~M., Boutron, I., Hoffmann, T.~C., Mulrow, C.~D., Shamseer, L., Tetzlaff, J.~M., Akl, E.~A., Brennan, S.~E., et~al.
+\newblock The {PRISMA} 2020 statement: an updated guideline for reporting systematic reviews.
+\newblock \emph{{BMJ}}, 372, 2021.
+
+\bibitem[Pan et~al.(2025)Pan, Cemri, Agrawal, Yang, Chopra, Tiwari, Keutzer, Parameswaran, Ramchandran, Klein, et~al.]{pan2025multiagent}
+Pan, M.~Z., Cemri, M., Agrawal, L.~A., Yang, S., Chopra, B., Tiwari, R., Keutzer, K., Parameswaran, A., Ramchandran, K., Klein, D., et~al.
+\newblock Why do multiagent systems fail?
+\newblock In \emph{{ICLR} 2025 Workshop on Building Trust in Language Models and Applications}, 2025.
+
+\bibitem[Parkinson et~al.(2025)Parkinson, Cerbone, Mieskolainen, Cao, Wilson, Albacete, Armstrong, Bass, Bot{\'\i}as, Brown, et~al.]{parkinson2025metabeeai}
+Parkinson, R.~H., Cerbone, H., Mieskolainen, M., Cao, S., Wilson, A.~D., Albacete, S., Armstrong, E.~B., Bass, C., Bot{\'\i}as, C., Brown, A., et~al.
+\newblock Metabeeai: an {AI} pipeline for full-text systematic reviews in biology.
+\newblock \emph{bioRxiv}, pp.\  2025--11, 2025.
+
+\bibitem[Peters \& Chin-Yee(2025)Peters and Chin-Yee]{peters2025generalization}
+Peters, U. and Chin-Yee, B.
+\newblock Generalization bias in large language model summarization of scientific research.
+\newblock \emph{Royal Society Open Science}, 12\penalty0 (4):\penalty0 241776, 2025.
+
+\bibitem[Polanin et~al.(2019)Polanin, Pigott, Espelage, and Grotpeter]{polanin2019best}
+Polanin, J.~R., Pigott, T.~D., Espelage, D.~L., and Grotpeter, J.~K.
+\newblock Best practice guidelines for abstract screening large-evidence systematic reviews and meta-analyses.
+\newblock \emph{Research Synthesis Methods}, 10\penalty0 (3):\penalty0 330--342, 2019.
+
+\bibitem[Przyby{\l}a et~al.(2018)Przyby{\l}a, Brockmeier, Kontonatsios, Le~Pogam, McNaught, von Elm, Nolan, and Ananiadou]{przybyla2018prioritising}
+Przyby{\l}a, P., Brockmeier, A.~J., Kontonatsios, G., Le~Pogam, M.-A., McNaught, J., von Elm, E., Nolan, K., and Ananiadou, S.
+\newblock Prioritising references for systematic reviews with {RobotAnalyst}: a user study.
+\newblock \emph{Research Synthesis Methods}, 9\penalty0 (3):\penalty0 470--488, 2018.
+
+\bibitem[Rein et~al.(2024)Rein, Hou, Stickland, Petty, Pang, Dirani, Michael, and Bowman]{reinGPQAGraduatelevelGoogleproof2024}
+Rein, D., Hou, B.~L., Stickland, A.~C., Petty, J., Pang, R.~Y., Dirani, J., Michael, J., and Bowman, S.~R.
+\newblock {{GPQA}}: {{A}} graduate-level {{Google-proof Q}}\&{{A}} benchmark.
+\newblock In \emph{First Conference on Language Modeling}, 2024.
+
+\bibitem[Roberts et~al.(2024)Roberts, Han, Houlsby, and Albanie]{robertsSciFIBenchBenchmarkingLarge2024}
+Roberts, J., Han, K., Houlsby, N., and Albanie, S.
+\newblock {{SciFIBench}}: {{Benchmarking}} large multimodal models for scientific figure interpretation.
+\newblock \emph{Advances in Neural Information Processing Systems}, 37:\penalty0 18695--18728, 2024.
+
+\bibitem[Scherbakov et~al.(2025)Scherbakov, Hubig, Jansari, Bakumenko, and Lenert]{scherbakov2025emergence}
+Scherbakov, D., Hubig, N., Jansari, V., Bakumenko, A., and Lenert, L.~A.
+\newblock The emergence of large language models as tools in literature reviews: a large language model-assisted systematic review.
+\newblock \emph{Journal of the American Medical Informatics Association}, 32\penalty0 (6):\penalty0 1071--1086, 2025.
+
+\bibitem[Syriani et~al.(2024)Syriani, David, and Kumar]{syriani2024screening}
+Syriani, E., David, I., and Kumar, G.
+\newblock Screening articles for systematic reviews with {ChatGPT}.
+\newblock \emph{Journal of Computer Languages}, 80:\penalty0 101287, 2024.
+
+\bibitem[Thomas et~al.(2021)Thomas, McDonald, Noel-Storr, Shemilt, Elliott, Mavergames, and Marshall]{thomas2021machine}
+Thomas, J., McDonald, S., Noel-Storr, A., Shemilt, I., Elliott, J., Mavergames, C., and Marshall, I.~J.
+\newblock Machine learning reduced workload with minimal risk of missing studies: development and evaluation of a randomized controlled trial classifier for cochrane reviews.
+\newblock \emph{Journal of Clinical Epidemiology}, 133:\penalty0 140--151, 2021.
+
+\bibitem[Tian et~al.(2024)Tian, Gao, Zhang, Chen, Fan, Guo, Haas, Ji, Krongchon, Li, et~al.]{tianSciCodeResearchCoding2024a}
+Tian, M., Gao, L., Zhang, S., Chen, X., Fan, C., Guo, X., Haas, R., Ji, P., Krongchon, K., Li, Y., et~al.
+\newblock {{SciCode}}: {{A}} research coding benchmark curated by scientists.
+\newblock \emph{Advances in Neural Information Processing Systems}, 37:\penalty0 30624--30650, 2024.
+
+\bibitem[Wallace et~al.(2010)Wallace, Trikalinos, Lau, Brodley, and Schmid]{wallace2010semi}
+Wallace, B.~C., Trikalinos, T.~A., Lau, J., Brodley, C., and Schmid, C.~H.
+\newblock Semi-automated screening of biomedical citations for systematic reviews.
+\newblock \emph{BMC bioinformatics}, 11\penalty0 (1):\penalty0 55, 2010.
+
+\bibitem[Wang et~al.(2023)Wang, Fu, Du, Gao, Huang, Liu, Chandak, Liu, Van~Katwyk, Deac, Anandkumar, Bergen, Gomes, Ho, Kohli, Lasenby, Leskovec, Liu, Manrai, Marks, Ramsundar, Song, Sun, Tang, Veli{\v c}kovi{\'c}, Welling, Zhang, Coley, Bengio, and Zitnik]{wangScientificDiscoveryAge2023}
+Wang, H., Fu, T., Du, Y., Gao, W., Huang, K., Liu, Z., Chandak, P., Liu, S., Van~Katwyk, P., Deac, A., Anandkumar, A., Bergen, K., Gomes, C.~P., Ho, S., Kohli, P., Lasenby, J., Leskovec, J., Liu, T.-Y., Manrai, A., Marks, D., Ramsundar, B., Song, L., Sun, J., Tang, J., Veli{\v c}kovi{\'c}, P., Welling, M., Zhang, L., Coley, C.~W., Bengio, Y., and Zitnik, M.
+\newblock Scientific discovery in the age of artificial intelligence.
+\newblock \emph{Nature}, 620\penalty0 (7972):\penalty0 47--60, 2023.
+
+\bibitem[Ward et~al.(2026)Ward, Gressani, Kim, Hens, and Edmunds]{WARD2026100882}
+Ward, J., Gressani, O., Kim, S., Hens, N., and Edmunds, W.~J.
+\newblock The epidemiology of pathogens with pandemic potential: A review of key parameters and clustering analysis.
+\newblock \emph{Epidemics}, 54:\penalty0 100882, 2026.
+
+\bibitem[{World Health Organization}(2024)]{worldhealthorganizationPathogensPrioritizationScientific2024}
+{World Health Organization}.
+\newblock Pathogens prioritization: A scientific framework for epidemic and pandemic research preparedness.
+\newblock Technical report, {World Health Organization}, 2024.
+
+\bibitem[Zahavi \& Einav(2025)Zahavi and Einav]{zahaviHowLargeLanguage2025}
+Zahavi, I. and Einav, S.
+\newblock How large language models can help us write a systematic review.
+\newblock \emph{Intensive Care Medicine}, 2025.
+
+\bibitem[Zhang et~al.(2025)Zhang, Khan, Mahmud, Yang, Lavin, Levin, Frey, Dunnmon, Evans, Bundy, et~al.]{zhang2025exploring}
+Zhang, Y., Khan, S.~A., Mahmud, A., Yang, H., Lavin, A., Levin, M., Frey, J., Dunnmon, J., Evans, J., Bundy, A., et~al.
+\newblock Exploring the role of large language models in the scientific method: from hypothesis to discovery.
+\newblock \emph{npj Artificial Intelligence}, 1\penalty0 (1):\penalty0 14, 2025.
+
+\end{thebibliography}

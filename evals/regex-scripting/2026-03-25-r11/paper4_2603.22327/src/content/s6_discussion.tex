@@ -1,0 +1,88 @@
+\section{Discussion}
+
+\label{sec:discussion}
+% \subsection{Principal Findings}
+
+\subsection{Key Takeaways}
+
+% \name{} is capable of automating each stage of the SLR process for epidemiology, achieving significant time and cost reductions as well as respectable alignment with human-expert annotations. For review stages with clear time estimates, our pipeline demonstrates a $19.3$ times reduction in time, from $48.1$ human-annotator work days down to $0.83$ calendar days of wall-clock time for our full pipeline. Notably, \name{} can screen full-text articles $118$ times faster than human reviewers.
+
+
+% Across article screening stages, \name{} shows recall comparable with human experts when run autonomously ($0.89$), which improves to $0.92$ when full-text screening is conditioned on human abstract review. We notice an intuitive trade-off when skipping abstract screening for direct full-text screening: recall improves ($0.81$ to $0.89$) but precision suffers ($0.75$ to $0.68$). Conditioning on human abstract review improved precision to $0.83$, giving competitive overall classification performance ($F_1 = 0.87$).
+
+
+% For data extraction, \name{} shows overall consistency with ground truth, but exhibits weaknesses in specific areas. Parameters are flagged imprecisely, and the full count of extractions is often underestimated. Model counts are similarly imprecise. Nevertheless,  nearly all relevant parameters are recalled ($0.88$ average, across all data types), and where we do extract, values are precise for a subset of fields.
+
+
+% Our pipeline's strengths in data extraction are more encouraging in light of our expert validation survey. Experts graded our extraction accuracy as higher than our precision on ground-truth data ($0.80$ on average, a $18.8$ percentage-point increase), suggesting that exact-match to human annotations underestimates pipeline ability. Most notably, experts rated \name{}'s extraction competence around $4$ for both parameters ($4.22$) and outbreaks ($3.90$). In the survey, a score of $4$ indicated ``the system identifies some things but struggles with edge cases; I could use it with moderate supervision / secondary screening.'' Qualitative impressions from these experts also suggest that providing \name{} extractions could improve their annotation efficiency in most cases.
+
+% Model ablations confirm that the headline screening and extraction patterns observed with \texttt{gpt-oss-120b} are not artefacts of a single model. Across all five models, abstract-stage screening $F1$ ranges from 0.62 to 0.77, with rankings shifting at full-text screening as models respond differently to the stricter quantitative inclusion criteria. Parameter extraction remains the universal performance ceiling, with no model exceeding an average $F1$ of 0.63, suggesting this limitation is structural to the task rather than specific to any model. The performance--cost analysis in Figure~\ref{fig:cost_vs_performance} further shows that open-weight models (\texttt{gpt-oss-120b}, \texttt{Kimi-K2.5}, \texttt{GLM-4.7}) offer competitive or superior performance to the closed-source \texttt{} at substantially lower cost, which has practical implications for large-scale deployment and version control.
+
+%\paragraph{\name{} achieves orders-of-magnitude efficiency gains while maintaining coverage.}
+\name{} achieves orders-of-magnitude efficiency gains while maintaining coverage. Our pipeline reduces active review time by a factor of $19.3$, from $385$ human labour hours to $20$ hours, with full-text screening running $118$ times faster than a human reviewer. These gains change the feasibility calculus for evidence synthesis on large, rapidly evolving corpora, with particular relevance where literature growth outpaces reviewer capacity \citep{bergstrom2026screening} or where timely synthesis is operationally critical \citep{orton2011use, clarke2017evidence}.
+
+
+
+%\paragraph{Screening precision-recall trade-offs are predictable and practically manageable.} 
+At the article screening stage, our trade-offs across ablations are predictable and practically manageable. Abstract screening is the primary labour bottleneck in systematic review production. With each paper taking minutes to process \citep{wallace2010semi}, direct full-text screening is operationally infeasible for human teams. Our autonomous two-stage screening achieves a recall of $0.81$, and skipping abstract screening to process full-texts directly improves recall to $0.89$ at a $2.3\times$ runtime increase. Conditioning on human abstract screening further improves recall to $0.92$ and precision to $0.83$. The precision penalty of direct full-text screening (from $0.75$ to $0.68$) is acceptable in practice, as false inclusions are correctable downstream while false exclusions are not. Furthermore, human abstract triage risks discarding articles whose abstracts under-report relevance, a limitation our direct full-text screening avoids entirely. The choice of screening configuration is therefore a tractable trade-off between resource cost and exclusion risk.
+
+%\paragraph{Parameter extraction is a structural ceiling, not a model-specific weakness.} 
+At the data extraction stage, and for parameter extraction in particular, our results indicate a structural ceiling due to task complexity instead of any model-specific weaknesses. Across all five models tested, no model exceeds $F_1 = 0.63$ for parameter extraction, and the spread between best and worst performers narrows markedly relative to screening. Performance degrades predictably from flagging ($F_1 = 0.75$) through counting ($0.65$) to field-level extraction ($0.63$). This convergence under structured tool-calling suggests the bottleneck is task ambiguity and reporting heterogeneity across papers rather than raw model capability. For instance, a paper may present a central estimate and spread in a table without labelling them as mean $\pm$ uncertainty, leaving both humans and models to infer the statistic. This unavoidable limitation has direct implications for where future engineering effort is best directed.
+
+
+
+
+% This convergence under structured tool-calling suggests the bottleneck is task ambiguity and reporting heterogeneity across papers rather than raw model capability, with direct implications for where future engineering effort is best directed.
+
+
+
+% \paragraph{Expert validation reveals that ground-truth comparison may underestimate AI utility.} --> I like this
+%\paragraph{Exact-match evaluation underestimates real-world extraction utility.}
+Finally, our expert validation suggests that exact-match, ground-truth evaluation underestimates \name{}'s real-world utility.
+Experts rated field-level extraction accuracy at $0.80$ on average, $18.8$ percentage points above our automated precision scores. Parameter and outbreak extraction competence were rated $4.22$ and $3.90$ on a $1$--$7$ scale, where $4$ denotes a system usable under moderate supervision. Qualitative feedback consistently indicated that \name{} extractions reduce net annotation effort by providing a correctable starting point. %, with false positives straightforward to identify and remove.
+Exact-match evaluation against a single annotation set is therefore a conservative lower bound on operational utility.
+
+
+\subsection{Implications}
+
+% This paper presents a feasibility study of automating SLRs in epidemiology, a challenging and context-rich scientific domain. Our results indicate that, while \name{} lacks the contextual understanding and domain expertise to fully automate an epidemiological SLR, tools like these can already deliver substantial efficiency gains within human-led review processes. Human-in-the-loop processes seem effective for both article screening and data extraction.
+
+% For article screening, manual review limits SLR scalability \citep{polanin2019best}, and full-text retrieval and processing requires substantially more resources than abstract-only triage \citep{clark2020full}. PERG reports their abstract screening to take a fraction of the time required for full-text. Given our strong classification performance in this setting, \name{} is well-suited to expedite full-text screening after human reviewers have filtered articles based on abstracts.
+
+% For data extraction, human experts report improved efficiency when provided with \name{}'s outputs. Though imperfect, \name{} extracts practically useful data. Our high recall is particularly important in this setting, as experts find false positives easy to identify and remove during validation. Overall, our findings suggest that \name{} could be deployed for preliminary extraction tasks at significant time and cost reductions to human review efforts.
+
+% With appropriate human supervision, \name{}'s end-to-end capabilities could support the rapid generation of preliminary ``living'' reviews. The careful development and adoption of such systems could considerably enhance our insight into large corpora of epidemiological literature, strengthening our disease monitoring abilities and pandemic preparedness.
+
+
+%\paragraph{Human-in-the-loop deployment is the appropriate mode for automated SLR tools.}
+Human-in-the-loop deployment is the appropriate mode for automated SLR tools like \name{}. While \name{} lacks the contextual understanding to fully automate an epidemiological SLR, it delivers substantial efficiency gains within human-led processes. Manual review limits SLR scalability \citep{polanin2019best}, and full-text processing requires substantially more resources than abstract-only triage \citep{clark2020full}. Given our strong classification performance, \name{} is well-suited to expedite full-text screening after human abstract filtering. For data extraction, high recall ensures that relevant evidence persists for human validation, and experts report improved efficiency when provided with \name{}'s outputs. By reducing the per-update burden that makes continuous curation infeasible, these capabilities could enable living systematic reviews for timely pandemic preparedness.
+
+In evaluating \name{}, we found error structure to matter just as much as error rate. Precision and recall figures describe average behaviour, but downstream consequences depend on error structure. Missing articles at random widens confidence intervals; missing articles of a particular study design or publication period introduces systematic bias. Consistent underperformance where studies report parameters implicitly (rather than in structured tables), or \texttt{gpt-oss-120b}'s weaker performance across Zika papers, suggest some failure modes may be systematic. Systematic failure modes warrant explicit characterisation before high-stakes deployment. Explicit error-structure analysis that distinguishes random from systematic failures remains an important future direction.
+
+
+
+%\paragraph{Open-weight models offer a viable foundation for scientific SLR deployment.}
+Our results also suggest that current open-weight models offer a viable foundation for scientific SLR deployment. Within our evaluation, open-weight models achieve performance comparable to closed-source frontier models while operating at substantially lower cost: \texttt{gpt-oss-120b} achieves similar performance ($F_1 = 0.70$) at over $96\times$ lower cost than \texttt{GPT-5.2} ($F_1 = 0.69$), while \texttt{Kimi-K2.5} achieves the best overall performance ($F_1 = 0.74$) at a mid-range cost. Beyond cost, open-weight models permit version pinning and local deployment, properties that matter for long-running living reviews where reproducibility is a scientific requirement.
+
+%\paragraph{Broad content restrictions from closed-source providers pose a risk for critical scientific applications.} 
+In addition, we encountered broad content restrictions from closed-source providers, which pose a risk for critical scientific applications. Attempts to evaluate \name{} using Claude Opus 4.5 and Sonnet 4.5 resulted in consistent streaming refusals, which we attribute to content filters triggered by epidemiological terminology being likened to bioweapons.\footnote{See the \href{https://support.claude.com/en/articles/12449294-understanding-sonnet-4-5-s-api-safety-filters}{Anthropic documentation} on Sonnet~4.5 API safety filters.} While such caution is understandable in consumer deployments, restrictions applied too broadly can render entire model families unavailable for legitimate public-health research, reinforcing the case for open-weight alternatives for both reproducibility and operational continuity.
+
+%\paragraph{Error structure matters as much as error rate.} 
+
+
+\subsection{Future Work}
+
+% This feasibility study suggests many exciting directions for future work. Most urgently, a proper human uplift study can be conducted to more robustly quantify the time savings and efficacy of a human-in-the-loop implementation. We are prototyping a human-in-loop annotation tool, explained in \Cref{appendix:annotation_tool}. This can be improved to production-grade and provided to epidemiologists conducting future SLRs. Human uplift is most compelling in the case of unknown or understudied diseases with serious epidemic potential \cite{Mehand2018_WHO_RnD_Blueprint_review}, or on priority pathogens considered too time-consuming for thorough review, like COVID-19. More generally, while \name{}'s implementation leans heavily on epidemiological domain knowledge, the framework it provides for SLR automation is extensible. Future work could explore \name{}'s generalisation to additional scientific fields, across the medical, social, and physical sciences, through further feasibility studies.
+
+This feasibility study suggests many exciting directions for future work. Most urgently, a proper human uplift study can be conducted to more robustly quantify the time savings and efficacy of a human-in-the-loop implementation. We are prototyping a human-in-loop annotation tool, explained in \Cref{appendix:annotation_tool}, to be improved to production-grade and provided to epidemiologists conducting future SLRs. Human uplift is most compelling in the case of unknown or understudied diseases with serious epidemic potential \citep{Mehand2018_WHO_RnD_Blueprint_review}, or on priority pathogens where literature volume outpaces reviewer capacity, like COVID-19.
+
+More generally, while \name{}'s implementation relies heavily on epidemiological domain knowledge, the framework it provides for SLR automation is extensible: future work could explore generalisation to additional scientific fields across the medical, social, and physical sciences, and investigate whether models can participate in defining their own extraction tools as domain knowledge shifts. Our ablations showed that different models excel at different stages, suggesting that heterogeneous multi-agent configurations routing sub-tasks to models with complementary capability profiles could improve overall pipeline performance.
+
+
+%%%%%%%%%%%%%%%%%%%
+% 
+%
+%
+% Discuss about open-source vs closed-source models, looking at Anthropic's policy blocking our requests, assuming its for bioweaopons because the word `zika exists`. For critical domains, can this be a problem ?
+% Generalisation of \name{} to other areas of Science [hand coded-logic, vs maybe having the model define the tools itself, and we did actually go in a co-improvement phase with experts and AI, but this was not quanitfied.]
+%%%%%%%%%%%%%%%%%%%

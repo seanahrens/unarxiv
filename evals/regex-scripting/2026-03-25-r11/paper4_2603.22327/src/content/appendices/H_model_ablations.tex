@@ -1,0 +1,202 @@
+\clearpage
+\section{Model Ablation Results}\label{app:model_ablations}
+This section reports full pathogen-level and metric-level results for the five model ablations described in Section~\ref{sec:model_ablations}. 
+
+% Tables~\ref{tab:ta_screening_model_ablation} and~\ref{tab:fulltext_screening_model_ablation} cover the two screening stages, evaluated across seven pathogens (Marburg, Ebola, Lassa, SARS, Zika, MERS, and Nipah). Tables~\ref{tab:parameter_extraction_model_ablation} and~\ref{tab:model_extraction_model_ablation} cover parameter and model extraction respectively, evaluated across four pathogens (Ebola, Lassa, SARS, and Zika). Table~\ref{tab:outbreak_extraction_model_ablation} covers outbreak extraction, evaluated across two pathogens (Lassa and Zika).
+
+\subsection{Article Screening}
+\subsubsection*{Title \& Abstract Screening}
+
+At title and abstract screening (Table~\ref{tab:ta_screening_model_ablation}), the spread in overall $F_1$ from $0.62$ (\texttt{DeepSeek-V3.2}) to $0.77$ (\texttt{Kimi-K2.5}) is driven almost entirely by recall rather than precision: \texttt{DeepSeek-V3.2} and GPT-5.2 are the two most precise models ($0.83$ and $0.82$ respectively) yet rank last and fourth on $F_1$, with recalls of $0.59$ and $0.61$ against \texttt{Kimi-K2.5}'s $0.75$. \texttt{Kimi-K2.5} is the best-performing model for all seven pathogens. Nipah is the worst-performing pathogen for three models and sits at or below $0.72$ for all five, consistent with it being one of the smallest and most heterogeneous corpora in the PERG dataset; the same pathogen has the narrowest precision-recall gap across models, suggesting the difficulty is intrinsic to the articles rather than a model-specific calibration issue.
+
+
+\begin{table*}[h]
+\centering
+\caption{\textbf{Title and abstract screening metrics with model ablations.} \highP{Green} and \lowP{Red} denote the best- and worst-performing pathogens for each model (in terms of $F_1$ score). \bestM{Bold} indicates the best-performing model for each pathogen, and \secondM{Underline} indicates the second-best. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:ta_screening_model_ablation}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{l|ccc|ccc|ccc|ccc|ccc}
+\toprule
+\textbf{Pathogen} & \multicolumn{3}{c|}{\textbf{\texttt{gpt-oss-120b}}} & \multicolumn{3}{c|}{\textbf{GPT-5.2}} & \multicolumn{3}{c|}{\textbf{\texttt{DeepSeek-V3.2}}} & \multicolumn{3}{c|}{\textbf{\texttt{Kimi-K2.5}}} & \multicolumn{3}{c}{\textbf{\texttt{GLM-4.7}}} \\
+& $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\textbf{Marburg} & 0.80 & 0.64 & \lowP{\secondM{0.69}} & 0.97 & 0.58 & 0.62 & 0.97 & 0.55 & 0.58 & 0.79 & 0.65 & \lowP{\bestM{0.69}} & 0.88 & 0.61 & 0.66 \\
+\textbf{Ebola} & 0.74 & 0.75 & 0.75 & 0.76 & 0.64 & \highP{0.68} & 0.80 & 0.61 & 0.64 & 0.79 & 0.79 & \bestM{0.79} & 0.88 & 0.72 & \secondM{0.77} \\
+\textbf{Lassa} & 0.82 & 0.72 & \secondM{0.75} & 0.78 & 0.63 & 0.66 & 0.84 & 0.60 & 0.63 & 0.84 & 0.77 & \bestM{0.80} & 0.88 & 0.68 & 0.73 \\
+\textbf{SARS} & 0.78 & 0.76 & 0.77 & 0.77 & 0.62 & 0.65 & 0.82 & 0.62 & \highP{0.66} & 0.80 & 0.78 & \bestM{0.79} & 0.89 & 0.73 & \highP{\secondM{0.78}} \\
+\textbf{Zika} & 0.73 & 0.77 & \secondM{0.75} & 0.70 & 0.62 & 0.64 & 0.73 & 0.63 & 0.66 & 0.78 & 0.79 & \bestM{0.79} & 0.76 & 0.69 & 0.72 \\
+\textbf{MERS} & 0.83 & 0.74 & \highP{\secondM{0.78}} & 0.87 & 0.62 & 0.67 & 0.86 & 0.60 & 0.65 & 0.86 & 0.78 & \highP{\bestM{0.81}} & 0.89 & 0.67 & 0.73 \\
+\textbf{Nipah} & 0.84 & 0.66 & \secondM{0.70} & 0.92 & 0.58 & \lowP{0.59} & 0.81 & 0.54 & \lowP{0.53} & 0.85 & 0.68 & \bestM{0.72} & 0.90 & 0.61 & \lowP{0.65} \\
+\midrule
+\textbf{Overall} & 0.79 & 0.72 & \secondM{0.74} & 0.82 & 0.61 & 0.65 & 0.83 & 0.59 & 0.62 & 0.82 & 0.75 & \bestM{0.77} & 0.87 & 0.67 & 0.72 \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+\subsubsection*{Full-text Screening}
+
+The ranking reorders substantially at full-text screening (Table~\ref{tab:fulltext_screening_model_ablation}), where \texttt{gpt-oss-120b} leads ($F_1$ $0.77$) and the two highest-precision abstract-stage models fall furthest. \texttt{DeepSeek-V3.2}'s precision drops from $0.83$ to $0.64$ and its recall from $0.59$ to $0.56$, making it the only model that loses ground on both measures simultaneously, with its Marburg result ($F_1$ $0.42$, precision $0.37$) being the single weakest pathogen-level score in either screening table. \texttt{gpt-oss-120b}'s advantage at this stage comes from recall: it achieves $0.81$ overall against the next-best \texttt{Kimi-K2.5} at $0.73$, and is one of only two models -- alongside \texttt{GLM-4.7} -- for which recall increases from abstract to full-text screening. The Nipah-to-Zika contrast also reverses: Nipah is the best-performing pathogen for \texttt{gpt-oss-120b} and \texttt{Kimi-K2.5} at full-text ($F_1$ $0.85$ and $0.82$), whereas it was the worst for three models at the abstract stage, suggesting that the richer context of full texts resolves ambiguity that titles and abstracts leave open for this pathogen.
+
+
+
+
+\begin{table*}[h]
+\centering
+\caption{\textbf{Full-text screening metrics with model ablations.}  \highP{Green} and \lowP{Red} denote the best- and worst-performing pathogens for each model (in terms of $F_1$ score). \bestM{Bold} indicates the best-performing model for each pathogen, and \secondM{Underline} indicates the second-best. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:fulltext_screening_model_ablation}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{l|ccc|ccc|ccc|ccc|ccc}
+\toprule
+\textbf{Pathogen} & \multicolumn{3}{c|}{\textbf{\texttt{gpt-oss-120b}}} & \multicolumn{3}{c|}{\textbf{GPT-5.2}} & \multicolumn{3}{c|}{\textbf{\texttt{DeepSeek-V3.2}}} & \multicolumn{3}{c|}{\textbf{\texttt{Kimi-K2.5}}} & \multicolumn{3}{c}{\textbf{\texttt{GLM-4.7}}} \\
+& $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\textbf{Marburg} & 0.75 & 0.76 & \secondM{0.75} & 0.76 & 0.59 & 0.59 & 0.37 & 0.49 & \lowP{0.42} & 0.66 & 0.66 & 0.66 & 0.86 & 0.72 & \highP{\bestM{0.76}} \\
+\textbf{Ebola} & 0.73 & 0.84 & \bestM{0.77} & 0.61 & 0.60 & 0.60 & 0.68 & 0.59 & 0.55 & 0.72 & 0.74 & 0.71 & 0.75 & 0.75 & \secondM{0.75} \\
+\textbf{Lassa} & 0.79 & 0.78 & \bestM{0.78} & 0.66 & 0.63 & 0.63 & 0.63 & 0.54 & 0.47 & 0.74 & 0.75 & \secondM{0.74} & 0.77 & 0.73 & 0.73 \\
+\textbf{SARS} & 0.71 & 0.85 & \bestM{0.76} & 0.60 & 0.58 & 0.58 & 0.73 & 0.61 & \highP{0.59} & 0.67 & 0.69 & 0.66 & 0.73 & 0.72 & \secondM{0.72} \\
+\textbf{Zika} & 0.66 & 0.79 & \lowP{\bestM{0.69}} & 0.50 & 0.50 & \lowP{0.50} & 0.61 & 0.55 & 0.52 & 0.63 & 0.64 & \lowP{\secondM{0.61}} & 0.60 & 0.59 & \lowP{0.59} \\
+\textbf{MERS} & 0.76 & 0.83 & \bestM{0.79} & 0.66 & 0.61 & 0.61 & 0.74 & 0.60 & 0.58 & 0.76 & 0.79 & \secondM{0.77} & 0.76 & 0.68 & 0.69 \\
+\textbf{Nipah} & 0.87 & 0.84 & \highP{\bestM{0.85}} & 0.80 & 0.63 & \highP{0.63} & 0.73 & 0.56 & 0.53 & 0.83 & 0.81 & \highP{\secondM{0.82}} & 0.72 & 0.61 & 0.61 \\
+\midrule
+\textbf{Overall} & 0.75 & 0.81 & \bestM{0.77} & 0.66 & 0.59 & 0.59 & 0.64 & 0.56 & 0.52 & 0.72 & 0.73 & \secondM{0.71} & 0.74 & 0.69 & 0.69 \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+
+
+
+
+
+\subsection{Data Extraction}
+\subsubsection*{Parameters}
+Parameter extraction results are disaggregated by pathogen and extraction type in Table~\ref{tab:parameter_extraction_model_ablation}. \texttt{Kimi-K2.5} achieves the highest overall average $F_1$ ($0.63$), marginally ahead of \texttt{GLM-4.7} ($0.63$), and lower performance seen for \texttt{gpt-oss-120b} ($0.59$), GPT-5.2 ($0.58$) and \texttt{DeepSeek-V3.2} ($0.56$). Performance is most variable in the Counts sub-task: \texttt{gpt-oss-120b} attains strong precision ($0.83$) but low recall ($0.47$), reproducing the asymmetric pattern observed for the primary model in Appendix~\ref{app:pipeline_stage_eval}, while GPT-5.2 shows the inverse (recall $0.83$, precision $0.36$). At the field-level Extraction sub-task, GPT-5.2 achieves the highest overall $F_1$ ($0.59$), followed by \texttt{Kimi-K2.5} ($0.56$), and the five models are broadly comparable, consistent with the interpretation that cross-model differences in average $F_1$ are driven by flagging and counting behaviour rather than the quality of individual field extractions. Zika is the weakest pathogen across most models and sub-tasks, while SARS is frequently the best-performing for \texttt{gpt-oss-120b}.
+
+
+\begin{table*}[h]
+\centering
+\caption{\textbf{Parameter extraction metrics with model ablations.} \textbf{Average} denotes means across sub-tasks; \textbf{Overall} denotes means across pathogens. \highP{Green} and \lowP{Red} denote the best- and worst-performing pathogens for each model (in terms of $F_1$ score). \bestM{Bold} indicates the best-performing model for each pathogen, and \secondM{Underline} indicates the second-best. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:parameter_extraction_model_ablation}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{ll|ccc|ccc|ccc|ccc|ccc}
+\toprule
+\textbf{Pathogen} & \textbf{Type} & \multicolumn{3}{c|}{\textbf{\texttt{gpt-oss-120b}}} & \multicolumn{3}{c|}{\textbf{GPT-5.2}} & \multicolumn{3}{c|}{\textbf{\texttt{DeepSeek-V3.2}}} & \multicolumn{3}{c|}{\textbf{\texttt{Kimi-K2.5}}} & \multicolumn{3}{c}{\textbf{\texttt{GLM-4.7}}} \\
+& & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\multirow{4}{*}{\textbf{Ebola}} & Flagging & 0.60 & 0.92 & \highP{0.72} & 0.58 & 0.93 & 0.71 & 0.49 & 0.91 & 0.64 & 0.67 & 0.90 & \secondM{0.77} & 0.72 & 0.82 & \bestM{0.77} \\
+ & Counts & 0.79 & 0.47 & 0.59 & 0.46 & 0.80 & \highP{0.58} & 0.57 & 0.59 & 0.58 & 0.52 & 0.73 & \secondM{0.61} & 0.59 & 0.65 & \bestM{0.62} \\
+ & Extraction & 0.48 & 0.54 & \lowP{0.50} & 0.58 & 0.57 & \bestM{0.57} & 0.54 & 0.47 & 0.49 & 0.55 & 0.57 & \lowP{\secondM{0.55}} & 0.51 & 0.56 & \lowP{0.52} \\
+ & Average & 0.62 & 0.64 & 0.60 & 0.54 & 0.77 & 0.62 & 0.54 & 0.65 & 0.57 & 0.58 & 0.73 & \bestM{0.64} & 0.61 & 0.68 & \secondM{0.64} \\
+\midrule
+\multirow{4}{*}{\textbf{Lassa}} & Flagging & 0.56 & 0.98 & 0.71 & 0.58 & 1.00 & \highP{0.73} & 0.54 & 0.91 & \highP{0.68} & 0.70 & 0.94 & \highP{\secondM{0.81}} & 0.77 & 0.87 & \highP{\bestM{0.82}} \\
+ & Counts & 1.00 & 0.35 & \lowP{0.51} & 0.30 & 0.85 & 0.45 & 0.46 & 0.57 & \lowP{0.51} & 0.59 & 0.81 & \highP{\bestM{0.69}} & 0.74 & 0.59 & \highP{\secondM{0.66}} \\
+ & Extraction & 0.58 & 0.54 & 0.55 & 0.66 & 0.63 & \highP{\bestM{0.63}} & 0.55 & 0.46 & \lowP{0.47} & 0.58 & 0.60 & \highP{\secondM{0.57}} & 0.58 & 0.56 & \highP{0.56} \\
+ & Average & 0.71 & 0.62 & 0.59 & 0.51 & 0.83 & 0.61 & 0.52 & 0.65 & 0.55 & 0.62 & 0.79 & \bestM{0.69} & 0.70 & 0.67 & \secondM{0.68} \\
+\midrule
+\multirow{4}{*}{\textbf{SARS}} & Flagging & 0.50 & 0.81 & \bestM{0.62} & 0.47 & 0.83 & 0.60 & 0.39 & 0.78 & \lowP{0.52} & 0.56 & 0.69 & \lowP{0.62} & 0.58 & 0.67 & \lowP{\secondM{0.62}} \\
+ & Counts & 0.80 & 0.61 & \highP{\bestM{0.69}} & 0.37 & 0.88 & 0.52 & 0.60 & 0.60 & \highP{\secondM{0.60}} & 0.45 & 0.72 & \lowP{0.56} & 0.51 & 0.59 & \lowP{0.55} \\
+ & Extraction & 0.51 & 0.63 & \highP{0.56} & 0.56 & 0.63 & \bestM{0.58} & 0.58 & 0.54 & \highP{0.55} & 0.53 & 0.65 & \highP{\secondM{0.57}} & 0.51 & 0.62 & 0.55 \\
+ & Average & 0.61 & 0.69 & \bestM{0.62} & 0.47 & 0.78 & 0.57 & 0.52 & 0.64 & 0.56 & 0.51 & 0.69 & \secondM{0.58} & 0.53 & 0.63 & 0.57 \\
+\midrule
+\multirow{4}{*}{\textbf{Zika}} & Flagging & 0.40 & 0.96 & \lowP{0.57} & 0.43 & 0.95 & \lowP{0.59} & 0.41 & 0.94 & 0.57 & 0.56 & 0.86 & \bestM{0.68} & 0.62 & 0.75 & \secondM{0.68} \\
+ & Counts & 0.72 & 0.47 & 0.57 & 0.31 & 0.80 & \lowP{0.45} & 0.50 & 0.60 & 0.55 & 0.55 & 0.73 & \secondM{0.63} & 0.59 & 0.67 & \bestM{0.63} \\
+ & Extraction & 0.52 & 0.57 & 0.53 & 0.56 & 0.59 & \lowP{\bestM{0.56}} & 0.55 & 0.50 & 0.51 & 0.54 & 0.59 & \secondM{0.55} & 0.52 & 0.58 & 0.54 \\
+ & Average & 0.55 & 0.67 & 0.56 & 0.43 & 0.78 & 0.53 & 0.49 & 0.68 & 0.54 & 0.55 & 0.73 & \bestM{0.62} & 0.58 & 0.66 & \secondM{0.61} \\
+\midrule
+\multirow{4}{*}{\textbf{Overall}} & Flagging & 0.51 & 0.92 & 0.66 & 0.51 & 0.93 & 0.66 & 0.46 & 0.88 & 0.60 & 0.62 & 0.85 & \secondM{0.72} & 0.67 & 0.78 & \bestM{0.72} \\
+ & Counts & 0.83 & 0.47 & 0.59 & 0.36 & 0.83 & 0.50 & 0.53 & 0.59 & 0.56 & 0.53 & 0.75 & \bestM{0.62} & 0.61 & 0.62 & \secondM{0.61} \\
+ & Extraction & 0.52 & 0.57 & 0.54 & 0.59 & 0.61 & \bestM{0.59} & 0.56 & 0.49 & 0.50 & 0.55 & 0.60 & \secondM{0.56} & 0.53 & 0.58 & 0.54 \\
+ & Average & 0.62 & 0.65 & 0.59 & 0.49 & 0.79 & 0.58 & 0.52 & 0.66 & 0.56 & 0.57 & 0.73 & \bestM{0.63} & 0.60 & 0.66 & \secondM{0.63} \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+\subsubsection*{Transmission Models}
+Transmission model extraction results are presented in Table~\ref{tab:model_extraction_model_ablation}. \texttt{GLM-4.7} achieves the highest overall average $F_1$ ($0.85$), with strong performance across all three sub-tasks: Flagging ($0.93$), Counts ($0.93$), and Extraction ($0.68$). \texttt{DeepSeek-V3.2} ranks second overall ($0.81$), driven by notably high Counts performance ($0.92$), whilst \texttt{gpt-oss-120b} ranks last ($0.75$), held back by comparatively low Counts precision ($0.52$ overall). Lassa is the best-performing pathogen for all five models, with \texttt{GLM-4.7} achieving an overall average $F_1$ of $0.91$ for that pathogen alone, including perfect Flagging and Counts scores. SARS is consistently the most challenging pathogen: Flagging $F_1$ ranges from $0.82$ (\texttt{DeepSeek-V3.2}) to $0.87$ (\texttt{Kimi-K2.5}), and Extraction $F_1$ from $0.59$ to $0.66$. These patterns are consistent with the field-level difficulties in transmission route and assumption extraction identified in Appendix~\ref{app:pipeline_stage_eval}.
+
+
+\clearpage
+
+\begin{table*}[t!]
+\centering
+\caption{\textbf{Model extraction metrics with model ablations.}  \highP{Green} and \lowP{Red} denote the best- and worst-performing pathogens for each model (in terms of $F_1$ score). \textbf{Average} denotes means across sub-tasks; \textbf{Overall} denotes means across pathogens. \bestM{Bold} indicates the best-performing model for each pathogen, and \secondM{Underline} indicates the second-best. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.}
+\label{tab:model_extraction_model_ablation}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1}
+{\footnotesize
+\begin{tabular}{ll|ccc|ccc|ccc|ccc|ccc}
+\toprule
+\textbf{Pathogen} & \textbf{Type} & \multicolumn{3}{c|}{\textbf{\texttt{gpt-oss-120b}}} & \multicolumn{3}{c|}{\textbf{GPT-5.2}} & \multicolumn{3}{c|}{\textbf{\texttt{DeepSeek-V3.2}}} & \multicolumn{3}{c|}{\textbf{\texttt{Kimi-K2.5}}} & \multicolumn{3}{c}{\textbf{\texttt{GLM-4.7}}} \\
+& & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\multirow{4}{*}{\textbf{Ebola}} & Flagging & 0.92 & 0.92 & 0.92 & 0.89 & 0.90 & 0.89 & 0.87 & 0.86 & 0.86 & 0.93 & 0.93 & \secondM{0.93} & 0.95 & 0.94 & \bestM{0.95} \\
+ & Counts & 0.50 & 1.00 & 0.67 & 0.56 & 1.00 & 0.71 & 0.81 & 0.99 & \secondM{0.89} & 0.63 & 0.99 & \lowP{0.77} & 0.88 & 0.99 & \bestM{0.93} \\
+ & Extraction & 0.59 & 0.72 & 0.64 & 0.62 & 0.74 & \bestM{0.66} & 0.57 & 0.65 & 0.61 & 0.60 & 0.71 & \lowP{0.64} & 0.62 & 0.71 & \secondM{0.66} \\
+ & Average & 0.67 & 0.88 & 0.74 & 0.69 & 0.88 & 0.76 & 0.75 & 0.83 & \secondM{0.79} & 0.72 & 0.88 & 0.78 & 0.81 & 0.88 & \bestM{0.84} \\
+\midrule
+\multirow{4}{*}{\textbf{Lassa}} & Flagging & 0.95 & 0.99 & \highP{\secondM{0.97}} & 0.95 & 0.99 & \highP{\secondM{0.97}} & 0.96 & 0.85 & 0.89 & 0.95 & 0.99 & \highP{\secondM{0.97}} & 1.00 & 1.00 & \highP{\bestM{1.00}} \\
+ & Counts & 0.60 & 1.00 & \highP{0.75} & 0.60 & 1.00 & 0.75 & 1.00 & 1.00 & \highP{\bestM{1.00}} & 0.75 & 1.00 & \highP{\secondM{0.86}} & 1.00 & 1.00 & \highP{\bestM{1.00}} \\
+ & Extraction & 0.68 & 0.73 & 0.70 & 0.68 & 0.79 & \highP{0.71} & 0.79 & 0.78 & \highP{\bestM{0.78}} & 0.70 & 0.78 & \highP{0.73} & 0.73 & 0.77 & \highP{\secondM{0.74}} \\
+ & Average & 0.74 & 0.91 & 0.81 & 0.74 & 0.92 & 0.81 & 0.92 & 0.88 & \secondM{0.89} & 0.80 & 0.92 & 0.85 & 0.91 & 0.92 & \bestM{0.91} \\
+\midrule
+\multirow{4}{*}{\textbf{SARS}} & Flagging & 0.86 & 0.86 & \lowP{\secondM{0.86}} & 0.86 & 0.86 & \lowP{\secondM{0.86}} & 0.83 & 0.81 & \lowP{0.82} & 0.87 & 0.87 & \lowP{\bestM{0.87}} & 0.85 & 0.84 & \lowP{0.84} \\
+ & Counts & 0.49 & 0.97 & 0.65 & 0.49 & 1.00 & \lowP{0.66} & 0.70 & 1.00 & \lowP{\secondM{0.82}} & 0.67 & 1.00 & 0.81 & 0.76 & 1.00 & \lowP{\bestM{0.86}} \\
+ & Extraction & 0.60 & 0.71 & \lowP{\secondM{0.64}} & 0.61 & 0.73 & \lowP{0.64} & 0.55 & 0.64 & \lowP{0.59} & 0.63 & 0.74 & \bestM{0.66} & 0.59 & 0.68 & \lowP{0.62} \\
+ & Average & 0.65 & 0.85 & 0.72 & 0.65 & 0.86 & 0.72 & 0.70 & 0.82 & 0.74 & 0.72 & 0.87 & \bestM{0.78} & 0.73 & 0.84 & \secondM{0.77} \\
+\midrule
+\multirow{4}{*}{\textbf{Zika}} & Flagging & 0.87 & 0.89 & 0.88 & 0.89 & 0.91 & 0.90 & 0.90 & 0.89 & \highP{0.90} & 0.90 & 0.92 & \secondM{0.91} & 0.93 & 0.93 & \bestM{0.93} \\
+ & Counts & 0.48 & 0.98 & \lowP{0.65} & 0.61 & 1.00 & \highP{0.76} & 0.97 & 0.97 & \bestM{0.97} & 0.72 & 0.97 & 0.83 & 0.88 & 0.97 & \secondM{0.93} \\
+ & Extraction & 0.66 & 0.78 & \highP{0.70} & 0.67 & 0.78 & 0.69 & 0.59 & 0.64 & 0.61 & 0.67 & 0.77 & \secondM{0.70} & 0.69 & 0.76 & \bestM{0.71} \\
+ & Average & 0.67 & 0.88 & 0.74 & 0.72 & 0.90 & 0.78 & 0.82 & 0.84 & \secondM{0.83} & 0.76 & 0.89 & 0.81 & 0.83 & 0.89 & \bestM{0.85} \\
+\midrule
+\multirow{4}{*}{\textbf{Overall}} & Flagging & 0.90 & 0.91 & 0.91 & 0.90 & 0.91 & 0.90 & 0.89 & 0.85 & 0.87 & 0.91 & 0.93 & \secondM{0.92} & 0.93 & 0.93 & \bestM{0.93} \\
+ & Counts & 0.52 & 0.99 & 0.68 & 0.56 & 1.00 & 0.72 & 0.87 & 0.99 & \secondM{0.92} & 0.69 & 0.99 & 0.81 & 0.88 & 0.99 & \bestM{0.93} \\
+ & Extraction & 0.63 & 0.74 & 0.67 & 0.64 & 0.76 & 0.67 & 0.63 & 0.68 & 0.65 & 0.65 & 0.75 & \bestM{0.68} & 0.66 & 0.73 & \secondM{0.68} \\
+ & Average & 0.68 & 0.88 & 0.75 & 0.70 & 0.89 & 0.77 & 0.80 & 0.84 & \secondM{0.81} & 0.75 & 0.89 & 0.81 & 0.82 & 0.88 & \bestM{0.85} \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+\subsubsection*{Outbreaks}
+
+Outbreak extraction results, evaluated across Lassa and Zika, are shown in Table~\ref{tab:outbreak_extraction_model_ablation}. GPT-5.2 achieves the highest overall average $F_1$ ($0.77$), followed closely by \texttt{Kimi-K2.5} ($0.76$), \texttt{DeepSeek-V3.2} ($0.73$), \texttt{GLM-4.7} ($0.72$), and \texttt{gpt-oss-120b} ($0.70$). Results diverge sharply between pathogens. Lassa Counts are strong across all models, ranging from $F_1$ $0.77$ (GPT-5.2) to $0.95$ (\texttt{Kimi-K2.5}), and field-level Extraction is uniformly high ($0.76$ to $0.83$). Zika Counts performance falls substantially for \texttt{gpt-oss-120b} ($F_1$ $0.47$) and \texttt{GLM-4.7} ($0.52$), whilst GPT-5.2 remains comparatively strong ($0.83$). A notable divergence in Flagging is also observed: \texttt{DeepSeek-V3.2} performs weakest on Lassa Flagging ($F_1$ $0.62$) whilst achieving the second-best result on Zika ($0.68$). These per-pathogen contrasts are consistent with the field-level analysis of suspected cases and epidemiological context fields reported in Appendix~\ref{app:pipeline_stage_eval}.
+
+\begin{table*}[h] \centering \caption{\textbf{Outbreak extraction metrics with model ablations.} \textbf{Average} denotes means across sub-tasks; \textbf{Overall} denotes means across pathogens. \highP{Green} and \lowP{Red} denote the best- and worst-performing pathogens for each model (in terms of $F_1$ score). \bestM{Bold} indicates the best-performing model for each pathogen, and \secondM{Underline} indicates the second-best. $P=\text{precision}$; $R=\text{recall}$; $F_1=\text{F1-Score}$.} \label{tab:outbreak_extraction_model_ablation} 
+{\footnotesize
+\setlength{\tabcolsep}{3pt} \renewcommand{\arraystretch}{1} 
+\begin{tabular}{ll|ccc|ccc|ccc|ccc|ccc}
+\toprule
+\textbf{Pathogen} & \textbf{Type} & \multicolumn{3}{c|}{\textbf{\texttt{gpt-oss-120b}}} & \multicolumn{3}{c|}{\textbf{GPT-5.2}} & \multicolumn{3}{c|}{\textbf{\texttt{DeepSeek-V3.2}}} & \multicolumn{3}{c|}{\textbf{\texttt{Kimi-K2.5}}} & \multicolumn{3}{c}{\textbf{\texttt{GLM-4.7}}} \\
+& & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ & $P$ & $R$ & $F1$ \\
+\midrule
+\multirow{4}{*}{\textbf{Lassa}} & Flagging & 0.69 & 0.82 & \highP{\secondM{0.70}} & 0.72 & 0.84 & \highP{\bestM{0.74}} & 0.61 & 0.65 & \lowP{0.62} & 0.67 & 0.77 & \highP{0.69} & 0.65 & 0.68 & \lowP{0.66} \\
+ & Counts & 0.83 & 1.00 & \highP{0.91} & 0.62 & 1.00 & \lowP{0.77} & 0.83 & 1.00 & \highP{0.91} & 0.90 & 1.00 & \highP{\bestM{0.95}} & 1.00 & 0.86 & \highP{\secondM{0.92}} \\
+ & Extraction & 0.85 & 0.73 & \lowP{0.77} & 0.84 & 0.79 & \lowP{\secondM{0.81}} & 0.75 & 0.78 & \highP{0.76} & 0.84 & 0.83 & \highP{\bestM{0.83}} & 0.83 & 0.76 & \highP{0.78} \\
+ & Average & 0.79 & 0.85 & \secondM{0.80} & 0.73 & 0.88 & 0.78 & 0.73 & 0.81 & 0.77 & 0.80 & 0.87 & \bestM{0.82} & 0.83 & 0.76 & 0.79 \\
+\midrule
+\multirow{4}{*}{\textbf{Zika}} & Flagging & 0.58 & 0.71 & \lowP{0.53} & 0.59 & 0.75 & \lowP{0.57} & 0.65 & 0.82 & \highP{\secondM{0.68}} & 0.61 & 0.80 & \lowP{0.59} & 0.67 & 0.87 & \highP{\bestM{0.70}} \\
+ & Counts & 0.49 & 0.45 & \lowP{0.47} & 0.76 & 0.92 & \highP{\bestM{0.83}} & 0.68 & 0.61 & \lowP{0.64} & 0.72 & 0.88 & \lowP{\secondM{0.79}} & 0.84 & 0.38 & \lowP{0.52} \\
+ & Extraction & 0.84 & 0.78 & \highP{\secondM{0.80}} & 0.88 & 0.87 & \highP{\bestM{0.87}} & 0.69 & 0.81 & \lowP{0.73} & 0.71 & 0.78 & \lowP{0.73} & 0.74 & 0.78 & \lowP{0.76} \\
+ & Average & 0.64 & 0.65 & 0.60 & 0.75 & 0.84 & \bestM{0.76} & 0.68 & 0.74 & 0.69 & 0.68 & 0.82 & \secondM{0.70} & 0.75 & 0.68 & 0.66 \\
+\midrule
+\multirow{4}{*}{\textbf{Overall}} & Flagging & 0.63 & 0.76 & 0.61 & 0.66 & 0.79 & \secondM{0.66} & 0.63 & 0.73 & 0.65 & 0.64 & 0.78 & 0.64 & 0.66 & 0.77 & \bestM{0.68} \\
+ & Counts & 0.66 & 0.72 & 0.69 & 0.69 & 0.96 & \secondM{0.80} & 0.76 & 0.80 & 0.78 & 0.81 & 0.94 & \bestM{0.87} & 0.92 & 0.62 & 0.72 \\
+ & Extraction & 0.85 & 0.76 & \secondM{0.79} & 0.86 & 0.83 & \bestM{0.84} & 0.72 & 0.79 & 0.75 & 0.78 & 0.81 & 0.78 & 0.78 & 0.77 & 0.77 \\
+ & Average & 0.71 & 0.75 & 0.70 & 0.74 & 0.86 & \bestM{0.77} & 0.70 & 0.78 & 0.73 & 0.74 & 0.84 & \secondM{0.76} & 0.79 & 0.72 & 0.72 \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+\clearpage

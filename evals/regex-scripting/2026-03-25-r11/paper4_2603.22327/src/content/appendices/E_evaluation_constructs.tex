@@ -1,0 +1,428 @@
+\clearpage
+\section{Evaluation Constructs}\label{app:additional_evaluation_details}
+
+Following standard perspectives on evaluation design and construct validity in LLM benchmarking~\cite{bean2025measuring}, which emphasise aligning metrics with the underlying phenomenon a benchmark is intended to capture, we build our evaluation around metrics that reflect the specific construct each stage is designed to measure. In particular, our screening metrics target reliable inclusion/exclusion decisions at the article level, while our extraction metrics decompose performance into identifying relevant information, recovering the expected quantity of items, and matching extracted content to reference annotations.
+
+\subsection{Article Screening}
+
+We evaluate screening as a binary article-level decision $y\in\{\IN,\EX\}$ (\IN\ = include; \EX\ = exclude) against the PERG reference label. Let $\mathrm{TP}$ be articles correctly labelled as \IN, $\mathrm{FP}$ be those incorrectly labelled as \IN and $\mathrm{FN}$ be those incorrectly labelled as \EX; then
+\[
+\mathrm{Precision}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}},\qquad
+\mathrm{Recall}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}},\qquad
+F_1=\frac{2PR}{P+R},
+\]
+where $\mathrm{Precision}$ measures the reliability of \IN\ decisions and $\mathrm{Recall}$ measures how well we avoid assigning \EX\ to PERG-\IN\ papers. We report macro-$F_1$ to weight \IN\ and \EX\ performance equally, rather than letting the majority class dominate.
+
+By default, article screening happens in two subsequent stages: first on the abstract and then on the full text. Full-text screening is therefore evaluated with different ablations so we can quantify both the stage-specific and holistic performance. We use three code-defined evaluation configurations for the ablations: (i) \textbf{AI abstract$\rightarrow$AI full-text}, where any abstract \EX\ forces final \EX; (ii) \textbf{Human abstract$\rightarrow$AI full-text} (PERG-conditioned), where any PERG abstract \EX\ forces final \EX; and (iii) \textbf{AI direct full-text}, which evaluates the AI full-text decision without filtering by abstract screening decisions.
+
+
+\subsection{Data Extraction}\label{app:data_extraction_extended_methods}
+
+\paragraph{Schema validation and data quality} Prior to evaluation, we validated and filtered our ground-truth extractions to ensure that only properly formatted annotations were compared. For fields typed as \texttt{Enum}s in the schemas outlined in \Cref{app:data_extraction_details}, we defined acceptable values based on the PERG REDCap survey schema, which standardises entries through dropdown lists. Other fields provide a multi-select option—these we handled as \texttt{List[Enum]} types in the tool call schemas. We filter any ground-truth extractions where \texttt{Enum}-typed values do not agree with the schema, in order to avoid penalising \name{} for extractions it is not allowed to produce. Because of schema verification applied in the tool-calling stage, \name{} produces no such invalid extractions.
+
+After validation, we aligned articles using shared identifiers, retaining only articles labelled \IN\ by both PERG and \name{}. This intersection matches the ground-truth-labelled data to our article pool (\Cref{tab:article_count_summary_ours_pergs}), and thus avoids counting errors due to paper availability from the article screening stages.
+
+\paragraph{Evaluation Framework} We evaluated extraction performance according to three measures: \textit{Flagging}, \textit{Count}, and \textit{Extraction}. All three measures are operationalised with standard classification metrics, specifically, we define and collect precision and recall for each.
+
+% \textit{\textbf{Flagging}} 
+
+\medskip
+\noindent\textbf{Flagging}\enskip measures whether \name{} correctly identifies the relevant data types to extract from each article. This measure considers all $\langle\mathrm{article}, \mathrm{data\_type}\rangle$ pairs, assigning labels with the functions
+\begin{subequations}\label{eq:flagging}
+\begin{align*}
+    y(\langle\mathrm{article}, \mathrm{data\_type}\rangle) &= \begin{cases}
+        1 & \text{There is a human extraction of }\mathrm{data\_type}\text{ from }\mathrm{article} \\
+        0 & \text{otherwise}
+    \end{cases} \\
+    \hat{y}(\langle\mathrm{article}, \mathrm{data\_type}\rangle) &= \begin{cases}
+        1 & \text{\name{} identifies }\mathrm{data\_type}\text{ as relevant in }\mathrm{article} \\
+        0 & \text{otherwise}
+    \end{cases}
+\end{align*}
+\end{subequations}
+and calculating precision and recall on these labels as in a standard binary classification task.
+
+\medskip
+\noindent\textbf{Count}\enskip measures whether the overall volume of \name{} extractions agrees with those in the ground-truth-labelled data, irrespective of any agreement between the extraction contents. We operationalise this measure using a partial credit scheme: if an article had $n$ models in the reference and our extractor identified $\hat{n}$ models, we counted true positives as correctly matching counts
+$$\mathrm{TP} = \min(n, \hat{n}),$$
+false positives as excess extractions
+$$\mathrm{FP} = \max(0, \hat{n} - n),$$
+and false negatives as missed extractions
+$$\mathrm{FN} = \max(0, n - \hat{n}).$$
+For example, if the reference contained 2 data points but we extracted 5, we would receive credit for the 2 correct extractions ($\mathrm{TP}=2$), be penalised for 3 spurious models ($\mathrm{FP}=3$), and would receive no penalty for missed models ($\mathrm{FN}=0$). We sum all of counts across all common articles and calculate precision and recall as standard.
+
+\medskip
+\noindent\textbf{Extractions}\enskip faced a more complex matching challenge: while extractions can be trivially compared by raw count, they consist of many metadata fields, and lack unique identifiers to establish canonical correspondence. Matching every field value exactly is an unreasonably challenging task, and it provides no measure beyond absolute correspondence. To assess the field-level quality of our extractions, we first established optimal one-to-one correspondences between ground truth and \name{} extractions within each article by computing pairwise similarity.
+
+For each extraction pair, we defined a subset of key fields $\mathcal{F}$ from the fields defined in \Cref{app:data_extraction_details} and compared these using normalised weights. The similarity between a true extraction $E$ and an \name{} extraction $\hat{E}$ was computed as
+\begin{equation*}
+s(E, \hat{E}) = \sum_{k \in \mathcal{F}} w_k \cdot d_k(E[k], \hat{E}[k]),
+\end{equation*}
+where $w_k$ is the normalized weight for field $k$ (with $\sum_{k \in \mathcal{F}} w_k = 1$) and $d_k$ is the Jaccard similarity between fields in the extractions
+\begin{equation*}
+d_k(v, \hat{v}) = J(v, \hat{v}) = \dfrac{|v \cap \hat{v}|}{|v \cup \hat{v}|}.
+\end{equation*}
+
+We then applied the modified Jonker--Volgenant algorithm~\citep{jonker1987shortest} using SciPy's \texttt{scipy.optimize.linear\_sum\_assignment()}\footnote{\url{https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.linear_sum_assignment.html}} function to the cost matrix (cost $= 1 - s$), finding the matching that maximised total similarity. 
+
+\Cref{tab:matching_example} illustrates this optimal bipartite matching on an example. Suppose a single article has two reference models extracted by expert epidemiologists (PERG), while \name{} produces three extractions. Because the sets differ in size, no perfect bijection exists, and the algorithm must leave at least one \name{} extraction unmatched. For explanation purposes we restrict to two fields: \texttt{model\_type}, a single-value field scored by exact match ($\delta_{\mathrm{type}}\in\{0,1\}$), and \texttt{interventions}, a multi-value field scored by Jaccard similarity ($J_{\mathrm{int}} = |v\cap\hat{v}|/|v\cup\hat{v}|$). With equal weights, each pairwise cell reduces to $s_{ij} = 0.5\,\delta_{\mathrm{type}} + 0.5\,J_{\mathrm{int}}$. 
+
+The algorithm correctly recovers both reference correspondences -- achieving total similarity $2.00$ out of a maximum possible $2.00$ -- while the spurious \name{} M$_2$ is left unmatched and counted as a false positive under the Count metric. Crucially, this unmatched extraction incurs a Count penalty only; it does not contaminate field-level Extraction scores, ensuring over-extraction and extraction inaccuracy are penalised independently.
+
+% \begin{table}[h!]
+% \centering
+% \caption{\textbf{Optimal model matching example for an article with 2 PERG reference models and 3 AI-extracted models.} \textbf{Left:} Field values for each model (simplified to two fields for illustration; the full method used all fields from Table~X with normalized weights). \textbf{Right:} Pairwise similarity matrix. The modified Jonker-Volgenant algorithm~\citep{jonker1987shortest} found the optimal one-to-one matching maximizing total similarity: PERG M$_1$$\leftrightarrow$\name{} M$_1$ (similarity 1.0) and PERG M$_2$$\leftrightarrow$\name{} M$_3$ (similarity 1.0), leaving \name{} M$_2$ unmatched.}
+% \label{tab:matching_example}
+% \begin{minipage}{0.48\textwidth}
+% \centering
+% \footnotesize
+% \textbf{Model Field Values}
+% \vspace{0.1cm}
+% \begin{tabular}{lll}
+% \toprule
+% \textbf{Model} & \textbf{Type} & \textbf{Interventions} \\
+% \midrule
+% \multicolumn{3}{l}{\textit{PERG Reference}} \\
+% PERG M$_1$ & SIR & Vaccination \\
+% PERG M$_2$ & SEIR & Quarantine; Vaccination \\
+% \midrule
+% \multicolumn{3}{l}{\textit{AI-Extracted}} \\
+% \name{} M$_1$ & SIR & Vaccination \\
+% \name{} M$_2$ & SIR & Treatment \\
+% \name{} M$_3$ & SEIR & Quarantine; Vaccination \\
+% \bottomrule
+% \end{tabular}
+% \end{minipage}%
+% \hfill
+% \begin{minipage}{0.48\textwidth}
+% \centering
+% \footnotesize
+% \textbf{Similarity Matrix $\mathbf{S}$}
+% \vspace{0.1cm}
+% \begin{tabular}{l|ccc}
+% \toprule
+%  & \textbf{M$_1$} & \textbf{M$_2$} & \textbf{M$_3$} \\
+% \midrule
+% \textbf{PERG M$_1$} & 1.00\textsuperscript{a} & 0.50\textsuperscript{b} & 0.25\textsuperscript{c} \\
+% \textbf{PERG M$_2$} & 0.25\textsuperscript{d} & 0.00\textsuperscript{e} & 1.00\textsuperscript{f} \\
+% \bottomrule
+% \end{tabular}
+% \vspace{0.25cm}
+% \small
+% \textbf{Optimal Matching:} \\[0.1cm]
+% PERG M$_1$ $\leftrightarrow$ \name{} M$_1$ (sim = 1.00) \\
+% PERG M$_2$ $\leftrightarrow$ \name{} M$_3$ (sim = 1.00) \\
+% \name{} M$_2$: unmatched (FP) \\
+% \vspace{0.1cm}
+% \small
+% Total similarity: 2.00
+% \end{minipage}
+% % \vspace{0.3cm}
+% \begin{flushleft}
+% \small
+% \textbf{Similarity calculations} (normalized weights: $w_{\text{type}} = w_{\text{int}} = 0.5$): \\[0.1cm]
+% \textsuperscript{a} Type: 1.0; Interventions: $J(\{\text{V}\}, \{\text{V}\}) = 1.0$ $\Rightarrow$ $s_{11} = 0.5(1.0) + 0.5(1.0) = 1.00$. \\[0.05cm]
+% \textsuperscript{b} Type: 1.0; Interventions: $J(\{\text{V}\}, \{\text{T}\}) = \frac{0}{2} = 0.0$ $\Rightarrow$ $s_{12} = 0.5(1.0) + 0.5(0.0) = 0.50$. \\[0.05cm]
+% \textsuperscript{c} Type: 0.0; Interventions: $J(\{\text{V}\}, \{\text{Q},\text{V}\}) = \frac{1}{2} = 0.5$ $\Rightarrow$ $s_{13} = 0.5(0.0) + 0.5(0.5) = 0.25$. \\[0.05cm]
+% \textsuperscript{d} Type: 0.0; Interventions: $J(\{\text{Q},\text{V}\}, \{\text{V}\}) = \frac{1}{2} = 0.5$ $\Rightarrow$ $s_{21} = 0.5(0.0) + 0.5(0.5) = 0.25$. \\[0.05cm]
+% \textsuperscript{e} Type: 0.0; Interventions: $J(\{\text{Q},\text{V}\}, \{\text{T}\}) = \frac{0}{3} = 0.0$ $\Rightarrow$ $s_{22} = 0.5(0.0) + 0.5(0.0) = 0.00$. \\[0.05cm]
+% \textsuperscript{f} Type: 1.0; Interventions: $J(\{\text{Q},\text{V}\}, \{\text{Q},\text{V}\}) = \frac{2}{2} = 1.0$ $\Rightarrow$ $s_{23} = 0.5(1.0) + 0.5(1.0) = 1.00$. \\[0.05cm]
+% {\footnotesize V=Vaccination, Q=Quarantine, T=Treatment; $J(A,B) = |A \cap B|/|A \cup B|$ is Jaccard similarity.}
+% \end{flushleft}
+% \end{table}
+
+%── packages needed ────────────────────────────────────────────────────────────
+% \usepackage{booktabs, colortbl, xcolor, array, tcolorbox, amsmath}
+% \tcbuselibrary{skins}
+
+
+Once optimal correspondences are established, we evaluated each field
+within each matched pair to compute field-level precision and recall. For single-value fields, we counted true positives as sets of equal values, false positives as all \name{} values with no or an unequal match, and false negatives as all ground-truth values with no or an unequal match.
+
+For multi-value fields, we defined
+\begin{align*}
+    \mathrm{TP} &= |v \cap \hat{v}| \\
+    \mathrm{FP} &= |\hat{v} \setminus v| \\
+    \mathrm{FN} &= |v \setminus \hat{v}|
+\end{align*}
+where $v\in E$ and $\hat{v}\in\hat{E}$ are sets of values. Aggregating across all matched pairs and articles, we computed precision and recall as standard.
+
+
+
+% \subsubsection*{Parameter extraction}
+
+\clearpage
+
+\begin{table}[t!]
+\centering
+\caption{%
+  \textbf{Optimal bipartite matching example: 2 PERG reference models,
+  3 \name{}-extracted models.}
+  \textbf{(a)}~Input field values (two fields shown for illustration).
+  \textbf{(b)}~Pairwise similarity matrix $\mathbf{S}$.
+  \textbf{(c)}~Optimal matching; \name{} M$_2$ is unmatched (FP).
+  \textbf{(d)}~Per-cell similarity calculations for entries of $\mathbf{S}$.
+}
+\label{tab:matching_example}
+
+\vspace{0.4cm}
+
+%------------------------------------------------------------
+% (a) Field values   |   (b) Matrix + (c) Matching
+%------------------------------------------------------------
+\begin{center}
+  \small\textbf{(a)\;Model Field Values}\\[7pt]
+  \footnotesize
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Model} & \textbf{Type} & \textbf{Interventions}\\
+    \midrule
+    \multicolumn{3}{@{}l@{}}{\textit{PERG Reference}}\\[2pt]
+    \hspace{5pt}PERG M$_1$ & SIR  & Vaccination\\
+    \hspace{5pt}PERG M$_2$ & SEIR & Quarantine; Vaccination\\
+    \addlinespace[5pt]
+    \multicolumn{3}{@{}l@{}}{\textit{AI-Extracted}}\\[2pt]
+    \hspace{5pt}\name{} M$_1$ & SIR  & Vaccination\\
+    \hspace{5pt}\name{} M$_2$ & SIR  & Treatment\\
+    \hspace{5pt}\name{} M$_3$ & SEIR & Quarantine; Vaccination\\
+    \bottomrule
+  \end{tabular}
+\end{center}
+\vspace{0.55cm}
+\begin{minipage}[t]{0.49\linewidth}
+  \centering
+  \small\textbf{(b)\;Pairwise Similarity Matrix $\mathbf{S}$}\\[1pt]
+  \footnotesize
+  \setlength{\abovedisplayskip}{0pt}
+  \[
+    \mathbf{S}
+    \;=\;
+    \overset{%
+      \begin{array}{@{}ccc@{}}
+        \scriptstyle\text{\name{} M}_{1} &
+        \scriptstyle\text{\name{} M}_{2} &
+        \scriptstyle\text{\name{} M}_{3}
+      \end{array}}{%
+      \left[\begin{array}{@{\hspace{6pt}}c@{\hspace{10pt}}c@{\hspace{10pt}}c@{\hspace{6pt}}}
+        1.00 & 0.50 & 0.25 \\[5pt]
+        0.25 & 0.00 & 1.00
+      \end{array}\right]}
+    \;\begin{array}{@{}l@{}}
+        \scriptstyle\leftarrow\;\text{PERG M}_{1}\\[5pt]
+        \scriptstyle\leftarrow\;\text{PERG M}_{2}
+      \end{array}
+  \]
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+  \centering
+  \small\textbf{(c)\;Optimal Matching}\\[6pt]
+  \footnotesize
+  \begin{tabular}{@{}l@{\hspace{12pt}}r@{}}
+    PERG M$_1\;\leftrightarrow\;$\name{} M$_1$ & $s=1.00$\\[2pt]
+    PERG M$_2\;\leftrightarrow\;$\name{} M$_3$ & $s=1.00$\\[2pt]
+    \name{} M$_2$\;:\;unmatched\quad(FP)        & \multicolumn{1}{c}{---}\\
+    \cmidrule(l){2-2}
+    Total similarity                             & $2.00$\\
+  \end{tabular}
+\end{minipage}
+
+\vspace{0.55cm}
+
+%------------------------------------------------------------
+% (d) Worked calculations
+%------------------------------------------------------------
+\begin{center}
+\small\textbf{(d)\;Similarity Calculations}
+\end{center}
+\begin{tcolorbox}[
+  enhanced,
+  colback=white,
+  colframe=white,
+  boxrule=0pt,
+  arc=2pt,
+  left=8pt, right=8pt, top=5pt, bottom=6pt,
+  title={
+    \normalfont\small
+    $s_{ij}
+      = \underbrace{0.5\,\delta_{\mathrm{type}}}_{\text{exact match on type}}
+      + \underbrace{0.5\,J_{\mathrm{int}}}_{\text{Jaccard on interventions}}$},
+  fonttitle=\sffamily\small,
+  coltitle=black,
+  colbacktitle=gray!14,
+  attach boxed title to top center={yshift=-2mm, xshift=4mm},
+  boxed title style={boxrule=0.4pt, arc=1pt}
+]
+\footnotesize
+\renewcommand{\arraystretch}{1.35}
+\centering
+\begin{tabular}{@{\hspace{2pt}}c @{\hspace{10pt}} l @{\hspace{10pt}} l @{\hspace{10pt}} r @{\hspace{2pt}}}
+  & \textbf{Type match\;$\delta_{\mathrm{type}}$}
+  & \textbf{Jaccard\;$J_{\mathrm{int}}$}
+  & $\boldsymbol{s_{ij}}$\\
+  \hline
+  $\mathbf{S}_{1,1}$ & $\mathbf{SIR = SIR}$:\;1.0
+       & $J(\{V\},\{V\})     =1/1=1.0$
+       & $\mathbf{1.00}$\\
+  $\mathbf{S}_{1,2}$ & $\mathbf{SIR = SIR}$:\;1.0
+       & $J(\{V\},\{T\})     =0/2=0.0$
+       & $\mathbf{0.50}$\\
+  $\mathbf{S}_{1,3}$ & $\mathbf{SIR \neq SEIR}$:\;0.0
+       & $J(\{V\},\{Q,V\})   =1/2=0.5$
+       & $\mathbf{0.25}$\\
+  $\mathbf{S}_{2,1}$ & $\mathbf{SEIR \neq SIR}$:\;0.0
+       & $J(\{Q,V\},\{V\})   =1/2=0.5$
+       & $\mathbf{0.25}$\\
+  $\mathbf{S}_{2,2}$ & $\mathbf{SEIR \neq SIR}$:\;0.0
+       & $J(\{Q,V\},\{T\})   =0/3=0.0$
+       & $\mathbf{0.00}$\\
+  $\mathbf{S}_{2,3}$ & $\mathbf{SEIR = SEIR}$:\;1.0
+       & $J(\{Q,V\},\{Q,V\}) =2/2=1.0$
+       & $\mathbf{1.00}$\\
+\end{tabular}
+
+\vspace{4pt}
+{\footnotesize
+V\,=\,Vaccination,\enspace Q\,=\,Quarantine,\enspace T\,=\,Treatment;\enspace
+$J(A,B) = |A\cap B|\,/\,|A\cup B|$.}
+\end{tcolorbox}
+
+\end{table}
+
+\subsubsection*{Data Extraction: Parameters}
+
+Parameter extraction is more varied than model and outbreak extraction. While there is only one $\mathrm{data\_type}$ for each of model and outbreak extraction, parameters are broken down into nine distinct parameter \textit{classes} (listed in \Cref{app:parameters_extended_extraction_process}) each with different fields to extract. Therefore, we resolve nine parameter $\mathrm{data\_type}$s at the level of parameter classes and calculate Flagging and Count metrics for each of these separately.
+
+We defined our key parameter fields as
+\begin{align*}
+    \mathcal{F} = \{&\texttt{parameter\_class}, \texttt{parameter\_type}, \texttt{value}, \texttt{unit}, \texttt{method}, \texttt{value\_type}, \\& \texttt{statistical\_approach}, \texttt{paired\_uncertainty}, \texttt{single\_type\_uncertainty}, \\
+    &\texttt{population\_sex}, \texttt{population\_group}, \texttt{population\_sample\_type}\},
+\end{align*}
+
+ensuring that each sub-stage of value extraction, uncertainty extraction, and population context extraction are represented by multiple fields common across parameter classes. We normalise weights $w_k$ so as to make each sub-stage equally important in determining similarity. Fields are grouped as follows:
+\vspace{-8pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \textit{Categorical fields} (2 fields): parameter class; parameter type;
+\item \textit{Value fields} (3 fields): value; unit; method;
+\item \textit{Uncertainty fields} (4 fields): value type; statistical approach; single type uncertainty; paired uncertainty;
+\item \textit{Population fields} (3 fields): population sex; population group; population sample type.
+\end{itemize}
+
+% To evaluate our parameter extraction performance, we compare our extractions to PERG's on the subset of available articles that passed PERG's screening criteria. Say that $S$ is the set of all articles from the Article Search stage (our article search query is identical to PERG's, and so $S = S_\mathrm{PERG} = S_\mathrm{AI}$). If $O\subseteq S$ is the subset of articles available via OpenAlex, and $I_\mathrm{PERG}\subseteq S$ is the subset of articles included through PERG's abstract and full-text screening stages, we take the article subset $A = O\cap I_\mathrm{PERG}$ compare our extractions. We do not consider our own screening decisions for this evaluation—that is, we do not consider our own included subset $I_\mathrm{AI}\subseteq S$—as doing so could propagate compounding errors from articles that we screen incorrectly.
+
+% Given articles $A$, \name~produces a set of extractions $E_\mathrm{AI}$, which we compare to PERG's gold-label extractions $E_\mathrm{PERG}$. Each extraction $e\in E$, for $E = E_\mathrm{AI}\cup E_\mathrm{PERG}$, derives from some article $f(e) = a\in A$ according to an assignment function $f: E\to A$. However, since an article may have any number of extractions, we are not guaranteed that either $f|_{E_\mathrm{AI}}:E_\mathrm{AI}\to A$ or $f|_{E_\mathrm{PERG}}:E_\mathrm{PERG}\to A$ is injective, so we are guaranteed neither $|E_\mathrm{AI}| = |E_\mathrm{PERG}|$ nor any straightforward bijection $E_\mathrm{AI}\leftrightarrow E_\mathrm{PERG}$ to pair extractions for comparison. This prevents us from using simple metrics like precision, recall or accuracy to evaluate our extractions against PERG's.
+
+% To get around this issue, we define a \textit{similarity score} to assign extractions $e\in E_\mathrm{AI}$ to their closest matches $e\in E_\mathrm{PERG}$, if one exists. The similarity score is defined as
+% \begin{align*}
+%     \mathrm{sim}(e_\mathrm{AI}, e_\mathrm{PERG}) =& \mathbf{1}\big[f(e_\mathrm{AI}) = f(e_\mathrm{PERG})\big]\times\mathbf{1}\big[e_\mathrm{AI}[\mathrm{parameter\_class}] = e_\mathrm{PERG}[\mathrm{parameter\_class}]\big]\times ( \\
+%     & \mathbf{1}\big[e_\mathrm{AI}[\mathrm{type}] = e_\mathrm{PERG}[\mathrm{type}]\big] \\
+%     ... \\
+%     &)
+% \end{align*}
+% where $\mathbf{1}$ is the indicator function
+% \begin{equation*}
+%     \mathbf{1}[\mathrm{condition}] = \begin{cases}
+%         1 & \mathrm{condition} = \mathrm{True} \\
+%         0 & \text{otherwise}
+%     \end{cases}
+% \end{equation*}
+
+\subsubsection*{Data Extraction: Transmission Models}
+
+% \paragraph{Schema Validation and Data Quality} Prior to evaluation of transmission models, we validated and filtered both the reference (PERG) and \name-extracted datasets to ensure only properly formatted annotations were compared. Each field had predefined valid values based on the current PERG RedCap survey schema,\footnote{\url{https://redcap.imperial.ac.uk/surveys/?s=CEX3YKW8W47NMFA4}}
+% \textsuperscript{,}
+% \footnote{\url{https://github.com/mrc-ide/priority-pathogens/wiki/Model-data}} which defined standardised vocabularies for epidemiological model annotation. Single-value fields such as \texttt{model\_type} had to contain exactly one value from the allowed set (Compartmental, Branching process, Agent/Individual based, Other, Unspecified), while multi-value fields such as \texttt{transmission\_route}, \texttt{assumptions}, and \texttt{interventions\_type} were validated by splitting on semicolons and verifying each component against the field's checkbox options. Boolean fields (\texttt{theoretical\_model}, \texttt{code\_available}, \texttt{spatial\_model}) accepted standardised values (True, False, 1, 0). 
+
+Table~\ref{tab:filtering_stats} shows the filtering statistics across pathogens: ground-truth datasets had between 3.85\% (Lassa) and 23.14\% (Zika) invalid entries removed.
+
+\begin{table}[h]
+\footnotesize
+\centering
+\caption{\textbf{Validation statistics for PERG reference data and AI-extracted transmission model annotations across four pathogens.} PERG entries contained invalid field values due to manual data entry inconsistencies, while AI-extracted values showed no invalid entries due to structured schema enforcement during extraction.}
+\label{tab:filtering_stats}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Pathogen} & \textbf{PERG Total} & \textbf{PERG Invalid} & \textbf{Invalid (\%)} & \textbf{\name{} Total} \\
+\midrule
+Lassa & 52 & 2 & 3.85 & 19 \\
+Ebola & 294 & 46 & 15.7 & 239 \\
+SARS & 112 & 8 & 7.14 & 85 \\
+Zika & 229 & 53 & 23.1 & 132 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For data extraction for models, we defined our key fields as
+\begin{align*}
+    \mathcal{F} = \{&\texttt{model\_type}, \texttt{compartmental\_type}, \texttt{stoch\_deter}, \texttt{theoretical\_model},\\ &\texttt{assumptions}, \texttt{interventions\_type}, \texttt{transmission\_route}\}.
+\end{align*}
+
+% \paragraph{Evaluation Framework} We evaluated extraction performance at two levels: screening and field-level extraction. Screening measured whether we correctly identified articles containing models (article flagging) and whether we extracted the correct number of models per article (model count). For model count evaluation, we used a partial credit scheme: if an article had $n_{\text{ref}}$ models in the reference and our extractor identified $n_{\text{ext}}$ models, we counted true positive $\text{TP} = \min(n_{\text{ref}}, n_{\text{ext}})$ models as \textit{correctly found}, false positive $\text{FP} = \max(0, n_{\text{ext}} - n_{\text{ref}})$ as \textit{over-extracted}, and false negative $\text{FN} = \max(0, n_{\text{ref}} - n_{\text{ext}})$ as \textit{missed}. For example, if the reference contained 2 models but we extracted 5, we would receive credit for the 2 correct extractions (TP$=2$), be penalised for 3 spurious models (FP$=3$), but would receive no penalty for missed models as all were found (FN$=0$). 
+
+% \subsubsection*{Outbreak extraction evaluation}
+
+
+\subsubsection*{Data Extraction: Outbreaks}
+Table~\ref{tab:outbreak_filtering_stats} shows the filtering statistics across pathogens: PERG datasets had between 0\% (Lassa) and 9.43\% (Zika) invalid entries removed.
+
+\begin{table}[h]
+\footnotesize
+\centering
+\caption{\textbf{Validation statistics for PERG reference data and AI-extracted outbreak annotations across two pathogens.} PERG entries contained invalid field values due to manual data entry inconsistencies, while AI-extracted values showed 0\% invalid entries due to structured schema enforcement during extraction.}
+\label{tab:outbreak_filtering_stats}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Pathogen} & \textbf{PERG Total} & \textbf{PERG Invalid} & \textbf{Invalid (\%)} & \textbf{AI-Extracted Total} \\
+\midrule
+Lassa & 30 & 0 & 0.00 & 62 \\
+Zika & 159 & 15 & 9.43 & 240 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For data extraction for outbreaks, we defined our key fields as
+\begin{align*}
+        \mathcal{F} = \{&\texttt{outbreak\_start\_day}, \texttt{outbreak\_start\_month}, \texttt{outbreak\_start\_year},\\&
+        \texttt{outbreak\_end\_day}, \texttt{outbreak\_end\_month}, \texttt{outbreak\_end\_year},\\&
+        \texttt{cases\_confirmed}, \texttt{deaths}, \texttt{outbreak\_country}, \texttt{outbreak\_location},\\& \texttt{detection\_mode}, \texttt{pre\_outbreak\_status}\}.
+\end{align*}
+
+Weights $w_k$ were determined by the discriminative power of each field $k$ for identifying unique outbreak events. \texttt{outbreak\_country}, \texttt{outbreak\_start\_year}, \texttt{cases\_confirmed}, and \texttt{deaths} received weights of $1.0$, while supporting temporal fields (\texttt{outbreak\_start\_month}, \texttt{outbreak\_end\_year}) received weights of $0.6$--$0.8$, and contextual fields (\texttt{outbreak\_location}, \texttt{mode\_of\_detection}) received weights of $0.5$--$0.7$.
+
+To provide interpretable summaries of extraction performance, we grouped the 17 outbreak fields into four categories based on their epidemiological function:
+\vspace{-8pt}
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+\item \textit{Temporal Features} (7 fields): outbreak start/end dates (year, month, day) and duration;
+\item \textit{Geographic and Spatial Features} (2 fields): outbreak country and specific location;
+\item \textit{Case Burden} (5 fields): confirmed, suspected, asymptomatic, and severe case counts, plus deaths;
+\item \textit{Epidemiological Context and Metadata} (3 fields): mode of detection, pre-outbreak status, and asymptomatic transmission description.
+\end{itemize}
+
+
+
+
+
+\subsection{Human Expert Validation}\label{app:human_expert_validation}
+
+For human expert validation, we recruited six epidemiologists to complete a series of form submissions to grade \name{}-generated data extractions. Each epidemiologist was onboarded with the expectation to spend up to $10$ hours on the validation process over $1$ to $2$ weeks as their availability permitted. We did not assign experts randomly across parameters, models, and outbreaks—instead, we considered expertise with specific pathogens and familiarity with specific SLR workflows when making assignments. Our assignments resulted in three epidemiologists completing validation solely for parameters, two solely for models, and the final sixth epidemiologist completing validation across all three data modalities.
+
+For each data type in parameters, models, and outbreaks, and for each pathogen in Lassa, Ebola, SARS, and Zika, we sample screened articles randomly without replacement until we generate subsamples guaranteed to exceed the time commitment from each expert. The experts are then instructed to proceed through their assigned extractions in order. Despite normalising for counts across different pathogens, different articles may have varying numbers of extractions, and these extractions may take varying amounts of time to grade. Thus, our experimental setup does not guarantee parity across pathogens or across data types.
+
+Experts are onboarded with a private GitHub repository that contains the Markdown extractions from our OCR model (\Cref{sec:pdf_to_markdown_conversion}), along with Markdown documents rendering the structured data extractions in a readable format. Submissions are collected through Google Forms. Each form proceeds through groups of questions in the same order. Each question contains an optional free-text field for providing context, which we use to collect and synthesise qualitative impressions of the pipeline as well as specific error patterns.
+
+The groups of questions in each form cover the following:
+\begin{enumerate}
+    \item The expert records the article identifier, pathogen identifier, and the pathogen.
+    \item The expert assesses whether the Markdown document has any significant issues that would affect data extraction.
+    \item Before looking at the \name{}-extracted data, the expert determines whether there is any relevant data in the article to extract.
+    \item The expert rates their particular extraction for overall relevance.
+    \item The expert answers a series of yes-or-no questions to validate the accuracy of each extracted field.
+    \item The expert grades the overall pipeline competence using a Likert scale rating between $1$ and $7$. We provide these particular descriptions to calibrate the Likert scale:\begin{itemize}
+        \item ``1" means ``the system gets nothing right; I couldn't use it to speed up my process at all."
+        \item ``4" means ``the system identifies some things but struggles with edge cases; I could use it with moderate supervision / secondary screening."
+        \item ``7" means ``the system is perfectly capable of doing all parameter extraction for me."
+    \end{itemize}
+    \item The expert provides a self-reported estimate of the time they took to complete the survey.
+\end{enumerate}
+
+\clearpage

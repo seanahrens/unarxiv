@@ -1,0 +1,198 @@
+\vspace{-2mm}
+\section{Deep Tabular Research}\label{sec:method}
+DTR tackles long-horizon analytical reasoning over unstructured tables by formulating tabular reasoning as a closed-loop decision process. Figure~2 provides an overview of the framework. We demonstrate the core idea and technical details from five main aspects hereunder.
+\vspace{-2mm}
+\subsection{Tabular Comprehension and Structural Modeling}
+
+Given a raw table $T$ (e.g., an Excel sheet) and a natural language query $q$, the first stage of DTR constructs a structured representation that captures both explicit and implicit table semantics. This representation serves as the foundation for downstream reasoning, enabling robust navigation of complex row--column relationships and hierarchical headers.
+\vspace{-3mm}
+\paragraph{Meta Information Extraction.}
+Effective tabular reasoning requires a global understanding of table structure and salient semantic signals. We extract column and row headers, including sub-headers that encode hierarchical organization, as they provide concise summaries of how data is arranged. Beyond explicit headers, we identify implicit metadata such as measurement units, temporal or categorical markers, and aggregation indicators. Integrating both explicit and implicit signals yields a structured representation that captures the table’s overall organization and supports subsequent reasoning.
+\vspace{-3mm}
+\paragraph{Bi-directional Header Identification.}
+Real-world tables often contain headers along both rows and columns, frequently with multi-level spans. We identify header regions along each axis and resolve their scopes via span alignment, producing a bidirectional header structure. Each data cell is associated with both row-wise and column-wise semantic descriptors, jointly defining its contextual meaning. These headers may form nested hierarchies, which are explicitly organized into a graph structure to capture interactions between row and column semantics.
+\vspace{-5mm}
+\paragraph{Meta Graph Construction.}
+After extracting metadata from irregular table formats, the unstructured entities are organized into a structured graph denoted as $\mathcal{G}_T = (V_T, E_T)$. Each node in the graph corresponds to a header or content element, and edges represent containment or hierarchical relationships. Due to the bi-directional nature of table headers, the same sub-item can simultaneously belong to both row-wise and column-wise parent nodes, forming a overlapping tree-like hierarchical structure. This graph explicitly preserves the organizational layout of the table and serves as a structured representation for downstream reasoning tasks.
+\vspace{-7mm}
+
+\subsection{Query-Guided Operation Mapping}
+\vspace{-2mm}
+Given a natural language query $q$ and the constructed table graph $\mathcal{G}_T$, we next determine a sequence of operations that can be executed over the graph to answer the query. Rather than directly reasoning over raw table cells, our approach relies on a predefined seed operation bank that encapsulates a diverse set of atomic operations commonly required for tabular reasoning. The seed operation bank contains a collection of basic operations such as filtering, group aggregation, and numerical sorting: $ \mathcal{O} = \{\texttt{CLEAN}, \texttt{FILTER}, \texttt{GROUP}, \texttt{AGG}, \texttt{JOIN}, \texttt{SORT}, \dots\}.
+$
+% Each operation is designed to act on nodes or subgraphs within $\mathcal{G}_T$, enabling structured and interpretable reasoning.
+
+% To align the query with executable operations, we first decompose the original query $q$ into a set of semantically coherent sub-queries. Each sub-query corresponds to a specific reasoning intent, such as selecting relevant entities, constraining values, or computing aggregated results. For each sub-query, we retrieve a subset of candidate actions from the operation bank based on semantic relevance. This process produces an operation sequence that is grounded in both the query semantics and the structure of the table graph, enabling effective and compositional reasoning.
+
+To align the query with executable operations, we leverage an LLM-based agent to perform decision making over both the decomposed sub-queries and the structured table graph. The graph $\mathcal{G}_T$ is linearized and provided to the agent in the form of relational triples, such as
+(\textit{table}, \textit{has\_column\_header}, \textit{column\_header\_description}) and
+(\textit{column\_header}, \textit{has\_child}, \textit{child\_header}),
+which explicitly encode the hierarchical and containment relations within the table. Given each sub-query and the corresponding graph description, the agent selects a set of candidate operations from the seed operation bank that are most relevant to the reasoning intent. The selected operations for query $q$ are denoted as $\mathcal{O}(q) = \{ o_1, o_2, \dots, o_K \}$, forming the basis for subsequent execution and reasoning over the table graph. The following text box provides a concrete input example. 
+
+\paragraph{Operation Map Construction.}
+We further construct an operation map that encodes dependencies and admissible orderings among operations. Rather than treating candidate actions as an unordered set, the operation map organizes them into a sequential path that respects logical and semantic constraints. Certain operations impose prerequisite contexts; for instance, \texttt{AGG} requires a well-defined grouping scope, while \texttt{FILTER} may be applied either before or after aggregation depending on whether it constrains raw values or aggregated results. These initial operation paths are subsequently refined through more sophisticated selection mechanisms to identify the most coherent sequence.
+
+
+\subsection{Path Planning with Expectation-Aware Selection}
+Given the feasible operation paths constructed from the operation map, a path is defined as $\pi = (o_1, o_2, \dots, o_L)$, representing an ordered sequence of operations. DTR performs path planning to identify the most promising execution strategy for a given query. Rather than treating all admissible paths equally, we introduce an expectation-aware selection that evaluates candidate paths based on their anticipated utility. We enumerate a finite set of candidate paths $\{\pi_i\}$ by composing operations under dependency constraints and pruning invalid or redundant sequences. Importantly, path selection is not performed in a single pass. As operations are executed, DTR reflects on the intermediate execution results and iteratively updates its preference over candidate paths. This closed-loop refinement allows the planner to revise earlier decisions, and progressively focus on operation sequences that are more likely to yield correct outcomes.
+
+\paragraph{Expectation-Aware Scoring.}
+
+For each candidate path $\pi$, we maintain a set of path-level statistics that summarize its historical execution behavior, including an estimate of its expected return $\hat{R}(\pi)$, the number of times the path has been executed $N(\pi)$, and a prior term $P(\pi)$ that reflects structural plausibility or domain knowledge. Based on these terms, we define an expectation-aware score for each path:
+\begin{equation}\small
+\mathcal{E}(\pi)
+=
+\hat{R}(\pi)
++
+\alpha \cdot P(\pi)
+\sqrt{
+\frac{\log \sum_{\pi'} N(\pi')}{1 + N(\pi)}
+}.
+\end{equation}
+The first term encourages exploitation by favoring paths that have produced reliable intermediate or final results in previous executions. The second term promotes exploration by assigning higher scores to paths that are structurally plausible but have been executed fewer times, with the logarithmic normalization accounting for the overall execution budget. The hyperparameter $\alpha$ controls the trade-off between exploitation and exploration. Our framework selects and executes the path that maximizes the expectation-aware score $\mathcal{E}(\pi)$, enabling a balance between enhancing reasoning strategies and discovering alternative paths.
+
+
+\paragraph{Theoretical Boundedness.}
+Assume the realized execution reward is bounded such that $R(\pi) \in [0, R_{\max}]$, and the structural prior satisfies $P(\pi) \in [0,1]$. Since $\hat{R}(\pi)$ is an empirical estimate of $R(\pi)$, it follows that
+$\hat{R}(\pi) \le R_{\max}$. Therefore, the expectation score is upper bounded by:
+\begin{equation}\small
+\mathcal{E}(\pi)
+\le
+R_{\max}
++
+\alpha \sqrt{\log \sum_{\pi'} N(\pi')}.
+\vspace{-1mm}
+\end{equation}
+This bound ensures that expectation values remain scaled and prevents unbounded optimism during exploration. Moreover, the exploration term for a fixed global execution budget is monotonically decreasing with respect to $N(\pi)$:
+\begin{equation}\small
+\lim_{N(\pi) \to \infty}
+\alpha \cdot P(\pi)
+\sqrt{
+\frac{\log \sum_{\pi'} N(\pi')}{1 + N(\pi)}
+}
+= 0.
+\end{equation}
+As a result, paths that are sufficiently explored gradually shift from exploration-driven selection to exploitation based on empirical performance obtained from current executions.
+
+
+% Moreover, the exploration term admits the bound
+% \[
+% \sqrt{
+% \frac{\log \sum_{\pi'} N(\pi')}{1 + N(\pi)}
+% }
+% \le
+% \sqrt{\log \sum_{\pi'} N(\pi')}.
+% \]
+
+
+% \paragraph{Exploration Decay.}
+
+
+\paragraph{Path Selection.}
+
+The planner selects the top-$k$ paths with the highest expectation scores for execution. Each selected path is then instantiated into an executable analytical program and applied to the table, producing intermediate or final results. Importantly, expectations are evaluated at the path level, since rewards in long-horizon tabular reasoning are inherently not decomposable and cannot be attributed to individual intermediate operations. 
+Execution outcomes are evaluated against the query intent to obtain a scalar feedback signal, which is subsequently used to update the path-level statistics. Through this iterative process, DTR progressively refines its preference over operation paths, enabling more accurate and reliable planning for complex tabular tasks.
+
+\paragraph{Iterative Interaction.} During the execution of a selected operation path, DTR enables intermediate interactions with the LLM agent between consecutive operations. Specifically, before and after executing each operation, the agent is prompted to produce a discrete flag signal that characterizes the latest execution stage, i.d., [THINK] / [CODE]. The flag indicates whether the agent is engaged in \emph{coding}, i.e. running executable code, or in \emph{thinking}, such as summarizing intermediate results and validating the ongoing analytical logic. Depending on the flag type, the corresponding execution code or reasoning summary is recorded as part of the execution trace. Prior to executing the next operation, this context is fed back to the agent, providing an explicit description of the current execution state and reasoning trajectory. This design allows the agent to adapt subsequent decisions based on both concrete execution results and evolving analytical understanding, facilitating coherent progression along the operation path.
+
+
+\subsection{Siamese Experience-Guided Reflection}
+
+Beyond path-level planning, DTR further incorporates a siamese experience-guided execution mechanism that leverages feedback at two complementary levels to perform cross-path reasoning and consolidation. The first type is \emph{parameterized execution feedback}, which captures concrete execution signals produced by running a selected operation path on the table. These signals include execution success or failure, and intermediate result validity. Such feedback provides fine-grained and specific supervision that reflects how well a particular operation performs on the given table.
+
+In parallel, DTR maintains an \emph{abstracted experience} channel that summarizes execution outcomes accumulated up to each timestamp. Instead of retaining raw execution traces, this channel distills higher-level patterns, such as which classes of operation paths tend to be effective under certain query structures or table organizations. These abstracted experiences are agnostic to specific table values, enabling transfer across instances and supporting more robust decision making in future executions. These two streams operate in a siamese manner: parameterized execution feedback informs immediate path refinement for the current query, while abstracted experience guides longer-term preference. Together, they form a closed-loop execution framework.
+
+\paragraph{Parameterized Execution Feedback Signals.}
+Given a selected operation path $\pi = (o_1, \dots, o_L)$ and its instantiated execution program $\mathcal{P}_\pi$, DTR executes $\mathcal{P}_\pi$ on the table and collects parameterized execution feedback signals that reflect the observed execution behavior. We denote the execution feedback as the following expression:
+\begin{equation}\small
+\label{f_pi}
+\mathbf{f}(\pi) = \big( f_{\text{exec}}(\pi),\; f_{\text{time}}(\pi),\; 
+f_{\text{type}}(\pi) \big),
+\end{equation}
+where each component evaluates a different aspect of execution behavior. The execution validity signal $f_{\text{exec}}(\pi) \in \{0,1\}$ indicates whether the program runs without errors. The execution time signal $f_{\text{time}}(\pi) \in \mathbb{R}^+$ records the time required to complete the execution of $\mathcal{P}_\pi$, reflecting the computational efficiency of the operation path. The type consistency signal metric $f_{\text{type}}(\pi) \in \{0,1\}$ evaluates whether the intermediate and final results match the expected output format implied by the query and operation sequence, such as whether a ranking operation yields an ordered list, or a numerical aggregation produces a scalar value. These signals are parameterized by the operation sequence, allowing DTR to distinguish between structurally similar paths that differ in execution behavior. The overall execution reward is computed as $r(\pi) = \phi\big( \mathbf{f}(\pi) \big)$, which is used to update path-level expectations and guide subsequent decisions.
+
+% \paragraph{Experience Representation.}
+% We store execution experience as
+% \begin{equation}
+% \mathcal{E}_\pi =
+% \langle
+% \pi,\;
+% \mathbf{s}(\pi),\;
+% \Delta(\pi)
+% \rangle,
+% \end{equation}
+% where $\Delta(\pi)$ captures abstracted insights such as failure patterns, missing preconditions, or recommended operation insertions.
+
+\paragraph{Abstracted Experience Feedback.} In addition to quantitative evaluation, abstracted experience is used to guide subsequent path execution. Rather than encoding concrete signals such as running time or output validity, this feedback summarizes semantic and strategic observations distilled from executed actions, preserving flexibility. For example, recurring aggregation failures may trigger the insertion of validation or cleaning operations prior to aggregation. 
+\begin{tcolorbox}[
+    colback = blue!5!white, colframe = blue!75!black, arc = 3pt, boxrule = 1pt
+]
+{  \footnotesize
+\textbf{Query: }What are the top-selling categories in Q3? \\ 
+\textbf{Feedback Summary: } \\
+- Path \(\pi_1\) first grouped seasons to compute total sales, then filtered Q3; filtering operation should be executed first to avoid computation of irrelevant data. \\  
+- Error: \textit{category} not found. Action: re-read table samples and derive sub-column \textit{product category}.\\ 
+- Repeated sorting operations before and after grouping do not contribute and can be skipped.  \\
+\textbf{Execution Reflection:} maintaining the correct filter-then-aggregate order; reading the sub-column \textit{product category}; sorting operation placed at the end.
+}
+
+\end{tcolorbox}
+
+\begin{table*}[ht!]\footnotesize
+\centering
+\caption{Full Comparisons over DTR-Bench to evaluate over accuracy, quality, and efficiency.}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tabular}{@{}l|cc|cc|cc|cc|ccc@{}}
+\toprule
+\multirow{4}{*}{\textbf{Methods}} & \multicolumn{2}{c|}{\textbf{Accuracy}} & \multicolumn{2}{c|}{\textbf{Analysis Depth}} & \multicolumn{2}{c|}{\textbf{Feasibility}} & \multicolumn{2}{c|}{\textbf{Aesthetics}} & \multirow{3}{*}{\makecell{\textbf{Avg.}\\\textbf{Runtime}\\\textbf{(s)}$\downarrow$}} & \multirow{3}{*}{\makecell{\textbf{Total}\\\textbf{Output}\\\textbf{Tokens}$\downarrow$}} & \multirow{3}{*}{\makecell{\textbf{Avg.}\\\textbf{LLM}\\\textbf{Calls}}$\downarrow$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
+& \makecell{Win Rate} & \graybg\makecell{Score Rate} & \makecell{Win Rate} & \graybg\makecell{Score Rate} & \makecell{Win Rate} & \graybg\makecell{Score Rate} & \makecell{Win Rate} & \graybg\makecell{Score Rate} & & & \\
+& {(Tie=0)$\uparrow$} & \graybg{ (Tie=0.5)$\uparrow$} & { (Tie=0)$\uparrow$} & \graybg{(Tie=0.5)$\uparrow$} & {(Tie=0)}$\uparrow$ & \graybg{(Tie=0.5)$\uparrow$} & { (Tie=0)$\uparrow$} & \graybg{(Tie=0.5)$\uparrow$} & & & \\
+\midrule
+\multicolumn{12}{c}{\textbf{Table specific LLM}} \\
+\midrule
+TableGPT2-7B & 0.20 & \graybg 8.41 & 5.12 & \graybg 5.12 & 4.33 & \graybg 4.35 & 6.21 & \graybg 6.21 & 3.42 & 12,450 & 1.0 \\
+TableLLM-7B & 0.15 & \graybg 6.22 & 3.84 & \graybg 3.84 & 3.10 & \graybg 3.12 & 4.55 & \graybg 4.55 & 3.15 & 10,820 & 1.0 \\
+StructGPT & 0.10 & \graybg 4.15 & 2.10 & \graybg 2.10 & 1.85 & \graybg 1.86 & 2.30 & \graybg 2.30 & 4.88 & 8,420 & 1.0 \\
+\midrule
+\multicolumn{12}{c}{\textbf{Common LLM}} \\
+\midrule
+DeepSeek-V3 & 1.21 & \graybg 30.2 & 21.72 & \graybg 21.72 & 20.60 & \graybg 20.60 & 31.23 & \graybg 31.23 & 38.64 & 49,271,1 & 1.0 \\
+DeepSeek-V3.2 & 1.28 & \graybg 33.52 & 25.22 & \graybg 25.22 & 24.42 & \graybg 24.43 & 36.63 & \graybg 36.83 & 39.02 & 52,446,3 & 1.0 \\
+\midrule
+\multicolumn{12}{c}{\textbf{Workflow}} \\
+\midrule
+ST-Raptor & 0.62 & \graybg 22.40 & 6.00 & \graybg 6.00 & 7.41 & \graybg 7.41 & 12.40 & \graybg 12.40 & 999.16 & 31,077,2 & 9.2 \\
+TreeThinker & 1.83 & \graybg 31.00 & 22.82 & \graybg 22.82 & 21.42 & \graybg 21.43 & 36.83 & \graybg 36.83 & 140.78 & 17,067,00 & 5.1 \\
+Code Loop & 1.32 & \graybg 27.50 & 9.40 & \graybg 9.51 & 14.81 & \graybg 14.92 & 20.42 & \graybg 20.42 & 175.84 & 75,204,2 & 8.8 \\
+\midrule
+\multicolumn{12}{c}{\textbf{DTR}} \\
+\midrule
+DTR (DS-v3) & \textbf{1.93} & \graybg \textbf{37.53} & \textbf{30.23} & \graybg \textbf{30.23} & \textbf{27.62} & \graybg \textbf{27.64} & \textbf{42.74} & \graybg \textbf{42.64} & 62.09 & 81,754,2 & 4.7 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+
+\subsection{Reflection-Driven Path Adaption}
+
+With real-time experience-guided reflection from the siamese mechanism, candidate operation paths are dynamically updated, leading to corresponding changes in their expectation scores. This allows DTR to progressively favor paths that demonstrate consistent effectiveness, while enabling subsequent operation selection to learn from accumulated reflections.
+
+\paragraph{Continual Expectation Update.}
+After executing an operation path $\pi$, DTR aggregates execution outcomes into a path-level reward $R(\pi)$, reflecting the overall effectiveness of the reasoning trajectory. The estimated expected return is updated incrementally as
+\begin{equation}\small
+\hat{R}(\pi) \leftarrow (1-\eta)\,\hat{R}(\pi) + \eta \cdot R(\pi),
+\vspace{-1mm}
+\end{equation}
+where $\eta \in (0,1]$ is a learning rate controlling the influence of newly observed execution outcomes. While $R(\pi)$ is only defined for executed paths, $\hat{R}(\pi)$ is continuously updated for paths to be executed. Through this mechanism, feedback from one path could influence the expectations of other related paths. As defined in Equation \ref{f_pi}, the real record of execution-level factors such as running time and output format consistency is reflected in the reward $r(\pi)$. Besides, abstracted experience is utilized to guide adjustments in operation selection for other candidate paths, thereby modifying their expected returns. For instance, structural modifications including operation insertions or removals lead to corresponding changes in execution count $N(\pi)$. This allows our framework to dynamically prioritize paths that are structurally aligned with previously successful signals. 
+\vspace{-4mm}
+\paragraph{Closed-Loop Optimization.}
+DTR performs closed-loop optimization by path planning, execution, and expectation update in a progressive manner. At each iteration $t$, the agent selects the candidate path with the highest expectation scores under real-time estimate $\mathcal{E}_t(\pi)$. These paths are executed to produce intermediate or final results, whose execution feedback is then used to update both parameterized signals and abstracted experience. To determine the final answer, DTR aggregates outputs from multiple executed paths.
+Let $\mathcal{A} = \{a_1, \dots, a_m\}$ denote the set of candidate answers and the final answer $a^\ast$ is selected by majority agreement:
+\vspace{-2mm}
+\begin{equation}\small
+a^\ast = \arg\max_{a \in \mathcal{A}} \sum_{i=1}^{m} \mathbb{I}(a_i = a),
+\vspace{-2mm}
+\end{equation}
+where only answers satisfying the query requirements and correct formats are considered. This voting-based selection improves robustness against individual execution errors and reinforces the reliability supported by multiple trials.

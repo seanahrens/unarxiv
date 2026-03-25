@@ -1,0 +1,29 @@
+{
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "DTR.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "DTR.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "algorithmic.sty"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "example_paper.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "icml2026.bst"
+      }
+   ],
+   "spec_version" : 1,
+   "texlive_version" : "2025",
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}

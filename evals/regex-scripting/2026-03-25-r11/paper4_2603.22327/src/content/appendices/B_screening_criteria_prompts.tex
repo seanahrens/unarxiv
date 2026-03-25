@@ -1,0 +1,435 @@
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Article Screening Criteria and Prompts}
+\label{app:study_objectives}
+\label{app:article_screening_prompts_criteri_fulltext}
+
+\label{app:article_screening_prompts_criteria}
+Following article search and retrieval, the articles are screened for relevance to the study. The screening is conducted on abstracts, and then on full-text articles. We present the study objectives, inclusion and exclusion criteria, along with the detailed prompts used to screen for relevant priority pathogen articles. We take inspiration from \cite{ottoSRPromptPaper}, and their ScreenPrompt structure to build our article screening prompts. 
+The prompts follow a structured format: basic instruction, study objectives, inclusion/exclusion criteria, article content, and chain-of-thought screening instructions with parsable output request.
+
+% \subsection{Study objectives}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=2pt, bottom=2pt
+]
+{\small
+{\textbf{\textcolor{orange!70!black}{Study Objectives}}}
+
+\smallskip
+
+This systematic review aims to collate transmission and modelling parameters for \texttt{\{pathogen\_name\}}. The review seeks to:
+
+\begin{enumerate}[leftmargin=*, itemsep=-3pt, topsep=2pt]
+    \item Provide estimates of key infectious disease metrics (reproduction number, CFR, generation time, serial interval, incubation period, etc.)
+    \item Document historical outbreak characteristics (size, location, duration, deaths)
+    \item Identify mathematical/statistical models of transmission
+    \item Collate risk factors for infection, severe disease, and death
+    \item Summarize seroprevalence data
+    \item Support infectious disease modelling and outbreak response efforts
+\end{enumerate}
+}
+
+\vspace{2pt}
+{\small
+This information enables effective outbreak preparedness, resource targeting, and mathematical modelling for nowcasting and forecasting of \texttt{\{pathogen\_name\}}.}
+\end{tcolorbox}
+
+% Next we give the inclusion and exclusion criteria for the abstract and full-text screening.
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=green!5,
+    colframe=green!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+
+{\small
+{\textbf{\textcolor{green!60!black}{Inclusion Criteria}}}
+
+{ALL must be met:}
+
+\begin{enumerate}[leftmargin=*, itemsep=-3pt, topsep=2pt]
+    \item {Pathogen:} Must be about \texttt{\{pathogen\_name\}}
+    
+    \item {Language:} English only
+    
+    \item {Study type:} Peer-reviewed, original research (note systematic reviews/meta-analyses for special consideration)
+    
+    \item {Population:} Human subjects (animal studies acceptable if reporting EITHER: (a) transmission parameters: $R_0$, $R_t$, $R_e$, $r$, growth rate, mutation rate, OR (b) vector parameters: extrinsic incubation period, vector reproduction numbers, vector competence, mosquito delays)
+    
+    \item {Content:} Must contain AT LEAST ONE of:
+    \begin{enumerate}[label=(\alph*), leftmargin=*, itemsep=-1pt]
+        \item Quantitative details of concluded/ongoing human outbreak (size, year, location, duration, spatial scale)
+        \item Mathematical or statistical model of disease transmission
+        \item Measures/estimates of transmission parameters: $R$, $R_0$, $R_t$, $r$, $R_e$, growth rate, doubling time
+        \item Measures/estimates of timing parameters: generation time, serial interval, incubation period, latent period, infectious period
+        \item Measures/estimates of severity: CFR, IFR, hospitalization rate, mortality rate, attack rate
+        \item Measures/estimates of genetic evolution: mutation rate, substitution rate, evolutionary rate
+        \item Measures of overdispersion or superspreading ($k$ parameter, transmission heterogeneity)
+        \item Seroprevalence data or serological surveys
+        \item Risk factors for infection, severe disease, death, or hospitalization (with statistical measures)
+        \item Measures/estimates of vector parameters: extrinsic incubation period (EIP), mosquito reproduction numbers, vector competence, mosquito delays, or relative transmission contributions (human-to-human vs vector-borne/zoonotic)
+    \end{enumerate}
+
+
+\dashtext{Full-text only}
+    
+    % \item[\textcolor{blue!60}{$\bm{+}$}]
+    \item
+    % \colorbox{blue!8}
+    % {\parbox{0.88\linewidth}
+    % {
+    {Data Extraction Requirement:} Must contain extractable mathematical models, transmission models, or quantitative parameter estimates (with values or ranges) for disease modeling. This includes: reproduction numbers, transmission rates, incubation periods, case fatality ratios, model structures, intervention effects, or other modeling parameters. Articles without extractable quantitative parameters or models should be excluded.
+% }}
+\end{enumerate}}
+\end{tcolorbox}
+
+% \vspace{6pt}
+
+
+
+% \vspace{3pt}
+% {\small\textit{Note:} Criteria marked with \textcolor{blue!60}{$\bm{+}$} and blue highlighting are additional criteria applied only during full-text screening.}
+
+% \clearpage
+
+% \subsection{Abstract screening prompt}
+
+
+\vspace{8pt}
+
+\newpage
+
+%%% ABSTRACT SCREENING PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Title \& Abstract Screening Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+    % {\small\textbf{\textcolor{gray!70!black}{Basic instruction}}}
+    
+    \vspace{4pt}
+    {\small{You are an expert epidemiologist screening abstracts for a systematic review on the target pathogen.}}
+    
+
+\end{tcolorbox}
+
+
+% Study Objectives partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{orange!70!black}{Study Objectives}}}
+
+\vspace{4pt}
+{\small\textit{[See Study Objectives above]}}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Screening Criteria}}}
+
+{\small
+\vspace{4pt}
+The following is an excerpt of 2 sets of criteria. A study is considered included if it meets ALL inclusion criteria. If a study meets ANY exclusion criteria, it should be excluded. Here are the 2 sets of criteria:}
+
+% Inclusion Criteria partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=green!5,
+    colframe=green!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+
+{\small\textbf{\textcolor{green!60!black}{Inclusion Criteria}}}
+
+\vspace{2pt}
+{\small\textit{[See Inclusion Criteria 1--5 above]}}
+\end{tcolorbox}
+
+% Exclusion Criteria partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=red!5,
+    colframe=red!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{red!60!black}{Exclusion Criteria}}}
+
+\vspace{2pt}
+{\small
+{Exclude if ANY apply:}
+\begin{enumerate}
+    [leftmargin=*, itemsep=0pt, topsep=4pt]
+    \item Pathogen: Not about \texttt{\{pathogen\_name\}} (excludes studies on other pathogens)
+    \item Language: Non-English
+    \item Publication type: Conference proceedings, abstract-only, posters, correspondence
+    \item Study design: \textit{In-vitro} studies only (no human or animal component)
+    \item Study design: Solely animal studies AND animal studies that do not report transmission parameters ($R_0$, $R_t$, $R_e$, $r$, growth rate, mutation rate)
+    \item {Outbreak type:} Accidental laboratory outbreaks (not natural disease transmission)
+\end{enumerate}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+% Abstract Input partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Abstract (To Screen)}}}
+
+\vspace{4pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Abstract: \{\{abstract\}\}
+}
+\end{tcolorbox}
+
+% Screening Instructions partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Screening Instructions}}}
+
+\vspace{4pt}
+{\small
+We now assess whether the paper should be included in the systematic review by evaluating it against each and every predefined inclusion and exclusion criterion. First, we will reflect on how we will decide whether a paper should be included or excluded. Then, we will think step by step for each criterion, giving reasons for why they are met or not met.
+
+\vspace{4pt}
+Studies that may not fully align with the primary focus of our inclusion criteria but provide data or insights potentially relevant to our review deserve thoughtful consideration. Given the nature of abstracts as concise summaries of comprehensive research, some degree of interpretation is necessary.
+
+\vspace{4pt}
+Our aim should be to inclusively screen abstracts, ensuring broad coverage of pertinent studies while filtering out those that are clearly irrelevant.
+
+\vspace{4pt}
+We will conclude by outputting (on the very last line) \texttt{<decision>EXCLUDE</decision>} if the paper warrants exclusion, or \texttt{<decision>INCLUDE</decision>} if inclusion is advised or uncertainty persists.
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+%\vspace{12pt}
+%\subsection{Full-text Screening Prompt}
+
+\newpage
+Finally, the articles that pass the abstract screening have their full text screened as follows.
+
+%%% FULL-TEXT SCREENING PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Full-Text Screening Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+    % {\small\textbf{\textcolor{gray!70!black}{Basic instruction}}}
+    
+    \vspace{4pt}
+    {\small{You are an expert epidemiologist screening abstracts for a systematic review on the target pathogen.}}
+    
+
+\end{tcolorbox}
+
+% Study Objectives partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=orange!5,
+    colframe=orange!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{orange!70!black}{Study Objectives}}}
+
+\vspace{4pt}
+{\small\textit{[See Study Objectives above]}}
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Screening Criteria}}}
+
+{\small
+\vspace{4pt}
+The following is an excerpt of 2 sets of criteria. A study is considered included if it meets ALL inclusion criteria. If a study meets ANY exclusion criteria, it should be excluded. Here are the 2 sets of criteria:}
+
+% Inclusion Criteria partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=green!5,
+    colframe=green!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{green!60!black}{Inclusion Criteria}}}
+
+\vspace{2pt}
+{\small\textit{[See Inclusion Criteria 1--6 above, including full-text criterion]}}
+\end{tcolorbox}
+
+% Exclusion Criteria partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=red!5,
+    colframe=red!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{red!60!black}{Exclusion Criteria}} 
+
+{Exclude if ANY apply:}
+
+\vspace{2pt}
+{\small
+\begin{enumerate}
+[leftmargin=*, itemsep=0pt, topsep=4pt]
+    \item Not about \texttt{\{pathogen\_name\}} (excludes other pathogens)
+    \item Non-English language
+    \item Conference proceedings, abstract-only, posters, correspondence, Literature reviews, meta-analyses
+    \item \textit{In-vitro} studies only (no human or animal component)
+    \item Animal studies without transmission parameters ($R_0$, $R_t$, $R_e$, $r$, growth rate, mutation rate) or solely animal studies.
+\item{\parbox{0.88\linewidth}{Case studies/reports with $<$10 human cases}}
+    \item Accidental laboratory outbreaks
+\end{enumerate}
+}}
+\end{tcolorbox}
+\end{tcolorbox}
+
+% Full-text Input partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Full-Text Article (To Screen)}}}
+
+\vspace{4pt}
+{\small\ttfamily
+Title: \{\{title\}\}\\[2pt]
+Full Text: \{\{fulltext\}\}
+}
+\end{tcolorbox}
+
+% Screening Instructions partition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Screening Instructions}}}
+
+\vspace{4pt}
+{\small
+We now assess whether the paper should be included in the systematic review by evaluating it against each and every predefined inclusion and exclusion criterion. First, we will reflect on how we will decide whether a paper should be included or excluded. Then, we will think step by step for each criterion, giving reasons for why they are met or not met.
+
+\vspace{4pt}
+\textbf{Critically evaluate:} Does this paper contain extractable quantitative data, models, or parameters relevant to disease transmission and outbreak response? This is essential for inclusion.
+
+\vspace{4pt}
+We will conclude by outputting (on the very last line) \texttt{<decision>EXCLUDE</decision>} if the paper warrants exclusion, or \texttt{<decision>INCLUDE</decision>} if inclusion is advised or uncertainty persists.
+}
+\end{tcolorbox}
+
+\end{tcolorbox}

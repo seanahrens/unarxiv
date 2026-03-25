@@ -1,0 +1,659 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Report Generation: Building Systematic Living Reviews}
+\label{app:report_generation_methods}
+
+\subsection{Deterministic Report Assembly}
+Given a pathogen $p$, we generate human-readable reports directly from the extracted, structured datasets for outbreaks.
+The report build aggregates extraction records into descriptive summary tables and figures, then compiles a Markdown draft, and finally renders a PDF. The report build is lightweight relative to retrieval, screening, and extraction and is omitted from our main runtime breakdown (typically $<5$ minutes per pathogen).
+
+\subsubsection*{Inputs and derived artefacts}
+\paragraph{Inputs}
+Let $\mathcal{D}^{\textsc{O}}_p$ be the set of extracted outbreak records for pathogen $p$ (one row per outbreak entity).
+Each record is schema-validated at extraction time (Appendix~\ref{app:data_extraction_details}), so report generation treats the datasets as structured inputs.
+
+\paragraph{Content manifest.}
+The manifest stores: pathogen identifier, timestamp, summary statistics (e.g. outbreak counts and geographic coverage), the list of narrative sections, and structured metadata for each figure and table (number, title, caption, path, and row or observation counts). This manifest is later used as part of the evidence packet in the LLM refinement stage (next subsection).
+
+
+\begin{table}[h]
+\centering
+\caption{\textbf{Artefact inventory for outbreak report generation (per pathogen $p$).} All artefacts are derived from the extracted outbreak dataset $\mathcal{D}^{\textsc{O}}_p$.}
+\label{tab:artifact_inventory_outbreaks}
+\footnotesize
+\begin{tabular}{p{0.27\linewidth}p{0.38\linewidth}p{0.28\linewidth}}
+\toprule
+\textbf{Artefact} & \textbf{Path (relative to repo root)} & \textbf{Purpose} \\
+\midrule
+Outbreak report (Markdown) &
+\texttt{writeup/}$p$\texttt{/outbreaks\_writeup.md} &
+Human-readable draft with embedded figures and tables. \\
+Outbreak report (PDF) &
+\texttt{writeup/}$p$\texttt{/outbreaks\_writeup.pdf} &
+Portable rendering for sharing and archiving. \\
+Figures directory &
+\texttt{writeup/}$p$\texttt{/figures/} &
+Generated plots referenced by Markdown (e.g., temporal distribution, geographic spread, case counts). \\
+Summary tables (embedded) &
+(in \texttt{outbreaks\_writeup.md}) &
+Count and proportion tables computed from $\mathcal{D}^{\textsc{O}}_p$. \\
+Content manifest &
+\texttt{writeup/}$p$\texttt{/content\_manifest.json} &
+Machine-readable inventory of figures, tables, and dataset statistics. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{Evidence packet construction}
+\paragraph{Evidence packet}
+For pathogen $p$ and outbreak report type $\textsc{O}$, code constructs an evidence packet
+\[
+E^{\textsc{O}}_p \;=\; \big(\;\textsc{Stats}^{\textsc{O}}_p,\;\textsc{Figs}^{\textsc{O}}_p,\;\textsc{Tables}^{\textsc{O}}_p,\;W^{\textsc{O},(0)}_p\;\big),
+\]
+where $\textsc{Stats}^{\textsc{O}}_p$ is a concise text summary of dataset counts and geographic breakdowns, $\textsc{Figs}^{\textsc{O}}_p$ is the required figure list (paths and captions), $\textsc{Tables}^{\textsc{O}}_p$ is the set of tables to be included (as Markdown blocks), and $W^{\textsc{O},(0)}_p$ is the programmatic Markdown draft.
+The model is instructed to rely only on $E^{\textsc{O}}_p$ and not to introduce external facts.
+
+\subsection{Evidence grounded narrative refinement}
+Report writing proceeds by an LLM revision stage that refines $W^{\textsc{O},(0)}_p$ into a narrative synthesis, while enforcing evidence grounding and artefact presence.
+
+\subsubsection*{Self-refinement loop and non-negotiable checks}
+\paragraph{Grounding and asset checks (non-negotiable).}
+Two constraints are enforced for every refined version:
+\begin{enumerate}[leftmargin=*, itemsep=-2pt]
+    \item \textbf{Asset presence:} every required figure path from the manifest must appear at least once as a Markdown image line.
+    \item \textbf{Table preservation:} every table provided in the evidence packet must be present, with values unchanged (reformatting is allowed).
+\end{enumerate}
+If either constraint is violated, we deterministically append missing figures or tables verbatim at the end of the Markdown so the final PDF always renders with the full artefact set.
+
+\paragraph{Minimal formalisation}
+Let $W^{(0)}$ denote the initial (programmatic) Markdown draft.
+Each iteration applies:
+\[
+\text{critique}(W^{(k-1)}) \rightarrow C^{(k)}, \qquad \text{revise}(W^{(k-1)}, C^{(k)}) \rightarrow W^{(k)}.
+\]
+This is only a notation convenience: in practice the evidence packet always accompanies both steps, and the critique output is structured JSON used to drive the next revision.
+
+\subsubsection*{Rubric and prompts}
+\paragraph{Rubric}
+We use an 8-dimension rubric, each scored from 1 (poor) to 5 (excellent). The dimensions are the same for both report types, except for the scope constraint.
+
+\paragraph{Shared dimensions}
+\vspace{-4pt}
+\begin{enumerate}[leftmargin=*, itemsep=-2pt]
+    \item \texttt{data\_fidelity}: descriptive claims match the evidence packet; no invented statistics or outbreak characteristics.
+    \item \texttt{figure\_table\_presence}: all required figures and tables appear.
+    \item \texttt{traceability}: outside interpretation blocks, claims cite their source as (Figure X), (Table Y), or (Dataset Statistics).
+    \item \texttt{clarity}: consistent terminology, clear writing, minimal ambiguity.
+    \item \texttt{completeness}: covers the major patterns visible in the available figures and tables.
+    \item \texttt{interpretation\_blocks}: interpretation is confined to dedicated blocks and labelled as such.
+    \item \texttt{formatting}: valid Markdown and sensible figure layout hints.
+\end{enumerate}
+
+\paragraph{Interpretation policy}
+Interpretation is allowed only inside blockquotes beginning with \texttt{> AI-Interpretation:}.
+Outside those blocks, the narrative must remain descriptive and evidence-linked; no new numbers may be introduced.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Report Generation Prompts}
+\label{app:report_generation_prompts_outbreaks}
+
+We present the exact prompts used for outbreak report generation and self-refinement, formatted consistently with the model report prompts.
+All prompts are instantiated programmatically by filling placeholders (e.g. \texttt{\{EVIDENCE\_PACKET\}}) at runtime.
+
+% \clearpage
+
+\subsubsection*{Outbreak report prompts}
+
+%%% OUTBREAK REPORT: INITIAL SYNTHESIS %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Outbreak Report: Initial Synthesis Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{gray!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are a senior epidemiologist editing a living outbreak surveillance review. You are revising a first draft prepared by a research assistant who summarized extracted outbreak records.}}
+\end{tcolorbox}
+
+% Method Basis
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Method Basis}}}
+
+\vspace{2pt}
+{\small
+Do not cite external sources; just follow these behaviors:
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item Iterative critique→refine loop (Self-Refine).
+    \item Rubric-based form-filling evaluation mindset (G-Eval).
+    \item Attribution-first revision: every descriptive claim must be attributable to the provided evidence packet (RARR-style editing for attribution).
+    \item Living review principles: explicitly describe what is present in the dataset snapshot and what is missing; avoid academic formatting.
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Scope Constraint
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Hard Scope Constraint}}}
+
+\vspace{2pt}
+{\small
+Focus on documented outbreak events and outbreak characteristics. Do not broaden into transmission modelling, pathogen biology, or clinical management beyond what is supported by the outbreak dataset.
+}
+\end{tcolorbox}
+
+% Truthfulness Constraints
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Truthfulness Constraints}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item Do not invent outbreak characteristics, case counts, geographic locations, or external facts.
+    \item Outside of AI-Interpretation blocks, every numeric or categorical claim must be directly supported by the evidence packet and must cite its support as (Figure X), (Table Y), or (Dataset Statistics).
+    \item Interpretation is allowed ONLY inside blockquotes starting with: \texttt{> AI-Interpretation:}
+    \item Inside AI-Interpretation blocks, you may propose plausible implications for outbreak surveillance and preparedness, but you must label them as hypotheses and you must not introduce new numbers that are not in the evidence packet.
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Figures and Tables Constraints
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Figures and Tables Constraints}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item All figures must appear as markdown images using their existing paths (e.g., \texttt{![Alt](figures/fig1\_...png)}). Placement is free.
+    \item Tables must all be present. You may reformat tables, but values must remain identical.
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Formatting Agency
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Formatting Agency}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item You may include an OPTIONAL HTML comment immediately after any figure image line to suggest sizing for PDF rendering.
+    \item Format: \texttt{<!-- fig-layout: width\_in=5.5 max\_height\_in=7.5 -->}
+    \item If absent, defaults will be used.
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Output Requirements
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Output Requirements}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item Produce a living outbreak surveillance review in Markdown.
+    \item Use descriptive, report-like sections rather than academic paper structure.
+    \item For each main section, include: (1) Evidence-based description, then (2) one AI-Interpretation blockquote.
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Task Definition}}}
+
+\vspace{2pt}
+{\small
+Task: Produce Version 1 of the living outbreak surveillance review.
+Use the evidence packet below. Maintain honesty and verifiability.
+
+\vspace{1em}
+
+\textbf{Required structure} (you may adapt headings, but keep these concepts):
+\begin{enumerate}[label=\arabic*), leftmargin=*, itemsep=-3pt]
+    \item Snapshot (dataset size, temporal coverage, geographic scope, what this review represents)
+    \item Outbreak temporal distribution (outbreak frequency over time, identification of major epidemic periods)
+    \item Geographic distribution and spread patterns (countries affected, spatial clustering, cross-border transmission)
+    \item Outbreak size and severity (case counts, fatality rates, outbreak durations)
+    \item Detection and reporting patterns (modes of detection, case definitions used, reporting delays if mentioned)
+    \item Demographic patterns (sex disaggregation, age patterns if available)
+    \item Data quality and gaps (completeness of reporting, missing information, asymptomatic transmission documentation)
+    \item Evidence-based recommendations (only tied to observed gaps in outbreak surveillance)
+    \item Change log stub (for future updates)
+\end{enumerate}
+}
+\end{tcolorbox}
+
+% Evidence Packet
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Evidence Packet}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{EVIDENCE\_PACKET\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% OUTBREAK REPORT: CRITIQUE PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Outbreak Report: Critique Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{gray!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are a meticulous scientific editor. Return only valid JSON.}}
+\end{tcolorbox}
+
+% Critique Task Definition
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Critique Task Definition}}}
+
+\vspace{2pt}
+{\small
+You are a scientific editor evaluating a living outbreak surveillance review for faithfulness to the provided evidence packet.
+Return STRICT JSON only.
+}
+\end{tcolorbox}
+
+% Evidence Packet Summary
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Evidence Packet Summary}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{DATASET\_STATISTICS\}
+}
+\end{tcolorbox}
+
+% Required Figure Paths
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Required Figure Paths}}}
+
+\vspace{2pt}
+{\small\ttfamily
+All of the following must appear at least once:\\[6pt]
+\{REQUIRED\_FIGURE\_PATHS\}
+}
+\end{tcolorbox}
+
+% Report to Critique
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Report to Critique}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{CURRENT\_REPORT\}
+}
+\end{tcolorbox}
+
+% Evaluation Dimensions
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Evaluation Dimensions}}}
+
+\vspace{2pt}
+{\small
+Evaluate dimensions (score 1-5). Provide issues and concrete suggestions.
+
+\vspace{1em}
+
+\textbf{Dimensions:}
+\begin{enumerate}[label=\arabic*), leftmargin=*, itemsep=-3pt]
+    \item \texttt{data\_fidelity}: descriptive claims supported by evidence packet; no invented outbreak characteristics, case counts, or geographic information.
+    \item \texttt{outbreak\_focus}: stays centered on documented outbreak events and outbreak surveillance rather than transmission modelling or pathogen biology.
+    \item \texttt{figure\_table\_presence}: all required figures present; all tables present.
+    \item \texttt{traceability}: outside AI-Interpretation blocks, claims cite support as (Figure X)/(Table Y)/(Dataset Statistics).
+    \item \texttt{clarity}: readable, precise, minimal ambiguity, consistent terminology for outbreak characteristics and surveillance metrics.
+    \item \texttt{completeness}: covers major patterns in outbreak temporal distribution, geographic spread, and detection practices described by available figures/tables.
+    \item \texttt{interpretation\_blocks}: each main section includes a blockquote starting with \texttt{> AI-Interpretation:} and interpretation stays inside it.
+    \item \texttt{formatting}: figure layout directives used sensibly where needed; no broken markdown.
+\end{enumerate}
+}
+\end{tcolorbox}
+
+% JSON Response Format
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{JSON Response Format}}}
+
+\vspace{2pt}
+{\small\ttfamily
+Return JSON of the form:\\[6pt]
+\{\\
+\ \ "dimensions": \{\\
+\ \ \ \ "data\_fidelity": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "outbreak\_focus": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "figure\_table\_presence": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "traceability": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "clarity": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "completeness": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "interpretation\_blocks": \{"score": 1-5, "issues": [...], "suggestions": [...]\},\\
+\ \ \ \ "formatting": \{"score": 1-5, "issues": [...], "suggestions": [...]\}\\
+\ \ \},\\
+\ \ "priority\_fixes": [...]\\
+\}
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% OUTBREAK REPORT: REVISION PROMPT %%%
+\begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=blue!30,
+    boxrule=0.8pt,
+    arc=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    title={\small\textbf{Outbreak Report: Revision Prompt}},
+    fonttitle=\sffamily,
+    coltitle=blue!70!black,
+    colbacktitle=blue!15,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={boxrule=0.5pt, arc=1pt}
+]
+
+% Basic Instruction
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+% {\small\textbf{\textcolor{gray!70!black}{Basic Instruction}}}
+
+\vspace{2pt}
+{\small{You are a senior epidemiologist performing an evidence-grounded revision.}}
+\end{tcolorbox}
+
+% Revision Constraints
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Revision Constraints}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item Follow an attribution-first editing approach: outside AI-Interpretation blocks, every claim must be supported by the evidence packet.
+    \item Keep the document outbreak-focused.
+    \item All figures must appear at least once as markdown images with their existing paths.
+    \item All tables must be present; you may reformat, but values must not change.
+    \item Interpretation is permitted only within blockquotes beginning with \texttt{> AI-Interpretation:}.
+    \item You may add optional figure sizing directives as HTML comments immediately after image lines: \texttt{<!-- fig-layout: width\_in=5.5 max\_height\_in=7.5 -->}
+\end{itemize}
+}
+\end{tcolorbox}
+
+% Quality Scores
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Quality Scores}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{DIMENSION\_SCORES\}
+}
+\end{tcolorbox}
+
+% Priority Fixes
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Priority Fixes}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{PRIORITY\_FIXES\}
+}
+\end{tcolorbox}
+
+% Evidence Packet
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Evidence Packet}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{EVIDENCE\_PACKET\}
+}
+\end{tcolorbox}
+
+% Current Report
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!70!black}{Current Report}}}
+
+\vspace{2pt}
+{\small\ttfamily
+\{CURRENT\_REPORT\}
+}
+\end{tcolorbox}
+
+% Revision Requirements
+\begin{tcolorbox}[
+    enhanced,
+    colback=gray!5,
+    colframe=gray!20,
+    boxrule=0pt,
+    leftrule=3pt,
+    arc=0pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt
+]
+{\small\textbf{\textcolor{gray!60!black}{Revision Requirements}}}
+
+\vspace{2pt}
+{\small
+\begin{itemize}[leftmargin=*, itemsep=-3pt]
+    \item Fix all critique issues.
+    \item Ensure each main section has (1) evidence-based description with citations (Figure/Table/Dataset Statistics), then (2) \texttt{> AI-Interpretation:} block.
+    \item Remove or relabel any statement not supported by the evidence packet.
+    \item Ensure outbreak-only framing (documented outbreak events and surveillance patterns).
+    \item Keep document a living surveillance review (descriptive, update-ready), not an academic paper.
+\end{itemize}
+
+\vspace{1em}
+
+Return the complete revised Markdown.
+}
+\end{tcolorbox}
+
+\end{tcolorbox}
+
+

@@ -1,0 +1,33 @@
+\section{\name{} Pipeline}\label{sec:pipeline}
+We present \name{}, an end-to-end open-source AI pipeline designed to automate and streamline systematic literature reviews. It is comprised of six stages (Figure~\ref{fig:flashfig}): article retrieval, abstract and full-text screening, OCR-based PDF to markdown conversion, structured data extraction using tools and report generation. 
+% The complete process runs autonomously, with human involvement during post-hoc evaluations.
+
+%---------------------------------------------------
+\subsection{Article Search and Retrieval}\label{sec:search}
+\name{} queries three bibliographic databases (OpenAlex, PubMed, and Europe PMC) using domain-specific Boolean search strategies covering seven core epidemiological domains. %including transmission dynamics, disease severity, temporal parameters, and transmission heterogeneity. 
+Retrieved records are first deduplicated using identifier and bibliographic metadata-based matching, then full texts are automatically retrieved from open-access sources. 
+% A cascading PDF retrieval workflow follows, first enriching records with additional identifiers and then sequentially querying multiple prioritised open-access sources. 
+The download pipeline incorporates caching, streaming and file validation, parallel execution and checkpointing. Full details are provided in Appendix~\ref{app:search_queries}.
+
+
+%---------------------------------------------------
+\subsection{Title and Abstract Screening}
+Initial screening is conducted using titles and abstracts based on predefined inclusion and exclusion criteria (Appendix~\ref{app:article_screening_prompts_criteria}). We use large language reasoning models (LRMs), which enable inference-time scaling without fine-tuning on limited prior studies. Following the ScreenPrompt methodology \citep{ottoSRPromptPaper}, we structure screening with five components: study objectives, inclusion/exclusion criteria, chain-of-thought reasoning instructions, article abstract and structured output format. 
+
+%---------------------------------------------------
+\subsection{PDF-to-Markdown Conversion}\label{sec:pdf_to_markdown_conversion}
+% Downloaded PDFs are converted to structured Markdown using the Mistral OCR API. 
+Each downloaded PDF is rendered page-by-page into high-resolution images, then processed with an OCR model to recover text while preserving document hierarchy, equations (LaTeX), and tables (HTML). The process produces one Markdown file per article.
+%---------------------------------------------------
+\subsection{Full-text Screening}
+Converted articles undergo full-text screening using an LRM with a prompt structure analogous to abstract screening but with stricter criteria, requiring extractable quantitative epidemiological parameters (e.g. transmission rates, incubation periods and severity outcomes) while excluding literature reviews, meta-analyses, and case studies describing fewer than 10 infected individuals. We provide the full criteria and prompts in Appendix~\ref{app:article_screening_prompts_criteri_fulltext}.
+
+%---------------------------------------------------
+\subsection{Data Extraction}\label{sec:data_extraction}
+We extract structured data for three categories---epidemiological parameters, transmission models and concluded outbreaks---using a multi-stage, schema-constrained framework. Extraction is carried out by an agentic LRM with specialised tool calls to enforce field-level constraints and ensure structured outputs, mimicing human annotators extracting relevant data from articles by filling in survey forms.
+
+For each data category, the pipeline first conducts \textit{presence flagging} to identify articles containing relevant data, followed by targeted extraction using parameter-specific, model-specific, or outbreak-specific tool calls for validated outputs. For epidemiological parameters, extraction also involves population tagging (e.g. age groups, geographic locations and clinical severity), which enables subsequent aggregation of parameter estimates into summary statistics across population contexts. Complete schemas, tool definitions and validation rules are provided in \Cref{app:data_extraction_details}.
+
+
+\subsection{Report Generation}
+Extracted data are converted into a structured review through a multi-stage process. Descriptive statistics are computed and visualised alongside standardised figures and evidence tables with an accompanying content manifest. An LRM generates an initial narrative synthesis, which then undergoes iterative self-refinement loops ($K=5$). Each iteration consists of a rubric-based critique assessing clarity, completeness and traceability, followed by targeted revision. During each revision, the model receives the complete evidence packet and is instructed to ensure all claims are either explicitly supported by the extracted data (figures, tables, and statistics) or clearly marked as interpretation, removing any statements that cannot be verified. The full process is detailed in \Cref{app:report_generation_methods}.

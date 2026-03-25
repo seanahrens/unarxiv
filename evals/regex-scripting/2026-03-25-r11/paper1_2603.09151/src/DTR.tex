@@ -1,0 +1,161 @@
+\documentclass{article}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+\usepackage[preprint]{icml2026}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\usepackage[textsize=tiny]{todonotes}
+
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{hyperref}
+\usepackage{graphicx} 
+\usepackage{url}
+\usepackage{tcolorbox}
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}    
+\usepackage{hyperref}   
+\usepackage{authblk}
+\usepackage{wrapfig}
+\usepackage{url}            
+\usepackage{booktabs}       
+\usepackage{amsfonts}       
+\usepackage{nicefrac}       
+\usepackage{microtype}      
+\usepackage{xcolor}         
+\usepackage{bm}
+\usepackage{makecell}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{bbding}
+\usepackage{colortbl}
+\definecolor{mygray}{gray}{.92}
+\let\Bbbk\relax 
+\usepackage{amsmath,amsthm,amssymb}
+\newtheorem{myDef}{Definition}
+\usepackage{color}
+\usepackage{float}
+\usepackage[T1]{fontenc}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\newcommand{\graybg}{\cellcolor{gray!10}}
+
+
+\icmltitlerunning{Deep Tabular Research}
+
+\begin{document}
+
+\twocolumn[
+  \icmltitle{Deep Tabular Research via Continual Experience-Driven Execution}
+
+  \icmlsetsymbol{equal}{*}
+
+  \begin{icmlauthorlist}
+    \icmlauthor{Junnan Dong}{equal,comp}
+    \icmlauthor{Chuang Zhou}{equal,comp}
+    \icmlauthor{Zheng Yuan}{comp}
+    \icmlauthor{Yifei Yu}{comp}
+    \icmlauthor{Qiufeng Wang}{comp}\\
+    \icmlauthor{Yinghui Li}{comp}
+    \icmlauthor{Siyu An\dag}{comp}
+    \icmlauthor{Di Yin}{comp}
+    \icmlauthor{Xing Sun}{comp}
+    \icmlauthor{Feiyue Huang\dag}{yyy}\\
+    Ruijin Hospital, Shanghai Jiaotong University\\Tencent Youtu Lab
+  \end{icmlauthorlist}
+
+  \icmlaffiliation{yyy}{Ruijin Hospital, Shanghai Jiaotong University}
+  \icmlaffiliation{comp}{Tencent Youtu Lab}
+
+  \icmlcorrespondingauthor{Feiyue Huang}{Ruijin Hospital, Shanghai Jiaotong University}
+  \icmlcorrespondingauthor{Siyu An}{Tencent Youtu Lab}
+  \icmlkeywords{Tabular Reasoning, Complex Unstructured Table, Agentic Planning}
+
+  \vskip 0.3in
+]
+
+\printAffiliationsAndNotice{}  
+\begin{figure*}
+    \centering
+    \includegraphics[width=0.9\linewidth]{resources/running.pdf}
+    \caption{\small Existing Table QA pipelines (a) are limited to well-structured tables and shallow queries, and fail to handle unstructured tabular properties (b) and long-horizon analytical tasks (c), motivating our Deep Tabular Research.}
+    \label{fig:running}
+\end{figure*}
+
+\begin{abstract}
+Large language models often struggle with complex long-horizon analytical tasks over unstructured tables, which typically feature hierarchical and bidirectional headers and non-canonical layouts. We formalize this challenge as Deep Tabular Research (DTR), requiring multi-step reasoning over interdependent table regions. To address DTR, we propose a novel agentic framework that treats tabular reasoning as a closed-loop decision-making process. We carefully design a coupled query and table comprehension for path decision making and operational execution. Specifically, \((i)\) DTR first constructs a hierarchical meta graph to capture bidirectional semantics, mapping natural language queries into an operation-level search space; \((ii)\) To navigate this space, we introduce an expectation-aware selection policy that prioritizes high-utility execution paths; \((iii)\) Crucially, historical execution outcomes are synthesized into a siamese structured memory, i.e., parameterized updates and abstracted texts, enabling continual refinement. Extensive experiments on challenging unstructured tabular benchmarks verify the effectiveness and highlight the necessity of separating strategic planning from low-level execution for long-horizon tabular reasoning.
+\end{abstract}
+
+% figure down table up
+\section{Introduction}
+Large language models (LLMs) have demonstrated remarkable capabilities in reasoning over structured data, leading to their widespread adoption in tabular question answering~\cite{gong2020tablegpt, zhao-etal-2024-tapera,katsis2022ait}. By serializing tables into textual formats, prior research has shown that LLMs can effectively resolve factual and numerical queries over well-structured schemas. These advances have positioned LLMs as promising general-purpose interfaces for interacting with tabular data~\cite{ren2025deep, somvanshi2024survey}. Despite this progress, most existing approaches rely on clean schemas, flat headers, and single-pass reasoning pipelines. Such assumptions severely limit their applicability to practical downstream scenarios where tables are frequently irregular, incomplete, and semantically implicit for comprehension.
+
+Real-world tabular data, particularly spreadsheets, exhibit a wide range of unstructured properties that defy traditional TableQA pipelines. As illustrated in Figure~\ref{fig:running}, these tables often feature hierarchical and bi-directional headers, merged cells, and values that are missing or contextually defined. Navigating these complex structures remains a persistent challenge~\cite{tang2025st, wu2025realhitbench}. Furthermore, beyond structural complexity, practical analytical tasks are inherently long-horizon and multi-hop. A single query may necessitate a sequence of factual checks, numerical computations, and aggregations across disparate table regions. Answering such analytical queries requires more than simple retrieval; it demands iterative verification and conditional branching, where intermediate results must be scrutinized and revised before reaching a validated conclusion.
+
+We formalize this problem as Deep Tabular Research (DTR), i.e., long-horizon complex tabular reasoning tasks that require coordinated data acquisition, computation, and analytical synthesis. While conventional approaches primarily rely on in-context learning, treating tables as text for direct LLM reasoning—such a paradigm is inherently limited by token constraints and struggles with precise numerical operations over large, irregular headers~\cite{sarkar2023testing,singha2023tabular}. To overcome these limitations, we advocate for a programmatic execution approach, leveraging tools like DataFrames to handle data processing and structural navigation. However, transitioning from static text-level reasoning to a code-driven agent introduces two significant challenges: \((i)\) Prohibitive search space for programmatic planning. Unlike static language reasoning for conventional table QA, translating high-level analytical intent (e.g., 'summarize by department') into concrete code operations (e.g., \texttt{df.groupby()}, \texttt{pd.pivot\_table()}) over unstructured tables involves a massive space of potential execution paths. Given the ambiguity of hierarchical headers and missing values, identifying the optimal sequence of operators is non-trivial. \((ii)\) Errors could inevitably propagate during complex long execution. Execution exposes concrete errors and ambiguities, while there is a limited mechanism to properly learn from past execution
+outcomes, especially for failures, to guide future decisions. 
+
+In this paper, we propose a novel agentic framework for DTR that treats tabular reasoning as a continual decision process driven by execution experience. Our framework explicitly decouples high-level strategic planning from low-level execution, ensuring that reasoning is informed by accumulated feedback rather than rigid heuristics. Specifically, our approach comprises three key components. \((i)\) A query-decomposed operator module maps natural language queries into a structured space of analytical operators, facilitating flexible composition; \((ii)\) We then design an expectation-aware policy that identifies promising execution trajectories under uncertainty, balancing exploration and utility without exhaustive simulation; \((iii)\) Finally, a siamese structured memory module records execution outcomes and failures, enabling the system to refine its planning strategy through experience. The memory is carefully evolved in a siamese mode inlucding both parameterized updates and abstracted textual experience. By grounding reasoning in verified micro operations and continuously adapting to feedback, our framework achieves robust error isolation and recovery across diverse tabular settings. Extensive experiments demonstrate that our approach consistently outperforms strong baselines on challenging unstructured benchmarks, establishing continual experience-driven execution as a superior foundation for deep tabular research.
+
+\textbf{Contributions}:
+\begin{itemize}[leftmargin=*] 
+\item \textbf{Task Formalization:} We define the Deep Tabular Research (DTR) task, shifting the focus from simple TableQA to long-horizon, multi-hop analytical reasoning over unstructured, non-canonical tables. 
+\item \textbf{Closed-Loop Agentic Framework:} We introduce a principled framework that decouples macro planning from micro execution, treating reasoning as an iterative decision-making process. 
+\item \textbf{Experience-Driven Optimization:} We propose an expectation-aware selection mechanism and a structured memory graph that enable the agent to learn from execution feedback and mitigate error propagation. 
+\item \textbf{Empirical Validation:} We provide extensive evaluations on unstructured tabular benchmarks, demonstrating the effectiveness and efficiency of DTR in handling complex, real-world data layouts. 
+\end{itemize}
+
+
+\input{problem}
+\input{methods}
+\input{exp}
+\input{conclusion}
+
+\section*{Broader Impact}
+
+We present a framework for advancing machine learning systems in complex tabular reasoning and analytical tasks for social good based on large language models. Our primary goal is to improve the robustness, interpretability, and effectiveness of automated reasoning over structured data, which is a core and well-established research direction in machine learning. Potential positive societal impacts of this work include improved automation and decision support in data-driven domains such as scientific analysis, business intelligence, and public data reporting, where accurate and transparent table-based reasoning is essential. By enabling models to better understand complex table structures and perform multi-step analytical reasoning, we may help reduce manual effort and errors in data analysis workflows.
+
+At the same time, we do not anticipate significant new ethical risks beyond those commonly associated with large language models and automated data analysis systems. As with prior work in this area, misuse could arise if such systems are deployed without appropriate human oversight, particularly in high-stakes settings involving sensitive or biased data. These risks are not unique to our method and are best addressed through established practices such as responsible deployment, data governance, and human-in-the-loop validation. We believe this work contributes incrementally and responsibly to the broader field of machine learning, without introducing novel ethical concerns that would require special mitigation beyond existing standards.
+
+
+
+\newpage
+\bibliography{example_paper}
+\bibliographystyle{icml2026}
+
+\newpage
+\appendix
+\onecolumn
+\input{appendix}
+
+\end{document}

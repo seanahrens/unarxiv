@@ -1,0 +1,25 @@
+\section{Limitations}
+% In this paper, we utilise expert validation and evaluate our pipeline on real-world, heterogeneous, and largely unstructured sources. Nevertheless, several limitations remain. Our analysis is restricted to open-access articles indexed in the queried bibliographic sources. As a result, the pipeline matched only around 26\% of the articles in our ground-truth dataset.
+% In addition, the pipeline adopts the same exclusion choices, e.g. English-only screening. Therefore non-English evidence and certain study types are systematically omitted, potentially biasing the pool of articles.
+
+% To prioritise recall, we instructed the LLM to err on the side of caution. For example, parameter-class flagging achieves high recall, but at the cost of a lower precision, indicating that downstream human filtering would still be required.
+
+% Our work focuses on automating retrieval, screening, and structured extraction. We do not evaluate deliberation-heavy steps such as meta-analysis and final review writing.
+% To improve controllability, \name{} is intentionally constrained into staged prompts and schema-validated tool calls, but it does not fully exercise broader agentic behaviours like iteratively resolving retrieval failures.
+
+% Finally, the system depends on non-trivial infrastructure, including LLMs with long-context capabilities and OCR for PDF-to-Markdown processing. At scale, deployment is further constrained by compute availability, context limits, and reliance on external services, which affects accessibility and reproducibility.
+% To prioritise accessibility, we used mainly open-weight models and therefore do not benchmark against proprietary alternatives.
+
+We note several limitations in our study design that point to promising future directions for research. First, our data coverage is limited. Our analysis is restricted to open-access articles, matching only around $26\%$ of the ground-truth dataset. English-only screening further excludes certain studies, potentially introducing corpus-level bias where multilingual literature carries material epidemiological signal.%\footnote{The restriction to monolingual (English) corpora is shared with PERG's own methodology and is therefore not specific to \name{}.}
+
+%\paragraph{Precision-recall design choices.} 
+Second, our evaluation metrics our opinionated and possibly not correct for all use cases. To prioritise recall, we instruct the LRM to err on the side of inclusion. Parameter-class flagging achieves high recall ($0.92$) at the cost of low precision ($0.51$), meaning downstream human filtering remains necessary. As extracted fields and values feed directly into evidence-based policy recommendations, imprecision is an important practical concern.
+
+%\paragraph{Agency and tool co-design.}
+Third, our stage-specific orchestration limits the agentic ability of our system. \name{} is intentionally constrained into staged prompts and schema-validated tool calls, and does not fully exercise broader agentic behaviours such as iteratively resolving retrieval failures or defining its own extraction schemas in response to novel study designs. We co-developed and validated extraction tools with human experts but did not formally quantify this process.
+
+%\paragraph{Evidence synthesis.} 
+Fourth, our coverage of the complete evidence synthesis process is incomplete. Our work covers retrieval, screening, and structured extraction; we do not evaluate deliberation-heavy steps such as meta-analysis or final review writing. The report generation stage produces narrative synthesis without inferential statistics. Whether models can correctly specify and fit statistical models (such as generalised logistic regression across stratified parameter subtypes) and produce interpretations genuinely grounded in thousands of collected data points, rather than relying on surface-level fluency, remains an open and important question.
+
+%\paragraph{Infrastructure and reproducibility.} 
+Finally, we note limitations around infrastructure access that affect the community's ability to reproduce our results. \name{} depends on LRMs with long-context capabilities and OCR for PDF-to-Markdown processing. At scale, deployment is conditioned on compute availability, context window limits, and reliance on external services. To prioritise reproducibility, we evaluated primarily open-weight models alongside \texttt{GPT-5.2}. More broadly, progress towards smaller and more efficient models is a precondition for equitable access to AI-assisted scientific synthesis, without which such capabilities may concentrate within institutions with privileged access to frontier compute.
