@@ -482,7 +482,7 @@ export async function handleNarrateUpgrade(
       // NOTE: MODAL_UPGRADE_FUNCTION_URL env var must be set in Cloudflare secrets
       // (replaces the old MODAL_PREMIUM_FUNCTION_URL secret)
       const upgradeUrl = env.MODAL_UPGRADE_FUNCTION_URL
-        || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
+        || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-upgrade-narration");
       const resp = await fetch(upgradeUrl, {
         method: "POST",
         headers: {

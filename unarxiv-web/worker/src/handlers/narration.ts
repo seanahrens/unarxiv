@@ -154,7 +154,7 @@ async function handleSponsoredPlus1(
       }
 
       const upgradeUrl = env.MODAL_UPGRADE_FUNCTION_URL
-        || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
+        || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-upgrade-narration");
       const resp = await fetch(upgradeUrl, {
         method: "POST",
         headers: {
