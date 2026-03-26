@@ -1,0 +1,149 @@
+'Generative CI' through Collective Response Systems.
+
+By Aviv Ovadya.
+
+Motivation.
+
+Most current approaches for group understanding and decision-making don't work well at scale; particularly given the warped incentives of the modern attention economy:
+
+Thoughtful deliberation doesn't scale: If a 'town hall' of a thousand people all try to talk and listen simultaneously, the result is just noise. Alternatively, if people speak one by one, that can take days. With a million people, this would take decades for a single issue, so most people impacted by a policy or conflict cannot meaningfully speak or listen.
+
+People feel voiceless and disrespected: People often don't feel empowered to express their perspectives, and don't see their views and experiences reflected. This creates mistrust and causes people to tune out of governance and conflict resolution processes.
+
+Valuable insights are missed: 'Knowledge keys', information, ideas, and insights that can help overcome entrenched conflicts, are often missed. These often originate in those closest to an issue, many of whom have minimal reach through standard channels.
+
+Divisiveness wins over common ground: Stirring up conflict is rewarded far more than identifying and elevating common ground.
+
+However, connectivity, machine learning, and democratic practice advances may allow us to overcome some of these challenges with 'simultaneous communication at a scale.'
+
+Collective response systems are meant to enable groups of arbitrary scale to make generative decisions (for example, decisions where the participants develop the option space). They are designed to get as close as possible to one version of the 'democratic ideal', that in collective decisions:
+
+First, Everyone has the ability to respond with their perspective Second, Everyone's response is listened to and incorporated. Third, The response(s) that best represent the group is chosen.
+
+Collective response systems are decision and deliberation-focused, and aim to avoid the perverse incentives of entertainment or politics-focused communication environments (for example, social media) where attention-seeking behaviors are rewarded. They enable a form of focused simultaneous communication at scale. They also enable collectives to be treated as single agents, which can then interact with other such collective agents.
+
+Contributions.
+
+This framing paper defines the structure, processes, key properties, and key principles of collective response systems. It is intended to provide a shared language for research and practice around collective intelligence facilitation and scaled democratic decision-making, informed by advances in human-computer interaction and artificial intelligence.
+
+Structure and Process.
+
+ A collective response system is a collective intelligence facilitation system that satisfies the structure, processes, properties, and principles described below, in sections and.
+
+Input.: A group and a prompt
+
+There are two inputs to the system: the prompt which might be a question, something to be completed, etc. and a group which is the set of participants.
+
+For example:
+
+Examples:
+
+For the citizens of a city: The most important challenge in education facing our city is...
+
+For a platform like Facebook: What kinds of behavior should not be allowed on this platform?
+
+For students about to graduate: Who should be our graduation speaker?
+
+For an organization: The core values of our organization should be:
+
+For the global population: The most important steps we should be taking to address climate change are...
+
+Output.: A representative distillation of the evaluations and optionally the raw and/or derived data.
+
+The core outputs of such a collective response system are an approximation or aggregation of the responses that meaningfully and representatively convey the 'best' response(s). This can most generally be referred to as a representative distillation.
+
+The definition of 'best' is largely open to interpretation but is constrained by the key-principleskey principles described below. For example, the responses with the most approval might be considered the best, though other approaches may be used instead (for example, the bridging-based ranking implemented by Polis's group informed consensus or by Twitter's Community Notes ). Outputs such as for example, the "best response" may also be used in downstream systems, including as collective-dialoguedescribed below in future collective response processes.
+
+In addition, derived data useful for reflecting back the responses and evaluations of the group may be output. For example, systems like Polis can show participants how issues and people fit on a map of perspectives. Finally, raw results such as the responses and evaluations may be output for further processing and analysis.
+
+Process.: Responding, Evaluating, Distilling
+
+A process facilitated by a collective response system is called a collective response process. Such processes are made up of three kinds of subprocess:
+
+Responding subprocess: Everyone in the group can (optionally) respond to the prompt.
+
+Evaluating subprocess: Everyone in the group evaluates some subset of the responses (potentially chosen by the system).
+
+Distilling subprocess: The system approximates and/or aggregates the evaluations of each response to produce a useful output.
+
+For example:
+
+Putting this all together, consider the case of five thousand people in a city participating in a collective dialogue on education policy.
+
+The collective response process in this case might look like this:
+
+First, Responding: Participants are asked: "What is the most important challenge in education facing our city?" They can respond with a short answer, a response. In systems like Polis and Remesh these responses are usually short, for example, one to three sentences. Second, Evaluating: Participants are assigned 'voting tasks', for example, to evaluate if they agree or disagree with a response. Third, Distilling: The system can then show the participants which responses have the most approval and also the most common ground across (for example, political) divides.
+
+Such a process can be executed in as little as 5 minutes (for example, synchronously with Remesh), or over days or weeks (for example, asynchronously and iteratively with Polis ).
+
+Properties and Principles.
+
+Key properties.
+
+The following properties must be satisfied for a system to be a collective response system:
+
+First, Participant Agency: Participants themselves may suggest responses instead of being limited to a fixed set, this may be referred to as "participatory perspectives". Second, Parallel Communication: Every participant doesn't need to talk to or listen to every other in order to move the process forward. This may rely on methods such as bracketing (that is, roughly analogous to breakout groups ) and elicitation inference (that is, methods for approximating how the participants would evaluate every response given evaluations of a subset). Third, Representative Distillation: There is some mechanism for approximating and/or aggregating the input of all of the participants to get evaluations representative of the whole. The resulting distilled outputs (which may include a "map" of output ), are shared back to the participants.
+
+Key principles.
+
+In addition, the design of a collective response system must be designed to satisfy the following key principles in order to live up to the democratic ideals described earlier:
+
+First, Collective Oriented: The system design prioritizes supporting/understanding a group and its decision-making over supporting/understanding an individual and their decision-making. Second, Prompt Oriented: The system design prioritizes the creation of outputs that best respond to the input prompt over other goals (for example, entertainment). Third, Deliberation Oriented: The system design prioritizes affordances and incentives that support participants understanding the potential choices, and each other's perspectives on them, over other goals (for example, engagement). (For example, this can involve supporting actions such as identifying common ground, surfacing insight, self-reflection on group experiences, and mapping of perspectives.) Fourth, Fair Hearing Oriented: The system design must ensure that all participants are given a fair hearing, all responses are given the opportunity to be heard by the group such that they may end up being considered the best.
+
+Properties are binary and clearcut, while the principles leave more room for interpretation; there may be additional philosophical, empirical, and normative work to be done to refine these principles further.
+
+Collective Dialogue.
+
+A collective dialogue system (CDS) is a collective response system with some form of iteration or feedback loop, such that participants repeatedly interact with the system to create new responses based on previous outputs (either to the same prompts or new prompts). The term collective dialogue can be used as shorthand for a collective dialogue process (the processes facilitated by a CDS).
+
+Such a dialogue process enables further drilling down into details, motivations, and blockers for the most promising solutions. They can also be used for any other sense-making or iterative decision-making task.
+
+For example:
+
+Consider the example earlier asking "What is the most important challenge in education facing our city?". If it was part of a collective dialogue, after the first answer, a follow-up question might be asked based on the responses that are deemed most representative, in a new collective response process with the same participants. This might look like asking: "What do you think is the best solution for addressing [that challenge]?"
+
+Existing Work and Related Concepts.
+
+ There are many existing partial implementations of collective response systems and a few complete ones. Some of the most notable include WikiSurvey's like Polis and All Our Ideas. Remesh and similar tools focus on approximation components which enable greater scale. An alternative approach can be found in bracketing systems like PSiApp. Some processes created for citizens' assemblies and deliberative polls may also fulfill the criteria for a collective response system. Relatedly, sortition-based selection of participants can be used to select people within a much larger group in situations where using collective response systems for the entire group is impractical.
+
+Collective response systems can blur the lines between governance systems and recommender systems. For example, collective response systems may use methods such as matrix factorization to support approximation. More recent approaches have also involved the use of large language models.
+
+Other kinds of online machine learning systems are also likely to be related to collective response systems (particularly depending on where and how training data is sourced). The chaining of collective response systems together into complex decision-making networks can be somewhat analogous to both prompt chaining and multi-body sortition. There may also be relevant similarities between prompt 'engineering' for generative AI and prompt design for generative CI.
+
+More generally, collective response systems are often meant to address multi-principal-agent problems, so prior work related to such problems is likely to be relevant. Finally disciplines including social choice theory have much to say on potential definitions of 'best', though the insight of other disciplines can also be incorporated. This is clearly not an exhaustive list, but simply meant to illustrate part of the breadth of related work.
+
+Conclusion.
+
+The underlying ideas and ideals of collective response systems are not new, this paper is primarily meant to articulate them succinctly, with the goal of creating a useful shared language.
+
+Collective response systems support understanding of a group's values, needs, and desires by combining participant-led responses and evaluations with a reversal of attention economy incentives, which then helps create decisive mandates. Such systems can be used to identify and reward responses that can bridge divides, the opposite of most modern politics, media, and social media. Anecdotally, collective response systems can also be incredibly efficient at surfacing new insights from those closest to the issues, and people feel heard and respected when they see their responses incorporated into the process.
+
+Limitations.
+
+Collective response systems are not a panacea.
+
+An isolated collective response process will only elicit gut opinions, not considered judgments. This is somewhat addressed in more elaborate (and expensive) processes such as citizens assemblies and deliberative polls through access to educational materials, experts, stakeholders, compensated time, and careful neutral moderation. Such resourcing and deliberative depth is crucial for decisions of significant importance.
+
+Some (but not all) of the downsides of the collective response system can be overcome with iteration, that is, collective dialogues. Such iteration can enable deeper and more deliberative explorations. Iterated or chained collective dialogues can even be used to determine for example, what questions are most important to ask experts, stakeholders, or the entire group.
+
+However, even when using a well-designed collective dialogue system, careful process design is crucial. Particular collective response systems implementations may also have significant tradeoffs, for example, in their capacity to be chained together into dialogues, to incorporate new information from participants mid-process, to be synchronous vs. asynchronous, to involve text vs. audio or video, etc. All of these factors must be taken into account.
+
+Many digitally mediated collective response systems do not, by default, enable normal human relationship formation (similar to ordinary, non-generative, voting systems). However, they do (surprisingly) appear to enable a valuable form of connection and trust despite that, likely by facilitating a form of collective introspection and helping identify areas of common ground through representative distillation.
+
+Where possible, collective response processes would ideally be used as a complement to deeper deliberative processes instead of a replacement. For example, they might be used by a citizens' assembly to get open-ended public input from the public in order to support its decision-making. Due to their lower overheard, collective response processes may also be run on a regular basis, far more often than assemblies, for less important decisions or for specific components of a governance process where deep personal deliberation is less crucial.
+
+Opportunities.
+
+While not appropriate for all collective decisions, collective response systems may help for embed new forms of sense-making, governance, democracy, and agency at every level of society:
+
+Governance and Conflict: They can be deployed by representatives, civil servants, citizen assemblies, and conflict mediators to meaningfully include the broader (busy) public.
+
+'Corporate democracy': They support a new form of corporate governance, going beyond just shareholders and elite stakeholders to users, employees, and the impacted public.
+
+Media and Understanding: They can support a new form of collective introspection, helping a public 'know itself', identify common ground, and thus better navigate internal and external challenges.
+
+There is a significant opportunity for research to create evaluation protocols and metrics for such systems, understand the impacts of different design decisions, and thus develop increasingly better systems (and chains of systems) for different purposes and contexts.
+
+Just as advances in machine learning have lead to new ways of interacting with computers by enabling 'generative AI', advances in collective response systems can lead to new ways of interacting with groups by supporting 'generative collective intelligence' (CI).
+
+Thanks for listening. This has been an audio narration of 'Generative CI' through Collective Response Systems. By Aviv Ovadya. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
