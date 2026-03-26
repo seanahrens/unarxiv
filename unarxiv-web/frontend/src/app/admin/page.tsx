@@ -811,7 +811,7 @@ const externalLinks = [
   {
     label: "Worker Secrets",
     url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/workers/services/view/unarxiv-api/production/settings/bindings",
-    description: "MODAL_WEBHOOK_SECRET, ADMIN_PASSWORD, ENCRYPTION_KEY",
+    description: "MODAL_WEBHOOK_SECRET, ADMIN_PASSWORD, ENCRYPTION_KEY, MODAL_UPGRADE_FUNCTION_URL",
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
