@@ -641,6 +641,27 @@ def narrate_paper_premium(
             print(f"Using parser-extracted title: {paper_title}")
         print(f"Free-tier script: {len(speech):,} chars")
 
+        # Save the regex-only script to R2 in parallel so we always have it
+        # for comparison, even though the hybrid script is the one that gets TTS.
+        regex_version_id = uuid.uuid4().hex[:12]
+        regex_transcript_r2_key = f"transcripts/{arxiv_id}/v{regex_version_id}.txt"
+        regex_transcript_local = os.path.join(work_dir, f"{arxiv_id}-regex-transcript.txt")
+        with open(regex_transcript_local, "w") as f:
+            f.write(speech)
+        print(f"Uploading regex script to R2: {regex_transcript_r2_key}")
+        upload_to_r2(regex_transcript_local, regex_transcript_r2_key, content_type="text/plain; charset=utf-8")
+        # Report the regex script as a base-tier version (script-only, no audio)
+        send_status(callback_url, secret, arxiv_id,
+                    status="script_ready",
+                    narration_tier="base",
+                    version_id=regex_version_id,
+                    transcript_r2_key=regex_transcript_r2_key,
+                    script_char_count=len(speech),
+                    scripter_mode="regex",
+                    tar_bytes=parsed.tar_bytes,
+                    latex_char_count=parsed.latex_char_count,
+                    figure_count=parsed.figure_count)
+
         # Strip version tag before passing to LLM / TTS
         tts_text = re.sub(r"\n\n%%%+ .+ %%%+\s*$", "", speech)
 

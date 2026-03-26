@@ -329,7 +329,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
   const [view, setView] = useState<"abstract" | "script">("abstract");
-  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded"; llmProvider: string | null; llmModel: string | null; createdAt: string | null; charCount: number }[]>([]);
+  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded"; llmProvider: string | null; llmModel: string | null; createdAt: string | null; charCount: number; scripterMode: string | null }[]>([]);
   const [activeScriptTab, setActiveScriptTab] = useState<string>("base");
   const [scriptLoading, setScriptLoading] = useState(false);
   const scriptsFetched = useRef(false);
@@ -434,7 +434,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
       // Fetch base transcript
       const base = await fetchTx(transcriptUrl(paper.id));
-      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null, charCount: base.text.length });
+      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null, charCount: base.text.length, scripterMode: null });
 
       // Fetch premium version transcripts
       try {
@@ -445,7 +445,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
           if (tx) {
             const avg = avgScore(v);
             const scoreLabel = avg != null ? ` (${(avg * 10).toFixed(1)})` : "";
-            tabs.push({ key: `v${v.id}`, label: `AI Script${scoreLabel}`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at, charCount: tx.text.length });
+            tabs.push({ key: `v${v.id}`, label: `AI Script${scoreLabel}`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at, charCount: tx.text.length, scripterMode: v.scripter_mode });
           }
         }
       } catch {}
@@ -664,12 +664,19 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
                       <p className="text-xs text-stone-400">
                         {(() => {
                           const parts: string[] = [];
+                          // Scripter type as the first metadata item
+                          const mode = active.scripterMode
+                            ?? (active.type === "upgraded" ? "llm" : "regex");
+                          const scripterLabel: Record<string, string> = {
+                            regex: "Regex Scripter",
+                            hybrid: "Hybrid Scripter",
+                            llm: "LLM Scripter",
+                          };
+                          parts.push(scripterLabel[mode] ?? mode);
                           if (active.type === "upgraded") {
                             const provider = formatLlmProvider(active.llmProvider);
                             const model = formatLlmModel(active.llmModel);
                             parts.push(provider ? `${provider} / ${model}` : model);
-                          } else {
-                            parts.push("Programmatic Script");
                           }
                           const dateStr = active.createdAt || active.date;
                           if (dateStr) {

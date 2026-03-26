@@ -680,6 +680,7 @@ export async function handleGetVersions(env: Env, id: string, baseUrl: string): 
       score_figures: v.score_figures ?? null,
       score_tts: v.score_tts ?? null,
       score_overall: v.score_overall ?? null,
+      scripter_mode: v.scripter_mode ?? null,
     })),
     best_version_id: paper.best_version_id,
     is_narrating: paper.status === "narrating",

@@ -16,6 +16,7 @@ interface TranscriptData {
   llmModel: string | null;
   createdAt: string | null; // raw created_at from version
   charCount: number; // character count of the transcript text
+  scripterMode: string | null; // 'regex' | 'llm' | 'hybrid'
 }
 
 export default function ScriptPageContent() {
@@ -54,7 +55,7 @@ export default function ScriptPageContent() {
         ""
       );
       const finalText = stripped || text;
-      return { text: finalText, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null, llmProvider: null, llmModel: null, createdAt: null, charCount: finalText.length };
+      return { text: finalText, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null, llmProvider: null, llmModel: null, createdAt: null, charCount: finalText.length, scripterMode: null };
     } catch {
       return null;
     }
@@ -102,6 +103,7 @@ export default function ScriptPageContent() {
               llmProvider: v.llm_provider,
               llmModel: v.llm_model,
               createdAt: v.created_at,
+              scripterMode: v.scripter_mode,
             });
           }
         }
@@ -214,12 +216,19 @@ export default function ScriptPageContent() {
             <p className="text-xs text-stone-400">
               {(() => {
                 const parts: string[] = [];
+                // Scripter type as the first metadata item
+                const mode = activeTranscript.scripterMode
+                  ?? (activeTranscript.scriptType === "upgraded" ? "llm" : "regex");
+                const scripterLabel: Record<string, string> = {
+                  regex: "Regex Scripter",
+                  hybrid: "Hybrid Scripter",
+                  llm: "LLM Scripter",
+                };
+                parts.push(scripterLabel[mode] ?? mode);
                 if (activeTranscript.scriptType === "upgraded") {
                   const provider = formatLlmProvider(activeTranscript.llmProvider);
                   const model = formatLlmModel(activeTranscript.llmModel);
                   parts.push(provider ? `${provider} / ${model}` : model);
-                } else {
-                  parts.push("Regex Parser");
                 }
                 // Use created_at from version if available, otherwise fall back to Last-Modified header date
                 const dateStr = activeTranscript.createdAt || activeTranscript.date;

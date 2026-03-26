@@ -714,6 +714,7 @@ export interface PaperVersion {
   score_figures: number | null;
   score_tts: number | null;
   score_overall: number | null;
+  scripter_mode: string | null; // 'regex' | 'llm' | 'hybrid'
 }
 
 export interface PaperVersionsResponse {
