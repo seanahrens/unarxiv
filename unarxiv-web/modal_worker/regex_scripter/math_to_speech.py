@@ -111,6 +111,9 @@ _SUPERSCRIPT_WORDS = {
     "n": " to the n",
     "k": " to the k",
     "i": " to the i",
+    "\\circ": " degrees",  # e.g. $360^{\circ}$ → "360 degrees"
+    "\\dagger": " dagger",
+    "\\dag": " dagger",
 }
 
 

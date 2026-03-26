@@ -57,9 +57,11 @@ def _expand_simple_macros(latex: str) -> str:
     latex = re.sub(r"\\gradientRGB\{([^}]*)\}\{[^}]*\}\{[^}]*\}", r"\1", latex)
 
     # Find all \newcommand{\name}{body} with no arguments (no [N])
+    # Pattern allows one level of nested braces in the body (e.g., \textbf{Name}).
     macros: dict[str, str] = {}
     for m in re.finditer(
-        r"\\(?:new|renew|provide)command\*?\{(\\[a-zA-Z]+)\}\s*\{([^{}]*)\}",
+        r"\\(?:new|renew|provide)command\*?\{(\\[a-zA-Z]+)\}\s*"
+        r"\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}",
         latex
     ):
         cmd_name = m.group(1)
@@ -70,6 +72,17 @@ def _expand_simple_macros(latex: str) -> str:
             macros[cmd_name] = clean
         elif len(replacement) < 100 and "\\" not in replacement:
             macros[cmd_name] = replacement
+        else:
+            # Try stripping inline formatting wrappers to extract plain text.
+            # Handles: \newcommand{\ours}{\textbf{SomeName}\xspace} → "SomeName"
+            # This recovers system/dataset names defined with bold/italic markup.
+            plain = re.sub(
+                r"\\(?:textbf|textit|emph|textsc|texttt|textsf|text|mathbf)\{([^}]*)\}",
+                r"\1", replacement
+            )
+            plain = re.sub(r"\\xspace\s*$", "", plain).strip()
+            if len(plain) < 100 and "\\" not in plain and plain:
+                macros[cmd_name] = plain
 
     # Apply expansions (up to 3 passes for chained macros)
     for _ in range(3):
@@ -776,6 +789,8 @@ def _normalize_text(text: str) -> str:
     text = text.replace("\\#", "")
     text = re.sub(r"\\&", " and ", text)
     text = text.replace("\\%", " percent")
+    # LaTeX spacing micro-commands that contain no printable content
+    text = re.sub(r"\\[!,;:]", "", text)  # \! \, \; \: — negative/thin/thick math spaces
 
     # ORCID identifiers
     text = re.sub(r"\\orcid\{[^}]*\}", "", text)

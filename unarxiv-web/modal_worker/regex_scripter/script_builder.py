@@ -96,6 +96,14 @@ def finalize_body(text: str) -> str:
     text = re.sub(r"[ \t]+", " ", text)
     lines = [l for l in text.split("\n") if l.strip() not in (".", ",", ";", ":", "-", "–")]
     text = "\n".join(lines)
+    # Strip lines that are only TeX length/spacing residue, e.g. ", -2ex," or " ,-1.5ex."
+    # These are left over from partially stripped column specs or \vspace-style commands.
+    text = re.sub(
+        r"^\s*[,\s]*-?\d+\.?\d*(?:ex|em|pt|cm|mm|in|sp|bp|pc)\s*[,.\s]*$",
+        "",
+        text,
+        flags=re.MULTILINE,
+    )
     # Deduplicate consecutive identical short paragraph headers
     # e.g., "Abstract.\n\nAbstract." -> "Abstract." (ICML two-abstract-block pattern)
     text = re.sub(r"([A-Z][^\n]{2,60}\.)\n\n\1(?=\n)", r"\1", text)
