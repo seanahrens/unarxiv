@@ -206,24 +206,34 @@ def _find_main_tex(extract_dir: str) -> str | None:
     return root_files[0] if root_files else (candidates[0] if candidates else None)
 
 
+def _parse_input_paths(content: str, base_dir: str) -> list[str]:
+    """Extract extra search directories from \\def\\input@path or \\makeatletter blocks."""
+    import re
+    extra: list[str] = []
+    # Match \def\input@path{{dir1/}{dir2/}} or \input@path{{dir/}}
+    for m in re.finditer(r'\\input@path\{(.+?)\}(?=\s|%|$)', content):
+        for sub in re.findall(r'\{([^}]*)\}', m.group(1)):
+            if sub:
+                p = sub if os.path.isabs(sub) else os.path.join(base_dir, sub)
+                if os.path.isdir(p):
+                    extra.append(p)
+    return extra
+
+
 def _inline_latex_inputs(
     file_path: str,
     max_chars: int,
     _visited: set[str] | None = None,
+    _extra_dirs: list[str] | None = None,
 ) -> str:
-    """Recursively inline \input{} and \include{} commands in a LaTeX file.
+    """Recursively inline \\input{} and \\include{} commands in a LaTeX file.
 
-    Replaces each \input{filename} command with the actual content of the
+    Replaces each \\input{filename} command with the actual content of the
     referenced file, recursing into nested includes. This produces a single
     complete LaTeX document in the correct logical order.
 
-    Args:
-        file_path: Absolute path to the .tex file to read and inline.
-        max_chars: Stop inlining once total chars reaches this limit.
-        _visited: Set of already-visited file paths (cycle guard).
-
-    Returns:
-        The fully inlined LaTeX content, capped at max_chars.
+    Respects \\def\\input@path{{dir/}} for papers that store content in
+    subdirectories (e.g. content/sec/1_intro.tex referenced as sec/1_intro).
     """
     import re
 
@@ -242,6 +252,12 @@ def _inline_latex_inputs(
         return ""
 
     base_dir = os.path.dirname(file_path)
+
+    # On first call, parse \input@path from the document for extra search dirs
+    if _extra_dirs is None:
+        _extra_dirs = _parse_input_paths(content, base_dir)
+
+    search_dirs = [base_dir] + _extra_dirs
 
     # Replace \input{filename} and \include{filename} with inlined content.
     # Handles optional .tex extension in the argument.
@@ -265,16 +281,19 @@ def _inline_latex_inputs(
 
         ref = m.group(1).strip()
         # Try the path as-is, then with .tex appended
-        candidate_paths = [ref]
+        suffixes = [ref]
         if not ref.endswith(".tex"):
-            candidate_paths.append(ref + ".tex")
+            suffixes.append(ref + ".tex")
 
         inlined = ""
-        for cand in candidate_paths:
-            full = cand if os.path.isabs(cand) else os.path.join(base_dir, cand)
-            if os.path.isfile(full):
-                remaining = max_chars - total_chars
-                inlined = _inline_latex_inputs(full, remaining, _visited)
+        for d in search_dirs:
+            for cand in suffixes:
+                full = cand if os.path.isabs(cand) else os.path.join(d, cand)
+                if os.path.isfile(full):
+                    remaining = max_chars - total_chars
+                    inlined = _inline_latex_inputs(full, remaining, _visited, _extra_dirs)
+                    break
+            if inlined:
                 break
 
         parts.append(inlined)
