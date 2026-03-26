@@ -223,6 +223,9 @@ def _convert_sqrt(expr: str) -> str:
     return expr
 
 
+_ORDINAL_SUFFIXES = {"th", "st", "nd", "rd"}
+
+
 def _convert_superscripts(expr: str) -> str:
     """Convert x^{2} → 'x squared', x^{n} → 'x to the n'."""
     # Braced superscripts: ^{...}
@@ -231,8 +234,18 @@ def _convert_superscripts(expr: str) -> str:
         if not m:
             break
         content = m.group(1).strip()
-        if content in _SUPERSCRIPT_WORDS:
+        # Strip \text{...} / \mathrm{...} wrappers to expose plain suffix
+        content_plain = re.sub(
+            r"\\(?:text|mathrm|mathit|mathbf|mathsf|mathtt)\{([^{}]*)\}",
+            r"\1", content,
+        ).strip()
+        if content_plain in _ORDINAL_SUFFIXES:
+            # Ordinal suffix: "27^{th}" → "27th" (no space, no "to the power of")
+            spoken = content_plain
+        elif content in _SUPERSCRIPT_WORDS:
             spoken = _SUPERSCRIPT_WORDS[content]
+        elif content_plain in _SUPERSCRIPT_WORDS:
+            spoken = _SUPERSCRIPT_WORDS[content_plain]
         else:
             spoken = f" to the power of {content}"
         expr = expr[:m.start()] + spoken + expr[m.end():]

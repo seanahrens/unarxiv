@@ -42,7 +42,7 @@ def build_footer(title: str, date: str, authors: list[str]) -> str:
         parts.append(_format_authors(authors))
     if date:
         parts.append(f"Published on {date}.")
-    parts.append("Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.")
+    parts.append("Narrated by unarxiv dot org.")
     return "\n\n" + " ".join(parts)
 
 
