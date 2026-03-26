@@ -636,6 +636,14 @@ def _strip_citations(text: str) -> str:
     # "(e.g. ; ; )" or "(e.g.)" → "" — the intro phrase is meaningless without citations
     text = re.sub(r"\(\s*(?:e\.g\.|i\.e\.)\s*[;,\s]*\)", "", text)
 
+    # Clean up orphaned "by, etc." / "by, and others" after stripped \cite chains
+    # "inspired by, etc." → "inspired by others"
+    text = re.sub(r"\bby\s*,\s*etc\.", "by others", text)
+    # "inspired by, and others" → "inspired by others"
+    text = re.sub(r"\bby\s*,\s*and others", "by others", text)
+    # Standalone orphaned ", etc." preceded by space (after cite removal) → ""
+    text = re.sub(r"\s*,\s*etc\.\s*(?=[.,;:!?\s]|$)", " ", text)
+
     # Clean up empty parentheses/brackets left by dropped citations
     text = re.sub(r"\(\s*\)", "", text)
     text = re.sub(r"\[\s*\]", "", text)
@@ -823,12 +831,32 @@ def _normalize_text(text: str) -> str:
     text = re.sub(r"\bfrom\s+\.", ".", text)
 
     # Dangling "in/see Section" with no number → replace with readable phrase
-    # "in Section." → "in a later section."  (preserves sentence structure)
-    text = re.sub(r"\bin\s+Section\s*(?=[.,;:)])", "in a later section", text)
-    text = re.sub(r"\bsee\s+Section\s*(?=[.,;:)])", "see a later section", text)
+    # Use varied phrasing to avoid repetition when a paper has many cross-references
+    _in_section_phrases = [
+        "in a later section", "as discussed below", "later in this paper",
+        "as we will see", "in a subsequent section",
+    ]
+    _see_section_phrases = [
+        "see a later section", "see below", "see later in this paper",
+        "as we will see", "see a subsequent section",
+    ]
+    _section_counter = [0]  # mutable counter for cycling
+
+    def _varied_section_ref(match: re.Match) -> str:
+        prefix = match.group(1).lower()
+        phrases = _see_section_phrases if prefix == "see" else _in_section_phrases
+        phrase = phrases[_section_counter[0] % len(phrases)]
+        _section_counter[0] += 1
+        return phrase
+
+    text = re.sub(r"\b(in|see)\s+Section[s]?\s*(?=[.,;:)])", _varied_section_ref, text, flags=re.IGNORECASE)
 
     # "Figure" / "Table" etc. with no number following → remove
     text = re.sub(r"\b(Figure|Fig\.|Table|Section|Eq\.|Equation)\s*(?=[,.\s;:)]|$)", "", text, flags=re.MULTILINE)
+
+    # Clean up parenthetical phrases now empty after ref stripping
+    # "(see )" or "(see also )" or "(cf. )" → ""
+    text = re.sub(r"\(\s*(?:see\s+(?:also\s+)?|cf\.\s*)\)", "", text)
 
     # Clean up doubled punctuation (but preserve ellipsis — three or more consecutive dots)
     text = re.sub(r"([!?])\.", r"\1", text)          # !. -> !  and ?. -> ?
