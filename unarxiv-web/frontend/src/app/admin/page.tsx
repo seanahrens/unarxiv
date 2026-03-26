@@ -445,7 +445,10 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
     if (periodOrder.length <= 1) return PAD.left + cW / 2;
     return PAD.left + (idx / (periodOrder.length - 1)) * cW;
   };
-  const scoreToY = (score: number) => PAD.top + (1 - score) * cH;
+  // Y-axis range: 50%–100% for better resolution on actual score changes
+  const Y_MIN = 0.5;
+  const Y_MAX = 1.0;
+  const scoreToY = (score: number) => PAD.top + ((Y_MAX - Math.max(score, Y_MIN)) / (Y_MAX - Y_MIN)) * cH;
 
   const renderSeries = (key: string, stroke: string, fill: string) => {
     const points: { x: number; y: number; period: string }[] = [];
@@ -469,8 +472,8 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
     );
   };
 
-  // Grid lines at 0.25, 0.5, 0.75
-  const gridLines = [0.25, 0.5, 0.75, 1.0];
+  // Grid lines within the 50–100% range
+  const gridLines = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
 
   // X-axis labels: first, last, and any in between if space allows (max 5)
   const firstPeriod = periodOrder[0];
@@ -507,8 +510,8 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
             </text>
           </g>
         ))}
-        {/* Y=0 baseline */}
-        <line x1={PAD.left} y1={scoreToY(0)} x2={PAD.left + cW} y2={scoreToY(0)} stroke="#a8a29e" strokeWidth="1" />
+        {/* Y=50% baseline */}
+        <line x1={PAD.left} y1={scoreToY(Y_MIN)} x2={PAD.left + cW} y2={scoreToY(Y_MIN)} stroke="#a8a29e" strokeWidth="1" />
         {/* Series */}
         {hasRegex && renderSeries("regex", "#ef4444", "#ef4444")}
         {hasLlm && renderSeries("llm", "#3b82f6", "#3b82f6")}
