@@ -1,6 +1,6 @@
 /**
- * Tests for premium narration endpoints:
- *   POST /api/papers/:id/narrate-premium  (3 request shapes)
+ * Tests for upgrade narration endpoints:
+ *   POST /api/papers/:id/narrate-upgrade  (3 request shapes)
  *   GET  /api/papers/:id/estimate
  *   GET  /api/papers/:id/versions
  */
@@ -66,7 +66,7 @@ describe("GET /api/papers/:id/estimate", () => {
     expect(opt).toHaveProperty("tts_cost");
     expect(opt).toHaveProperty("total_cost");
     expect(opt).toHaveProperty("quality_rank");
-    expect(opt.quality_rank).toBeGreaterThan(0); // premium ranks >= 5
+    expect(opt.quality_rank).toBeGreaterThan(0); // upgrade ranks >= 5
   });
 
   it("options are sorted best quality first", async () => {
@@ -101,12 +101,12 @@ describe("GET /api/papers/:id/versions", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/papers/:id/narrate-premium  — missing ENCRYPTION_KEY guard
+// POST /api/papers/:id/narrate-upgrade  — missing ENCRYPTION_KEY guard
 // ─────────────────────────────────────────────────────────────────────────────
-describe("POST /api/papers/:id/narrate-premium — validation", () => {
+describe("POST /api/papers/:id/narrate-upgrade — validation", () => {
   it("returns 404 for unknown paper", async () => {
     const encKey = await encryptKey("sk-test", "openai");
-    const resp = await SELF.fetch(`${BASE}/api/papers/9999.11111/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/9999.11111/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "unified", provider: "openai", encrypted_key: encKey }),
@@ -116,7 +116,7 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
 
   it("returns 400 for invalid type field", async () => {
     await insertPaper({ id: "np.0001" });
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.0001/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.0001/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "invalid_type", provider: "openai", encrypted_key: "x" }),
@@ -128,7 +128,7 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
 
   it("returns 400 for invalid JSON body", async () => {
     await insertPaper({ id: "np.0002" });
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.0002/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.0002/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: "not-json",
@@ -139,7 +139,7 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
   it("unified: returns 400 when provider or encrypted_key missing", async () => {
     await insertPaper({ id: "np.0003" });
     // Missing encrypted_key
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.0003/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.0003/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "unified", provider: "openai" }),
@@ -152,7 +152,7 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
   it("dual: returns 400 when required fields missing", async () => {
     await insertPaper({ id: "np.0004" });
     const encKey = await encryptKey("sk-test", "openai");
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.0004/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.0004/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -169,7 +169,7 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
 
   it("free_voice: returns 400 when llm_provider or encrypted_llm_key missing", async () => {
     await insertPaper({ id: "np.0005" });
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.0005/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.0005/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "free_voice" }), // no llm_provider
@@ -181,7 +181,7 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
 
   it("returns 400 when encrypted key cannot be decrypted (corrupted)", async () => {
     await insertPaper({ id: "np.0006" });
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.0006/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.0006/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -197,14 +197,14 @@ describe("POST /api/papers/:id/narrate-premium — validation", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/papers/:id/narrate-premium — successful dispatch (no MODAL_FUNCTION_URL)
+// POST /api/papers/:id/narrate-upgrade — successful dispatch (no MODAL_FUNCTION_URL)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
+describe("POST /api/papers/:id/narrate-upgrade — successful claim", () => {
   it("unified request: claims paper and returns narrating status", async () => {
     await insertPaper({ id: "np.1001", status: "unnarrated" });
     const encKey = await encryptKey("sk-test-openai-key", "openai");
 
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.1001/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.1001/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -224,7 +224,7 @@ describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
     const llmKey = await encryptKey("sk-openai-llm", "openai");
     const ttsKey = await encryptKey("sk-openai-tts", "openai");
 
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.1002/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.1002/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -244,7 +244,7 @@ describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
     await insertPaper({ id: "np.1003", status: "unnarrated" });
     const llmKey = await encryptKey("sk-anthropic-test", "anthropic");
 
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.1003/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.1003/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -266,8 +266,8 @@ describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
 
     // Fire two concurrent requests
     const [r1, r2] = await Promise.all([
-      SELF.fetch(`${BASE}/api/papers/np.1004/narrate-premium`, { method: "POST", headers, body: payload }),
-      SELF.fetch(`${BASE}/api/papers/np.1004/narrate-premium`, { method: "POST", headers, body: payload }),
+      SELF.fetch(`${BASE}/api/papers/np.1004/narrate-upgrade`, { method: "POST", headers, body: payload }),
+      SELF.fetch(`${BASE}/api/papers/np.1004/narrate-upgrade`, { method: "POST", headers, body: payload }),
     ]);
 
     // Both should be 200 (contract: return current state)
@@ -283,7 +283,7 @@ describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
     await insertPaper({ id: "np.1005", status: "narrating" });
     const key = await encryptKey("sk-test", "openai");
 
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.1005/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.1005/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "unified", provider: "openai", encrypted_key: key }),
@@ -294,11 +294,11 @@ describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
     expect(body.status).toBe("narrating");
   });
 
-  it("failed paper: can be retried via narrate-premium", async () => {
+  it("failed paper: can be retried via narrate-upgrade", async () => {
     await insertPaper({ id: "np.1006", status: "failed" });
     const key = await encryptKey("sk-retry-test", "openai");
 
-    const resp = await SELF.fetch(`${BASE}/api/papers/np.1006/narrate-premium`, {
+    const resp = await SELF.fetch(`${BASE}/api/papers/np.1006/narrate-upgrade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "unified", provider: "openai", encrypted_key: key }),
@@ -310,9 +310,9 @@ describe("POST /api/papers/:id/narrate-premium — successful claim", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Webhook handler — premium narration completion
+// Webhook handler — upgrade narration completion
 // ─────────────────────────────────────────────────────────────────────────────
-describe("POST /api/webhooks/modal — premium webhook", () => {
+describe("POST /api/webhooks/modal — upgrade webhook", () => {
   const SECRET = "test-webhook-secret";
 
   it("updates paper status on narrated webhook", async () => {

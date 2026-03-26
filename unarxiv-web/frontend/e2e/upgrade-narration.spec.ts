@@ -28,11 +28,11 @@ const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? testEnv["WEBHOOK_SECRET"] ?
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? testEnv["ADMIN_PASSWORD"] ?? "localdev";
 
 /** Open the Upgrade Voice modal from a narrated paper page. */
-async function openPremiumModal(page: Page) {
+async function openUpgradeModal(page: Page) {
   await page.click('[data-testid="open-paper-actions"]');
-  const premiumBtn = page.locator('[data-testid="premium-narration"]');
-  await expect(premiumBtn).toBeVisible({ timeout: 5000 });
-  await premiumBtn.click();
+  const upgradeBtn = page.locator('[data-testid="upgrade-narration"]');
+  await expect(upgradeBtn).toBeVisible({ timeout: 5000 });
+  await upgradeBtn.click();
   await expect(page.locator('h2').filter({ hasText: 'Upgrade Voice' })).toBeVisible();
 }
 
@@ -54,8 +54,8 @@ async function selectOptionAndContinue(page: Page, qualityLabel: string) {
 
 test.describe("Upgrade Voice Modal", () => {
   test.beforeEach(async ({ page }) => {
-    // Clean up premium versions so the paper is in base state (not fully upgraded)
-    await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/premium-versions`, {
+    // Clean up upgrade versions so the paper is in base state (not fully upgraded)
+    await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/upgrade-versions`, {
       method: 'DELETE',
       headers: { 'X-Admin-Password': ADMIN_PASSWORD },
     }).catch(() => {});
@@ -68,11 +68,11 @@ test.describe("Upgrade Voice Modal", () => {
   });
 
   test("1. Modal opens from menu", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
   });
 
   test("2. Options displayed — verify 3 quality tiers", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await waitForOptions(page);
 
     // Verify the 3 quality labels using exact text match on the semibold span
@@ -82,7 +82,7 @@ test.describe("Upgrade Voice Modal", () => {
   });
 
   test("3. Most Lifelike Voice is default selected, Continue is enabled", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await waitForOptions(page);
 
     // Most Lifelike Voice should be pre-selected (border-stone-700)
@@ -95,7 +95,7 @@ test.describe("Upgrade Voice Modal", () => {
   });
 
   test("4. Selecting a different option updates highlight", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await waitForOptions(page);
 
     // Click More Polished Voice
@@ -109,7 +109,7 @@ test.describe("Upgrade Voice Modal", () => {
   });
 
   test("5. Step 2 — key entry form appears after Continue with More Polished Voice (OpenAI)", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await selectOptionAndContinue(page, "More Polished Voice");
 
     // Step 2 should show the password input
@@ -120,7 +120,7 @@ test.describe("Upgrade Voice Modal", () => {
   test("6. Key validation — enter OpenAI key and verify test completes", async ({ page }) => {
     test.skip(!TEST_OPENAI_KEY, "TEST_OPENAI_KEY not set — skipping key validation test");
 
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await selectOptionAndContinue(page, "More Polished Voice");
 
     await page.locator('input[type="password"]').first().fill(TEST_OPENAI_KEY);
@@ -130,7 +130,7 @@ test.describe("Upgrade Voice Modal", () => {
   });
 
   test("7. Review & Confirm disabled until key is valid", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await selectOptionAndContinue(page, "More Polished Voice");
 
     // Before entering a key, Review & Confirm should be disabled
@@ -146,19 +146,19 @@ test.describe("Upgrade Voice Modal", () => {
   });
 
   test("8. Cancel closes modal", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.locator('h2').filter({ hasText: 'Upgrade Voice' })).not.toBeVisible();
   });
 
   test("9. Backdrop click closes modal", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await page.mouse.click(10, 10);
     await expect(page.locator('h2').filter({ hasText: 'Upgrade Voice' })).not.toBeVisible();
   });
 
   test("10. Back navigation — step 2 back returns to step 1", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await selectOptionAndContinue(page, "More Polished Voice");
 
     // Verify we're on step 2
@@ -181,8 +181,8 @@ test.describe("Upgrade Voice Full Flow", () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeAll(async ({ }, testInfo) => {
-    // Clean up premium versions from any prior test run
-    await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/premium-versions`, {
+    // Clean up upgrade versions from any prior test run
+    await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/upgrade-versions`, {
       method: 'DELETE',
       headers: { 'X-Admin-Password': ADMIN_PASSWORD },
     }).catch(() => {});
@@ -201,7 +201,7 @@ test.describe("Upgrade Voice Full Flow", () => {
   });
 
   test("12. No disabled options in modal before upgrade", async ({ page }) => {
-    await openPremiumModal(page);
+    await openUpgradeModal(page);
     await waitForOptions(page);
     await expect(page.locator('[data-testid="completed-badge"]')).not.toBeVisible();
     // All options should be enabled
@@ -209,11 +209,11 @@ test.describe("Upgrade Voice Full Flow", () => {
     await expect(disabledBtns).toHaveCount(0);
   });
 
-  test("13. Simulate premium webhook → stars appear on play button", async ({ page, request }) => {
+  test("13. Simulate upgrade webhook → stars appear on play button", async ({ page, request }) => {
     // Verify no stars initially
     await expect(page.locator('[data-testid="play-stars"]')).not.toBeVisible();
 
-    // Send premium completion webhook (elevenlabs = 5 stars) directly to the worker
+    // Send upgrade completion webhook (elevenlabs = 5 stars) directly to the worker
     const webhookResponse = await request.post(`${WORKER_URL}/api/webhooks/modal`, {
       headers: {
         'Content-Type': 'application/json',
@@ -249,6 +249,6 @@ test.describe("Upgrade Voice Full Flow", () => {
 
     // Open menu and verify "Upgrade Voice" is no longer shown
     await page.click('[data-testid="open-paper-actions"]');
-    await expect(page.locator('[data-testid="premium-narration"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid="upgrade-narration"]')).not.toBeVisible();
   });
 });

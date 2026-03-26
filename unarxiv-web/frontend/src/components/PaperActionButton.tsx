@@ -9,7 +9,7 @@ import { audioUrl, formatDuration, isInProgress, getPaperVersions, type Paper, t
 import { getBestTierFromVersions, VOICE_TIERS } from "@/lib/voiceTiers";
 import PlusIcons from "@/components/PlusIcons";
 import PaperActionsMenu from "@/components/PaperActionsMenu";
-import PremiumNarrationModal from "@/components/PremiumNarrationModal";
+import UpgradeNarrationModal from "@/components/UpgradeNarrationModal";
 
 const SparklesIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -87,13 +87,13 @@ export default function PaperActionButton({
   onToggleScript?: () => void;
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
-  /** Called when the paper state changes (e.g. after premium upgrade submission) */
+  /** Called when the paper state changes (e.g. after upgrade submission) */
   onPaperUpdated?: (paper: Paper) => void;
 }) {
   const { state, actions } = useAudio();
   const { addOrMoveToTop } = usePlaylist();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = (open: boolean) => {
@@ -156,7 +156,7 @@ export default function PaperActionButton({
   const isEnhanced = upgradePlus > 0;
   const isFullyUpgraded = upgradePlus >= 3;
 
-  const openPremiumModal = () => { setShowPremiumModal(true); toggleMenu(false); };
+  const openUpgradeModal = () => { setShowUpgradeModal(true); toggleMenu(false); };
 
   if (!isNarrated && !isProcessing && !isUnnarrated && !isFailed) return null;
 
@@ -268,7 +268,7 @@ export default function PaperActionButton({
           onEnsureImported={onEnsureImported}
           onToggleScript={onToggleScript}
           currentView={currentView}
-          onOpenPremiumModal={openPremiumModal}
+          onOpenUpgradeModal={openUpgradeModal}
           hideUpgradeNarration={isFullyUpgraded}
           versions={versions}
           onPlayVersion={(v) => {
@@ -281,11 +281,11 @@ export default function PaperActionButton({
         />
       )}
 
-      {/* Premium narration modal — shared across all states */}
-      {showPremiumModal && (
-        <PremiumNarrationModal
+      {/* Upgrade narration modal — shared across all states */}
+      {showUpgradeModal && (
+        <UpgradeNarrationModal
           paper={paper}
-          onClose={() => setShowPremiumModal(false)}
+          onClose={() => setShowUpgradeModal(false)}
           onSuccess={onPaperUpdated}
         />
       )}

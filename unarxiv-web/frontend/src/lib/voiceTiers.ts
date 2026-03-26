@@ -142,7 +142,7 @@ export function formatTierForReview(tier: VoiceTier): string {
 }
 
 /**
- * Estimate total processing time for a premium narration.
+ * Estimate total processing time for an upgrade narration.
  * Includes LLM script generation (~4s per 1K chars) + TTS synthesis.
  * LLM typically expands script by ~33%, so TTS gets ~1.33x the char count.
  *

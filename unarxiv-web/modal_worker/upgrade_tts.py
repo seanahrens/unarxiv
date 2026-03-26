@@ -1,4 +1,4 @@
-"""premium_tts.py — Multi-provider premium TTS for unarXiv.
+"""upgrade_tts.py — Multi-provider upgrade TTS for unarXiv.
 
 Each provider handles its own authentication, text chunking (respecting
 provider-specific character limits), audio generation, and concatenation.
@@ -27,6 +27,8 @@ import time
 import xml.sax.saxutils as _saxutils
 from dataclasses import dataclass
 from typing import Callable, Protocol, runtime_checkable
+
+from config import SPONSORED_TTS_VOICE, FREE_TTS_CHUNK_MAX
 
 
 # ---------------------------------------------------------------------------
@@ -79,10 +81,10 @@ PROVIDER_CONFIGS: dict[str, ProviderConfig] = {
         voice="en-US-GuyNeural",
     ),
     "free": ProviderConfig(
-        chunk_max=4_000,
+        chunk_max=FREE_TTS_CHUNK_MAX,
         cost_per_char=0.0,
         secs_per_chunk=5,
-        voice="en-US-EricNeural",
+        voice=SPONSORED_TTS_VOICE,
     ),
 }
 
@@ -120,24 +122,8 @@ class TTSProvider(Protocol):
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-def _chunk_text(text: str, max_chars: int) -> list[str]:
-    """Split text into paragraph-aligned chunks of at most max_chars each."""
-    chunks: list[str] = []
-    current_paras: list[str] = []
-    current_len = 0
-    for para in text.split("\n\n"):
-        para = para.strip()
-        if not para:
-            continue
-        if current_len + len(para) > max_chars and current_paras:
-            chunks.append("\n\n".join(current_paras))
-            current_paras, current_len = [para], len(para)
-        else:
-            current_paras.append(para)
-            current_len += len(para) + 2  # +2 for "\n\n"
-    if current_paras:
-        chunks.append("\n\n".join(current_paras))
-    return chunks
+# Chunking logic is shared with tts_utils.split_into_chunks
+from tts_utils import split_into_chunks as _chunk_text
 
 
 def _concatenate_mp3_bytes(chunks: list[bytes]) -> bytes:
@@ -442,7 +428,7 @@ class FreeTTSProvider:
         sys.path.insert(0, "/app")
         import tts_utils  # noqa: PLC0415
 
-        chunks = tts_utils._split_into_chunks(text)
+        chunks = tts_utils.split_into_chunks(text)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         with tempfile.TemporaryDirectory() as tmp:

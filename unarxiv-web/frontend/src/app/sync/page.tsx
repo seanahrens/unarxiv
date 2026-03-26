@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { mergeTokensApi } from "@/lib/api";
-import { mergePremiumDataFromSync } from "@/lib/premiumKeys";
+import { mergeUpgradeDataFromSync } from "@/lib/upgradeKeys";
 
 export default function SyncPage() {
   const [status, setStatus] = useState<"loading" | "imported" | "empty">("loading");
@@ -62,9 +62,11 @@ export default function SyncPage() {
         localStorage.setItem("list_tokens", JSON.stringify(merged));
       }
 
-      // Merge premium keys if present
-      if (data.premium_keys) {
-        mergePremiumDataFromSync(data.premium_keys);
+      // Merge upgrade keys if present (support both old and new key names)
+      if (data.upgrade_keys) {
+        mergeUpgradeDataFromSync(data.upgrade_keys);
+      } else if (data.premium_keys) {
+        mergeUpgradeDataFromSync(data.premium_keys);
       }
 
       setStatus("imported");

@@ -38,13 +38,13 @@ from typing import Optional
 
 
 # ---------------------------------------------------------------------------
-# Module-level constants
+# Module-level constants — canonical values live in config.py
 # ---------------------------------------------------------------------------
 
+from config import FREE_TTS_VOICE, FREE_TTS_CHUNK_MAX, INTER_PAPER_PAUSE
+
 #: Default edge-tts voice used when no voice is specified.
-#: GuyNeural is a male Microsoft voice for base narrations;
-#: EricNeural is reserved for plus1 premium narrations.
-DEFAULT_VOICE = "en-US-GuyNeural"
+DEFAULT_VOICE = FREE_TTS_VOICE
 
 #: Short alias keys → full edge-tts BCP-47 voice names.
 VOICE_PRESETS: dict[str, str] = {
@@ -54,10 +54,7 @@ VOICE_PRESETS: dict[str, str] = {
 }
 
 #: Maximum characters per TTS request chunk (keeps requests well inside API limits).
-CHUNK_MAX_CHARS = 4_000
-
-#: Courtesy pause (seconds) between papers in batch mode.
-INTER_PAPER_PAUSE = 15
+CHUNK_MAX_CHARS = FREE_TTS_CHUNK_MAX
 
 
 # ---------------------------------------------------------------------------
@@ -1349,7 +1346,7 @@ def build_speech_text_from_pdf(
     return header + "\n" + body + footer
 
 
-def _split_into_chunks(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
+def split_into_chunks(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
     """Split *text* into paragraph-aligned chunks of at most *max_chars* each."""
     chunks: list[str]       = []
     current_paras: list[str] = []
@@ -1505,7 +1502,7 @@ def generate_audio(
         print(f"  Author: {first_author}")
         print(f"  Output: {os.path.basename(output_path)}")
 
-    chunks = _split_into_chunks(speech)
+    chunks = split_into_chunks(speech)
     if verbose:
         print(f"  Generating audio ({len(chunks)} chunk(s), {len(speech):,} chars)...")
 

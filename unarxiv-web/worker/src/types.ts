@@ -4,7 +4,7 @@ export interface Env {
   TURNSTILE_SECRET_KEY: string;
   TURNSTILE_SITE_KEY: string;
   MODAL_FUNCTION_URL: string;
-  MODAL_PREMIUM_FUNCTION_URL?: string;
+  MODAL_UPGRADE_FUNCTION_URL?: string;
   MODAL_WEBHOOK_SECRET: string;
   DAILY_GLOBAL_LIMIT: string;
   PER_IP_DAILY_LIMIT: string;
@@ -126,6 +126,48 @@ export interface ListResponse {
   created_at: string;
   updated_at: string;
   paper_count: number;
+}
+
+export interface ModalWebhookPayload {
+  arxiv_id: string;
+  status: "unnarrated" | "narrating" | "script_ready" | "narrated" | "failed";
+  // Progress
+  eta_seconds?: number;
+  progress_detail?: string;
+  // Version
+  version_id?: string;
+  narration_tier?: "base" | "plus1" | "plus2" | "plus3";
+  // Audio
+  audio_r2_key?: string;
+  audio_size_bytes?: number;
+  duration_seconds?: number;
+  // Transcript
+  transcript_r2_key?: string;
+  script_char_count?: number;
+  // LLM metrics
+  llm_provider?: string;
+  llm_model?: string;
+  llm_cost?: number;
+  actual_input_tokens?: number;
+  actual_output_tokens?: number;
+  // TTS metrics
+  tts_provider?: string;
+  tts_model?: string;
+  tts_cost?: number;
+  // Source stats
+  tar_bytes?: number;
+  latex_char_count?: number;
+  figure_count?: number;
+  // Pipeline
+  scripter_mode?: string;
+  script_latency_ms?: number;
+  // Error
+  error_message?: string;
+  error_category?: string;
+  // Legacy fields that Modal may still send
+  actual_cost?: number;
+  provider_model?: string;
+  tts_char_count?: number;
 }
 
 export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse {

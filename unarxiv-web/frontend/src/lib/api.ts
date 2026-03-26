@@ -224,8 +224,8 @@ export async function deletePaperApi(id: string, password: string): Promise<void
   }
 }
 
-export async function clearPremiumVersionsApi(id: string, password: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/admin/papers/${id}/premium-versions`, {
+export async function clearUpgradeVersionsApi(id: string, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/admin/papers/${id}/upgrade-versions`, {
     method: "DELETE",
     headers: { "X-Admin-Password": password },
   });
@@ -532,9 +532,9 @@ export function extractArxivId(input: string): string | null {
   return null;
 }
 
-// --- Premium Narration ---
+// --- Upgrade Narration ---
 
-export interface PremiumOptionEstimate {
+export interface UpgradeOptionEstimate {
   option_id: string;          // e.g. "plus2", "plus3", "plus1"
   display_name: string;       // e.g. "OpenAI TTS"
   tagline: string;            // one-liner
@@ -544,14 +544,14 @@ export interface PremiumOptionEstimate {
   available: boolean;
 }
 
-export interface PremiumEstimateResponse {
+export interface UpgradeEstimateResponse {
   paper_id: string;
   word_count: number;
-  options: PremiumOptionEstimate[];
+  options: UpgradeOptionEstimate[];
   has_existing_script: boolean;
 }
 
-/** Map a TTS provider from the raw API to the simplified tier ID used by the modal. */
+/** Map a TTS provider from the raw API to the simplified tier ID used by the upgrade modal. */
 function ttsProviderToTierId(ttsProvider: string | null): string {
   if (!ttsProvider || ttsProvider === "free") return "plus1";
   if (ttsProvider === "elevenlabs") return "plus3";
@@ -561,7 +561,7 @@ function ttsProviderToTierId(ttsProvider: string | null): string {
 }
 
 
-export async function getPremiumEstimate(paperId: string): Promise<PremiumEstimateResponse> {
+export async function getUpgradeEstimate(paperId: string): Promise<UpgradeEstimateResponse> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/estimate`, {
     headers: userHeaders(),
   });
@@ -587,7 +587,7 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
     }
   }
 
-  const options: PremiumOptionEstimate[] = [];
+  const options: UpgradeOptionEstimate[] = [];
   for (const [tierId, costs] of byTier) {
     options.push({
       option_id: tierId,
@@ -606,7 +606,7 @@ export async function getPremiumEstimate(paperId: string): Promise<PremiumEstima
   return { paper_id: paperId, word_count: raw.script_char_count, options, has_existing_script: !!raw.has_existing_script };
 }
 
-export interface PremiumNarrationConfig {
+export interface UpgradeNarrationConfig {
   option_id: string;
   /** Encrypted API keys — opaque ciphertext from /api/keys/encrypt */
   encrypted_keys: Partial<Record<string, string>>;
@@ -614,9 +614,9 @@ export interface PremiumNarrationConfig {
   llm_provider?: string;
 }
 
-export async function requestPremiumNarration(
+export async function requestUpgradeNarration(
   paperId: string,
-  config: PremiumNarrationConfig
+  config: UpgradeNarrationConfig
 ): Promise<Paper> {
   // Transform frontend config to worker request format
   let body: Record<string, string | undefined>;
@@ -647,7 +647,7 @@ export async function requestPremiumNarration(
   }
 
   const headers = userHeaders({ "Content-Type": "application/json" });
-  const res = await fetch(`${API_BASE}/api/papers/${paperId}/narrate-premium`, {
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/narrate-upgrade`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),

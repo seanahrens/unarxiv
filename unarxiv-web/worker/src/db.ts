@@ -737,10 +737,10 @@ export async function claimPaperForNarration(db: D1Database, id: string): Promis
 }
 
 /**
- * Atomically claim a paper for premium upgrade narration.
+ * Atomically claim a paper for upgrade narration.
  * Like claimPaperForNarration, but also allows already-narrated papers.
  */
-export async function claimPaperForPremium(db: D1Database, id: string): Promise<boolean> {
+export async function claimPaperForUpgrade(db: D1Database, id: string): Promise<boolean> {
   // Increment retry_count when retrying from failed, clear error fields
   const result = await db
     .prepare(
@@ -1021,10 +1021,10 @@ export async function updateBestVersionId(db: D1Database, paperId: string, newVe
 }
 
 /**
- * Find the most recent premium script R2 key for a paper.
- * Returns the transcript_r2_key if a premium script exists, null otherwise.
+ * Find the most recent upgrade script R2 key for a paper.
+ * Returns the transcript_r2_key if an upgrade script exists, null otherwise.
  */
-export async function findExistingPremiumScript(db: D1Database, paperId: string): Promise<string | null> {
+export async function findExistingUpgradeScript(db: D1Database, paperId: string): Promise<string | null> {
   const result = await db
     .prepare(
       `SELECT transcript_r2_key FROM narration_versions

@@ -128,7 +128,7 @@ export default function AboutPage() {
               which means some errors are inevitable.
             </p>
             <p>
-              An LLM-based pipeline paired with a premium voice model could address both challenges &mdash;
+              An LLM-based pipeline paired with an upgraded voice model could address both challenges &mdash;
               smarter script conversion and better synthesis &mdash; but it would mean running the service at a cost.
               We&apos;d love to offer a bring-your-own-API-key option for this. If that&apos;s something you&apos;d
               use, drop us a line &mdash; the more interest we hear, the sooner it&apos;ll happen.

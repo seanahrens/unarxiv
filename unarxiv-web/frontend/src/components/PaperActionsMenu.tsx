@@ -61,7 +61,7 @@ interface PaperActionsMenuProps {
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
   /** Called when user clicks Upgrade Voice — opens the modal in the parent */
-  onOpenPremiumModal?: () => void;
+  onOpenUpgradeModal?: () => void;
   /** Hide the Upgrade Voice option (e.g. when paper is fully upgraded) */
   hideUpgradeNarration?: boolean;
   /** Available narration versions for per-version play items */
@@ -83,7 +83,7 @@ export default function PaperActionsMenu({
   onEnsureImported,
   onToggleScript,
   currentView,
-  onOpenPremiumModal,
+  onOpenUpgradeModal,
   hideUpgradeNarration,
   versions,
   onPlayVersion,
@@ -208,8 +208,8 @@ export default function PaperActionsMenu({
         <>
           <div className={DIVIDER} />
           <button
-            data-testid="premium-narration"
-            onClick={() => { onOpenPremiumModal?.(); onClose(); }}
+            data-testid="upgrade-narration"
+            onClick={() => { onOpenUpgradeModal?.(); onClose(); }}
             className={MENU_ITEM}
           >
             <SerifPlus size={14} className="text-stone-600" />
@@ -314,7 +314,7 @@ function NarrationVersionSubmenu({ versions, onPlayVersion, onClose }: {
 
   const versionByTier = getBestVersionPerTier(versions);
 
-  // Don't render submenu if there are no premium versions
+  // Don't render submenu if there are no upgrade versions
   if (versionByTier.size === 0) return null;
 
   return (

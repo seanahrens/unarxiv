@@ -15,13 +15,13 @@ import {
   handleSubmitPaper,
 } from "./handlers/papers";
 import {
-  handleNarratePremium,
+  handleNarrateUpgrade,
   handleEstimate,
   handleGetVersions,
   handleEncryptKey,
   handleValidateKey,
-  handleDeletePremiumVersions,
-} from "./handlers/premium";
+  handleDeleteUpgradeVersions,
+} from "./handlers/upgrade";
 import {
   handleNarratePaper,
   handleNarrationCheck,
@@ -245,8 +245,14 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     },
     {
       method: "DELETE",
+      pattern: /^\/api\/admin\/papers\/([\w.-]+)\/upgrade-versions$/,
+      handler: (req, env, _url, m) => handleDeleteUpgradeVersions(req, env, m[1]),
+    },
+    {
+      // Legacy route alias — remove after next frontend deploy
+      method: "DELETE",
       pattern: /^\/api\/admin\/papers\/([\w.-]+)\/premium-versions$/,
-      handler: (req, env, _url, m) => handleDeletePremiumVersions(req, env, m[1]),
+      handler: (req, env, _url, m) => handleDeleteUpgradeVersions(req, env, m[1]),
     },
     {
       method: "POST",
@@ -357,8 +363,14 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     },
     {
       method: "POST",
+      pattern: /^\/api\/papers\/(.+?)\/narrate-upgrade$/,
+      handler: (req, env, _url, m, ctx) => handleNarrateUpgrade(req, env, m[1], baseUrl, ctx),
+    },
+    {
+      // Legacy route alias — remove after next frontend deploy
+      method: "POST",
       pattern: /^\/api\/papers\/(.+?)\/narrate-premium$/,
-      handler: (req, env, _url, m, ctx) => handleNarratePremium(req, env, m[1], baseUrl, ctx),
+      handler: (req, env, _url, m, ctx) => handleNarrateUpgrade(req, env, m[1], baseUrl, ctx),
     },
     {
       method: "GET",

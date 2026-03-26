@@ -40,7 +40,7 @@ VOICE_TIERS_FILE = PROJECT_ROOT / "frontend" / "src" / "lib" / "voiceTiers.ts"
 ENV_FILE = PROJECT_ROOT / "frontend" / ".env.test.local"
 OUTPUT_DIR = PROJECT_ROOT / "frontend" / "public" / "samples"
 
-# Voices (match what premium_tts.py uses)
+# Voices (match what upgrade_tts.py uses)
 ELEVENLABS_VOICE = "pNInz6obpgDQGcFmaJgB"  # "Adam" pre-made voice ID
 OPENAI_VOICE = "onyx"
 FREE_VOICE = "en-US-JennyNeural"

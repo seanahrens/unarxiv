@@ -91,10 +91,10 @@ export default function ScriptPageContent() {
           txMap.set("base", baseTranscript);
         }
 
-        // Fetch premium version transcripts
-        const premiumVersions = getUpgradedVersions(allVersions);
+        // Fetch upgrade version transcripts
+        const upgradeVersions = getUpgradedVersions(allVersions);
 
-        for (const v of premiumVersions) {
+        for (const v of upgradeVersions) {
           const tx = await fetchTranscript(id, v.id);
           if (tx) {
             txMap.set(`v${v.id}`, {

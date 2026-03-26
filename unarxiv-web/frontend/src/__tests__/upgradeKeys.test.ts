@@ -1,5 +1,5 @@
 /**
- * Tests for lib/premiumKeys.ts — key management functions using localStorage.
+ * Tests for lib/upgradeKeys.ts — key management functions using localStorage.
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -11,10 +11,10 @@ import {
   clearKeys,
   getLastOption,
   setLastOption,
-  getPremiumDataForSync,
-  mergePremiumDataFromSync,
-  type PremiumProvider,
-} from "../lib/premiumKeys";
+  getUpgradeDataForSync,
+  mergeUpgradeDataFromSync,
+  type UpgradeProvider,
+} from "../lib/upgradeKeys";
 
 // jsdom provides localStorage; reset it before each test
 beforeEach(() => {
@@ -149,11 +149,11 @@ describe("getLastOption / setLastOption", () => {
   });
 });
 
-// ─── getPremiumDataForSync ────────────────────────────────────────────────────
+// ─── getUpgradeDataForSync ────────────────────────────────────────────────────
 
-describe("getPremiumDataForSync", () => {
+describe("getUpgradeDataForSync", () => {
   it("returns object with keys and lastOption fields", () => {
-    const data = getPremiumDataForSync();
+    const data = getUpgradeDataForSync();
     expect(data).toHaveProperty("keys");
     expect(data).toHaveProperty("lastOption");
   });
@@ -161,28 +161,28 @@ describe("getPremiumDataForSync", () => {
   it("reflects currently stored state", () => {
     storeEncryptedKey("openai", "enc123");
     setLastOption("openai/gpt-4o+free");
-    const data = getPremiumDataForSync();
+    const data = getUpgradeDataForSync();
     expect(data.keys.openai).toBe("enc123");
     expect(data.lastOption).toBe("openai/gpt-4o+free");
   });
 });
 
-// ─── mergePremiumDataFromSync ─────────────────────────────────────────────────
+// ─── mergeUpgradeDataFromSync ─────────────────────────────────────────────────
 
-describe("mergePremiumDataFromSync", () => {
+describe("mergeUpgradeDataFromSync", () => {
   it("adds missing keys from incoming data", () => {
     const incoming = {
       keys: { openai: "remote-key" },
       lastOption: "openai/gpt-4o+free",
     };
-    mergePremiumDataFromSync(incoming);
+    mergeUpgradeDataFromSync(incoming);
     expect(getStoredKey("openai")).toBe("remote-key");
     expect(getLastOption()).toBe("openai/gpt-4o+free");
   });
 
   it("does NOT overwrite existing keys with incoming keys", () => {
     storeEncryptedKey("openai", "local-key");
-    mergePremiumDataFromSync({
+    mergeUpgradeDataFromSync({
       keys: { openai: "remote-key" },
       lastOption: null,
     });
@@ -192,13 +192,13 @@ describe("mergePremiumDataFromSync", () => {
 
   it("does NOT overwrite existing lastOption with incoming", () => {
     setLastOption("local-option");
-    mergePremiumDataFromSync({ keys: {}, lastOption: "remote-option" });
+    mergeUpgradeDataFromSync({ keys: {}, lastOption: "remote-option" });
     expect(getLastOption()).toBe("local-option");
   });
 
   it("merges new keys without touching existing ones", () => {
     storeEncryptedKey("openai", "existing-openai");
-    mergePremiumDataFromSync({
+    mergeUpgradeDataFromSync({
       keys: { openai: "ignore-this", elevenlabs: "new-el-key" },
       lastOption: null,
     });
@@ -207,18 +207,18 @@ describe("mergePremiumDataFromSync", () => {
   });
 
   it("handles null/undefined input gracefully", () => {
-    expect(() => mergePremiumDataFromSync(null)).not.toThrow();
-    expect(() => mergePremiumDataFromSync(undefined)).not.toThrow();
-    expect(() => mergePremiumDataFromSync("string")).not.toThrow();
-    expect(() => mergePremiumDataFromSync(42)).not.toThrow();
+    expect(() => mergeUpgradeDataFromSync(null)).not.toThrow();
+    expect(() => mergeUpgradeDataFromSync(undefined)).not.toThrow();
+    expect(() => mergeUpgradeDataFromSync("string")).not.toThrow();
+    expect(() => mergeUpgradeDataFromSync(42)).not.toThrow();
   });
 
   it("handles malformed incoming data gracefully", () => {
-    expect(() => mergePremiumDataFromSync({ keys: "not-an-object" })).not.toThrow();
+    expect(() => mergeUpgradeDataFromSync({ keys: "not-an-object" })).not.toThrow();
   });
 
   it("handles corrupted localStorage gracefully", () => {
-    localStorage.setItem("unarxiv_premium_keys", "}{invalid json");
+    localStorage.setItem("unarxiv_upgrade_keys", "}{invalid json");
     // Should not throw — falls back to empty state
     expect(() => getStoredKeys()).not.toThrow();
     expect(getStoredKeys()).toEqual({});

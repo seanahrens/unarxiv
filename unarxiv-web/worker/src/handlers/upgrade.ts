@@ -1,20 +1,20 @@
 /**
- * Premium narration handlers — key encryption, cost estimation, version management.
+ * Upgrade narration handlers — key encryption, cost estimation, version management.
  */
 
 import type { Env, Paper, PaperStatus } from "../types";
 import { paperToResponse } from "../types";
-import { legacyBaseAudioKey, legacyPremiumAudioKey } from "./r2paths";
+import { legacyBaseAudioKey, legacyUpgradeAudioKey } from "./r2paths";
 import {
   getPaper,
-  claimPaperForPremium,
+  claimPaperForUpgrade,
   insertNarrationVersion,
   getNarrationVersions,
   getVersionsWithScores,
   getVersionById,
   updateBestVersionId,
   updateScriptCharCount,
-  findExistingPremiumScript,
+  findExistingUpgradeScript,
   updatePaperStatus,
 } from "../db";
 import { arxivSrcUrl } from "../arxiv";
@@ -61,7 +61,7 @@ export const PRICING = {
  * This prevents the two systems from having conflicting defaults.
  *
  * TTS defaults are fine here since TTS is handled by the CF worker / Modal
- * premium_tts.py and there's no duplication.
+ * upgrade_tts.py and there's no duplication.
  */
 export const DEFAULT_MODELS = {
   llm: {} as Record<string, string>,
@@ -75,12 +75,12 @@ export const DEFAULT_MODELS = {
 // ─── Utility functions ───────────────────────────────────────────────────────
 
 /**
- * Quality rank for a premium narration configuration.
- * Free narrations are rank 0; premium ranks start at 5.
+ * Quality rank for an upgrade narration configuration.
+ * Free narrations are rank 0; upgrade ranks start at 5.
  * Higher = better quality / more expensive.
  */
 export function computeQualityRank(ttsProvider: string | null, ttsModel: string | null): number {
-  if (!ttsProvider) return 5; // premium script + free voice
+  if (!ttsProvider) return 5; // upgrade script + free voice
   if (ttsProvider === "openai") {
     return ttsModel === "tts-1-hd" ? 25 : 15;
   }
@@ -264,7 +264,7 @@ export async function validateProviderKey(
   }
 }
 
-// --- Request shapes for narrate-premium ---
+// --- Request shapes for narrate-upgrade ---
 
 export interface UnifiedKeyRequest {
   type: "unified";
@@ -295,15 +295,15 @@ export interface SponsoredPlus1Request {
   type: "sponsored_plus1";
 }
 
-export type NarratePremiumRequest = (UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest | SponsoredPlus1Request) & {
+export type NarrateUpgradeRequest = (UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest | SponsoredPlus1Request) & {
   /** "llm" (default) or "hybrid" — selects the scripting pipeline on Modal */
   scripter_mode?: string;
 };
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
-/** POST /api/papers/:id/narrate-premium */
-export async function handleNarratePremium(
+/** POST /api/papers/:id/narrate-upgrade */
+export async function handleNarrateUpgrade(
   request: Request,
   env: Env,
   id: string,
@@ -311,15 +311,15 @@ export async function handleNarratePremium(
   ctx?: ExecutionContext
 ): Promise<Response> {
   if (!env.ENCRYPTION_KEY) {
-    return json({ error: "Premium narration not configured" }, 503);
+    return json({ error: "Upgrade narration not configured" }, 503);
   }
 
   const paper = await getPaper(env.DB, id);
   if (!paper) return json({ error: "Paper not found" }, 404);
 
-  let body: NarratePremiumRequest;
+  let body: NarrateUpgradeRequest;
   try {
-    body = await request.json<NarratePremiumRequest>();
+    body = await request.json<NarrateUpgradeRequest>();
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
   }
@@ -385,8 +385,8 @@ export async function handleNarratePremium(
   // Save previous status so we can revert correctly on dispatch failure
   const previousStatus = paper.status as PaperStatus;
 
-  // Claim the paper atomically — premium upgrades also allow 'narrated' → 'narrating'
-  const claimed = await claimPaperForPremium(env.DB, id);
+  // Claim the paper atomically — upgrades also allow 'narrated' → 'narrating'
+  const claimed = await claimPaperForUpgrade(env.DB, id);
   if (!claimed) {
     // Already narrating — tell the caller so they can show an appropriate message
     return json({ error: "This paper is already being upgraded. Please wait for it to finish." }, 409);
@@ -395,10 +395,10 @@ export async function handleNarratePremium(
   // Dispatch to Modal with decrypted keys (never persisted in D1)
   const dispatch = async () => {
     if (!env.MODAL_FUNCTION_URL) {
-      console.log(`[local-dev] Auto-completing premium narration for ${id}`);
+      console.log(`[local-dev] Auto-completing upgrade narration for ${id}`);
 
       // Copy base audio to versioned R2 path (simulates Modal producing a new file)
-      const versionedR2Key = legacyPremiumAudioKey(id, ttsProvider ?? "free");
+      const versionedR2Key = legacyUpgradeAudioKey(id, ttsProvider ?? "free");
       const baseAudio = await env.AUDIO_BUCKET.get(legacyBaseAudioKey(id));
       if (baseAudio) {
         await env.AUDIO_BUCKET.put(versionedR2Key, baseAudio.body, {
@@ -436,13 +436,13 @@ export async function handleNarratePremium(
         duration_seconds: 600,
       });
 
-      console.log(`[local-dev] Premium narration complete: ${versionedR2Key} (rank=${qualityRank})`);
+      console.log(`[local-dev] Upgrade narration complete: ${versionedR2Key} (rank=${qualityRank})`);
       return;
     }
     try {
-      // Check if a premium LLM script already exists — reuse it to skip LLM cost
+      // Check if an upgrade LLM script already exists — reuse it to skip LLM cost
       let existingScript: string | null = null;
-      const scriptR2Key = await findExistingPremiumScript(env.DB, id);
+      const scriptR2Key = await findExistingUpgradeScript(env.DB, id);
       if (scriptR2Key) {
         try {
           const obj = await env.AUDIO_BUCKET.get(scriptR2Key);
@@ -451,7 +451,7 @@ export async function handleNarratePremium(
       }
 
       // Validate scripter_mode if provided; default is "hybrid" (regex prose + targeted LLM)
-      const scripterMode = (body as NarratePremiumRequest).scripter_mode;
+      const scripterMode = (body as NarrateUpgradeRequest).scripter_mode;
       const validScripterModes = ["llm", "hybrid"];
       const resolvedScripterMode = scripterMode && validScripterModes.includes(scripterMode)
         ? scripterMode : "hybrid";
@@ -463,7 +463,7 @@ export async function handleNarratePremium(
         paper_title: paper.title,
         paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
         paper_date: paper.published_date || "",
-        narration_mode: "premium",
+        narration_mode: "upgrade",
         llm_provider: llmProvider,
         llm_api_key: llmApiKey,
         llm_model: llmModel,
@@ -478,10 +478,12 @@ export async function handleNarratePremium(
       if (existingScript) {
         payload.existing_script = existingScript;
       }
-      // Use dedicated premium endpoint — derive from standard URL if not set
-      const premiumUrl = env.MODAL_PREMIUM_FUNCTION_URL
+      // Use dedicated upgrade endpoint — derive from standard URL if not set
+      // NOTE: MODAL_UPGRADE_FUNCTION_URL env var must be set in Cloudflare secrets
+      // (replaces the old MODAL_PREMIUM_FUNCTION_URL secret)
+      const upgradeUrl = env.MODAL_UPGRADE_FUNCTION_URL
         || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
-      const resp = await fetch(premiumUrl, {
+      const resp = await fetch(upgradeUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -491,11 +493,11 @@ export async function handleNarratePremium(
       });
       if (!resp.ok) {
         const body = await resp.text().catch(() => "");
-        console.error(`Modal premium dispatch failed for ${id}: ${resp.status} (was ${previousStatus}) ${body}`);
+        console.error(`Modal upgrade dispatch failed for ${id}: ${resp.status} (was ${previousStatus}) ${body}`);
         await updatePaperStatus(env.DB, id, previousStatus);
       }
     } catch (e: any) {
-      console.error(`Failed to dispatch premium for ${id} (was ${previousStatus}):`, e);
+      console.error(`Failed to dispatch upgrade for ${id} (was ${previousStatus}):`, e);
       await updatePaperStatus(env.DB, id, previousStatus);
     }
   };
@@ -535,8 +537,8 @@ export async function handleEstimate(env: Env, id: string): Promise<Response> {
     return json({ estimated: false, message: "Script not yet generated; estimates unavailable" });
   }
 
-  // Check if a premium LLM script already exists — use its actual length for TTS estimates
-  const scriptR2Key = await findExistingPremiumScript(env.DB, id);
+  // Check if an upgrade LLM script already exists — use its actual length for TTS estimates
+  const scriptR2Key = await findExistingUpgradeScript(env.DB, id);
   const hasExistingScript = !!scriptR2Key;
   let charCount: number;
   if (scriptR2Key) {
@@ -624,7 +626,7 @@ export async function handleEstimate(env: Env, id: string): Promise<Response> {
         costs = estimateCost(llm.provider, llm.model, tts.provider, tts.model, charCount, latexCharCount, figureCount);
       }
 
-      // If a premium script already exists, LLM generation is skipped — zero out LLM cost
+      // If an upgrade script already exists, LLM generation is skipped — zero out LLM cost
       if (hasExistingScript) {
         costs.total_cost -= costs.llm_cost;
         costs.llm_cost = 0;
@@ -744,13 +746,13 @@ export async function handleValidateKey(request: Request, env: Env): Promise<Res
   return json({ valid: result.valid, info: result.info, error: result.error });
 }
 
-// ─── Admin: delete premium versions (test cleanup) ─────────────────────────
+// ─── Admin: delete upgrade versions (test cleanup) ─────────────────────────
 
-export async function handleDeletePremiumVersions(request: Request, env: Env, paperId: string): Promise<Response> {
+export async function handleDeleteUpgradeVersions(request: Request, env: Env, paperId: string): Promise<Response> {
   const denied = requireAdmin(request, env);
   if (denied) return denied;
 
-  // Collect R2 keys for premium versions before deleting DB rows
+  // Collect R2 keys for upgrade versions before deleting DB rows
   const versions = await env.DB
     .prepare("SELECT audio_r2_key, transcript_r2_key FROM narration_versions WHERE paper_id = ? AND narration_tier != 'base'")
     .bind(paperId)

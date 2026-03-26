@@ -8,20 +8,20 @@ import {
   fetchPapersForCurate,
   deletePaperApi,
   reprocessPaperApi,
-  clearPremiumVersionsApi,
+  clearUpgradeVersionsApi,
   fetchPaperRatings,
   clearPaperRatings,
   formatDurationShort,
   isInProgress,
   fetchAdminLists,
   deleteListAdmin,
-  requestPremiumNarration,
+  requestUpgradeNarration,
   type Contributor,
   type PaperWithRating,
   type AdminRating,
   type AdminList,
 } from "@/lib/api";
-import { getStoredKeys } from "@/lib/premiumKeys";
+import { getStoredKeys } from "@/lib/upgradeKeys";
 import AudioFileIcon from "@/components/AudioFileIcon";
 import FileIcon from "@/components/FileIcon";
 
@@ -1154,7 +1154,7 @@ export default function AdminPage() {
     const failed: string[] = [];
     for (const id of ids) {
       try {
-        const updated = await requestPremiumNarration(id, {
+        const updated = await requestUpgradeNarration(id, {
           option_id: tier,
           encrypted_keys: keys as Partial<Record<string, string>>,
           llm_provider: llmProvider,
@@ -1167,22 +1167,22 @@ export default function AdminPage() {
     if (failed.length > 0) setActionError(`Failed to upgrade ${failed.length} paper(s)`);
   }, [selected]);
 
-  const handleBulkClearPremium = useCallback(async () => {
+  const handleBulkClearUpgrade = useCallback(async () => {
     if (!password || selected.size === 0) return;
-    if (!confirm(`Clear premium narrations for ${selected.size} paper${selected.size > 1 ? "s" : ""}? This deletes upgraded audio, scripts, and R2 files.`)) return;
+    if (!confirm(`Clear upgrade narrations for ${selected.size} paper${selected.size > 1 ? "s" : ""}? This deletes upgraded audio, scripts, and R2 files.`)) return;
     setActionError("");
     const ids = [...selected];
     setProcessing(new Set(ids));
     const failed: string[] = [];
     for (const id of ids) {
       try {
-        await clearPremiumVersionsApi(id, password);
+        await clearUpgradeVersionsApi(id, password);
         setPapers((prev) => prev.map((p) => (p.id === id ? { ...p, best_version_id: null } : p)));
       } catch { failed.push(id); }
     }
     setSelected(new Set());
     setProcessing(new Set());
-    if (failed.length > 0) setActionError(`Failed to clear premium for ${failed.length} paper(s)`);
+    if (failed.length > 0) setActionError(`Failed to clear upgrade for ${failed.length} paper(s)`);
   }, [password, selected]);
 
   const handleBulkClearReviews = useCallback(async () => {
@@ -1377,7 +1377,7 @@ export default function AdminPage() {
                 <button onClick={() => handleBulkUpgrade("plus3")} className="w-full text-left px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50 border-t border-stone-100">
                   3Plus
                 </button>
-                <button onClick={() => { setReprocessMenuOpen(false); handleBulkClearPremium(); }} className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-b-lg border-t border-stone-100">
+                <button onClick={() => { setReprocessMenuOpen(false); handleBulkClearUpgrade(); }} className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-b-lg border-t border-stone-100">
                   Clear Upgrades
                 </button>
               </div>

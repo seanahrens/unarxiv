@@ -4,7 +4,7 @@
  * Centralizes the "is this an upgrade?" predicate, version filtering,
  * and tier-mapping logic that was previously duplicated across
  * PaperPageContent, ScriptPageContent, PaperActionsMenu,
- * PremiumNarrationModal, and voiceTiers.
+ * UpgradeNarrationModal, and voiceTiers.
  */
 
 import type { PaperVersion } from "./api";

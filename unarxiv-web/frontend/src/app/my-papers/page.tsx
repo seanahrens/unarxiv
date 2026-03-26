@@ -10,7 +10,7 @@ import {
   deleteListApi,
   type ListMeta,
 } from "@/lib/lists";
-import { getPremiumDataForSync } from "@/lib/premiumKeys";
+import { getUpgradeDataForSync } from "@/lib/upgradeKeys";
 import { MyPapersSectionSkeleton } from "@/components/Skeleton";
 
 export default function MyCollectionsPage() {
@@ -85,9 +85,9 @@ export default function MyCollectionsPage() {
       if (lt) data.list_tokens = JSON.parse(lt);
     } catch {}
     try {
-      const premiumData = getPremiumDataForSync();
-      if (Object.keys(premiumData.keys).length > 0) {
-        data.premium_keys = premiumData;
+      const upgradeData = getUpgradeDataForSync();
+      if (Object.keys(upgradeData.keys).length > 0) {
+        data.upgrade_keys = upgradeData;
       }
     } catch {}
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));

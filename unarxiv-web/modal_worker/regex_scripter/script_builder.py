@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
+
 def build_script(
     body: str,
     title: str,
@@ -18,13 +19,13 @@ def build_script(
     source_type: str = "unknown",
 ) -> str:
     """Wrap cleaned body text with a spoken header and footer."""
-    formatted_date = _format_date(date)
-    header = _build_header(title or "Untitled", formatted_date, authors)
-    footer = _build_footer(title or "Untitled", formatted_date, authors)
+    formatted_date = format_date(date)
+    header = build_header(title or "Untitled", formatted_date, authors)
+    footer = build_footer(title or "Untitled", formatted_date, authors)
     return header + "\n" + body.strip() + footer
 
 
-def _build_header(title: str, date: str, authors: list[str]) -> str:
+def build_header(title: str, date: str, authors: list[str]) -> str:
     """Build the spoken header prepended to the transcript."""
     lines = [_ensure_period(title), ""]
     if authors:
@@ -34,7 +35,7 @@ def _build_header(title: str, date: str, authors: list[str]) -> str:
     return "\n".join(lines)
 
 
-def _build_footer(title: str, date: str, authors: list[str]) -> str:
+def build_footer(title: str, date: str, authors: list[str]) -> str:
     """Build the spoken footer appended to the transcript."""
     parts = [f"Thanks for listening. This has been an audio narration of {_ensure_period(title)}"]
     if authors:
@@ -45,13 +46,19 @@ def _build_footer(title: str, date: str, authors: list[str]) -> str:
     return "\n\n" + " ".join(parts)
 
 
-def _format_date(date: str) -> str:
+def format_date(date: str) -> str:
     """Convert YYYY-MM-DD to 'Month D, YYYY'; pass through other formats."""
     try:
         dt = datetime.strptime(date.strip(), "%Y-%m-%d")
         return dt.strftime("%B %-d, %Y")
     except (ValueError, AttributeError):
         return date
+
+
+# Backward-compat aliases (used by callers that imported the private names)
+_build_header = build_header
+_build_footer = build_footer
+_format_date = format_date
 
 
 def _ensure_period(s: str) -> str:

@@ -1,4 +1,4 @@
-"""Tests for premium_tts.py — TTS provider factory, helpers, and implementations."""
+"""Tests for upgrade_tts.py — TTS provider factory, helpers, and implementations."""
 import sys
 from unittest.mock import MagicMock, patch, call
 
@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 
-from premium_tts import (
+from upgrade_tts import (
     TTSResult,
     _chunk_text,
     get_tts_provider,
@@ -125,8 +125,8 @@ def test_elevenlabs_synthesize():
     mock_el_mod.client.ElevenLabs.return_value = mock_el_client
 
     with patch.dict("sys.modules", {"elevenlabs": mock_el_mod, "elevenlabs.client": mock_el_mod.client}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=30.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=30.0):
         result = ElevenLabsProvider(api_key="el-key").synthesize("Hello world")
 
     assert isinstance(result, TTSResult)
@@ -149,8 +149,8 @@ def test_elevenlabs_multi_chunk():
     mock_el_mod.client.ElevenLabs.return_value = mock_el_client
 
     with patch.dict("sys.modules", {"elevenlabs": mock_el_mod, "elevenlabs.client": mock_el_mod.client}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=0.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=0.0):
         ElevenLabsProvider(api_key="k").synthesize(long_text)
 
     # Should have been called more than once
@@ -173,8 +173,8 @@ def test_openai_tts_synthesize():
     mock_openai.OpenAI.return_value = mock_client
 
     with patch.dict("sys.modules", {"openai": mock_openai}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=60.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=60.0):
         result = OpenAITTSProvider(api_key="sk-key").synthesize("Hello TTS")
 
     assert result.provider == "openai"
@@ -194,9 +194,9 @@ def test_openai_tts_cost_calculation():
 
     text = "x" * 1_000_000
     with patch.dict("sys.modules", {"openai": mock_openai}), \
-         patch("premium_tts._chunk_text", return_value=[text]), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=0.0):
+         patch("upgrade_tts._chunk_text", return_value=[text]), \
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=0.0):
         result = OpenAITTSProvider(api_key="k").synthesize(text)
 
     assert abs(result.cost_usd - 15.0) < 0.01
@@ -215,8 +215,8 @@ def test_google_tts_synthesize():
     mock_httpx.post.return_value = mock_resp
 
     with patch.dict("sys.modules", {"httpx": mock_httpx, "base64": __import__("base64")}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=45.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=45.0):
         result = GoogleCloudTTSProvider(api_key="AIza").synthesize("Hello Google")
 
     assert result.provider == "google"
@@ -234,8 +234,8 @@ def test_google_tts_derives_lang_from_voice():
     mock_httpx.post.return_value = mock_resp
 
     with patch.dict("sys.modules", {"httpx": mock_httpx, "base64": __import__("base64")}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=0.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=0.0):
         GoogleCloudTTSProvider(api_key="k", voice="en-GB-Neural2-A").synthesize("test")
 
     payload = mock_httpx.post.call_args.kwargs["json"]
@@ -287,8 +287,8 @@ def test_polly_synthesize():
     mock_boto3.client.return_value = mock_polly_client
 
     with patch.dict("sys.modules", {"boto3": mock_boto3}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=20.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=20.0):
         result = AmazonPollyProvider(api_key="AKID:SECRET").synthesize("Hello Polly")
 
     assert result.provider == "polly"
@@ -319,8 +319,8 @@ def test_azure_synthesize():
     mock_httpx.post.return_value = mock_resp
 
     with patch.dict("sys.modules", {"httpx": mock_httpx}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=15.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=15.0):
         result = AzureSpeechProvider(api_key="key:eastus").synthesize("Hello Azure")
 
     assert result.provider == "azure"
@@ -335,8 +335,8 @@ def test_azure_endpoint_uses_region():
     mock_httpx.post.return_value = mock_resp
 
     with patch.dict("sys.modules", {"httpx": mock_httpx}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=0.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=0.0):
         AzureSpeechProvider(api_key="k:westeurope").synthesize("test")
 
     url = mock_httpx.post.call_args.args[0]
@@ -353,8 +353,8 @@ def test_azure_escapes_xml_chars():
 
     text_with_xml = "Hello <World> & 'Friends'"
     with patch.dict("sys.modules", {"httpx": mock_httpx}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=0.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=0.0):
         AzureSpeechProvider(api_key="k:eastus").synthesize(text_with_xml)
 
     ssml_bytes = mock_httpx.post.call_args.kwargs["content"]
@@ -382,8 +382,8 @@ def test_free_tts_provider_has_zero_cost():
     mock_tex_to_audio._tts_chunk.side_effect = fake_tts_chunk
 
     with patch.dict("sys.modules", {"tts_utils": mock_tex_to_audio}), \
-         patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
-         patch("premium_tts._mp3_duration", return_value=5.0):
+         patch("upgrade_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
+         patch("upgrade_tts._mp3_duration", return_value=5.0):
         result = FreeTTSProvider().synthesize("test text")
 
     assert result.cost_usd == 0.0

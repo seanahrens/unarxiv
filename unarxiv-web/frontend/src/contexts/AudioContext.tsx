@@ -52,7 +52,7 @@ interface AudioState {
   currentTime: number;
   duration: number;
   playbackRate: number;
-  /** The version currently playing, if premium audio is loaded. */
+  /** The version currently playing, if upgraded audio is loaded. */
   currentVersion: PaperVersion | null;
 }
 

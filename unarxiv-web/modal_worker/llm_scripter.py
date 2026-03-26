@@ -334,8 +334,8 @@ Here is a section of a draft narration script:
 Improve this section for audio narration. Cover ALL content — do not shorten.\
 """
 
-# Maximum chars per chunk sent to the LLM
-_MAX_CHUNK_CHARS = 50_000
+# Canonical value lives in config.py
+from config import LLM_CHUNK_MAX_CHARS as _MAX_CHUNK_CHARS
 
 
 # ---------------------------------------------------------------------------
@@ -537,13 +537,27 @@ def generate_script(
     raw_source: str,
     fallback_script: str = "",
     figures_dir: str | None = None,
+    title: str = "",
+    authors: list[str] | None = None,
+    date: str = "",
 ) -> LLMResult:
     """Full LLM rewrite pipeline — the public entry point.
 
     Generates a narration script from LaTeX source (or free-tier script),
-    chunked by sections. This is the function narrate.py calls.
+    chunked by sections. Wraps the output with the standard header/footer
+    so callers always get a complete, ready-to-narrate script.
     """
-    return generate_from_source(provider, raw_source, fallback_script=fallback_script, figures_dir=figures_dir)
+    from regex_scripter.script_builder import build_script
+    result = generate_from_source(provider, raw_source, fallback_script=fallback_script, figures_dir=figures_dir)
+    wrapped = build_script(result.improved_script, title, authors or [], date, source_type="llm")
+    return LLMResult(
+        improved_script=wrapped,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        cost_usd=result.cost_usd,
+        provider=result.provider,
+        model=result.model,
+    )
 
 
 # ---------------------------------------------------------------------------

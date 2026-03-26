@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
-  getPremiumEstimate,
-  requestPremiumNarration,
+  getUpgradeEstimate,
+  requestUpgradeNarration,
   encryptKey,
   validateKey,
   getPaperVersions,
-  type PremiumOptionEstimate,
+  type UpgradeOptionEstimate,
   type PaperVersion,
   type Paper,
 } from "@/lib/api";
@@ -21,8 +21,8 @@ import {
   getDefaultScriptingProvider,
   setDefaultScriptingProvider,
   clearKeys,
-  type PremiumProvider,
-} from "@/lib/premiumKeys";
+  type UpgradeProvider,
+} from "@/lib/upgradeKeys";
 import { track } from "@/lib/analytics";
 import { VOICE_TIERS, estimateProcessingSeconds, formatProcessingTime } from "@/lib/voiceTiers";
 import { getHighestCompletedTierRank } from "@/lib/versionUtils";
@@ -57,9 +57,9 @@ interface ProviderLink {
 
 interface OptionConfig {
   id: string;
-  provider: PremiumProvider;
+  provider: UpgradeProvider;
   /** For dual-key options: the TTS key provider. For unified: same as id. */
-  ttsProvider?: PremiumProvider;
+  ttsProvider?: UpgradeProvider;
   /** Whether this option needs a separate LLM key + provider selector */
   needsLlmKey: boolean;
   /** Whether this option uses a single key covering both LLM + TTS */
@@ -128,7 +128,7 @@ function OptionCard({
   hasExistingScript,
 }: {
   option: OptionConfig;
-  estimate: PremiumOptionEstimate;
+  estimate: UpgradeOptionEstimate;
   selected: boolean;
   supported: boolean;
   disabled: boolean;
@@ -348,7 +348,7 @@ function KeyInputRow({
 // ---------------------------------------------------------------------------
 
 const KEY_MGMT_PROVIDERS: {
-  id: PremiumProvider;
+  id: UpgradeProvider;
   label: string;
   link: string;
   placeholder: string;
@@ -367,24 +367,24 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
   const storedKeys = getStoredKeys();
 
   // Local draft values — empty string means "unchanged". We never show the real key.
-  const [drafts, setDrafts] = useState<Partial<Record<PremiumProvider, string>>>({});
+  const [drafts, setDrafts] = useState<Partial<Record<UpgradeProvider, string>>>({});
   // Track which rows the user has actively modified
-  const [modified, setModified] = useState<Set<PremiumProvider>>(new Set());
+  const [modified, setModified] = useState<Set<UpgradeProvider>>(new Set());
   // Validation states per provider
-  const [testStates, setTestStates] = useState<Partial<Record<PremiumProvider, "idle" | "testing" | "ok" | "fail">>>({});
+  const [testStates, setTestStates] = useState<Partial<Record<UpgradeProvider, "idle" | "testing" | "ok" | "fail">>>({});
   // Default scripting provider
   const [defaultProv, setDefaultProv] = useState<string | null>(getDefaultScriptingProvider);
   // Saving indicator
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleChange = (provider: PremiumProvider, value: string) => {
+  const handleChange = (provider: UpgradeProvider, value: string) => {
     setDrafts((d) => ({ ...d, [provider]: value }));
     setModified((m) => { const s = new Set(m); s.add(provider); return s; });
     setTestStates((s) => ({ ...s, [provider]: "idle" }));
   };
 
-  const handleClear = (provider: PremiumProvider) => {
+  const handleClear = (provider: UpgradeProvider) => {
     clearKeys(provider);
     setDrafts((d) => { const n = { ...d }; delete n[provider]; return n; });
     setModified((m) => { const s = new Set(m); s.delete(provider); return s; });
@@ -437,7 +437,7 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
     }
     // If the current scripting default no longer has a valid stored key, reassign
     const currentDefault = getDefaultScriptingProvider();
-    if (currentDefault && !hasKeyForProvider(currentDefault as PremiumProvider)) {
+    if (currentDefault && !hasKeyForProvider(currentDefault as UpgradeProvider)) {
       const fallback = KEY_MGMT_PROVIDERS.find(
         (p) => p.isScriptingCapable && hasKeyForProvider(p.id)
       );
@@ -582,20 +582,20 @@ function KeyManagementPanel({ onBack }: { onBack: () => void }) {
 // Main Modal
 // ---------------------------------------------------------------------------
 
-interface PremiumNarrationModalProps {
+interface UpgradeNarrationModalProps {
   paper: Paper;
   onClose: () => void;
   onSuccess?: (updatedPaper: Paper) => void;
 }
 
-export default function PremiumNarrationModal({
+export default function UpgradeNarrationModal({
   paper,
   onClose,
   onSuccess,
-}: PremiumNarrationModalProps) {
+}: UpgradeNarrationModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(true);
-  const [estimates, setEstimates] = useState<PremiumOptionEstimate[]>([]);
+  const [estimates, setEstimates] = useState<UpgradeOptionEstimate[]>([]);
   const [estimateError, setEstimateError] = useState(false);
   const [scriptCharCount, setScriptCharCount] = useState(0);
 
@@ -675,7 +675,7 @@ export default function PremiumNarrationModal({
   const [existingVersions, setExistingVersions] = useState<PaperVersion[]>([]);
   const [isNarrating, setIsNarrating] = useState(false);
 
-  // Whether a premium LLM script already exists (no LLM cost for subsequent narrations)
+  // Whether an upgraded LLM script already exists (no LLM cost for subsequent narrations)
   const [hasExistingScript, setHasExistingScript] = useState(false);
 
   // Key management panel toggle
@@ -697,9 +697,9 @@ export default function PremiumNarrationModal({
   useEffect(() => {
     setLoading(true);
     setEstimateError(false);
-    getPremiumEstimate(paper.id)
+    getUpgradeEstimate(paper.id)
       .then((resp) => {
-        const opts = (resp.options ?? []).filter((o: PremiumOptionEstimate) => o.option_id !== "google");
+        const opts = (resp.options ?? []).filter((o: UpgradeOptionEstimate) => o.option_id !== "google");
         setEstimates(opts);
         setHasExistingScript(resp.has_existing_script);
         setScriptCharCount(resp.word_count || 0);
@@ -732,7 +732,7 @@ export default function PremiumNarrationModal({
 
     // Prefer highest tier where user already has all required API keys
     const cfg = (id: string) => ALL_OPTIONS.find((o) => o.id === id);
-    const hasLlm = LLM_PROVIDERS.some((p) => hasKeyForProvider(p.id as PremiumProvider));
+    const hasLlm = LLM_PROVIDERS.some((p) => hasKeyForProvider(p.id as UpgradeProvider));
     const withKey = available.find((e) => {
       const c = cfg(e.option_id);
       if (!c) return false;
@@ -759,7 +759,7 @@ export default function PremiumNarrationModal({
     ? hasKeyForProvider(selectedConfig.provider)
     : false;
 
-  const hasLlmKeyStored = (prov: string) => hasKeyForProvider(prov as PremiumProvider);
+  const hasLlmKeyStored = (prov: string) => hasKeyForProvider(prov as UpgradeProvider);
 
   // Determine if we can skip step 2 (returning user with stored keys)
   const canSkipKeys = (() => {
@@ -808,7 +808,7 @@ export default function PremiumNarrationModal({
       if (!rawKey.trim()) return null;
       try {
         const resp = await encryptKey(provider, rawKey.trim());
-        storeEncryptedKey(provider as PremiumProvider, resp.encrypted_key);
+        storeEncryptedKey(provider as UpgradeProvider, resp.encrypted_key);
         return resp.encrypted_key;
       } catch {
         return null;
@@ -844,18 +844,18 @@ export default function PremiumNarrationModal({
     if (storedTts) encryptedKeys[selectedConfig.provider] = storedTts;
 
     if (selectedConfig.needsLlmKey) {
-      const storedLlm = getStoredKey(llmProvider as PremiumProvider);
+      const storedLlm = getStoredKey(llmProvider as UpgradeProvider);
       if (storedLlm) encryptedKeys[llmProvider] = storedLlm;
     }
 
     try {
-      const updatedPaper = await requestPremiumNarration(paper.id, {
+      const updatedPaper = await requestUpgradeNarration(paper.id, {
         option_id: selectedOptionId,
         encrypted_keys: encryptedKeys,
         llm_provider: selectedConfig.needsLlmKey ? llmProvider : undefined,
       });
 
-      track("premium_narration_requested", {
+      track("upgrade_narration_requested", {
         arxiv_id: paper.id,
         option_id: selectedOptionId,
         estimated_cost: selectedEstimate?.estimated_cost_usd ?? 0,

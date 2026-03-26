@@ -14,7 +14,7 @@ import { track } from "@/lib/analytics";
 import { isRead as checkIsRead, markAsRead, markAsUnread } from "@/lib/readStatus";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import PaperActionButton from "@/components/PaperActionButton";
-import PremiumNarrationModal from "@/components/PremiumNarrationModal";
+import UpgradeNarrationModal from "@/components/UpgradeNarrationModal";
 
 function CopyableId({ id }: { id: string }) {
   const [toast, setToast] = useState<{ x: number; y: number } | null>(null);
@@ -399,7 +399,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     return () => window.removeEventListener("paper-status-changed", handler);
   }, [id]);
 
-  // Lazy-fetch transcripts (base + premium versions) when switching to script view
+  // Lazy-fetch transcripts (base + upgrade versions) when switching to script view
   useEffect(() => {
     if (view !== "script" || scriptsFetched.current || !paper) return;
     if (!["narrated", "narrating"].includes(paper.status)) return;
@@ -436,11 +436,11 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       const base = await fetchTx(transcriptUrl(paper.id));
       if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null, charCount: base.text.length, scripterMode: null });
 
-      // Fetch premium version transcripts
+      // Fetch upgrade version transcripts
       try {
         const resp = await getPaperVersions(paper.id);
-        const premium = getUpgradedVersions(resp.versions);
-        for (const v of premium) {
+        const upgraded = getUpgradedVersions(resp.versions);
+        for (const v of upgraded) {
           const tx = await fetchTx(transcriptUrl(paper.id, v.id));
           if (tx) {
             const avg = avgScore(v);
@@ -743,7 +743,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       })()}
 
       {showUpgradeModal && (
-        <PremiumNarrationModal
+        <UpgradeNarrationModal
           paper={paper}
           onClose={() => setShowUpgradeModal(false)}
           onSuccess={(updatedPaper) => setPaper(updatedPaper)}

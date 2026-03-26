@@ -3,7 +3,7 @@
  * audio/transcript serving, reprocess, delete, progress, and visit recording.
  */
 
-import type { Env, Paper, PaperStatus } from "../types";
+import type { Env, ModalWebhookPayload, Paper, PaperStatus } from "../types";
 import { paperToResponse } from "../types";
 import {
   getPaper,
@@ -23,9 +23,9 @@ import {
 } from "../db";
 import { arxivSrcUrl, scrapeArxivMetadata } from "../arxiv";
 import { json, requireAdmin, getClientIp } from "./helpers";
-import { computeQualityRank } from "./premium";
+import { computeQualityRank } from "./upgrade";
 import { legacyBaseTranscriptKey } from "./r2paths";
-import { claimPaperForPremium, findExistingPremiumScript } from "../db";
+import { claimPaperForUpgrade, findExistingUpgradeScript } from "../db";
 
 // ─── Narration Trigger ───────────────────────────────────────────────────────
 
@@ -88,8 +88,8 @@ async function handleSponsoredPlus1(
   baseUrl: string,
   ctx?: ExecutionContext
 ): Promise<Response> {
-  // Use premium claim (allows narrated → narrating for upgrades)
-  const claimed = await claimPaperForPremium(env.DB, id);
+  // Use upgrade claim (allows narrated → narrating for upgrades)
+  const claimed = await claimPaperForUpgrade(env.DB, id);
   if (!claimed) {
     // Fall back to standard claim for unnarrated/failed papers
     const baseClaimed = await claimPaperForNarration(env.DB, id);
@@ -113,7 +113,7 @@ async function handleSponsoredPlus1(
   }
   await recordSubmission(env.DB, ip);
 
-  // Dispatch sponsored plus1 to Modal premium endpoint
+  // Dispatch sponsored plus1 to Modal upgrade endpoint
   const previousStatus = paper.status as PaperStatus;
   const dispatch = async () => {
     if (!env.MODAL_FUNCTION_URL) {
@@ -121,9 +121,9 @@ async function handleSponsoredPlus1(
       return;
     }
     try {
-      // Check for existing premium script to reuse
+      // Check for existing upgrade script to reuse
       let existingScript: string | null = null;
-      const scriptR2Key = await findExistingPremiumScript(env.DB, id);
+      const scriptR2Key = await findExistingUpgradeScript(env.DB, id);
       if (scriptR2Key) {
         try {
           const obj = await env.AUDIO_BUCKET.get(scriptR2Key);
@@ -138,7 +138,7 @@ async function handleSponsoredPlus1(
         paper_title: paper.title,
         paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
         paper_date: paper.published_date || "",
-        narration_mode: "premium",
+        narration_mode: "upgrade",
         llm_provider: "anthropic",
         llm_api_key: env.ANTHROPIC_API_KEY!,
         llm_model: "",  // Modal picks default
@@ -153,9 +153,9 @@ async function handleSponsoredPlus1(
         payload.existing_script = existingScript;
       }
 
-      const premiumUrl = env.MODAL_PREMIUM_FUNCTION_URL
+      const upgradeUrl = env.MODAL_UPGRADE_FUNCTION_URL
         || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
-      const resp = await fetch(premiumUrl, {
+      const resp = await fetch(upgradeUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -541,40 +541,7 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const body = await request.json<{
-    arxiv_id: string;
-    status: string;
-    progress_detail?: string;
-    error_message?: string;
-    error_category?: string;
-    eta_seconds?: number;
-    audio_r2_key?: string;
-    audio_size_bytes?: number;
-    duration_seconds?: number;
-    // Premium narration fields
-    narration_tier?: "base" | "plus1" | "plus2" | "plus3";
-    tts_provider?: string;
-    tts_model?: string;
-    llm_provider?: string;
-    llm_model?: string;
-    transcript_r2_key?: string;
-    actual_cost?: number;
-    llm_cost?: number;
-    tts_cost?: number;
-    script_char_count?: number;
-    // Track 1: source stats for cost estimation
-    tar_bytes?: number;
-    latex_char_count?: number;
-    figure_count?: number;
-    // Track 2: actual LLM token counts for ML model training
-    actual_input_tokens?: number;
-    actual_output_tokens?: number;
-    provider_model?: string;
-    version_id?: string;
-    // Track 3: scripting pipeline tracking
-    scripter_mode?: string;
-    script_latency_ms?: number;
-  }>();
+  const body = await request.json<ModalWebhookPayload>();
 
   if (!body.arxiv_id || !body.status) {
     return json({ error: "arxiv_id and status required" }, 400);
@@ -585,7 +552,7 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     await updateScriptCharCount(env.DB, body.arxiv_id, body.script_char_count);
   }
 
-  // Persist source stats if provided (Track 1 — free and premium narrations)
+  // Persist source stats if provided (Track 1 — free and upgrade narrations)
   if (body.tar_bytes != null && body.tar_bytes > 0) {
     await updatePaperSourceStats(
       env.DB, body.arxiv_id,

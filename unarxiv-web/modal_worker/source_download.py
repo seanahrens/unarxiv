@@ -1,5 +1,5 @@
 """
-Shared source download and parsing utilities for both free and premium narration.
+Shared source download and parsing utilities for both free and upgrade narration.
 
 Centralizes the duplicated logic for:
 - HTTP download with retry
@@ -445,7 +445,7 @@ def download_and_parse(
         tar_bytes, latex_char_count, figure_count = _collect_source_stats(latex_path, work_dir)
         print(f"Source stats: {tar_bytes:,} tar bytes, {latex_char_count:,} latex chars, {figure_count} figures")
 
-    # Extract raw source text for LLM context (premium only).
+    # Extract raw source text for LLM context (upgrade only).
     # Also extract the source archive to expose figures_dir for multimodal LLM calls.
     raw_source_text: str | None = None
     figures_dir: str | None = None

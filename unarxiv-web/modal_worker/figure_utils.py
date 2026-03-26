@@ -23,12 +23,8 @@ IMAGE_MEDIA_TYPES: dict[str, str] = {
 # Types we can convert to PNG via pymupdf before sending
 CONVERTIBLE_EXTENSIONS = {".pdf", ".eps"}
 
-# Max bytes per image (5 MB — lowest common denominator across all providers)
-MAX_IMAGE_BYTES = 5 * 1024 * 1024
-# Max images to attach per LLM chunk (keep cost/latency bounded)
-MAX_IMAGES_PER_CHUNK = 5
-# Max pixel dimension — Claude's internal processing cap
-MAX_IMAGE_PIXELS = 1568
+# Canonical values live in config.py
+from config import MAX_IMAGE_BYTES, MAX_IMAGES_PER_CHUNK, MAX_IMAGE_PIXELS
 
 
 def build_figure_map(figures_dir: str) -> dict[str, str]:
