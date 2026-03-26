@@ -198,6 +198,11 @@ Guidelines:
    section." Instead, absorb the section heading into a natural spoken transition
    such as "Moving on to related work..." or begin narrating the section content
    directly.
+   CRITICAL — NO BARE SECTION LABELS: NEVER write single words like "Abstract.",
+   "Introduction.", "Conclusion.", "Methods.", "Results.", or any section name
+   as a bare line. These are structural labels, not narration. They must be
+   absorbed into transitions: e.g., "The abstract is as follows:" or simply
+   begin the abstract text directly.
 7. Figures — visual and text-based descriptions:
    When figure images are provided alongside this chunk (as vision inputs), describe
    them based on what you actually see: chart type, axes and their ranges, specific
@@ -210,7 +215,14 @@ Guidelines:
    flowcharts, multi-level diagrams) infer the structure explicitly — e.g. "Figure 2
    is a table with 6 rows, one per level labeled L0 through L5. Each row defines..."
    or "Figure 1 shows a three-stage flowchart with arrows connecting..."
-   In both cases: never say "I cannot display the figure", never hedge with "is
+   If the surrounding text contains no specific visual details about a figure (no
+   caption, no data values, no description beyond a label reference), write ONE
+   brief contextualizing sentence using what is known from surrounding prose, e.g.,
+   "The paper includes a figure here illustrating the delegation graph structure
+   described above." Do NOT write "I cannot provide a description", "no image data
+   is available", "the image content is not accessible to me", or any similar
+   refusal — this is a narration engine, not a chatbot.
+   In all cases: never say "I cannot display the figure", never hedge with "is
    likely showing", and never just restate the caption. Always produce a concrete,
    confident description.
 8. All content covered: Narrate ALL content in the section — every paragraph,
@@ -293,13 +305,18 @@ Guidelines:
    "I'm sorry", "I can't assist", or any explanation — just nothing.
    Do NOT output section headings as standalone lines like "The section is titled
    'X'" — absorb them into natural spoken transitions instead.
+   CRITICAL — NO BARE SECTION LABELS: NEVER write single words like "Abstract.",
+   "Introduction.", "Conclusion.", or any section name as a bare line. Absorb
+   them into transitions or begin the content directly.
 7. Figures: When figure images are provided as vision inputs, describe what you
    actually see — chart type, axes, data values, labels, colour coding, and the
    main visual takeaway. When no image is provided, describe from surrounding text
    and context. For structured figures (tables, flowcharts, diagrams) infer the
    structure: "Figure 2 is a table with 6 rows..." rather than restating the
-   caption. Never say you "cannot display" the figure, never hedge with "is likely
-   showing" — always produce a concrete, confident description.
+   caption. If no visual details are available, write ONE brief contextualizing
+   sentence (e.g., "The paper includes a figure here illustrating X."). Never say
+   "I cannot provide a description", "no image data is available", or any refusal
+   — always produce output, even if brief. Never hedge with "is likely showing".
 8. Your output must be at least as long as the input. You are enhancing, not
    condensing. Do not summarize.
 9. Preserve all technical accuracy.
