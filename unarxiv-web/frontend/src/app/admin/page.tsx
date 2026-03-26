@@ -1132,13 +1132,12 @@ export default function AdminPage() {
   const handleBulkUpgrade = useCallback(async (tier: "plus1" | "plus2" | "plus3") => {
     if (selected.size === 0) return;
     const keys = getStoredKeys();
-    // Determine which LLM provider key is available
+    // plus1 is server-sponsored (uses worker's Anthropic key) — no client keys needed
     const llmProvider = keys.openai ? "openai" : keys.google ? "google" : null;
-    if (!llmProvider) {
+    if (tier !== "plus1" && !llmProvider) {
       setActionError("No API keys stored — add keys via the upgrade modal on any paper first");
       return;
     }
-    // Check TTS key availability for plus2/plus3
     if (tier === "plus2" && !keys.openai) {
       setActionError("No OpenAI API key stored — needed for 2Plus");
       return;
@@ -1157,7 +1156,7 @@ export default function AdminPage() {
         const updated = await requestUpgradeNarration(id, {
           option_id: tier,
           encrypted_keys: keys as Partial<Record<string, string>>,
-          llm_provider: llmProvider,
+          llm_provider: llmProvider ?? "anthropic",
         });
         setPapers((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated } : p)));
       } catch { failed.push(id); }
@@ -1169,7 +1168,7 @@ export default function AdminPage() {
 
   const handleBulkClearUpgrade = useCallback(async () => {
     if (!password || selected.size === 0) return;
-    if (!confirm(`Clear upgrade narrations for ${selected.size} paper${selected.size > 1 ? "s" : ""}? This deletes upgraded audio, scripts, and R2 files.`)) return;
+    if (!confirm(`Clear upgrade audio for ${selected.size} paper${selected.size > 1 ? "s" : ""}? This deletes upgraded audio files. Scripts are preserved for evaluation.`)) return;
     setActionError("");
     const ids = [...selected];
     setProcessing(new Set(ids));

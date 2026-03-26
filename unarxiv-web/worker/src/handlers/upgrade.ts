@@ -752,24 +752,19 @@ export async function handleDeleteUpgradeVersions(request: Request, env: Env, pa
   const denied = requireAdmin(request, env);
   if (denied) return denied;
 
-  // Collect R2 keys for upgrade versions before deleting DB rows
+  // Collect R2 audio keys for upgrade versions (keep scripts for eval)
   const versions = await env.DB
-    .prepare("SELECT audio_r2_key, transcript_r2_key FROM narration_versions WHERE paper_id = ? AND narration_tier != 'base'")
+    .prepare("SELECT audio_r2_key FROM narration_versions WHERE paper_id = ? AND narration_tier != 'base' AND audio_r2_key IS NOT NULL")
     .bind(paperId)
-    .all<{ audio_r2_key: string | null; transcript_r2_key: string | null }>();
+    .all<{ audio_r2_key: string }>();
 
-  // Delete R2 objects (audio MP3s and LLM scripts)
+  // Delete R2 audio files only — scripts are preserved for evaluation
   for (const v of versions.results) {
-    if (v.audio_r2_key) {
-      try { await env.AUDIO_BUCKET.delete(v.audio_r2_key); } catch {}
-    }
-    if (v.transcript_r2_key) {
-      try { await env.AUDIO_BUCKET.delete(v.transcript_r2_key); } catch {}
-    }
+    try { await env.AUDIO_BUCKET.delete(v.audio_r2_key); } catch {}
   }
 
-  // Delete DB rows
-  await env.DB.prepare("DELETE FROM narration_versions WHERE paper_id = ? AND narration_tier != 'base'")
+  // Clear audio references but keep rows (scripts, scores, model info survive)
+  await env.DB.prepare("UPDATE narration_versions SET audio_r2_key = NULL WHERE paper_id = ? AND narration_tier != 'base'")
     .bind(paperId)
     .run();
   // Reset best_version_id, restore original audio R2 key, and reset status if stuck narrating

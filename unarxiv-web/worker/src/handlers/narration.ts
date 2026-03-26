@@ -25,7 +25,7 @@ import { arxivSrcUrl, scrapeArxivMetadata } from "../arxiv";
 import { json, requireAdmin, getClientIp } from "./helpers";
 import { computeQualityRank } from "./upgrade";
 import { legacyBaseTranscriptKey } from "./r2paths";
-import { claimPaperForUpgrade, findExistingUpgradeScript } from "../db";
+import { claimPaperForUpgrade } from "../db";
 
 // ─── Narration Trigger ───────────────────────────────────────────────────────
 
@@ -121,16 +121,7 @@ async function handleSponsoredPlus1(
       return;
     }
     try {
-      // Check for existing upgrade script to reuse
-      let existingScript: string | null = null;
-      const scriptR2Key = await findExistingUpgradeScript(env.DB, id);
-      if (scriptR2Key) {
-        try {
-          const obj = await env.AUDIO_BUCKET.get(scriptR2Key);
-          if (obj) existingScript = await obj.text();
-        } catch {}
-      }
-
+      // Always generate a fresh script — admin reprocess should use latest scripter code
       const payload: Record<string, string | null> = {
         arxiv_id: id,
         tex_source_url: arxivSrcUrl(id),
@@ -149,9 +140,6 @@ async function handleSponsoredPlus1(
         scripter_mode: "hybrid",
         _secret: env.MODAL_WEBHOOK_SECRET,
       };
-      if (existingScript) {
-        payload.existing_script = existingScript;
-      }
 
       const upgradeUrl = env.MODAL_UPGRADE_FUNCTION_URL
         || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-upgrade-narration");
