@@ -385,16 +385,16 @@ def _strip_non_prose(text: str) -> str:
     # Remove \tikzstyle{name}=[...] definitions
     text = re.sub(r"\\tikzstyle\{[^}]*\}\s*=\s*\[[^\]]*\]", "", text, flags=re.DOTALL)
 
-    # Remove acknowledgements section (greedy to end of section or document)
-    # Match sections whose title CONTAINS "Acknowledg" anywhere (handles compound titles)
+    # Remove acknowledgements and author-contribution sections (greedy to end of section or document)
+    # Match sections whose title CONTAINS "Acknowledg" or "Author Contribution" anywhere
     text = re.sub(
-        r"\\(?:sub)*section\*?\{[^}]*Acknowledg(?:e?ments?)[^}]*\}.*?(?=\\section[^a-zA-Z]|\\appendix\b|\Z)",
+        r"\\(?:sub)*section\*?\{[^}]*(?:Acknowledg(?:e?ments?)|Authors?\s+Contribution[s]?)[^}]*\}.*?(?=\\section[^a-zA-Z]|\\appendix\b|\Z)",
         "", text, flags=re.DOTALL | re.IGNORECASE,
     )
     text = re.sub(r"\\begin\{acks\}.*?\\end\{acks\}", "", text, flags=re.DOTALL)
-    # Also catch "Acknowledgments" as a paragraph header
+    # Also catch "Acknowledgments" / "Author Contributions" as paragraph headers
     text = re.sub(
-        r"\\paragraph\*?\{[^}]*Acknowledg(?:e?ments?)[^}]*\}.*?(?=\\(?:sub)*section|\\paragraph|\Z)",
+        r"\\paragraph\*?\{[^}]*(?:Acknowledg(?:e?ments?)|Authors?\s+Contribution[s]?)[^}]*\}.*?(?=\\(?:sub)*section|\\paragraph|\Z)",
         "", text, flags=re.DOTALL | re.IGNORECASE,
     )
 
@@ -464,10 +464,15 @@ def _strip_non_prose(text: str) -> str:
 
     # Remove layout/navigation commands
     text = re.sub(r"\\label\{[^}]*\}", "", text)
+    # Strip \hspace and \vspace with their arguments specifically (not via greedy [^\n]*)
+    # so they don't eat prose on the same line.  e.g. \hspace{1em}\vrule\hspace{0.6em} → ""
+    text = re.sub(r"\\[hv]space\*?\{[^}]*\}", "", text)
+    text = re.sub(r"\\vrule\b", "", text)
+    text = re.sub(r"\\vphantom\{[^}]*\}", "", text)
     text = re.sub(
         r"\\(maketitle|tableofcontents|printbibliography|bibliographystyle|"
         r"bibliography|listoffigures|listoftables|newpage|clearpage|"
-        r"cleardoublepage|vspace|hspace|vfill|hfill|noindent|medskip|"
+        r"cleardoublepage|vfill|hfill|noindent|medskip|"
         r"bigskip|smallskip|hypertarget|tightlist|pagestyle|"
         r"thispagestyle|fancyhf|lfoot|rfoot|lhead|rhead|cfoot|chead|"
         r"printindex|glsaddall|printglossary|"
@@ -646,8 +651,14 @@ def _strip_citations(text: str) -> str:
     text = re.sub(r"\\url\{[^}]*\}", "", text)
 
     # Clean up orphaned reference text pointing to nothing
-    # "Figure " or "Table " at end of sentence or before comma
+    # "Figure " or "Table " at end of sentence or before comma (case-insensitive for
+    # lowercase forms like "figure " that appear after \ref stripping in some templates)
     text = re.sub(r"\b(Figure|Fig\.|Table|Eq\.|Equation)\s*~?\s*(?=[,.\s]|$)", "", text, flags=re.MULTILINE)
+
+    # Clean up "in [N] and [M]" constructs where both refs were stripped (e.g. from \Cref chains)
+    # "in sections and." → remove the whole dangling phrase
+    text = re.sub(r"\bin\s+sections?\s+and\b\.?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bin\s+and\b\.?", "", text, flags=re.IGNORECASE)
 
     # Clean up parenthetical citation lists now empty except for "e.g."/"i.e."
     # "(e.g. ; ; )" or "(e.g.)" → "" — the intro phrase is meaningless without citations
@@ -774,8 +785,9 @@ def _normalize_text(text: str) -> str:
     text = latex_accents_to_unicode(text)
 
     # Common abbreviations → spoken form
-    text = re.sub(r"e\.g\.~?", "for example, ", text)
-    text = re.sub(r"i\.e\.~?", "that is, ", text)
+    # Consume optional trailing comma to prevent double-comma when source has "e.g.," or "i.e.,"
+    text = re.sub(r"e\.g\.~?,?\s*", "for example, ", text)
+    text = re.sub(r"i\.e\.~?,?\s*", "that is, ", text)
     text = re.sub(r"cf\.~?", "compare ", text)
     text = re.sub(r"et al\.(?!\.)", "et al.", text)  # keep et al. as is (TTS reads it fine)
     text = re.sub(r"w\.r\.t\.~?", "with respect to ", text)
@@ -870,8 +882,13 @@ def _normalize_text(text: str) -> str:
 
     text = re.sub(r"\b(in|see)\s+Section[s]?\s*(?=[.,;:)])", _varied_section_ref, text, flags=re.IGNORECASE)
 
-    # "Figure" / "Table" etc. with no number following → remove
-    text = re.sub(r"\b(Figure|Fig\.|Table|Section|Eq\.|Equation)\s*(?=[,.\s;:)]|$)", "", text, flags=re.MULTILINE)
+    # "Figure" / "Table" / "figure" / "table" etc. with no number following → remove
+    # Case-insensitive so lowercase "(figure )" and "(section )" forms are also caught
+    text = re.sub(r"\b(Figure|Fig\.|Table|Section|Eq\.|Equation)\s*(?=[,.\s;:)]|$)", "", text, flags=re.MULTILINE | re.IGNORECASE)
+    # Clean up "(sections -)" or "(sections –)" range patterns left after multi-ref stripping
+    text = re.sub(r"\(\s*[Ss]ections?\s*[-–\s]+\s*\)", "", text)
+    # Clean up parenthetical "(section )" "(figure )" "(table )" now empty after stripping
+    text = re.sub(r"\(\s*(?:section|figure|table|eq\.?|equation)s?\s*\)", "", text, flags=re.IGNORECASE)
 
     # Clean up parenthetical phrases now empty after ref stripping
     # "(see )" or "(see also )" or "(cf. )" → ""

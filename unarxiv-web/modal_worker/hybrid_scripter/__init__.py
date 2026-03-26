@@ -175,6 +175,31 @@ def generate_script(
     surviving_placeholders = re.findall(r"HYBRID_ELEMENT_[A-Z_]+_\d{3}", body)
     print(f"[hybrid] {len(surviving_placeholders)}/{len(elements)} placeholders survived regex pipeline")
 
+    # Safety guard: if the body is suspiciously short after processing, the LaTeX
+    # structure was likely unrecognised and all content was stripped.  Fall back to
+    # the plain regex scripter rather than producing a near-empty narration.
+    _BODY_MIN_CHARS = 200
+    if len(body.strip()) < _BODY_MIN_CHARS:
+        print(f"[hybrid] WARNING: body too short ({len(body.strip())} chars < {_BODY_MIN_CHARS}), "
+              f"falling back to regex-only pipeline")
+        from regex_scripter import generate_script as _regex_generate
+        regex_script = _regex_generate(
+            source_path=source_path,
+            source_priority=source_priority,
+            fallback_title=fallback_title,
+            fallback_authors=fallback_authors,
+            fallback_date=fallback_date,
+            pdf_path=pdf_path,
+        )
+        return LLMResult(
+            improved_script=regex_script,
+            input_tokens=0,
+            output_tokens=0,
+            cost_usd=0.0,
+            provider="regex_fallback",
+            model="regex_scripter",
+        )
+
     # -----------------------------------------------------------------------
     # Step 5: LLM descriptions for extracted elements
     # -----------------------------------------------------------------------
