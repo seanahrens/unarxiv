@@ -63,6 +63,7 @@ premium_image = (
     .add_local_file("figure_utils.py", "/app/figure_utils.py", copy=True)
     .add_local_file("latex_post_process.py", "/app/latex_post_process.py", copy=True)
     .add_local_file("premium_tts.py", "/app/premium_tts.py", copy=True)
+    .add_local_dir("hybrid_scripter", "/app/hybrid_scripter", copy=True, ignore=["__pycache__/*"])
 )
 
 # Modal secret: "unarxiv-secrets" (legacy name — renaming requires recreating in Modal)
@@ -553,8 +554,12 @@ def narrate_paper_premium(
     tts_api_key: str = "",
     version_id: str = "",
     existing_script: str = "",
+    scripter_mode: str = "llm",
 ):
     """Premium narration pipeline: source → LLM script improvement → premium TTS → R2.
+
+    scripter_mode: "llm" (default) = full LLM rewrite of all content
+                   "hybrid"        = regex for prose + targeted LLM for figures/math/tables
 
     Pipeline:
       1. Download arXiv source (LaTeX-first or PDF-first per source_priority)
@@ -666,24 +671,50 @@ def narrate_paper_premium(
                 f"{llm_provider.upper()}_API_KEY", ""
             )
             if resolved_llm_key:
-                # Estimate LLM time: ~1 token per 4 chars output, ~60 tokens/sec throughput
-                llm_output_tokens_est = len(tts_text) / 4
-                llm_time_est = max(20, int(llm_output_tokens_est / 60))
-                total_est = llm_time_est + tts_time_est
-                send_status(callback_url, secret, arxiv_id,
-                            status="narrating",
-                            progress_detail="Improving script with LLM...",
-                            eta_seconds=total_est,
-                            version_id=version_id)
-                has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
                 # Model resolution: explicit param from caller → provider class default
                 resolved_model = llm_model or None
-                print(f"Running LLM script generation ({llm_provider}/{resolved_model or 'default'}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
                 provider = get_provider(llm_provider, resolved_llm_key, model=resolved_model)
-                llm_result = llm_generate_script(provider, raw_source_text, fallback_script=tts_text, figures_dir=parsed.figures_dir)
-                tts_text = llm_result.improved_script
+
+                if scripter_mode == "hybrid":
+                    # Hybrid mode: regex for prose + targeted LLM for figures/math/tables
+                    # Much faster and cheaper than full LLM rewrite
+                    llm_time_est = max(10, int(len(tts_text) / 4 / 60 * 0.2))  # ~20% of full LLM time
+                    total_est = llm_time_est + tts_time_est
+                    send_status(callback_url, secret, arxiv_id,
+                                status="narrating",
+                                progress_detail="Hybrid scripting (regex + targeted LLM)...",
+                                eta_seconds=total_est,
+                                version_id=version_id)
+                    print(f"Running hybrid script generation ({llm_provider}/{resolved_model or 'default'})...")
+                    from hybrid_scripter import generate_script as hybrid_generate_script
+                    llm_result = hybrid_generate_script(
+                        provider=provider,
+                        source_path=parsed.source_path or "",
+                        fallback_title=paper_title,
+                        fallback_authors=[a.strip() for a in paper_author.split(",") if a.strip()] if paper_author else [],
+                        fallback_date=paper_date,
+                        figures_dir=parsed.figures_dir,
+                        raw_source=raw_source_text,
+                    )
+                    tts_text = llm_result.improved_script
+                else:
+                    # Full LLM mode: send entire paper through LLM
+                    has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
+                    llm_output_tokens_est = len(tts_text) / 4
+                    llm_time_est = max(20, int(llm_output_tokens_est / 60))
+                    total_est = llm_time_est + tts_time_est
+                    send_status(callback_url, secret, arxiv_id,
+                                status="narrating",
+                                progress_detail="Improving script with LLM...",
+                                eta_seconds=total_est,
+                                version_id=version_id)
+                    print(f"Running LLM script generation ({llm_provider}/{resolved_model or 'default'}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
+                    llm_result = llm_generate_script(provider, raw_source_text, fallback_script=tts_text, figures_dir=parsed.figures_dir)
+                    tts_text = llm_result.improved_script
+
                 print(
-                    f"LLM done: {llm_result.input_tokens} in / {llm_result.output_tokens} out "
+                    f"{'Hybrid' if scripter_mode == 'hybrid' else 'LLM'} done: "
+                    f"{llm_result.input_tokens} in / {llm_result.output_tokens} out "
                     f"tokens, ${llm_result.cost_usd:.4f}"
                 )
             else:
@@ -697,8 +728,9 @@ def narrate_paper_premium(
         formatted_date = _format_date(paper_date)
         header = _build_header(paper_title or "Untitled", formatted_date, authors_list_parsed)
         footer = _build_footer(paper_title or "Untitled", formatted_date, authors_list_parsed)
-        if llm_result is not None:
+        if llm_result is not None and scripter_mode != "hybrid":
             # LLM generated fresh body-only content — wrap it now.
+            # Hybrid scripter already includes header/footer via build_script.
             # Defensively strip footer in case the fallback-script path let it through.
             body = tts_text.strip()
             if body.endswith(footer.strip()):
@@ -931,6 +963,10 @@ def trigger_premium_narration(request: dict):
 
     version_id = request.get("version_id", "")
 
+    scripter_mode = request.get("scripter_mode", "llm")
+    if scripter_mode not in ("llm", "hybrid"):
+        scripter_mode = "llm"
+
     narrate_paper_premium.spawn(
         arxiv_id=arxiv_id,
         tex_source_url=tex_source_url,
@@ -946,6 +982,7 @@ def trigger_premium_narration(request: dict):
         tts_api_key=tts_api_key,
         version_id=version_id,
         existing_script=request.get("existing_script", ""),
+        scripter_mode=scripter_mode,
     )
 
     return {
