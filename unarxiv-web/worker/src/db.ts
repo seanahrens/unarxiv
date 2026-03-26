@@ -302,6 +302,7 @@ export async function resetPaperForReprocess(
       `UPDATE papers SET title = ?, authors = ?, abstract = ?, published_date = ?,
        status = 'narrating', eta_seconds = NULL, progress_detail = NULL, error_message = NULL, error_category = NULL,
        audio_r2_key = NULL, audio_size_bytes = NULL, duration_seconds = NULL, completed_at = NULL,
+       best_version_id = NULL,
        updated_at = datetime('now')
        WHERE id = ?`
     )

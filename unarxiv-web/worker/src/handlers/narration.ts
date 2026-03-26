@@ -475,17 +475,22 @@ export async function handleGetTranscript(env: Env, id: string, url: URL): Promi
     return json({ error: "Transcript not available" }, 404);
   }
 
-  // Support ?version=<id> for version-specific transcripts
-  let r2Key = legacyBaseTranscriptKey(id);
+  // Support ?version=<id> for version-specific transcripts.
+  // Default: use best_version_id's transcript, falling back to legacy path.
+  let r2Key: string | null = null;
   const versionParam = url.searchParams.get("version");
-  if (versionParam) {
-    const versionId = parseInt(versionParam, 10);
-    if (!isNaN(versionId)) {
-      const version = await getVersionById(env.DB, versionId, id);
-      if (version?.transcript_r2_key) {
-        r2Key = version.transcript_r2_key;
-      }
+  const versionId = versionParam
+    ? parseInt(versionParam, 10)
+    : paper.best_version_id;
+
+  if (versionId && !isNaN(versionId)) {
+    const version = await getVersionById(env.DB, versionId, id);
+    if (version?.transcript_r2_key) {
+      r2Key = version.transcript_r2_key;
     }
+  }
+  if (!r2Key) {
+    r2Key = legacyBaseTranscriptKey(id);
   }
 
   const object = await env.AUDIO_BUCKET.get(r2Key);
