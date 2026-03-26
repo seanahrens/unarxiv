@@ -1,0 +1,114 @@
+\section{ Extensions and Computational Complexity}
+
+\subsection{Model Extensions}
+
+Our bicriteria results extend to the settings of repeated games, weighted voters, and multiple delegates.
+
+\noindent $\bullet$ {\em Repeated Games}.
+Recollect that an underlying motivation for liquid democracy is that it can be applied repeatedly over time with agents
+having the option of delegating to different agents at different times. Evidently, by repeating the delegation
+game over time, with different utility functions for the topics considered in different time periods, 
+the same bicriteria guarantees holds.
+
+\noindent $\bullet$ {\em Weighted Voters}. In some electoral systems, different agents may have different voting powers.
+That is, the voters are weighted. In this case, the number of votes a guru casts is simply the sum of the weights of all the
+votes to which it was delegated. Our bicriteria guarantees then follow trivially.
+
+\noindent $\bullet$ {\em Multiple Delegates}.
+In some settings it may be the case that an agent is allowed to nominate more than one delegate.
+That are two natural models for this. First, an agent nominates multiple delegates but the mechanism
+can use only one of them. Second, an agent splits its voting weight up and assigns it to multiple delegates.
+In both cases our techniques can be adapted and applied to give the same performance guarantees.
+
+
+\subsection{Computational Aspects}
+
+Let us conclude by discussing computation aspects in the liquid democracy game.
+Recall, to find an $\epsilon$-Nash equilibrium with a provably optimal social welfare guarantee
+we solved a fixed point theorem. 
+Moreover, solving the fixed point theorem requires knowledge of the optimal set $D^*$ of gurus.
+But obtaining $D^*$ is equivalent to finding an optimal solution to the liquid democracy game 
+and this problem is hard.
+\begin{thm}\label{thm:hardness}
+It is NP-hard to find an optimal solution to the liquid democracy game.
+\end{thm}
+\begin{proof}
+We apply a reduction from {\em dominating set in a directed graph}. Given a directed 
+graph $G=(V,A)$ and an integer $k$: is there a set $S\subseteq V$ of cardinality $k$ such that,
+for each $i\notin S$, there exists an arc $(i,j)\in A$ for some $j\in S$. 
+This problem is NP-complete. We now give a reduction to the liquid democracy game.
+
+Given the directed graph $G=(V,A)$ let the set of agents in the game be $V$. Define the
+utility function of an agent by:
+$$
+u_{ij} = 
+\begin{cases}
+1 &\text{if } (i,j)\in A  \\ 
+0 & \text{otherwise}	
+\end{cases} 
+$$ 
+It immediately follows that there is a dominating set of cardinality at most $k$ if and only if the
+liquid democracy game has a solution with social welfare at least $n-k$.
+This completes the proof.
+\qed
+\end{proof}
+
+So is it possible for the agents to compute a good bicriteria solution in polynomial time? 
+If we allow for sub-optimal approximation guarantees then this is achievable.
+The idea is simple: the characteristics required of the agents to ensure 
+reasonable performance guarantees are {\em narcissism} and {\em avarice}.\footnote{This is not an unreasonable assumption for
+both pirates and many of the inhabitants of Wonderland!}
+First, since $D^*$ is unknown, each agent $i$ narcissistically assumes he himself is an optimal guru.
+Consequently, he will vote with probability $p$. Thus, he will delegate his vote 
+with probability $(1-p)$. This he will do avariciously, by greedily delegating to the agent $i^*$
+that gives him largest myopic utility, that is $i^*=\argmax_{j\in V} u_{ij}$.
+
+\begin{thm}\label{thm:approx}
+For any $\epsilon\in[\frac{3}{4},1]$, the narcissistic-avaricious algorithm is linear time and produces an
+$\epsilon$-Nash equilibrium with social welfare at least $(1-\epsilon)\cdot \Opt$.
+\end{thm}
+\begin{proof}
+Consider the incentive guarantee for agent $i$ for the strategy profile $\z$ induced by the algorithm.
+As $i$ votes with probability $z_{ii}=p$ and delegates to $i^*$ with probability $z_{ii^*}=(1-p)$,
+his utility is 
+\begin{align*}
+		u_i(\z_i,\z_{-i}) &\ \geq\ z_{ii}u_{ii} + z_{i i^*} z_{i^* i^*}  u_{ii^*} \\
+		&\ =\ p\cdot u_{ii} + (1-p) \cdot p\cdot u_{ii^*} \\
+		&\ \geq\ (1-p)\cdot p\cdot u_{ii^*} \\
+		&\ \geq\ (1-p)\cdot p \cdot u_i(\hat{\z_i},\z_{-i}) \qquad \forall \hat{\z_i}\in \mathbb{S}_i
+\end{align*}
+Hence $\z$ is an $\epsilon$-Nash equilibrium for 
+$$\epsilon=(1-p(1-p))=1-p+p^2=\frac34 +(p-\frac12)^2$$
+It follows that the narcissistic-avaricious algorithm can provide incentive guarantees only for $\epsilon\in[\frac{3}{4},1]$.
+Further, by solving the corresponding quadratic equation, to obtain such an $\epsilon$-Nash equilibrium we simply 
+select $p=\frac12\left(1+\sqrt{1-4(1-\epsilon)}\right)$.
+
+Now, let's evaluate the social welfare guarantee for the narcissistic-avaricious algorithm.	
+As above, we have
+ \begin{align*}
+	 	\SW(\z) &\ =\ \sum_{i\in V} u_i(\z_i,\z_{-i})\\
+		&\ \geq\ \sum_{i\in V} (1-p)\cdot p\cdot u_{ii^*} \\
+	 	&\ =\  (1-p)\cdot p\cdot\sum_{i\in V} u_{ii^*}\\
+		&\ \geq\ (1-p)\cdot p\cdot \Opt 
+ \end{align*}
+ Since $p=\frac12\left(1+\sqrt{1-4(1-\epsilon)}\right)$ this gives
+ $$\SW(\z) \ \ge\ \frac14\Big(1-(1-4(1-\epsilon)\Big)\cdot \Opt \ = \ (1-\epsilon)\cdot \Opt$$
+Therefore, as claimed, the narcissistic-avaricious algorithm outputs a solution whose welfare is at least $(1-\epsilon)$
+times the optimal welfare. 
+
+Finally, observe that implementing the narcissistic-avaricious strategy requires that each agent $i$ simply 
+computes $i^*=\argmax_{j\in V} u_{ij}$. This can be done for every agent in linear time in the size of the input.
+\qed
+\end{proof}
+
+We emphasize two points concerning Theorem~\ref{thm:approx}. One, it only works for weaker incentive guarantees, namely 
+$\epsilon\in[\frac{3}{4},1]$. Unlike the fixed point algorithm it does not work for the range $\epsilon\in (0,\frac34)$.
+Two, the social welfare guarantee is $(1-\epsilon)$. This is a constant but, for the valid range $\epsilon\in[\frac{3}{4},1]$, it is much worse 
+than the $\epsilon$ guarantee obtained by the fixed point algorithm. 
+A very interesting open problem is to find a polynomial time algorithm that matches the optimal bicriteria
+guarantees provided by Theorem~\ref{thm:bicriteria} and applies for all $\epsilon>0$.
+
+\vspace*{0.5cm}
+
+\noindent \textbf{Acknowledgements}: We thank Bundit Laekhanukit for interesting discussions. We are also grateful to the reviewers for suggestions which greatly improved the paper.
+

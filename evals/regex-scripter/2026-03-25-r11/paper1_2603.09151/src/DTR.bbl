@@ -1,0 +1,158 @@
+\begin{thebibliography}{29}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Akhtar et~al.(2023)Akhtar, Shankarampeta, Gupta, Patil, Cocarascu, and Simperl]{akhtar2023exploring}
+Akhtar, M., Shankarampeta, A., Gupta, V., Patil, A., Cocarascu, O., and Simperl, E.
+\newblock Exploring the numerical reasoning capabilities of language models: A comprehensive analysis on tabular data.
+\newblock \emph{arXiv preprint arXiv:2311.02216}, 2023.
+
+\bibitem[Dagan et~al.(2023)Dagan, Keller, and Lascarides]{dagan2023dynamic}
+Dagan, G., Keller, F., and Lascarides, A.
+\newblock Dynamic planning with a llm.
+\newblock \emph{arXiv preprint arXiv:2308.06391}, 2023.
+
+\bibitem[Ge et~al.(2025)Ge, Romeo, Cai, Sunkara, and Zhang]{ge2025samule}
+Ge, Y., Romeo, S., Cai, J., Sunkara, M., and Zhang, Y.
+\newblock Samule: Self-learning agents enhanced by multi-level reflection.
+\newblock In \emph{Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing}, pp.\  16602--16621, 2025.
+
+\bibitem[Gong et~al.(2020)Gong, Sun, Feng, Qin, Bi, Liu, and Liu]{gong2020tablegpt}
+Gong, H., Sun, Y., Feng, X., Qin, B., Bi, W., Liu, X., and Liu, T.
+\newblock Tablegpt: Few-shot table-to-text generation with table structure reconstruction and content matching.
+\newblock In \emph{Proceedings of the 28th International Conference on Computational Linguistics}, pp.\  1978--1988, 2020.
+
+\bibitem[Huang et~al.(2024)Huang, Liu, Chen, Wang, Wang, Lian, Wang, Tang, and Chen]{huang2024understanding}
+Huang, X., Liu, W., Chen, X., Wang, X., Wang, H., Lian, D., Wang, Y., Tang, R., and Chen, E.
+\newblock Understanding the planning of llm agents: A survey.
+\newblock \emph{arXiv preprint arXiv:2402.02716}, 2024.
+
+\bibitem[Katsis et~al.(2022)Katsis, Chemmengath, Kumar, Bharadwaj, Canim, Glass, Gliozzo, Pan, Sen, Sankaranarayanan, et~al.]{katsis2022ait}
+Katsis, Y., Chemmengath, S., Kumar, V., Bharadwaj, S., Canim, M., Glass, M., Gliozzo, A., Pan, F., Sen, J., Sankaranarayanan, K., et~al.
+\newblock Ait-qa: Question answering dataset over complex tables in the airline industry.
+\newblock In \emph{Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies: Industry Track}, pp.\  305--314, 2022.
+
+\bibitem[Kulkarni et~al.(2025)Kulkarni, Dixit, Srikumar, Roth, and Gupta]{kulkarni2025llmsymbolicintegrationrobusttemporal}
+Kulkarni, A., Dixit, K., Srikumar, V., Roth, D., and Gupta, V.
+\newblock Llm-symbolic integration for robust temporal tabular reasoning, 2025.
+\newblock URL \url{https://arxiv.org/abs/2506.05746}.
+
+\bibitem[Liu et~al.(2024)Liu, Feng, Xue, Wang, Wu, Lu, Zhao, Deng, Zhang, Ruan, et~al.]{liu2024deepseek}
+Liu, A., Feng, B., Xue, B., Wang, B., Wu, B., Lu, C., Zhao, C., Deng, C., Zhang, C., Ruan, C., et~al.
+\newblock Deepseek-v3 technical report.
+\newblock \emph{arXiv preprint arXiv:2412.19437}, 2024.
+
+\bibitem[Lu et~al.(2025)Lu, Qin, Qiao, Li, Dai, Ke, He, Qiao, Yin, Sun, et~al.]{lu2025youtu}
+Lu, J., Qin, J., Qiao, L., Li, Y., Dai, X., Ke, B., He, J., Qiao, R., Yin, D., Sun, X., et~al.
+\newblock Youtu-llm: Unlocking the native agentic potential for lightweight large language models.
+\newblock \emph{arXiv preprint arXiv:2512.24618}, 2025.
+
+\bibitem[Perzina \& Ram{\'i}k(2014)Perzina and Ram{\'i}k]{Perzina2014MicrosoftEA}
+Perzina, R. and Ram{\'i}k, J.
+\newblock Microsoft excel as a tool for solving multicriteria decision problems.
+\newblock In \emph{International Conference on Knowledge-Based Intelligent Information \& Engineering Systems}, 2014.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:34854159}.
+
+\bibitem[Ren et~al.(2025)Ren, Zhao, Huang, and Honavar]{ren2025deep}
+Ren, W., Zhao, T., Huang, Y., and Honavar, V.
+\newblock Deep learning within tabular data: Foundations, challenges, advances and future directions.
+\newblock \emph{arXiv preprint arXiv:2501.03540}, 2025.
+
+\bibitem[Renze \& Guven(2024)Renze and Guven]{renze2024self}
+Renze, M. and Guven, E.
+\newblock Self-reflection in llm agents: Effects on problem-solving performance.
+\newblock \emph{arXiv preprint arXiv:2405.06682}, 2024.
+
+\bibitem[Sarkar \& Lausen(2023)Sarkar and Lausen]{sarkar2023testing}
+Sarkar, S. and Lausen, L.
+\newblock Testing the limits of unified sequence to sequence llm pretraining on diverse table data tasks.
+\newblock \emph{arXiv preprint arXiv:2310.00789}, 2023.
+
+\bibitem[Shi et~al.(2024)Shi, Xu, Zhuang, Yu, Zhang, Wu, Zhu, Ho, Yang, and Wang]{Shi2024EHRAgentCE}
+Shi, W., Xu, R., Zhuang, Y., Yu, Y., Zhang, J., Wu, H., Zhu, Y., Ho, J.~C., Yang, C., and Wang, M.~D.
+\newblock Ehragent: Code empowers large language models for complex tabular reasoning on electronic health records.
+\newblock \emph{ArXiv}, abs/2401.07128, 2024.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:273324122}.
+
+\bibitem[Singha et~al.(2023)Singha, Cambronero, Gulwani, Le, and Parnin]{singha2023tabular}
+Singha, A., Cambronero, J., Gulwani, S., Le, V., and Parnin, C.
+\newblock Tabular representation, noisy operators, and impacts on table structure understanding tasks in llms.
+\newblock \emph{arXiv preprint arXiv:2310.10358}, 2023.
+
+\bibitem[Somvanshi et~al.(2024)Somvanshi, Das, Javed, Antariksa, and Hossain]{somvanshi2024survey}
+Somvanshi, S., Das, S., Javed, S.~A., Antariksa, G., and Hossain, A.
+\newblock A survey on deep tabular learning.
+\newblock \emph{arXiv preprint arXiv:2410.12034}, 2024.
+
+\bibitem[Song et~al.(2023)Song, Wu, Washington, Sadler, Chao, and Su]{song2023llm}
+Song, C.~H., Wu, J., Washington, C., Sadler, B.~M., Chao, W.-L., and Su, Y.
+\newblock Llm-planner: Few-shot grounded planning for embodied agents with large language models.
+\newblock In \emph{Proceedings of the IEEE/CVF international conference on computer vision}, pp.\  2998--3009, 2023.
+
+\bibitem[Sun et~al.(2024)Sun, Han, Jiang, Qi, Sun, Yuan, and Huang]{Sun2024ASO}
+Sun, M., Han, R., Jiang, B., Qi, H., Sun, D., Yuan, Y., and Huang, J.
+\newblock A survey on large language model-based agents for statistics and data science.
+\newblock \emph{ArXiv}, abs/2412.14222, 2024.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:274859246}.
+
+\bibitem[Tang et~al.(2025)Tang, Niu, Zhou, Li, Zhou, Wang, Li, Zhang, and Wu]{tang2025st}
+Tang, Z., Niu, B., Zhou, X., Li, B., Zhou, W., Wang, J., Li, G., Zhang, X., and Wu, F.
+\newblock St-raptor: Llm-powered semi-structured table question answering.
+\newblock \emph{Proceedings of the ACM on Management of Data}, 3\penalty0 (6):\penalty0 1--27, 2025.
+
+\bibitem[Wang et~al.(2024)Wang, Zhang, Li, Eisenschlos, Perot, Wang, Miculicich, Fujii, Shang, Lee, et~al.]{wang2024chain}
+Wang, Z., Zhang, H., Li, C.-L., Eisenschlos, J.~M., Perot, V., Wang, Z., Miculicich, L., Fujii, Y., Shang, J., Lee, C.-Y., et~al.
+\newblock Chain-of-table: Evolving tables in the reasoning chain for table understanding.
+\newblock \emph{arXiv preprint arXiv:2401.04398}, 2024.
+
+\bibitem[W{\"o}lflein et~al.(2025)W{\"o}lflein, Ferber, Truhn, Arandjelovic, and Kather]{wolflein2025llm}
+W{\"o}lflein, G., Ferber, D., Truhn, D., Arandjelovic, O., and Kather, J.~N.
+\newblock Llm agents making agent tools.
+\newblock In \emph{Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)}, pp.\  26092--26130, 2025.
+
+\bibitem[Wu et~al.(2025)Wu, Yang, Zhu, Ye, Gu, Lu, Xiao, Bao, He, Zha, et~al.]{wu2025realhitbench}
+Wu, P., Yang, Y., Zhu, G., Ye, C., Gu, H., Lu, X., Xiao, R., Bao, B., He, Y., Zha, L., et~al.
+\newblock Realhitbench: A comprehensive realistic hierarchical table benchmark for evaluating llm-based table analysis.
+\newblock \emph{arXiv preprint arXiv:2506.13405}, 2025.
+
+\bibitem[Wu et~al.(2024)Wu, Yang, Chai, Zhang, Liu, Du, Liang, Shu, Cheng, Sun, Niu, Li, and Li]{Wu2024TableBenchAC}
+Wu, X., Yang, J., Chai, L., Zhang, G., Liu, J., Du, X., Liang, D., Shu, D., Cheng, X., Sun, T., Niu, G., Li, T., and Li, Z.
+\newblock Tablebench: A comprehensive and complex benchmark for table question answering.
+\newblock \emph{ArXiv}, abs/2408.09174, 2024.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:271902839}.
+
+\bibitem[Yang et~al.(2025)Yang, Li, Yang, Zhang, Hui, Zheng, Yu, Gao, Huang, Lv, et~al.]{yang2025qwen3}
+Yang, A., Li, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Gao, C., Huang, C., Lv, C., et~al.
+\newblock Qwen3 technical report.
+\newblock \emph{arXiv preprint arXiv:2505.09388}, 2025.
+
+\bibitem[Zhao et~al.(2024{\natexlab{a}})Zhao, Huang, Xu, Lin, Liu, and Huang]{zhao2024expel}
+Zhao, A., Huang, D., Xu, Q., Lin, M., Liu, Y.-J., and Huang, G.
+\newblock Expel: Llm agents are experiential learners.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}, volume~38, pp.\  19632--19642, 2024{\natexlab{a}}.
+
+\bibitem[Zhao et~al.(2023)Zhao, Mi, Qi, Nan, Guo, Cohan, and Radev]{zhao2023openrt}
+Zhao, Y., Mi, B., Qi, Z., Nan, L., Guo, M., Cohan, A., and Radev, D.
+\newblock Openrt: An open-source framework for reasoning over tabular data.
+\newblock In \emph{Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations)}, pp.\  336--347, 2023.
+
+\bibitem[Zhao et~al.(2024{\natexlab{b}})Zhao, Chen, Cohan, and Zhao]{zhao-etal-2024-tapera}
+Zhao, Y., Chen, L., Cohan, A., and Zhao, C.
+\newblock {T}a{PERA}: Enhancing faithfulness and interpretability in long-form table {QA} by content planning and execution-based reasoning.
+\newblock In Ku, L.-W., Martins, A., and Srikumar, V. (eds.), \emph{Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics}, pp.\  12824--12840, August 2024{\natexlab{b}}.
+
+\bibitem[Zheng et~al.(2024)Zheng, Feng, Si, She, Lin, Jiang, and Wang]{zheng2024multimodal}
+Zheng, M., Feng, X., Si, Q., She, Q., Lin, Z., Jiang, W., and Wang, W.
+\newblock Multimodal table understanding.
+\newblock \emph{arXiv preprint arXiv:2406.08100}, 2024.
+
+\bibitem[Zhu et~al.(2024)Zhu, Cai, Xu, Li, Sun, Zhou, Su, Tang, and Liu]{Zhu2024AutoTQATA}
+Zhu, J.-P., Cai, P., Xu, K., Li, L., Sun, Y., Zhou, S., Su, H., Tang, L., and Liu, Q.
+\newblock Autotqa: Towards autonomous tabular question answering through multi-agent large language models.
+\newblock \emph{Proc. VLDB Endow.}, 17:\penalty0 3920--3933, 2024.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:272727897}.
+
+\end{thebibliography}

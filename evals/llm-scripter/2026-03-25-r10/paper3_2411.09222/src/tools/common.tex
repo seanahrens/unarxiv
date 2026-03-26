@@ -1,0 +1,65 @@
+\definecolor{white}{HTML}{FFFFFF}
+\definecolor{lightgrey}{HTML}{BBBBBB}
+\definecolor{grey}{HTML}{888888}
+\definecolor{black}{HTML}{000000}
+\definecolor{lightgreen}{HTML}{ECFAE7}
+\definecolor{darkgreen}{HTML}{1D4C08}
+
+
+\newcommand{\thickbar}{\noindent\rule{\linewidth}{1pt}}
+
+\newcommand{\arrowbox}[1]{%
+    \tikz[baseline=(char.base)]{
+        \node[draw=none, fill=lightgreen, rounded corners=3pt, inner sep=3pt, minimum height=1.2em, minimum width=2em] (char) {\ttfamily #1};
+    }%
+}
+
+\newcommand{\ldtbox}[1]{
+    #1
+    \vspace{0.1cm}
+}
+
+\newcommand{\ldttitle}[1]{
+    {\section*{\textcolor{darkgreen}{#1}}}
+    \vspace{-0.2cm}
+}
+
+\newcommand{\ldtsubheading}[1]{
+    \vspace{3pt}
+    \noindent\textit{#1}
+}
+
+\newcommand{\dscplaceholder}{
+    {\color{lightgrey}{\par\noindent (Answer here)}}
+}
+\newcommand{\sfss}[1]{%
+    \section*{\textcolor{darkgreen}{#1}}%
+}
+
+\newcommand{\sfsss}[1]{%
+    \subsection*{\textcolor{darkgreen}{#1}}%
+}
+
+
+\newenvironment{quotebar}{%
+  \par\noindent
+  \begin{tabular}{@{}|@{\hspace{5pt}}p{0.97\columnwidth}@{}}
+}{%
+  \end{tabular}%
+}
+
+
+\newenvironment{noitemize}{%
+\let\originalitem\item
+  \renewcommand{\item}{\par}%
+}{%
+  \let\item\originalitem
+}
+
+\newenvironment{describe}[1][]
+    {\itshape\color{#1}\begin{quotebar}\textbf{Describe:}}
+    {\end{quotebar}}
+
+\newenvironment{evaluate}[1][]
+    {\itshape\color{#1}\begin{quotebar}\textbf{Evaluate:}}
+    {\end{quotebar}}

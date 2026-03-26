@@ -1,0 +1,97 @@
+\section{Introduction}
+Liquid democracy is a form of direct and representative democracy, based on the concept of {\em delegation}.
+Each voter has the choice of voting themselves or transferring (transitively) its vote to a trusted proxy.
+Recent interest in liquid democracy, from both practical and theoretical perspectives, was sparked 
+by the Pirate Party in Germany and its Liquid Feedback platform~\cite{BKN14}.
+Similar initiatives have subsequently been undertaken by the 
+Demoex Party in Sweden, the Internet Party in Spain, and the Net Party in Argentina.
+
+There are many potential benefits of a transitive delegation mechanism. 
+Participation may improve in quantity for several reasons. The system is easy to use and understand, induces low barriers 
+to participation, and is inherently egalitarian: there is no distinction between voters and representatives; every one
+is both a voter and a delegator. Participation may also improve in quality due to the flexibility to choose different 
+forms of participation: voters can chose to be active participants on topics they are comfortable with or delegate on topics
+they are less comfortable with. Accountability may improve due to the transparent nature of the mechanism and 
+because there is a demonstrable line of responsibility between a delegated proxy and its delegators.
+The quality of decision making may improve via a specialization to delegated experts
+and a reduction in induced costs, such as the duplication of resources.
+
+Our objective here is not to evaluate such claimed benefits, but we refer the reader to~\cite{Beh17, BKN14, BZ16, For02, GA15} for detailed 
+discussions on the motivations underlying liquid democracy.
+Rather, our focus is to quantitatively measure the performance of liquid democracy in an idealized setting.
+Specifically, can equilibria in these voting mechanisms provide high social welfare?
+That is, we study the {\em price of stability of liquid democracy}.
+
+\subsection{Background}
+As stated, vote delegation lies at the heart of liquid democracy. Furthermore, 
+vote delegation in liquid democracy has several fundamental characteristics: optionality, retractability, 
+partitionability, and transitivity. So let us begin by defining these concepts and tracing their origins~\cite{Beh17,BKN14}.
+
+The notion of {\em optional} delegation proffers voters the choice of direct participation (voting themselves/choosing to abstain)
+or indirect participation (delegating their vote). This idea dates back over a century to the work of Charles Dodgson on parliamentary 
+representation~\cite{Dod1884}.\footnote{Dodgson was a parson and 
+a mathematician but, as the author of  ``Alice in Wonderland'', is more familiarly known by his {\em nom de plume}, Lewis Carroll.}
+
+Miller~\cite{Mil69} proposed that delegations be {\em retractable} and {\em partitionable}.
+The former allows for delegation assignments to be time-sensitive and reversible.
+The latter allows a voter to select different delegates for different policy decisions.\footnote{This option is particularly useful 
+where potential delegates may have assorted competencies. For example, Alice may prefer to delegate to the Hatter on
+matters concerning tea-blending but to the Queen of Hearts on matters concerning horticulture.}
+ 
+Finally, {\em transitive} delegation is due to Ford~\cite{For02}. This allows a proxy to themselves delegate its vote {\em and} 
+all its delegated votes. This concept is central to liquid democracy. Indeed, if an agent is better served by delegating her vote to 
+a more informed proxy it would be perverse to prohibit that proxy from re-delegating that vote to an even more informed proxy.  
+Moreover, such transitivity is necessary should circumstances arise causing the proxy to be unable to vote. It also reduces the 
+duplication of efforts involved in voting.
+
+As noted in the sixties by Tullock~\cite{Tol67}, the development of the computer opened up the possibility of large proxy voting systems.
+Indeed, with the internet and modern security technologies, liquid democracy is inherently practical; see Lumphier~\cite{Lan95}.
+
+There has been a flurry of interest in liquid democracy from the AI community. This is illustrated by the large range of 
+recent papers on the topic; see, for example, \cite{Bri18,  BT18, CG17, CMM17, GKM18, 
+GA15, KMP18, KR20, ZZ17}. Most directly related to our work is the game theoretic model of liquid democracy 
+studied by Escoffier et al.~\cite{EGP19}. (A related game-theoretic model was also investigated by Bloembergen et al.~\cite{BGL19}.) Indeed, our motivation is an open question posed by Escoffier et al.~\cite{EGP19}:
+are price of anarchy type results obtainable for their model of liquid democracy?
+We will answer this question for a generalization of their model. 
+
+%accuracy of 0-1 voting BGL19
+% price of anarchy of simple game in BGL19
+%supervoters GKM18, KMP18
+%dynamics EGP19
+%axiomatic GA15
+% binary aggregation CG17, BT,
+%GA, CMM-- voting in a metric space
+%rankings
+
+
+\subsection{Contributions}
+
+In Section~\ref{sec:model}, we will see that vote delegation has a natural representation in terms of a 
+directed graph called the {\em delegation graph}. If each agent $i$ has a utility of $u_{ij}\in [0,1]$ when agent $j$ 
+votes as her delegate then a game, called the {\em liquid democracy game}, is induced on the delegation graph.
+We study the {\em welfare ratio} in the liquid democracy game, which compares the social welfare of an equilibrium 
+to the welfare of the optimal solution.
+
+Pure strategy Nash equilibria need not exist in the liquid democracy game, so we focus on mixed 
+strategy Nash equilibria.
+Our main result, given in Section~\ref{sec:bicriteria} is that bicriteria approximation guarantees (for social welfare and rationality) 
+exist in the game.
+\begin{thm}\label{thm:upper}
+For all $\epsilon\in [0,1]$, and for any instance of the liquid democracy game, there exists an $\epsilon$-Nash equilibrium with social 
+welfare at least $\epsilon\cdot \Opt$.
+\end{thm}
+Theorem~\ref{thm:upper} is tight: the stated bicriteria guarantees cannot be improved.
+\begin{thm}\label{thm:lower}
+For all $\epsilon\in[0,1]$, there exist instances such that any $\epsilon$-Nash equilibrium has welfare at most $\epsilon\cdot \Opt +\gamma$ for any $\gamma>0$.
+\end{thm}
+
+Theorems~\ref{thm:upper} and~\ref{thm:lower} imply
+that the {\em price of stability} for $\epsilon$-Nash equilibria is~$\epsilon$.
+An important consequence of Theorem~\ref{thm:upper} is that strong approximation guarantees can {\em simultaneously}
+be obtained for both social welfare and rationality.
+Specifically, setting~$\epsilon=\frac12$ gives factor $2$ approximation guarantees for each criteria.
+\begin{cor} \label{cor:upper} 
+For any instance of the liquid democracy game, there exists a $\frac12$-Nash equilibrium with welfare at least~$\frac12\cdot \Opt$.
+\end{cor}
+
+

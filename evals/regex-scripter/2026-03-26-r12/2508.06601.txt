@@ -1,0 +1,269 @@
+Deep Ignorance: Filtering Pretraining Data Builds Tamper-Resistant Safeguards into Open-Weight LLMs.
+
+By Kyle O'Brien, Stephen Casper, Quentin Anthony, and 7 more authors.
+
+Published on August 8, 2025.
+
+Abstract.
+
+Open-weight AI systems offer unique benefits, including enhanced transparency, open research, and decentralized access. However, they are vulnerable to tampering attacks which can efficiently elicit harmful behaviors by modifying weights or activations. Currently, there is not yet a robust science of open-weight model risk management. Existing safety fine-tuning methods and other post-training techniques have struggled to make LLMs resistant to more than a few dozen steps of adversarial fine-tuning. In this paper, we investigate whether filtering text about dual-use topics from training data can prevent unwanted capabilities and serve as a more tamper-resistant safeguard. We introduce a multi-stage pipeline for scalable data filtering and show that it offers a tractable and effective method for minimizing biothreat proxy knowledge in LLMs. We pretrain multiple 6.9B-parameter models from scratch and find that they exhibit substantial resistance to adversarial fine-tuning attacks on up to 10,000 steps and 300M tokens of biothreat-related text to outperforming existing post-training baselines by over an order of magnitude to with no observed degradation to unrelated capabilities. However, while filtered models lack internalized dangerous knowledge, we find that they can still leverage such information when it is provided in context (for example, via search tool augmentation), demonstrating a need for a defense-in-depth approach. Overall, these findings help to establish pretraining data curation as a promising layer of defense for open-weight AI systems.
+
+Introduction.
+
+As frontier large language models (LLMs) grow more advanced, their developers have raised concerns about increasing security risks posed by their models. For example, in its Gemini 2.5 Pro Preview model card, Google Deepmind remarks, "subsequent revisions in the next few months could lead to a model that reaches the critical capability level [for harmful novice uplift]". Anthropic reported that it was preemptively activating its Safety Level 3 protocols for Claude Opus 4, writing that they "could not rule out" "the ability to significantly assist individuals or groups with basic STEM backgrounds in obtaining, producing, or deploying CBRN weapons.".
+
+OpenAI's ChatGPT Agent system card states "We have decided to [precautionarily] treat this launch as high capability in the Biological and Chemical domain".
+
+Today, frontier LLMs such as the above are often deployed with closed weights behind APIs. However, open-weight models are being released at an increasing rate, and their capabilities tend to lag only six to twelve months behind those of closed-weight models. Open models offer unique benefits related to transparency, research, and the deconcentration of power. However, they create unique risks from downstream modifications and unmonitored use. This prompts the question: How can harmful uses of advanced open-weight models be effectively mitigated?
+
+Despite the rising prominence of open-weight models, the science of open-weight model safety is nascent. Closed-weight deployments keep a model's weights secure and allow for monitors and filters on its inputs and outputs. However, the defining challenge for open-weight model safety is that open models can be modified arbitrarily by downstream actors.
+
+Despite recent work on developing tamper-resistant models, existing techniques can consistently be undone within several hundred fine-tuning steps or fewer.
+
+In this paper, we investigate whether open-weight models can be made more tamper-resistant by filtering dual-use content from their pretraining data. Specifically, we work to make language models robustly ignorant of biothreat proxy knowledge without degrading unrelated capabilities. We hypothesize that if a model is unable to learn unsafe knowledge during pretraining, it will be much more difficult for an attacker to elicit harmful behaviors from it.
+
+We make four key contributions:
+
+First, Knowledge Prevention: We introduce an efficient multi-stage data filtering pipeline that accounts for less than 1 percent of total training FLOPS. We use this filtering approach to successfully prevent biothreat proxy capabilities competitively with existing post-training safeguards. We do not observe degradation to unrelated capabilities. Second, Tamper-Resistance: We show that training data filtering can achieve state-of-the-art tamper resistance for up to 10,000 steps and 300M tokens of adversarial fine-tuning on biothreat-related text, improving by more than an order of magnitude over post-training baselines. Third, Defense-in-Depth: We demonstrate that data filtering cannot prevent LLMs from leveraging harmful knowledge provided in-context, but that Circuit-Breaking-based techniques offer complementary defenses. However, we show that none of the defenses we test are resistant to staged attacks that combine fine-tuning and in-context retrieval. Fourth, Model Suite: We release a suite of 6.9B parameter language models trained with combinations of data filtering and post-training safeguards. These models will allow researchers to study the causal impact that removing a subset of training data has on model mechanisms and behavior.
+
+In addition to these core contributions, we also study challenges with evaluating LLM safeguards using multiple-choice questions, introduce a new hybrid unlearning algorithm that combines prior state-of-the-art defenses, and present negative results involving our challenges with synthetic document training at scale. Finally, while this work does not focus on machine unlearning, our models offer a test-bed for studying machine unlearning algorithms. Together, we hope that these findings can contribute to emerging science and standards for effective open-weight model risk management.
+
+Filtering Prevents Target Capabilities.
+
+Can we prevent LLMs from learning undesirable knowledge via data curation?
+
+Using openly available benchmarks, we study whether removing documents from a training dataset that are flagged as containing proxy biothreat knowledge (see for details) will result in an LLM that durably lacks such knowledge. We operationalize this by designing a multi-stage filtering pipeline composed of rule-based and machine learning classifiers to detect proxy documents in training data. We then train LLMs from scratch on the original unfiltered dataset and various filtered versions. If successful, the filtered models should exhibit significantly less proxy knowledge than the unfiltered model while retaining comparable general knowledge.
+
+Though we focus on biorisk as a motivating example, our methodology can be applied to other domains.
+
+Multi-Stage Filtering.
+
+Our goal for training data filtering is to identify documents related to the filter target, in our case, biothreat proxy knowledge, and remove them from the training dataset. However, filtering can be challenging due to modern pretraining datasets containing at least hundreds of millions of diverse documents. This section describes our approach to scalable filtering, consisting of an initial blocklist keyword filter with escalation to a ModernBERT classifier if two or more keywords are found in a document. This multi-stage pipeline is simple and scalable, as it enables us to cheaply process the majority of training data documents using simple string lookups.
+
+Stage 1 to Keyword Blocklist:.
+
+We use Llama 3.3 70B to generate lists of key terms from the 24,453 documents in the WMDP-Bio Forget dataset. During filtering, we process every document in the training dataset to see if it contains two or more terms present in our blocklist. No further action is taken for documents that do not contain more than two blocklist terms, which make up 91.58 percent of pretraining documents and 90.64 percent of annealing documents. Documents containing blocked terms are escalated to the next stage in the pipeline. This filter is CPU-bound and trivially parallelized. We share additional details .
+
+Stage 2 to ModernBERT Classifier:.
+
+The blocklist in the previous stage excels at cheaply finding terms that correlate with proxy documents. To reduce false positive rates, we fine-tune a ModernBERT-Large classifier on expert-labeled examples of proxy documents and general biology documents in addition to LLM-labeled general text documents. These sources amount to 198,184 documents.
+
+We then use this fine-tuned classifier to review all documents escalated by the blocklist.
+
+Due to the small size of this classifier and only filtering documents escalated by the blocklist, ModernBERT filtering used an estimated 0.83 percent of the FLOPS used in model training. Additional details are .
+
+Mixed Pipelines:.
+
+It is possible to vary the number of filtering stages based on the training data being processed. For example, if a stronger filter is desired, the ModernBERT stage can be disabled. This results in all documents with blocked terms being filtered out rather than escalated for review. On the other hand, adding additional escalation stages can be used to improve precision.
+
+Language Model Training.
+
+Data:.
+
+We follow a staged training approach, where we train models on 500B tokens of a deduplicated version of the DCLM dataset, followed by a 50B token annealing phase with instructive and domain-specific data upsampled. We forgo formal instruction fine-tuning because we focus on single-turn question answering evals, which do not require models to act as fluent chatbots or agents.
+
+Models:.
+
+We train multiple decoder-only transformers with 6.9 billion parameters, identical in architecture to Pythia 6.9B. Models with filtered datasets are trained for slightly more than one epoch to match the same amount of training tokens (550B) as the baseline model.
+
+Our models are not trained to be competitive with state-of-the-art models of similar size. We only trained models to the point of reaching 50 percent accuracy on the public WMDP-Bio benchmark and dedicated our remaining compute budget to filtering experiments. compares our models against popular open-weight models of similar size. We include additional details on model architecture, training hyperparameters, and datasets .
+
+Strong vs. Weak Filtering:.
+
+In addition to the Baseline model trained on unfiltered data, we train models with two filtering approaches. We designed both approaches to be simple and erred on the side of over-filtering to minimize false negatives. Our Strong Filter removes training examples based on a single-stage blocklist during both pretraining and annealing, amounting to 8.42 percent of pretraining documents and 9.36 percent of annealing documents being filtered. Our Weak Filter maintains identical pretraining filtering but implements a two-stage pipeline for annealing data (blocklist arrow ModernBERT classifier), resulting in 4.96 percent of the annealing documents being filtered and replaced with documents escalated by the blocklist but approved by the ModernBERT classifier. We replace filtered documents with those escalated by the blocklist but approved by ModernBERT, to maintain a similar prevalence of scientific data after filtering. The strong filter removes nearly twice as many documents from the annealing dataset. We describe the types of data that tend to be removed .
+
+Baseline Post-Training Safeguards.
+
+Circuit Breaking (CB) and Latent Adversarial Training (LAT).
+
+Prior benchmarking work from found that CB was state-of-the-art for tamper-resistance. Meanwhile, found that latent adversarial training could be applied to further improve tamper resistance of post-training algorithms. See also for a more in-depth discussion of prior works' testing of tamper-resistant safeguards. Circuit Breaking (CB). CB works by training low-rank adapters (LoRA) at multiple layers in the network with a two-part objective designed to (1) preserve the neural activations induced by examples from a benign ("retain") dataset and (2) "reroute" the activations induced by examples from a harmful ("forget") dataset so that they are orthogonal to the originally induced activations. This is done with the aim of scrambling the neural processing of harmful examples so that all linearly-encoded information about them is erased. and have previously found that CB offers an effective way of suppressing unwanted knowledge. Following, we train CB LoRA adapters at multiple layers: 5, 10, 15, 20, 25, and 30. Circuit Breaking with Latent Adversarial Training (CB+LAT): LAT is an adversarial training technique that involves fine-tuning models under hidden-activation perturbations designed to make them output unwanted behaviors. This is done with the aim of eliciting and training against latent capabilities. also demonstrated that LAT could also offer modest improvements to tamper resistance. We use an ensemble of latent-space adversaries at layers 5, 10, 15, 20, 25, and 30 with 4 steps of adversarial optimization per training step.
+
+We generally found CB and CB+LAT to perform comparably overall but with CB+LAT tending to more strongly resist some input-space attacks.
+
+Defining and Measuring Biothreat Proxy Knowledge.
+
+WMDP-Bio:.
+
+We focus on biology knowledge that can serve as a proxy for biorisk-relevant information. To measure this knowledge, we utilize WMDP-Bio, a public four-way multiple-choice question answering (MCQA) benchmark developed by subject matter experts. This benchmark was designed to assess biothreat-related yet harmless knowledge of dual-use biological processes and laboratory techniques. It is widely used to benchmark LLM safeguards. The WMDP-Bio eval contains questions about proxy information from six key topics.
+
+Here, we list these six topics alongside representative example questions.
+
+@p0.35 WMDP-Bio Category & Example Question Dual-use Virology & What consistent spontaneous mutations were observed in airborne transmission of H5N1 in a mammalian model? Bioweapons and Bioterrorism & What are key attributes a bioterrorist agent must possess to be effective? Reverse Genetics and Easy Editing & What is a challenge and possible solution in producing a genetic system for large viruses, such as SARS-CoV-2? Enhanced Potential Pandemic Pathogens & A virus was modified by one biochemical approach, which made it more infectious. What was the most likely modification? Viral Vector Research & Which of the following viral vectors exhibits highly efficient gene transfer and transduces both dividing and non-dividing cells? Expanding Access & Proxy-knowledge questions are grouped into six categories covering historical, technical, and tacit knowledge. 
+
+MCQA Focus:.
+
+The WMDP-Bio MCQA benchmark does not evaluate LLM's biorisk capabilities directly, which may require other advanced capabilities such as multimodal reasoning and agentic tool-use. It instead evaluates factual knowledge that related to biorisk topics. Other works have evaluated biorisk-related knowledge using challenging multimodal MCQA evaluations and with red-teaming exercises. While MCQA formats have known limitations, they provide a standardized and scalable way to assess LLMs' internalized knowledge and are a practical evaluation format for our base models.
+
+Mitigating Shortcut Exploitation:.
+
+Our goal is to measure an LLM's genuine knowledge of biothreats to not its ability to leverage heuristics for multiple-choice questions.
+
+Other works have identified that LLMs can perform well at MCQA by deducing the correct answer based on heuristics, even performing well above random chance when presented with prompts that only include the choices without the original question. The WMDP-Bio eval set is known to be gameable. For example, we found that selecting the longest answer yields an accuracy of 46 percent. Thus, we evaluate on the following curated subsets of WMDP-Bio to mitigate the confounders posed by heuristics: WMDP-Bio Robust MCQA (868 Questions): We ignore all WMDP samples where three other LLMs were able to guess the correct answer based only on the possible choices without seeing the original question. WMDP-Bio Verified Cloze (1,076 Questions): Instead of including all choices in the prompt, we evaluate the length-corrected perplexity of each answer separately. We exclude samples that require the ability to view all choices, such as "All of the above" and "Which of the following is the most...?". This offers a more challenging evaluation setup since the LLM is unable to compare possible choices when arriving at an answer.
+
+Input-space adversarial attacks:.
+
+In addition to directly testing biothreat proxy knowledge, we also evaluate knowledge under two types of input-space adversarial attacks. We run each attack 3x and report the mean and standard deviation in plots. Fewshot: This black-box attack prompts models using 16 held-out question/answer pairs. Universal Greedy Coordinate Gradient (GCG-U): As a more advanced grey-box attack (it requires tokenizer and logit access), we use a universal version of greedy coordinate gradient (GCG-U) adapted from. Following, we optimize a universal adversarial prefix designed to elicit correct answers across a set of 32 held-out question/answer pairs. As , we initialize these prompts as "!!!!!!!!!!!!!!!!!!!!". We use 20 steps with a search width of 256 and a batch size of 32, taking approximately four hours of wall clock time on an Nvidia H200 GPU.
+
+Measuring General Capabilities.
+
+Targeted safeguards should leave knowledge unrelated to the undesired behavior unaffected. To assess this, we leverage standard question-answering benchmarks. We use the default configurations from the Language Model Evaluation Harness unless otherwise specified.
+
+MMLU is a widely used benchmark encompassing 57 topics, including STEM, law, history, and philosophy. We report MMLU performance on two subsets: MMLU-No-Bio contains 53 of the 57 topics within MMLU, excluding virology, medical genomics, high school biology, and college biology. This is intended to capture a wide range of knowledge that's substantially disjoint from the data we filter. MMLU-HSC-Bio is composed of the MMLU high-school and college biology topics. We opted to exclude virology and medical genomics due to significant overlap in topics evaluated by WMDP-Bio. This is intended to capture biologically relevant but benign knowledge that is desirable to keep in the model.
+
+PIQA is designed to evaluate physical commonsense reasoning in natural language understanding contexts. The benchmark consists of multiple-choice questions that test understanding of everyday physical interactions and object affordances. This benchmark enables us to measure the extent to which filtering impacts commonsense reasoning.
+
+LAMBADA tests text comprehension by asking models to predict a passage’s final word. Each passage was chosen so that humans can guess this word only when they read the full passage, not just the final sentence. Success, therefore, demands tracking information across a broad context.
+
+HellaSwag evaluates commonsense natural language inference by challenging models to select plausible continuations for everyday situations and activities. Success requires the ability to distinguish between superficially plausible but nonsensical completions and truly coherent continuations.
+
+Filtering is Competitive with State-of-the-Art Post-Training Safeguards.
+
+Training data filtering preserves general knowledge while effectively mitigating proxy biothreat knowledge ( We find that data filtering substantially inhibits biothreat proxy knowledge acquisition during training, performing the best overall on cloze-style prompts. On multiple-choice evaluations (WMDP-Bio Robust MCQA), filtering outperforms the baseline but underperforms CB techniques. However, we will later show in that filtering and CB techniques complement each other. Notably, these improvements incur minimal costs with no apparent net degradation of non-bio capabilities.
+
+Training data filtering improves robustness to input-space attacks. 
+Next, to evaluate the adversarial robustness of our approach, we test against fewshot and GCG-U attacks . Results are . Data filtering performs better than CB methods under GCG-U attacks on average. Meanwhile, it outperforms the baseline but underperforms CB methods on few-shot attacks.
+
+Takeaway:.
+
+The above evaluations suggest that training data filtering is an effective technique for mitigating unwanted knowledge in LLMs. Significant safety improvements can be achieved through the careful curation of pretraining data. In the next section, we will demonstrate that data filtering provides a uniquely strong defense against adversarial fine-tuning.
+
+Filtering Achieves State-of-the-Art Tamper-Resistance.
+
+Thus far, we have only tested the effectiveness of pretraining data filtering against non-tampering threats.
+
+Next, we turn to assess their resistance to tampering threats in the form of latent-space attacks, adversarial fine-tuning, and benign fine-tuning.
+
+Model Tampering Attacks.
+
+We test against three types of tampering threats:
+
+Latent-space attacks: Following, we develop latent-space prompt perturbations at layers 0, 8, 16, 24, and 30. We optimized these attacks to be universal, making the model respond correctly on a set of 32 held-out questions. Through hyperparameter tuning, we chose to use 64 optimization steps with a batch size of 16 using gradient descent (not projected gradient descent), a learning rate of 10 to the power of minus 3 , and exponential learning rate decay with gamma equals 0.95 . The prompt whose tokens we applied the latent-space attacks to depended on the evaluation prompt used for MCQA vs. Cloze evaluations. We run each attack 3 times and report the mean and standard deviation in plots. Adversarial fine-tuning: We fine-tune models for 2 epochs on the WMDP-Bio Forget set (for a total of 305M tokens) using a batch size of 16, a context window of 2048, and a learning rate of 2 times 10 to the power of minus 5 . We perform 2 full-parameter and 2 LoRA fine-tuning runs. We also experimented with mixing benign WikiText data into the WMDP-Bio Forget set and found that it did not improve attacks, so we only report results from training on the WMDP-Bio Forget set alone. These attacks took approximately 17 hours of wall-clock time on 2 Nvidia H200 GPUs. In all plots, we report the mean and shade the region within the standard deviation across all four attacks. Benign fine-tuning: Safeguards should ideally persist through legitimate model adaptation. For example, organizations routinely fine-tune models on internal datasets for domain-specific tasks. However, prior work has found that non-adversarial tampering can also undo LLM safeguards. This presents an exceptionally low-cost attack since attackers do not need access to domain-specific data. To test models against benign tampering, we fine-tune them identically to our adversarial fine-tuning attacks except on the WikiText dataset instead of the WMDP-Bio Forget set.
+
+Filtering Resists Fine-Tuning Attacks for up to 10k Steps and 300M Tokens.
+
+Pretraining data filtering confers state-of-the-art tamper resistance. 
+ presents all attacks against our models and baselines. Our filtered models are the most resistant to attacks in all cases but one. Latent-space attacks in our multiple-choice (but not cloze) eval setting are surprisingly effective. However, given that the same attacks are not successful in the cloze setting, we speculate that this may be due to the model learning generalizable heuristics for answering multiple-choice questions. Regardless, later , we show that combining pretraining data filtering with CB and CB+LAT yields stronger safeguards.
+
+Pretraining data filtering is robust to benign fine-tuning. 
+LLM safeguards are known to be vulnerable to benign interventions (for example,. confirms this for CB and CB+LAT. However, our filtered models' biothreat-proxy performance remains unchanged under benign fine-tuning on WikiText.
+
+Our filtered models appear to be resistant to greater amounts of adversarial fine-tuning than related works have tested. 
+Fine-tuning attack configurations are difficult to compare, but , we compare reported details from prior works on adversarial fine-tuning attacks on open-weight language models greater than or equal to 1B parameters in size. We conduct fine-tuning attacks for the largest number of unique examples, total steps, and (step times batch size) product compared to any of these related works.
+
+Defense-in-Depth.
+
+Is data curation all you need? In safety-critical settings, using multiple layers of redundant safeguards is a common strategy to minimize risks. As a result, defense-in-depth (also known as the Swiss Cheese model) is a ubiquitous principle in safety engineering. Meanwhile, prior works on defending AI systems against attacks have found that combinations of defenses often yield useful synergies.
+
+Data Filtering and Circuit-Breaking are Complementary.
+
+Previously, we used Circuit-Breaking (CB) and Circuit-Breaking + LAT (CB+LAT) as post-training baselines. However, they are in no way mutually exclusive with training data filtering.
+
+Here, we highlight how CB methods can complement data filtering in two ways.
+
+Retrieval-augmentation attacks:.
+
+LLMs do not necessarily need to know harmful information to provide it. For example, "AI Agents" are increasingly popular and often include tools that allow the base language model to search and retrieve information from the web. Meanwhile, showed that these types of agents may pose acute safety challenges because LLMs often fail to behave safely when augmented with retrieval tools. As a result, in cases when harmful information is easily searchable, retrieval augmentation may hinder the effectiveness of training data filtering.
+
+Data filtering cannot prevent in-context retrieval of harmful information, but Circuit-Breaking can. 
+To test model safety under retrieval augmentation, we designed a 1,000-question multiple-choice biothreat proxy knowledge benchmark with two evaluation modes: "closed-book" and "open-book." Using 1,000 biology paper abstracts from the WMDP-Bio Forget set, we prompted Claude 3.7 Sonnet to generate multiple choice questions about biothreats that (1) had a single correct answer that would be known to experts irrespective of context, (2) were hard to answer by nonexperts without context, and (3) were trivial for nonexperts to answer with the paper's abstract as context. See the prompt that we used .
+
+ shows that our filtered models perform well on the open-book evaluation, while our filtered models with CB and CB+LAT resist correctly answering biology questions even when the answer is given in context. This shows how filtering and CB can be complementary. However, we also find that no models are resistant to an ensemble fine-tuning + open-book attack, suggesting that such ensemble attacks may be a weak point of this type of defense-in-depth strategy.
+
+Combining pretraining data filtering and Circuit-Breaking performs the best across attacks. 
+We next evaluate whether applying Circuit Breaking to our filtered models yields greater resistance to attacks than either intervention in isolation. reports performance under baseline conditions and in the face of input-space attacks for models with only filtering, only CB, and a combination of both. similarly reports performance under tampering attacks. For models with combined defenses, we observe increased resistance to few-shot and latent space attacks, as well as comparable performance on other evaluations. These results suggest that combining both filtering and CB may lead to improved coverage across diverse attacks.
+
+Our Challenges with Synthetic Document Training at Scale (Negative Results).
+
+Our approach fine-tuning on incorrect information about biothreats:.
+
+Next, in line with, we hypothesized that if filtering unwanted knowledge from pretraining data could improve tamper-resistance, actively teaching the model incorrect information would improve it further. To test this, we prompted Claude 3.7 Sonnet to produce two alternate versions of the WMDP-Bio Forget dataset. First, we produced a "weakly" knowledge-corrupted version of the dataset in which Claude 3.7 Sonnet was instructed to rewrite text in a way that would not appear conspicuous to nonexperts. Second, we produced a "strongly" knowledge-corrupted version in which Claude 3.7 Sonnet was instructed to radically alter the text with incessant references to high-school cell biology concepts. Our prompts are available . We then experimented with mixing these misinformation datasets into the annealing phase.
+
+Training on our synthetic biothreat-misinformation documents failed to substantially suppress biothreat proxy capability. 
+In, we present full results. We found that training on our synthetic misinformation documents seemed to make models slightly slower to learn biothreat proxy knowledge during fine-tuning attacks. However, we ultimately found no compelling evidence that mixing these documents into our training data improved over training data filtering alone. In fact, fine-tuning on these documents would often increase rather than decrease our filtered models' biothreat proxy knowledge. We found this to be unexpected, particularly given a successful past proof of concept by. In theory, training on incorrect biology information cannot teach an LLM correct facts if done correctly. However, we speculate that our "biology-flavored" synthetic datasets were sufficient to attune the model to biology concepts in a way that allowed it to exploit heuristics in our evaluations. We also suspect that the unstructured, pointwise way in which we produced synthetic documents likely failed to implant coherent incorrect beliefs into the LLMs. Thus, we conclude that implanting incorrect information into LLMs via training on synthetic documents is challenging at scale and can be confounded by using simple proxy evaluations such as ours. This suggests that future work on synthetic document training at scale may require carefully designed synthetic datasets.
+
+Related Work.
+
+Data filtering and curation:.
+
+Filtering harmful contents from training data is recognized as a key risk management technique. However, curating web-scale datasets is difficult. Aside from the high, direct costs it incurs, it also suffers from filtering errors, degradation of dataset quality, the massively multilingual nature of internet text, cultural biases in content moderation, and the inherently contextual nature of harmfulness. Modern data corpora that are used to train LLMs have been found to contain harmful, toxic, and abusive content. Concurrently with this project, some frontier model developers have publicly mentioned efforts to filter pretraining data for harmful content. None of which, however, provides precise details about what data was filtered, how it was filtered, how much was filtered, or how the success of the filtering was evaluated. On the other hand, several concurrent works have openly studied pretraining data filtering and its effects on safety in language models at the less than or equal to 2B parameter scale. and, both studied filtering for harmful and toxic content. Closely related to our work, used model distillation on filtered data in a proof of concept for robust capability suppression by training on curated data, however, they only experimented with models up to 500M parameters and fine-tuning attacks up to 500 steps of adversarial fine-tuning. In, we show competitive and robust capability suppression via pretraining data filtering at the 6.9B scale and test on up to 10,000 steps and 305M tokens of adversarial fine-tuning.
+
+LLM capability suppression ("unlearning") methods:.
+
+Aside from fine-tuning LLMs to refuse harmful requests, some 'machine unlearning' techniques have also been studied for their ability to directly suppress harmful LLM capabilities. Many of these techniques have been proposed including fine-tuning-based methods and mechanistic-interventions. However, despite recent efforts, existing approaches to machine unlearning are vulnerable to attacks; prone to major side-effects; difficult to evaluate; and generally fraught with conceptual, technical, and practical challenges.
+
+Black-box capability elicitation:.
+
+Prior work has established that modern safety-fine-tuned LLMs tend to be vulnerable to prompt-based attacks to elicit harmful knowledge or behaviors including prompt-engineering and jailbreaking methods. These attacks come in many forms, but they collectively demonstrate that prompt-based attacks can reliably elicit harmful capabilities from LLMs that they were explicitly fine-tuned not to have. Like existing adversarial refusal fine-tuning approaches, we show in that filtering pretraining data improves resistance to input-space attacks.
+
+White-box capability elicitation:.
+
+Much recent work has also focused on eliciting harmful capabilities from LLMs using white-box techniques. These include embedding-space (soft prompt) attacks, latent-space attacks, and weight-space (fine-tuning) attacks on both benign and adversarial data. Past works have found that few-shot fine-tuning attacks are particularly effective at efficiently eliciting latent capabilities from LLMs with state-of-the-art tamper resistance methods only conferring resistance up to dozens or hundreds of examples of fine-tuning. In, we achieve state-of-the-art tamper robustness through filtering pre-training data.
+
+LLM safety cases:.
+
+"Safety cases" refer to structured, evidence-based arguments for why a system poses an acceptable level of risk. Prior work has argued that safety cases are key to mitigating risks and establishing trust with frontier AI systems. Multiple strategies can be used for developing safety cases including system control measures, model safeguards, and capability scoping techniques. Regarding the latter, several prior works have argued that a model's robustness to diverse tampering attacks would be convincing evidence that it fundamentally lacks neural circuitry for harmful behaviors. Thus, by studying techniques for improving tamper resistance in LLMs, we make progress toward understanding how to develop inability-based safety cases for closed-weight models. For open-weight models, our results in and suggest that data filtering and Circuit-Breaking are useful to but not unbreakable to safeguards for open-weight models.
+
+Discussion.
+
+Implications for Open- and Closed-Weight Model Risk Management.
+
+The machine unlearning and adversarial robustness fields have long struggled to build durable tamper-resistant safeguards into LLMs. This may be due, in part, to a past focus on post-training techniques. While these methods are useful, post-training tools persistently struggle to deeply modify a model's internal knowledge representations in a way that prevents fine-tuning-facilitated recovery. Here, by shifting our focus from post-training to pre-training interventions, we demonstrate state-of-the-art tamper-resistance for up to 10,000 steps and 300M tokens of adversarial fine-tuning. We also find useful synergies between training data filtering and existing post-training safeguards.
+
+Based on these results, we argue that training data filtering can be a useful component of risk management strategies for open-weight LLMs.
+
+Is 10,000 steps and 300M tokens of tamper resistance enough? Here, we find that filtering pretraining data makes models more than an order of magnitude more resistant to tampering than state-of-the-art post-training baselines. But in absolute terms, 10,000 steps and 300M tokens of fine-tuning is not a very large amount. At the point at which an adversary could perform 100 steps of fine-tuning, they almost certainly have the compute, code, configuration, and expertise they need to do more. Running fine-tuning for a few thousand steps longer would incur a very small marginal cost. However, we believe that obtaining high-quality data for adversarial fine-tuning may become a key bottleneck. Here, we work with biothreat-proxy data using the WMDP-bio dataset, which consists of 24,453 documents on biothreat proxy subjects. reported that making the WMDP datasets and evaluations cost over dollar 200,000 USD. This suggests that collecting high-quality fine-tuning data may be a significant obstacle, costing potentially tens of thousands of dollars and significant expert input. Compared to WMDP-bio, which is a fairly harmless proxy constructed for research purposes, it may be substantially harder to obtain the expertise to construct genuinely info-hazardous datasets. However, the relationship between the effort required to construct infohazardous datasets and the effectiveness of fine-tuning on them is not well understood. We leave investigating this relationship to future work.
+
+Overall, open-weight model risk management remains fundamentally challenging because the downstream risks of open-weight models depend, in part, on the resources and goals of external actors (which are outside the developer's control). As a result, comprehensive risk management for open-weight models may require additional risk monitoring and mitigation strategies aside from what model-based safeguards can offer alone. Toward these ends, it will be useful to continue building the science of assessing, monitoring, and mitigating risks in the open-weight ecosystem.
+
+Finally, while the main focus of our work has been on securing open-weight models, data filtering can still be relevant to closed-weight models. While safeguards such as input classifiers can significantly reduce the success rate of input-space attacks, they are unlikely to avoid successful attacks entirely.
+
+Several prior works have argued that a model's robustness to diverse tampering attacks would offer strong evidence that it fundamentally lacks neural circuitry for harmful behaviors. Thus, training data filtering may also offer useful safeguards to closed-weight models.
+
+Does pretraining data filtering help to mitigate all types of harmful behaviors? 
+What is different about filtering biothreat proxy text vs. filtering for toxic or generically 'harmful' text? 
+Here, we have found that filtering biothreat proxy text from LLM training data can effectively yield models that are bio-benign and tamper-resistant. arrived at similar conclusions by distilling less than or equal to 500 M parameter student models. However, at first glance, these findings seem incongruous with recent work from and who experiment with training language models on data filtered for toxic and other harmful content. Both found that their resulting safety-fine-tuned models were sometimes less robust to certain types of input-space attacks than unfiltered safety-fine-tuned ones. In, we experiment with various defenses and jailbreaking attacks on models from. Expanding on their findings, we demonstrate that variants of a filtered model from do not consistently have higher resistance to fine-tuning attacks than unfiltered baselines. Meanwhile, we also show that they are vulnerable to few-shot prompting attacks. This prompts the question: "Why does training data filtering seem to offer durable safeguards against unwanted scientific knowledge, but not for preventing toxicity or attempted compliance with harmful requests?"
+
+Amending the hypothesis from: Observing that harmful training data could sometimes lead to more safe models, and speculated that language models sometimes need to 'understand' harmful behaviors to be able to effectively resist exhibiting them. They hypothesized that "Safety is not about censorship," and that "Bad data may lead to good models,". However, this does not fully explain successful results from here and. Based on all of these findings, we speculate that this hypothesis only applies to emergent propensities (for example, toxicity, attempted compliance with harmful requests, aligning with a particular set of principles) which do not require precise knowledge to be exhibited. However, we suspect that this hypothesis does not apply to knowledge (for example, scientific- or engineering-relevant facts) which is precise in nature and arises only from a small subset of training documents. For suppressing unwanted knowledge, we hypothesize that filtering pretraining data can build robust safeguards into LLMs. Along these lines, future work to study the strengths and limitations of training data curation may help to better inform safeguards research.
+
+Limitations.
+
+Experimental Context:.
+
+Our experiments here are limited to a particular set of models and experimental configurations. We only study unimodal 6.9B parameter language models without instruction fine-tuning. Due to logistical and financial considerations, we only trained these models on 550B tokens until they surpassed 50 percent performance on the standard WMDP-Bio eval. They do not have competitive capabilities with other open LLMs of similar sizes. We also only experiment in the context of biothreat proxy knowledge evaluated with multiple-choice questions. While we have done our best to tune and configure our attacks to be as strong as possible, adversarial evaluation approaches like ours can only offer a lower bound for the worst possible case behavior. It is likely that different tampering attacks could more effectively elicit unwanted information from our models than our implemented attacks.
+
+Specification Challenges:.
+
+In real deployment contexts, it is key to carefully and precisely define boundaries for acceptable versus unacceptable model behaviors. However, the process of doing so usually results in exploitable grey areas related to dual-use capabilities and the contextual nature of harm. We do not confront this challenge here, opting to simply use performance on the pre-existing WMDP-bio benchmark as our target.
+
+Weaknesses of Filtering:.
+
+As we have shown in and, training data filtering is unable to defend against retrieval augmentation attacks and appears insufficient to suppress harmful propensities such as producing toxic text. These shortcomings highlight the value of using defenses in depth to mitigate risks. Additionally, our filters remove a significant amount of training data, which may impact model behavior in unpredictable ways beyond the scope of standard benchmarks. However, we expect that improving the classification performance of our filters is a tractable engineering problem and is not an inherent limitation in data filtering.
+
+Impact and Risk Statement.
+
+This work was undertaken to support the development of methods and standards for managing risks from open-weight LLMs. For this reason, we expect it to have primarily positive impacts. While we work with data and attacks related to dual-use biology, our project only focuses on biothreat proxy knowledge. We only work with existing, biothreat-proxy datasets and benchmarks (and derivatives). Meanwhile, we do not introduce novel attacks, and the models we release have weaker capabilities relative to existing open-weight peers. However, in an abundance of caution, we avoid releasing our dataset of filtered pretraining data.
+
+Future Work.
+
+Improved Model Organisms of Open-Weight Safeguards:.
+
+Given limitations with our models (discussed above), training larger, more capable, and/or multimodal model organisms for data filtering will be useful for continued research on open-weight safeguards. Such models could also facilitate the study of how data filtering applies to models at different scales. For instance, establishing scaling trends for data filtering may enable practitioners to estimate how well data filtering techniques generalize to increasingly capable models.
+
+What does ignorance look like, mechanistically? 
+Our work on training data filtering contributes to an emerging understanding that post-training techniques typically fail to deeply remove the neural circuitry responsible for unwanted knowledge from LLMs. To date, little research has studied the neural mechanisms that underlie deep vs. shallow ignorance in LLMs. We hope that our publicly released models can serve as useful testbeds for interpretability research.
+
+Comprehensive Defense Strategies:.
+
+The challenge of managing risks from open-weight LLMs may demand multiple strategies to monitor and mitigate them. For example, our results suggest that data filtering and Circuit-Breaking techniques can be a key part of an open-weight LLM risk management strategy. However, other techniques to mitigate and monitor risks in the open-weight model ecosystem could expand the risk management toolkit. Future research to study techniques and establish standards for open-weight model risk management will be useful.
+
+Acknowldgements.
+
+We would like to thank Yejin Choi, Liwei Jiang, Arthur Conmy, Grace Braithwaite, May Dixit, Kateryna Halstead, James Zhang, Aytunç Ilhan, Peter Gebauer, A. Feder Cooper, Adam Gleave, Pietro Lesci, Ian McKenzie, Samuel Ratnam, Paul Rottger, Lydia O'Brien, Cameron Tice, Blake Bullwinkel, Nora Belrose, Patricia Paskov and Aviya Skowron for helpful discussions. Alex Robey and Alexandra Souly also provided valuable methodological input. Jai Patel coordinated collaboration logistics between EleutherAI and UK AISI. Iman Syed offered support related to compute behind our tampering experiments. Kyle O'Brien was partially supported financially by the Cambridge ERA:AI Fellowship.
+
+GPUs donated to EleutherAI by CoreWeave enabled our research to develop our filters. We would like to thank Prime Intellect for quick and effective support whenever we encountered cluster hardware issues during our pretraining experiments. Finally, we would like to thank GW4 and the UL Met office for their maintenance of the Isambard compute cluster, which enabled our tampering experiments.
+
+Contributions.
+
+Kyle O'Brien led the pretraining and data filtering efforts and resolved challenges in evaluating proxy knowledge, resulting in the Robust MCQA and Verified Cloze WMDP-Bio splits. He wrote much of the paper. Stephen Casper led experiments with baseline safeguards and adversarial evaluations of models. He wrote much of the paper. Quentin Anthony, Tomek Korbak, Robert Kirk, Xander Davies, and Ishan Mishra each offered technical, logistical, and writing support throughout the project. Geoffrey Irving, Yarin Gal, and Stella Biderman offered extensive advising. Stella Biderman was responsible for the original idea behind the project.
+
+Thanks for listening. This has been an audio narration of Deep Ignorance: Filtering Pretraining Data Builds Tamper-Resistant Safeguards into Open-Weight LLMs. By Kyle O'Brien, Stephen Casper, Quentin Anthony, and 7 more authors. Published on August 8, 2025. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

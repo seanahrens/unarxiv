@@ -1,0 +1,171 @@
+\section{A Model of Liquid Democracy}\label{sec:model}
+
+In this section, we present the liquid democracy game. This game generalizes the game-theoretic 
+model studied by Escoffier et al.~\cite{EGP19}. 
+
+\subsection{The Delegation Graph}\label{sec:delegation-graph}
+In liquid democracy each agent has three strategies: she can abstain, vote herself, or delegate her 
+vote to another agent. So we can represent an instance by a directed network $G=(V,A)$
+called the {\em delegation graph}.
+There is a vertex in $V=\{1,\cdots, n\}$ for each agent. 
+To define the sets of arcs, there are three possibilities.
+First, if agent $i$ votes herself the delegation graph contains a self-loop $(i,i)$.
+Second, if agent $i$ delegates her vote to agent $j\neq i$ 
+then there is an arc $(i,j)$ in $G$.
+Third, if agent $i$ abstains then the vertex $i$ has out-degree zero.
+
+Now, because the out-degree of each vertex is at most one, the delegation graph $G$ is a $1$-forest.  
+That is, each component of $G$ is an arborescence plus at most one arc.
+In particular, each component is either an arborescence and, thus, contains no cycle or 
+contains exactly one directed cycle (called a {\em delegation cycle}).
+In the former case, the component contains one sink node corresponding to an abstaining voter.
+In the latter case, if the delegation cycle is a self-loop the component contains exactly one voter called
+a {\em guru}; if the delegation cycle has length at least two then the component contains no voters. 
+An example of a delegation graph is shown in Figure~\ref{fig:delegation-graph}.
+\begin{figure}
+	\begin{center}
+	\includegraphics*[scale=0.13]{ExampleLD}
+	\end{center}	
+	\caption{A delegation graph.}\label{fig:delegation-graph}	
+\end{figure}
+
+Observe that, by the transitivity of delegations, if an agent $i$ is in a component containing
+a guru $g$ then that guru will cast a vote on $i$'s behalf. On the other hand, if agent $i$ is 
+in a component without a guru (that is, with either a sink node or a cycle of length at least two)
+then no vote will be cast on $i$'s behalf. 
+We denote the guru $j$ representing agent $i$ by $g(i)=j$ if it exists (we write $g(i)=\emptyset$ otherwise).
+Furthermore, its easy to find $g(i)$: simply apply path traversal starting at vertex $i$ in
+the delegation graph. 
+
+For example, in Figure~\ref{fig:delegation-graph} two components contain a guru. 
+Agent $4$ is the guru of agents $1,2,3$ and itself; agent $9$ is the guru only for itself. 
+The vertices in the remaining three components have no gurus.
+There are two components with {\em delegation cycles}, namely $\{(10,11), (11, 10)\}$ and 
+$\{(5,6), (6, 7), (7,5)\}$. The final component also contains no guru as agent $12$ is a sink node and thus abstains.
+
+
+
+
+
+
+\subsection{The Liquid Democracy Game}\label{sec:delegation-game}
+The game theoretic model we study is a generalization of the model of Escoffier et al.~\cite{EGP19}.
+A pure strategy $s_i$ for agent $i$ corresponds to the selection of at most one outgoing arc.
+Thus we can view $s_i$ as an $n$-dimensional vector $\x_i$. Specifically, 
+$\x_i$ is a single-entry vector with entry $x_{ij}=1$ if $i$ delegates to agent $j$ and $x_{ij}=0$ otherwise.
+Note that if $x_{ii}=1$ then $i$ votes herself (``delegates herself'') and that $\x_i={\bf 0}$ if agent $i$ abstains.
+
+
+It immediately follows that there is a unique delegation graph $G_{\x}$ associated with
+a pure strategy profile $\x=(\x_1, \x_2 \cdots, \x_n)$.
+To complete the description of the game, we must define the payoffs corresponding to
+each pure strategy profile $\x$. To do this, let agent $i$ have a utility $u_{ij}\in [0,1]$ if she 
+has agent $j$ as her guru. Because of the costs of voting in terms of time commitment, knowledge acquisition, etc.,
+it may be that $u_{ii}< u_{ij}$ for some $j\neq i$ trusted by $i$.\footnote{Indeed, if this is not the case then
+liquid democracy has no relevance.}
+We denote the utility of agent $i$ in the delegation graph $G_{\x}$ by $u_i(\x)=u_{i,g(i)}$. 
+If agent~$i$ has no guru then it receives zero utility.\footnote{We remark that our results hold even when agents who abstain or have no guru obtain positive utility.}
+It follows that only agents that lie in a component of $G_{\x}$ containing a guru can obtain positive utility.
+
+For example, in Figure~\ref{fig:delegation-graph} agent $9$ is a guru so receives utility $u_{9,9}$.
+Each agent $i\in \{1,2,3,4\}$ has agent $4$ as its guru so receives utility $u_{i,4}$. 
+All the remaining agents have no guru and so receive zero utility.   
+
+An agent $i$ is playing a best response at a pure strategy $\x=(\x_1, \x_2, \cdots, \x_n)$ if he cannot increase
+his utility by selecting a different or no out-going arc. The strategy profile is a pure Nash equilibrium if every agent is
+playing a best response at $\x$. 
+Our interest is in comparing the social welfare of equilibria to the optimal welfare in the game.
+To do this, let the social welfare of $\x$ be $\SW(\x) = \sum_{i\in V} u_i(\x)$ and let 
+$\Opt=\max\limits_{\x} \sum_{i\in V} u_i(\x)$ be the optimal welfare over all strategy profiles. 
+The {\em price of stability} is the worst ratio over all instances between the {\em best} welfare of a Nash equilibrium
+and the optimal social welfare. %{\bf [Formal definition?...]}
+
+The reader may ask why could an equilibrium have low social welfare. The problem is that delegation is transitive, but {\em trust is not}.
+ Agent $i$ may delegate to an agent $j$ where $u_{ij}$ is large but $j$ may then re-delegate to an agent $k$ where $u_{ik}$ is small.
+Worse, agent $i$ may receive no utility if the transitive delegation of its vote leads to a delegation cycle or an abstaining voter.
+ Unfortunately, not only can pure Nash equilibria have low social welfare in the liquid democracy game they need not even exist!
+ \begin{lem}\label{lem:no-PSNE}
+There exist liquid democracy games with no pure strategy Nash equilibrium. 
+\end{lem}
+\begin{proof}
+Let there be three voters with $u_1=(\frac{1}{2},1,0)$, $u_2=(0,\frac{1}{2},1)$ and $u_3=(1,0,\frac{1}{2})$. 
+(A similar instance was studied in \cite{EGP19}.) Assume $\x$ is a pure Nash equilibrium and let $S$ be the set of gurus 
+in $G_{\x}$. There are two cases.
+First, if $|S|\leq 1$ then there exists an agent $i$ with zero utility. This agent can deviate and vote herself to 
+obtain utility of $\frac{1}{2}>0$, a contradiction. 
+Second, if $|S|\geq 2$ then one of the gurus can delegate its vote to another guru to obtain a utility of $1> \frac{1}{2}$, a contradiction.
+Therefore, no pure Nash equilibrium exists. \qed 
+\end{proof}
+
+
+\subsection{Mixed Strategy Equilibria}\label{sec:MSNE}
+
+Lemma~\ref{lem:no-PSNE} tells us that to obtain performance guarantees we must look beyond pure strategies.
+Of course, as liquid democracy is a finite game, a mixed strategy Nash equilibrium always exists.
+It follows that we can always find a mixed Nash equilibrium in the liquid democracy game and compare
+its welfare to the optimal welfare.
+
+Here a mixed strategy for agent $i$ is now simply a non-negative vector $\x_i$ where the entries 
+satisfy $\sum_{j=1}^n x_{ij}\le 1$. Note that agent $i$ then abstains with probability $1-\sum_{j=1}^n x_{ij}$.
+However, because abstaining is a weakly dominated strategy, we may assume no voter abstains in either the
+optimal solution or the best Nash equilibria. Hence, subsequently, each $\x_i$ will be unit-sum vector.
+
+What is the utility $u_i(\x)$ of an agent for a mixed strategy profile $\x=(\x_1, \x_2, \dots, \x_n)$?
+It is simply the expected utility  given the probability distribution over the delegation graphs generated by $\x$.
+%Namely
+%$$u_i(\x)= \sum_{G} \mathbb{P}_\x(G)\cdot u_i(G)$$
+%Here $\mathbb{P}_\x(G)=\prod_{(i,j)\in G} x_{ij}$ because $\x_i$ is unit-vector and so every vertex has exactly one
+%outgoing arc in each delegation graph generated. Further $u_i(G)=u_{i, g^G(i)}$ where $g^G(i)$ is the guru of $i$ in the
+%graph $G$.
+There are several equivalent ways to define this expected utility. For the purpose of analysis, 
+the most useful formulation is in terms of directed paths in the delegation graphs.
+Denote by $\mathcal{P}(i,j)$ be the set of all directed paths from $i$ to $j$ in a complete directed graph 
+on $V$. Let $\mathbb{P}_{\x}( g(i)=j)$ be the probability that $j$ is the guru of $i$ given the mixed strategy profile $\x$. Then
+\begin{align*}
+	u_i(\x) &= \sum_{j\in V} \mathbb{P}_{\x}( g(i)=j  ) \cdot u_{ij} \\ 
+	 &= \sum_{j\in V} \mathbb{P}_{\x}( \exists \text{ path from } i \ \text{to} \ j  )\cdot \mathbb{P}_{\x}(\exists \text{ arc } (j,j) ) \cdot u_{ij}\\
+	&=\sum_{j\in V} \left( \sum_{P \in \mathcal{P}(i,j)}  \prod\limits_{a\in P}  x_a \right)  \cdot x_{jj} \cdot u_{ij}
+\end{align*}
+To understand this recall that $\x_i$ is a unit-sum vector. It follows that each delegation graph generated by
+the mixed strategy $\x$ has uniform out-degree equal to one.
+This is because we generate a delegation graph from $\x$ by
+selecting exactly one arc emanating from $i$ according to the probability distribution $\x_i$.
+Consequently, $j$ can be the guru of $i$ if and only if the delegation graph contains a self-loop $(j,j)$ {\em and} contains 
+a unique path $P$ from $i$ to $j$. The second equality above then holds.
+Further, the choice of outgoing arc is independent at each vertex $i$. This implies the third equality.
+
+Regrettably, however, no welfare guarantee is obtainable even with mixed strategy Nash equilibria.
+
+ \begin{lem}\label{lem:bad-MSNE}
+The price of stability in liquid democracy games is zero. 
+\end{lem}
+\begin{proof}
+	
+	Consider an instance with three agents whose utility is given as $u_1=(\delta,1,0),u_2=(0,\delta,1) $ and $u_3=(1,0,\delta)$. The optimal welfare is $\Opt=1+2\delta$ obtained by the first and second agent voting and the third agent delegates to the first agent.  
+	
+	By a similar argument to Lemma~\ref{lem:no-PSNE}, we know that no pure strategy Nash equilibrium exists. It is straightforward to verify that this game has a unique mixed strategy Nash equilibria $\x$, where $x_1=(\delta,1-\delta,0)$, $x_2=(0,\delta,1-\delta)$ and $x_3 =(1-\delta, 0, \delta) $. 
+	
+ The expected utility of agent~$1$ is then
+\begin{eqnarray*}
+u_1(\x) &=& \sum_{j\in V} \left( \sum_{P \in \mathcal{P}(i,j)}  \prod\limits_{a\in P}  x_a \right)  \cdot x_{jj} \cdot u_{ij} \\
+&=& x_{11} \cdot u_{11} + x_{12}\cdot x_{22} \cdot u_{12}  \\
+&=& \delta^2 + (1-\delta)\cdot \delta \\
+&=& \delta
+ \end{eqnarray*}
+The case of agents $2$ and $3$ are symmetric, hence the social welfare of this equilibria is $3\delta$. 
+Thus, the price of stability is $\frac{3\delta}{1+2\delta}$ which tends to zero
+as $\delta\rightarrow 0$. \qed 
+\end{proof}
+
+Lemma~\ref{lem:bad-MSNE} appears to imply that no reasonable social welfare guarantees
+can be obtained for liquid democracy. This is not the case. Strong performance guarantees
+can be achieved, provided we relax the incentive constraints.
+Specifically, we switch our attention to approximate Nash equilibria.
+A strategy profile $\x$ is an $\epsilon$-{\em Nash equilibrium} if, for each agent $i$, 
+$$u_{i}(\x)\geq \ (1-\epsilon)\cdot u_{i}(\hat{\x}_i,\x_{-i}) \qquad \forall \hat{\x}_i $$
+
+Above, we use the notation $\x_{-i}=\{\x_i\}_{j\neq i}$.
+Can we obtain good welfare guarantees for approximate Nash equilibria? We will prove the answer is {\sc yes}
+in the remainder of the paper. In particular, we present tight bounds on the price of stability for $\epsilon$-Nash equilibria.
+%\textbf{Furthermore we show the bounds obtained therein are tight."Should we include that our result is tight here"?}
+

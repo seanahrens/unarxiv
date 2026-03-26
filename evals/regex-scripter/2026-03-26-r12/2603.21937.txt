@@ -1,0 +1,175 @@
+MultiBind: A Benchmark for Attribute Misbinding in Multi-Subject Generation.
+
+By Wenqing Tian, Hanyi Mao, Zhaocheng Liu, and 4 more authors.
+
+Published on March 23, 2026.
+
+Abstract.
+
+Subject-driven image generation is increasingly expected to support fine-grained control over multiple entities within a single image. In multi-reference workflows, users may provide several subject images, a background reference, and long, entity-indexed prompts to control multiple people within one scene. In this setting, a key failure mode is cross-subject attribute misbinding: attributes are preserved, edited, or transferred to the wrong subject. Existing benchmarks and metrics largely emphasize holistic fidelity or per-subject self-similarity, making such failures hard to diagnose. We introduce MultiBind, a benchmark built from real multi-person photographs. Each instance provides slot-ordered subject crops with masks and bounding boxes, canonicalized subject references, an inpainted background reference, and a dense entity-indexed prompt derived from structured annotations. We also propose a dimension-wise confusion evaluation protocol that matches generated subjects to ground-truth slots and measures slot-to-slot similarity using specialists for face identity, appearance, pose, and expression. By subtracting the corresponding ground-truth similarity matrices, our method separates self-degradation from true cross-subject interference and exposes interpretable failure patterns such as drift, swap, dominance, and blending. Experiments on modern multi-reference generators show that MultiBind reveals binding failures that conventional reconstruction metrics miss.
+
+Introduction.
+
+Multi-reference image generation has rapidly evolved into a practical workflow where users rely on fine-grained, entity-indexed prompts to independently control multiple subjects in editing, design, and content creation. In many real-world use cases, users provide several subject reference images and write explicit "Subject A/B/C" blocks to specify distinct attributes, actions, and relations for each entity within a single scene. As these systems become more capable, a central question emerges for the community: how do we reliably measure fine-grained controllability under long, structured instructions in multi-subject settings?
+
+In this paper, we focus on multi-reference, multi-subject image generation. Users provide several subject reference images, often alongside a background reference, and a long, entity-indexed prompt that assigns different attributes, actions, and relations to specific subjects in a shared scene. The goal is not merely to generate a globally plausible image, but to compose all subjects into one scene while preserving the identity and unspecified attributes of each reference, simultaneously binding the requested edits to the correct target subjects.
+
+This binding requirement is exactly where current systems often fail. When per-subject controls become detailed and intertwined, visual cues and textual directives can leak across subjects: a jacket intended for Subject A appears on Subject B, a smile lands on the wrong face, or apparel cues are averaged across references. We refer to this failure mode as cross-subject attribute misbinding. Closely related to the "binding" and "leakage" errors studied in compositional generation, this failure mode yields outputs that may look globally coherent at a glance while still violating specific user intent. In other words, each subject must satisfy two requirements at once: follow the requested edits, and retain unspecified attributes from its own reference without absorbing cues from others. Evaluation in this setting therefore has to be both subject-specific and attribute-specific. illustrates the setting and several representative failure modes, including drift, dominance, swap, and blending across subjects.
+
+However, existing evaluation protocols lag behind these practical capabilities. Many works and benchmarks emphasize global similarity signals, such as CLIP-based alignment and distributional fidelity. Some personalization methods explicitly study subject confusion, but quantitative evaluation is typically limited to face-identity self-similarity or pairwise matching in an identity embedding space. While such scalars may correlate with overall fidelity, they provide weak diagnostics for complex controllability: they cannot answer who confuses with whom, nor can they provide quantitative indicators to distinguish generic self-degradation (drift) from cross-subject interference. Recent VLM-based protocols can improve overall prompt adherence assessment, but they are largely reference-free and do not expose per-subject correspondence errors.
+
+A second limitation concerns benchmark construction, particularly the choice of target images. Some benchmarks synthesize targets by prompting a generator to compose multiple subjects into a single image. While scalable, generating targets from synthetic prompts creates an inherent dilemma. Because these scenes are unanchored from real images, complex prompts risks generating internally inconsistent images, whereas overly simple ones fail to rigorously test multi-subject control. Furthermore, other benchmarks do not provide a paired ground-truth target image at all, relying instead on reference-free (often VLM-based) judging for scoring. These issues motivate our shift toward benchmarks grounded in real targets, which naturally guarantee both rich, consistent details and explicit correspondence supervision.
+
+We introduce MultiBind, a benchmark designed to stress-test long-prompt, multi-subject controllability with explicit subject correspondence supervision. Each instance is anchored to a unique real target image, and provides: (i) per-subject ground-truth crops with instance masks and bounding boxes, (ii) canonicalized subject reference images and an inpainted background reference, and (iii) structured attribute descriptions compiled into a long, entity-indexed prompt. Grounding each condition in a real target enables attribute-rich prompts that remain realistic, diverse, and internally consistent, while also supporting reproducible similarity-based scoring.
+
+Beyond the benchmark, we propose a confusion-aware evaluation protocol that makes subject-attribute misbinding directly measurable. For each attribute dimension, we first compute subject-to-subject similarity matrices between generated subjects and ground-truth subjects using dimension-specific specialists. To isolate the changes introduced by generation, we subtract the inherent similarities between ground-truth subjects to compute baseline-corrected delta matrices. This step effectively disentangles generic quality degradation (a subject losing its own features, reflected on the matrix diagonal) from cross-subject interference (a subject absorbing features from others, reflected off-diagonal). The resulting diagnostics expose whether failures manifest as drift, specific swaps, dominant confusers, or blending. provides an overview of the full MultiBind pipeline.
+
+Contributions. 
+Our main contributions are summarized as follows:
+
+Benchmark. We establish MultiBind, a robust benchmark for multi-subject and multi-reference generation. Unlike previous datasets, it is grounded in real target images and provides exhaustive annotations, including per-subject masks, bounding boxes, and background references, alongside structured captions rewritten into entity-indexed prompts.
+
+Evaluation. We introduce a dimension-wise evaluation protocol that leverages specialist representations to produce confusion-aware similarity and delta matrices. This framework enables precise diagnostics of common multi-subject failure modes, such as identity drift, subject swapping, and attribute blending.
+
+Analysis. Through a systematic evaluation under the MultiBind regime, we benchmark state-of-the-art multi-reference generators and report fine-grained binding trends, offering new insights into how models represent and reason with multiple logical entities.
+
+Related Work.
+
+Subject-driven image generation. 
+Subject-driven and reference-conditioned generation aims to preserve subject identity and appearance from one or more reference images while following new textual instructions. Early personalization approaches adapt diffusion models per subject via fine-tuning or token learning. This enables identity preservation but requires per-subject optimization. To bypass test-time tuning, recent works inject image conditions through lightweight adapters or specialized modules, improving usability for image-guided prompting and editing. Extending these capabilities to multi-subject settings exposes a critical failure mode: multiple high-fidelity references often interfere, causing swaps and attribute bleeding. A range of methods attempt to mitigate this via localized attention or layout guidance, alongside recent multi-subject personalization pipelines. While these methods advance generation capabilities, their evaluation commonly remains coarse, such as measuring only diagonal similarity to each subject's own reference. This limitation motivates a benchmark capable of explicitly diagnosing cross-subject interference.
+
+Multi-subject benchmarking. 
+Several benchmarks have begun to stress-test multi-reference composition at scale. For instance, MRBench evaluates group image references, MultiRef-bench targets controllable generation with multiple visual anchors, and MultiBanana systematically varies reference-set conditions to probe robustness. Other works release paired datasets alongside generation methods (for example, XVerseBench, MS-Bench, LAMICBench++, and IMIG-100K). Additionally, specialized evaluations focus on multi-human identity preservation or multi-image context generation. These efforts provide valuable coverage of prompt and reference-set diversity. However, many settings still rely on LLM- or VLM-as-a-judge scoring or weak supervision. This makes the results sensitive to the choice of evaluator and susceptible to benchmark drift as these models evolve. More importantly, diagnosing who interferes with whom requires explicit correspondence supervision. This demands paired targets with deterministic, slot-indexed entity correspondences (such as instance masks or bounding boxes) and specific per-entity attributes. Without such grounding, evaluation frequently reduces to judge-based scoring or simple diagonal preservation, failing to quantify off-diagonal confusion like swaps and attribute leakage across subjects. MultiBind is designed for this setting by pairing each multi-reference condition with a unique real ground-truth target and explicit slot-level supervision, enabling reproducible, confusion-aware diagnostics.
+
+Attribute binding and diagnostic evaluation. 
+Binding failures are widely studied in text-only compositional generation, where models misassociate entities and modifiers (for example, "a pink sunflower and a yellow flamingo"). For example, SynGen improves attribute correspondence by aligning cross-attention maps according to syntactic structure. In parallel, fine-grained text-to-image evaluation has progressed beyond global alignment using object- or question-based checks. However, these works do not address multi-reference interference, where the dominant failure mode is not merely incorrect text grounding, but cross-subject confusion among multiple visual anchors. In multi-subject personalization, evaluation frequently reports diagonal identity preservation (often face-focused) or holistic image similarity. As discussed, these scalars cannot reveal whether a failure is caused by generic self-degradation (drift) or by cross-subject interference (confusion). While methods like MuDI target identity decoupling and report multi-subject diagnostics, existing protocols remain limited in attributing interference across multiple attribute dimensions (such as clothing, pose, and expression) under a unified framework. Our protocol addresses this limitation by employing dimension-wise specialists and converting continuous similarities into calibrated binary indicators. This yields interpretable confusion matrices and baseline-corrected metrics for specific failure patterns, including drift, dominance, swaps, and blending, under strict ground-truth supervision.
+
+The MultiBind.
+
+Dataset
+
+Task Definition.
+
+MultiBind instantiates multi-reference generation as a real-image reconstruction task: given per-subject reference images, a background reference, and an entity-indexed prompt, the model must reconstruct a real ground-truth target image I sub gt . We use real images as targets because they exhibit diverse, fine-grained controllable factors while remaining globally coherent.
+
+We focus exclusively on human subjects. Multi-person generation is a common and particularly challenging use case for subject misbinding. It also offers relatively well-defined semantic dimensions, making failures more directly measurable and comparable across models.
+
+Assuming I sub gt contains N subject slots, we formalize the visual factors as Z(I sub gt) equals ( sub i sub i equals 1 to the power of N, b, R, E) , where b , R , and E denote background, relations, and environment factors respectively. Each subject s sub i equals (s sub i^ edit, s sub i^ preserve) is partitioned into two sets. The edit set s sub i^ edit equals pose, expression contains attributes altered in the canonicalized references that must be recovered via prompt guidance. The preserve set s sub i^ preserve equals identity, appearance contains dimensions that must carry over strictly from the reference image without leaking across slots.
+
+Given the condition C equals ( sub i^ subject sub i equals 1 to the power of N, r^ background, p) , where r sub i^ subject are standardized subject references, r^ background is the background reference, and p is the entity-indexed prompt, a generator G produces I sub gen equals G(C) to reconstruct I sub gt with correct subject-attribute binding .
+
+MultiBind Instance Construction and Statistics.
+
+Starting from a real target image I sub gt , we construct one canonicalized subject reference image r sub i^ subject per slot, an inpainted background reference r^ background , and compile structured annotations into the entity-indexed prompt p . The full automated and manual pipeline, including instance segmentation, generative canonicalization and inpainting, strict multi-stage quality control, and rule-based prompt rewriting, is detailed in the supplementary material.
+
+Dataset sources and statistics. 
+We curate MultiBind from four public datasets: CIHP , LV-MHP-v2 , Objects365 , and COCO . MultiBind contains 508 instances and 1,527 human subjects. The dataset features 118, 269, and 121 instances with two, three, and four subjects, respectively. Every instance utilizes an entity-indexed prompt (referencing fixed slots like "Subject A") with an average length of 474 words. Detailed dataset distributions are provided in the supplementary material.
+
+MultiBind.
+
+Evaluation
+
+MultiBind evaluates cross-subject binding in three steps. For each ground-truth target image I sub gt and a generated reconstruction I sub gen , we (1) extract person instances from I sub gen and match them to the N ground-truth subject slots, obtaining the set of successfully matched slots M is a subset of 1,...,N ; (2) compute dimension-wise subject-to-subject similarity matrices using dimension-specific specialists; and (3) derive confusion-oriented diagnostics from baseline-corrected similarity deltas. We discuss the details of the matching algorithm in the supplementary material, and report the successful match count and mean IoU in Sec. . Note that different models may match different subsets of subjects for the same target instance. To ensure a fair comparison, every model is evaluated on the same subject subset for a given instance.
+
+Dimension-wise similarity matrices.
+
+This section defines the per-dimension similarity matrices that serve as the common input to all subsequent confusion analyses.
+
+Per-slot crops and specialists. 
+Consider one instance. For each matched slot i in M , the dataset provides the ground-truth subject crop o sub i^ gt (Sec. ). We also extract the corresponding generated crop o sub i^ gen from I sub gen using the matched mask. We evaluate four attribute dimensions (D=face identity, appearance, pose, expression) . For each dimension d in D , we compute specialist features (fi ,=, gd(oi)) for x in gt, gen , and compare slots with a dimension-appropriate similarity sim sub d( times , times ) .
+
+Valid slots. 
+Some specialists are only defined when the required visual evidence is present (for example, the face specialist requires a detected face). For each dimension d , let V to the power of (d) is a subset of 1,...,N denote the set of ground-truth slots where the specialist output is valid. All per-subject evaluations are performed on the row index set (I ,=, M V), so rows correspond to matched generated subjects with valid specialist outputs, while columns always range over valid ground-truth subjects j in V to the power of (d) .
+
+Similarity matrices. 
+For each dimension d , we build two similarity matrices of shape | I to the power of (d)| times | V to the power of (d)| :
+
+All subsequent confusion analyses operate on the baseline-corrected delta matrix
+
+The key role of S sub gt to the power of (d) is to provide an instance-specific baseline: its off-diagonal entries quantify how similar the ground-truth subjects already are to each other in dimension d . Subtracting this baseline isolates the change introduced by generation. Concretely: (i) the diagonal Delta to the power of (d)[i,i] measures self-retention (how close the generated subject in slot i stays to its own ground-truth subject); and (ii) an off-diagonal entry Delta to the power of (d)[i,j] (j does not equal i) becomes positive when the generated subject in slot i moves toward ground-truth subject j beyond what is already implied by the ground-truth similarity between subjects i and j . We report aggregated diagonal and off-diagonal values in the supplementary material.
+
+Binary indicators and failure patterns.
+
+To provide interpretable diagnostics for subject- and image-level failure modes, we binarize Delta to the power of (d) into (a) a diagonal self-consistency signal and (b) an off-diagonal cross-subject confusion signal, using thresholds calibrated to human annotations. Specifically, for each matched generated subject crop o sub i^ gen and each dimension d , human labelers annotate whether it is (1) consistent with o sub i^ gt and (2) confused with o sub j^ gt, j does not equal i in dimension d . The thresholds for consistency thresh sub cons to the power of (d) and confusion thresh sub conf to the power of (d) are derived by maximizing the F1 score between Delta to the power of (d)[i,i] and consistency labels, and between Delta to the power of (d)[i,j] and confusion labels, respectively. Annotation details and threshold values are reported in the supplementary material.
+
+Binary matrices. 
+Using the calibrated thresholds, we define two binary matrices for each dimension d :
+
+where i in I to the power of (d) and j in V to the power of (d) . Here Cons to the power of (d) marks self-consistent diagonal matches. We call any off-diagonal pair (i,j) with Conf to the power of (d)[i,j] equals 1 a confusion link (also called a "confusion edge" in a graph view): it indicates that, in dimension d , the generated subject assigned to slot i is anomalously close to the wrong ground-truth subject j .
+
+Subject-level outcomes. 
+For each generated subject (row) i in I to the power of (d) , define
+
+Dataset-level subject rates are computed by averaging over the subjects of all instances.
+
+Image-level failure patterns. 
+Define the combined match indicator matrix
+
+so that M to the power of (d) in 0,1^| I to the power of (d)| times | V to the power of (d)| . Let
+
+which are the row and column degrees of M to the power of (d) and the total number of off-diagonal confusion links. From them we detect three structured patterns, reported as image-level rates:
+
+Intuitively, swap corresponds to a permutation-like assignment with at least one off-diagonal confusion link, dominance to a column-wise collapse onto a single ground-truth subject, and blending to a row-wise match to multiple ground-truth subjects. Note that these patterns are defined heuristically, and one could define other indicators as needed based on the same binary matrices.
+
+Global pattern shift: row-wise JS.
+
+To summarize how each row distribution changes (including probability mass moving off the diagonal), we compute a row-wise Jensen to Shannon (JS) shift. Define the row distribution induced by similarities
+
+We then report
+
+Experiments.
+
+Experimental Setup.
+
+Models.
+
+We evaluate six image generation systems: three closed-source models, Gemini 3 Pro Image (Nano Banana Pro) , GPT-Image-1.5 , and Seedream 4.5 ; and three open-source models, HunyuanImage-3.0-Instruct , Qwen-Image-Edit-2511 , and OmniGen2 .
+
+We do not include several recent open-source multi-subject reference methods because most rely on CLIP-style text encoders with short context windows (commonly 77 tokens) or limited-context T5-style encoders (for example, 512 tokens), which are insufficient for our long, entity-indexed prompts.
+
+Multi-reference image generation.
+
+For each MultiBind instance, models are conditioned on subject references sub i^ subject sub i equals 1 to the power of N , a background reference r^ background , and the fine-grained, entity-indexed prompt p . We standardize output resolution across models and fix inference settings whenever the interface allows it. The shared reconstruction setup, together with the model-specific settings explicitly reported there, is given in the supplementary material.
+
+Metrics.
+
+We report two complementary sets of metrics.
+
+Holistic reconstruction metrics compare each generated image with the real target: FID (distribution-level fidelity), CLIP-I and DINO (image-level similarity), and AES , a pretrained aesthetic predictor score that summarizes overall visual appeal. These metrics capture overall reconstruction quality, but they are not designed to isolate binding failures.
+
+Binding diagnostics are computed from the subject-level similarity matrices after slot matching. First, we use the row-wise Jensen to Shannon shift JS to the power of (d) (Sec. ), which measures how each subject's distribution over candidate ground-truth slots changes under generation. Second, we report the rates of subject- and image-level diagnostics derived from binarized self-consistency and confusion indicators: Success, Confused, Inconsistent, Drift, and the structured patterns Swap, Dominance, and Blending, as discussed in Sec. . We also report the aggregated raw values of diagonal degradation and off-diagonal mixing as continuous counterparts in the supplementary material.
+
+Holistic reconstruction and overall binding shift.
+
+ summarizes the holistic metrics. We additionally report the number of matched subject slots and the mean IoU between ground-truth and generated subjects to reflect each model's ability to produce the correct number of subjects in approximately correct locations.
+
+The closed-source models outperform the three open-source baselines on the holistic metrics. Among all models, Nano Banana Pro gives the strongest overall reconstruction, achieving the best FID, CLIP-I, DINO, and global JS. GPT-Image-1.5 attains the highest AES and ties for the largest number of matched subject slots, indicating strong visual quality together with reliable subject count and placement. Hunyuan-Image-3.0-Instruct achieves the best Mean IoU, but its higher JS shows that good localization does not necessarily translate into stable subject binding. Qwen-Image-Edit-2511 and OmniGen2 trail on both holistic similarity and slot matching.
+
+Failure-pattern diagnosis.
+
+ reports thresholded subject-level and image-level rates derived from the binary self-consistency and confusion indicators of Sec. . These metrics directly indicate whether a subject stays aligned with its own slot, drifts away from it, or becomes confused with another subject, making them our main diagnostic view.
+
+Across all models, reveals three regimes. Nano Banana Pro and GPT-Image-1.5 are the most stable: they maintain the highest success rates and the lowest structured-pattern rates in nearly every dimension. Seedream 4.5 is mixing-heavy with low drift rates, most clearly on face, where blending reaches 53.7 percent and dominance 14.5 percent despite only 12.1 percent inconsistency. This suggests that Seedream 4.5 often preserves facial information from the references, but binds it to the wrong subject. Hunyuan-Image-3.0-Instruct shows the opposite profile: it is drift-heavy rather than mixing-heavy, with face inconsistency 56.3 percent and drift 45.6 percent, but much lower face blending than Seedream 4.5. Its lower face-blending rate should not be interpreted as better identity binding; it mainly reflects weak facial preservation. Qwen-Image-Edit-2511 and OmniGen2 are unstable on both counts, combining low success with high confusion and the highest swap, dominance, and blending rates on appearance and expression. Notably, while Seedream 4.5 and Hunyuan-Image-3.0-Instruct remain competitive in holistic similarity and aesthetic scores, our binding diagnostics reveal severe mixing or drift patterns. This underscores the value of our binding metrics as a complementary perspective on holistic evaluation.
+
+Per-dimension trends. 
+Face. Face identity most clearly separates mixing from decay. Seedream 4.5 is face-mixing dominated (53.7 percent blending, 14.5 percent dominance), whereas Hunyuan-Image-3.0-Instruct is face-drift dominated (45.6 percent drift, only 15.6 percent confusion). Qwen-Image-Edit-2511 and OmniGen2 add a third failure mode, assignment-style errors, with face swap rates of 17.1 percent and 18.2 percent, respectively, together with substantial dominance.
+
+Appearance. Appearance makes permutation-like errors easiest to . Qwen-Image-Edit-2511 and OmniGen2 show high appearance swap rates (22.9 percent and 18.9 percent), suggesting that appearance cues are often preserved but attached to the wrong subject. By contrast, Nano Banana Pro and GPT-Image-1.5 keep appearance success above 94 percent and appearance blending below 6 percent, indicating comparatively stable appearance binding once identity remains intact.
+
+Pose. Pose remains challenging for all models, likely because it is only partially specified by text and is sensitive to distance and cropping. Nano Banana Pro achieves the highest pose success rate and generally exhibits less drift and confusion than the other models.
+
+Expression. Expression shows that low drift does not guarantee clean binding. For the stronger closed models, drift is near zero, yet blending remains non-trivial (9.4 to 13.6 percent), suggesting mild cross-subject coupling of facial expression even when self-consistency is preserved. Hunyuan-Image-3.0-Instruct exhibits the same pattern more strongly (25.5 percent blending with essentially zero drift), and the weaker open models escalate it into explicit collapse: dominance reaches 18.7 percent for Qwen-Image-Edit-2511 and 19.5 percent for OmniGen2, while blending reaches 43.4 percent and 50.2 percent, respectively, and drift remains comparatively small. Expression therefore appears less limited by identity decay than by shared or copied affect across subjects.
+
+Qualitative and Quantitative Validation.
+
+Qualitative Results. 
+To make the diagnostic patterns concrete, shows a representative example together with the thresholded match matrices for face and appearance. In the face dimension, Nano Banana Pro retains strong diagonal matches for all three subjects, with only mild confusion between subjects 1 and 3. Seedream 4.5, by contrast, exhibits clear blending: the diagonal remains strong, but the off-diagonal face matches are also high, indicating averaged facial traits across subjects. Hunyuan-Image-3.0-Instruct and Qwen-Image-Edit-2511 illustrate identity drift on different subjects, where the generated faces no longer resemble their corresponding references. In appearance, Nano Banana Pro, Seedream 4.5, and Hunyuan-Image-3.0-Instruct largely preserve the correct slot assignments, whereas Qwen-Image-Edit-2511 shows a clear leakage pattern for subject 2, combining the hairstyle of subject 2 with the clothing of subject 3. This case qualitatively matches the trends captured by our metrics. Additional cases are provided in the supplementary material.
+
+Quantitative Verification with Human Judgments. 
+To assess the reliability of the proposed diagnostics, we perform a meta-evaluation against human annotations. Following Sec. , we compute the area under the curve (AUC) for diagonal scores Delta to the power of (d) sub i,i against consistency labels and for off-diagonal scores Delta to the power of (d) sub i,j against confusion labels, aggregated over all matched subjects. Across all four dimensions, our specialist-based metrics achieve higher AUC than VLM-as-a-judge baselines, indicating better agreement with human judgments. Detailed AUC values, the annotation protocol, and the VLM prompts are provided in the supplementary material.
+
+Conclusion.
+
+We propose MultiBind, a benchmark for evaluating multi-reference, multi-subject image generation under complex instructions. By establishing deterministic slot correspondence via comprehensive annotations (for example, masks, crops, references) and structured prompts, MultiBind enables the precise assessment of both reference preservation and edit accuracy. Furthermore, we introduce a specialist-based, dimension-wise confusion evaluation protocol that disentangles self-degradation from cross-subject interference. This exposes interpretable failure modes such as drift, swap, dominance, and blending. Evaluations across modern generators demonstrate that our metrics align with human judgment and reveal critical subject-attribute binding failures often obscured by holistic scores.
+
+Thanks for listening. This has been an audio narration of MultiBind: A Benchmark for Attribute Misbinding in Multi-Subject Generation. By Wenqing Tian, Hanyi Mao, Zhaocheng Liu, and 4 more authors. Published on March 23, 2026. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.

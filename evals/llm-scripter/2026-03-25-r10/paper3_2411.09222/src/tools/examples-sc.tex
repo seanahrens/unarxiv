@@ -1,0 +1,391 @@
+\clearpage
+
+\twocolumn[
+\section{Example System Card: Habermas Machine}
+The following is an example partial system card for an AI tool meant to support collective deliberation \cite{tessler2024ai}. 
+
+    \thickbar
+    \vspace{14pt}
+]
+
+\begin{center}
+    {\textcolor{darkgreen}{\Large\bfseries Democratic System Card}}
+\end{center}
+
+\sfss{Context}
+    \begin{describe}[grey]
+        The process or a system at a high level. (Can reference a process card for more details. Can call out what is unspecified.)
+    \end{describe}
+
+    The Habermas Machine represents a novel approach to collective deliberation, leveraging LLMs to facilitate the discovery of common ground among individuals with diverse perspectives. Inspired by Jürgen Habermas's theory of communicative action, this AI system employs large language models (LLMs) to process personal opinions and critiques submitted by participants. Through iterative generation and refinement, the Habermas Machine produces group statements that aim to maximize collective endorsement and reflect shared understanding.
+
+    At its core, the system combines two fine-tuned LLMs: a generative model that proposes high-quality candidate group statements, and a personalized reward model (PRM) that evaluates these candidates based on each participant’s personal opinion. The PRM outputs a personalized ranking of candidate statements for every participant. These rankings are then aggregated using a social choice function to select a group statement that aims to reflect broad agreement while incorporating critical minority viewpoints, facilitating inclusive and balanced consensus.
+
+    \begin{describe}[grey]
+        What are other systems that this process depends on or interacts with, which impact its success? (e.g., sortition data, or user or citizen authentication systems)
+    \end{describe}
+
+    \begin{noitemize}
+        \item \textbf{User Input Quality:} The quality of the initial opinions and critiques participants provide is crucial. If users are not prepared to contribute in good faith or lack relevant information, the HM's output will be less effective.  
+        \item \textbf{LLM Capabilities:} The success of the HM relies heavily on the capabilities of the underlying LLM to understand nuanced opinions, generate coherent and relevant group statements, and incorporate critiques effectively.  Biases in the LLM could also impact the process.  
+        \item \textbf{Platform for Interaction:}  A reliable and accessible platform is needed for participants to interact with the HM, submit opinions and critiques, and receive group statements.  
+        \item \textbf{Human Oversight:} While AI-mediated, human oversight is still important to ensure the process is fair, address any unforeseen issues, and interpret the outputs in a real-world context.  
+        \item \textbf{Context of Deliberation:} The specific social or political issue being deliberated and the broader context of the deliberation can influence the effectiveness and impact of the HM.  
+        \item \textbf{Information provision:} The Habermas Machine does not inform participants and is only focused on finding common ground among already informed participants. Separate systems have to be built to help inform participants.
+    \end{noitemize}
+    
+\sfss{Process Quality}
+\sfsss{Representation}
+
+    \begin{describe}[grey]
+        The extent to which key decisions are representative of the constituent population.
+    \end{describe}
+
+    The Habermas Machine does not directly address the representation of participants in terms of demographic proportionality. Participants are grouped, but the system focuses on processing the content of their opinions, not ensuring a representative sample of the broader population is included in each group. The system aims to represent diverse viewpoints within the group by incorporating minority and majority opinions into the generated group statements.
+
+    \begin{evaluate}[grey]
+        To what extent: (1) is there sufficient representation at critical parts of the process, including (a) proposing decisions, and (b) making ultimate decisions? (2) are there barriers leading to bias in representation?
+    \end{evaluate}
+
+    Sufficient representation of groups is not directly addressed through the process. As a technology-mediated system, the Habermas Machine may introduce potential barriers to entry related to technology. Lack of access to devices (computers, smartphones, tablets) and reliable internet connectivity could exclude certain segments of the population from participating. This could lead to underrepresentation of groups with lower digital literacy or limited technology access. Mitigations include building voice access, apps, or having supported access.
+    
+\sfsss{Informedness}
+
+    \begin{describe}[grey]
+        The extent to which critical information is taken into account for decision-making.
+    \end{describe}
+
+    The Habermas Machine does not directly enhance participant informedness. It works with the opinions that participants already hold. The deliberation process itself, mediated by the AI, may indirectly increase informedness by exposing participants to diverse perspectives and prompting them to justify and critique opinions.
+    
+    \begin{evaluate}[grey]
+        To what extent: (1) is critical context incorporated into decision-making about tradeoffs and consequences of different decisions? (2) is this sourced from (a) domain expertise, (b) the existing authorities, who may have extensive context, (c) a broad diversity of constituents, (d) the most impacted stakeholders, and (e) the powerful stakeholders, whose incentives are critical to having the decision ``stick''?
+    \end{evaluate}
+
+    The HM does not actively provide participants with additional context or information about trade-offs. However, participant informedness can increase as a result of participating in the deliberative process itself---engaging with AI-generated statements that synthesize different viewpoints. Rather than direct provision of knowledge from experts, authorities, or stakeholders, this is a more indirect and emergent form of informedness. The system is designed to work with the existing knowledge and opinions of the participants, rather than to make them more informed in a traditional sense.
+
+\sfsss{Deliberation}
+    
+    \begin{describe}[grey]
+        The extent to which decisions are considered and deliberative (rather than superficial and reactive).
+    \end{describe}
+
+    The Habermas Machine is explicitly designed to foster deliberation through an iterative process. Participants engage in multiple rounds of interaction: submitting initial opinions, reviewing and ranking AI-generated group statements, and providing critiques of the top-ranked statement. The AI mediator then uses these critiques to generate revised statements, continuing the cycle of refinement. This structured process encourages participants to consider diverse perspectives. However, it's still a very controlled form of deliberation, and no direct interaction between participants is possible.
+    
+    \begin{evaluate}[grey]
+        To what extent are those involved: (1) able to (and supported to) move from shallower to deeper goals and values? (2) able to (and supported to) collaborate where necessary? (3) able to address issues within the available time?
+    \end{evaluate}
+
+    The iterative nature of the HM process, with critique and revision rounds, encourages participants to move beyond initial, surface-level opinions. By requiring them to articulate critiques and respond to group statements, the process pushes them to consider underlying reasons and potentially evolve their perspectives towards a more nuanced understanding of the issue and shared values. While participants interact with the HM individually, the system is designed to facilitate a collective deliberation. Participants are indirectly collaborating by contributing to a shared group statement. The HM acts as a mediator to synthesize these individual contributions into a potentially consensual output.
+    
+\sfsss{Substantiveness}
+    
+    \begin{describe}[grey]
+        The extent to which decisions are substantive (e.g., actionable, consequential) rather than nonsubstantive (e.g., vague, simplistic, inconsequential).
+    \end{describe}
+
+    The Habermas Machine aims to produce substantive outputs through group statements that capture common ground. The iterative refinement process, incorporating critiques, moves beyond vague or simplistic statements towards more comprehensive and nuanced representations of the group's collective perspective on a complex issue.
+    
+    \begin{evaluate}[grey]
+        To what extent: (1) is the decision directly actionable and implementable? (2) does the decision meaningfully address the issues? (3) does the decision grapple with the necessary levels of complexity? (4) is uncertainty appropriately managed and accounted for? (5) are risks to implementability accounted for?
+    \end{evaluate}
+
+    \begin{noitemize}
+        \item \textbf{Actionable}: While the group statements produced by the HM are in natural language and can be relatively detailed, they are not formal policy documents and are not directly actionable and implementable.
+        \item \textbf{Meaningfully addressing issues}: Group statements are intended to be clear and informative around issues, making use of fine-tuned LLMs to increase quality, such as in \cite{tessler2024ai}. %
+        \item \textbf{Complexity}: Designed for complex issues, the HM's iteration and diverse inputs allow statements to reflect multiple facets and nuances. Full complexity capture depends on input quality and LLM synthesis. However, the fact that there's no direct interaction (i.e., caucus mediation) might reduce complexity.
+        \item \textbf{Uncertainty}: HM implicitly acknowledges uncertainty by surfacing diverse views and allowing for critiques. However, in its current form, it generates a single output. A system that represents a distribution over outputs might be better at managing uncertainty.
+        \item \textbf{Risks}: As outputs are not intended to be directly implementable, the process does not have additional measures to account for risk in implementability.
+    \end{noitemize}
+
+\sfsss{Robustness}
+    
+    \begin{describe}[grey]
+        The extent to which the process is robust to suboptimal conditions or adversarial or strategic behavior.
+    \end{describe}
+
+    HM robustness is not fully tested, but iteration and critique may offer some resilience. Iterative critique could mitigate adversarial behavior, as statements can be challenged and refined. Still, if by posing a very extreme opinion, one might be able to influence the model more than others.
+    
+    \begin{evaluate}[grey]
+        To what extent is the process or system vulnerable to: (1) suboptimal conditions or broken assumptions? (e.g., low turnout, larger power asymmetries) (2) strategic behavior and manipulation? (3) false claims? (e.g., of manipulation)
+    \end{evaluate}
+
+    \begin{noitemize}
+        \item \textbf{Strategic behavior}: The Habermas Machine's effectiveness relies on the sincere input of its users, making it vulnerable to strategic manipulation if participants misrepresent their opinions to skew the outcome. 
+        \item \textbf{Manipulation}: Susceptible to coordinated biased input. Limited safeguards against attacks. Transparency could offer some defense against false claims.
+    \end{noitemize}
+    
+\sfsss{Legibility}
+    
+    \begin{describe}[grey]
+        The extent to which the processes and decisions are accessible, understandable, and verifiable.
+    \end{describe}
+
+    The Habermas Machine's process is moderately legible. The steps of opinion submission, statement generation, critique, and revision are conceptually straightforward. The final output, a group statement in natural language, is understandable. However, the inner workings of the LLM and the precise algorithms used to generate and select statements are less transparent to non-participants.
+    
+    \begin{evaluate}[grey]
+        To what extent is information (a) accessible, (b) understandable, (c) verifiable about the: (1) processes/systems used to make decisions? (2) the execution of these processes? (3) decisions being made (4) reasons and inputs feeding into decisions?
+    \end{evaluate}
+
+    \begin{noitemize}
+        \item \textbf{Processes/systems used to make decisions}: The reasoning behind the specific wording of the group statement is less transparent. While the intermediate statements and personalized rankings allow for inspection, the specific AI algorithms and weighting of opinions are not easily auditable by non-participants.
+        \item \textbf{Execution of processes}: Verifying the robustness of the Habermas Machine would require technical expertise to evaluate the AI models and experimental methodology. For non-participants, robustness is largely a matter of trust in the research and the described process rather than direct verification.
+        \item \textbf{Decisions being made}: The group statement, as the "decision," is presented in a clear, natural language format, making it understandable to non-participants.
+        \item \textbf{Reasons and inputs feeding into decisions}: The final group statement represents a synthesis, not a breakdown of 'for' and 'against' positions. While the HM incorporates minority opinions, the output doesn't explicitly delineate which groups favored or opposed specific aspects of the issue.
+    \end{noitemize}
+    
+    
+
+    
+
+    
+    
+
+    
+
+    
+    
+
+    
+
+
+\clearpage
+\twocolumn[
+\section{Example System Card: UK Citizen Assembly on AI}    
+    The following is an example system card for a hypothetical citizen assembly run for the UK government.
+
+    \thickbar
+    \vspace{14pt}
+]
+
+    
+    \begin{center}
+        {\textcolor{darkgreen}{\Large\bfseries Democratic System Card}}
+    \end{center}
+
+\sfss{Context}
+
+    \begin{describe}[grey]
+        Describe the process or a system at a high level. (Can reference a process card for more details. Can call out what is unspecified.)
+    \end{describe}
+
+    \begin{noitemize}
+        \item A Citizens' Assembly of 100 UK citizens chosen via sortition along geography, age, gender, education, and home ownership covariates such that they roughly match the population.   
+        \item They meet for six full-day meetings and four evening meetings, totaling 60 hours of deliberation.  
+        \item They go through a learning journey on AI and its place in the UK via materials and testimony from experts, stakeholders, and the unilateral authority.
+        \item They deliberate on the topic of: *How should the UK address the risks of AI persuasion?*  
+        \item They collectively agree on key recommendations, creating a roadmap for enacting this plan.
+        \item The UK Government commits to publicly responding to the key recommendations.
+    \end{noitemize}
+
+    \begin{describe}[grey]
+        What are other systems that this process depends on or interacts with, which impact its success? (e.g., sortition data, or user or citizen authentication systems)
+    \end{describe}
+
+    The organizers require access to relevant data to carry out the sortition effectively and in a representative manner.
+
+    A wider communications campaign also complements the process to support recruitment, awareness raising, and opportunities for wider input. The process generally relies on a wider engagement program that supports the constituent population to contribute and participate in the process beyond the membership of the citizens' assembly, such as through contributing their values, views, desired outcomes and concerns in a structured and representative manner.
+
+\sfss{Process Quality}
+\sfsss{Representation}
+
+    \begin{describe}[grey]
+        The extent to which key decisions are representative of the constituent population.
+    \end{describe}
+
+    Members are selected via sortition to be a demographically proportional representation of the UK public by age, gender, geography, education, and home ownership.
+
+    \begin{evaluate}[grey]
+        To what extent: (1) is there sufficient representation at critical parts of the process, including (a) proposing decisions, and (b) making ultimate decisions? (2) are there barriers leading to bias in representation?
+    \end{evaluate}
+
+    Assembly members are fully involved in making final recommendations. However, the agenda-setting and scoping are initially structured by the organizing team, introducing some limits to representation at the scoping stage. As the process progresses, assembly members gain more agency in proposing new decision options and directions, but their efficacy is ultimately constrained by conditions imposed by the UK government.
+
+    Some recruitment processes may miss people from some demographics or not adequately control for groups beyond stratification covariates. Some groups typically engage less with political processes due to a myriad of factors, so additional work is necessary to guarantee the necessary engagement from this public. Only 100 people are chosen, so many subgroups and their intersections miss out on membership. The assembly members make the key decisions (which are reflective of the views of the assembly and not necessarily the constituent population). Some of these gaps are addressed in information provision, but not all.
+    
+\sfsss{Informedness}
+
+    \begin{describe}[grey]
+        The extent to which critical information is taken into account for decision-making.
+    \end{describe}
+
+    Assembly members are taken on a learning journey, including engagement with diverse information, hearing from a variety of experts in AI development, industrial policy, AI governance, and public service innovation, the views of key stakeholders, and the lived experiences of the other assembly members. 
+    
+    \begin{evaluate}[grey]
+        To what extent: (1) is critical context incorporated into decision-making about tradeoffs and consequences of different decisions? (2) is this sourced from (a) domain expertise, (b) the existing authorities, who may have extensive context, (c) a broad diversity of constituents, (d) the most impacted stakeholders, and (e) the powerful stakeholders, whose incentives are critical to having the decision ``stick''?
+    \end{evaluate}
+    
+    Extended time allows for an in-depth learning journey that provides a baseline understanding of context and the trade-offs between considerations. 
+    
+    Opportunities for unilateral authority and stakeholder feedback on draft recommendations facilitate understanding of impacts and trade-offs.
+    
+    Current practices may not accommodate diverse learning styles and participants' differing ability to digest large amounts of written or oral information, resulting in some uneven understanding of the issue. Capabilities such as scenario mapping and impact forecasting are technically and practically constrained by time.
+    
+\sfsss{Deliberation}
+    
+    \begin{describe}[grey]
+        The extent to which decisions are considered and deliberative (rather than superficial and reactive).
+    \end{describe}
+
+    Citizens spend 60 hours deliberating with each other, the process is managed by independent facilitators, and the process makes use of mixed breakout groups, plenary sessions and other discussion formats.
+    
+    \begin{evaluate}[grey]
+        To what extent are those involved: (1) able to (and supported to) move from shallower to deeper goals and values? (2) able to (and supported to) collaborate where necessary? (3) able to address issues within the available time?
+    \end{evaluate}
+
+    Independent facilitation provides structured formats for assembly members to develop their views and reconcile them with the views of others through conversation and group work.
+
+    The 60 hours of deliberation provide sufficient time for addressing core issues within the remit, although some assembly members always report feeling pressed for time when tackling particularly complex aspects of AI governance. Facilitators helped manage the workflow to ensure all critical decision-making steps were met, key issues received adequate attention, and the process concluded with results.
+    
+\sfsss{Substantiveness}
+    
+    \begin{describe}[grey]
+        The extent to which decisions are substantive (e.g., actionable, consequential) rather than nonsubstantive (e.g., vague, simplistic, inconsequential).
+    \end{describe}
+
+    A carefully facilitated process ensures that recommendations respond to the remit and consider the key problems presented to the assembly, with purposeful attention paid to the systems that their recommendations will be interacting with to optimally design for implementability.
+    
+    \begin{evaluate}[grey]
+        To what extent: (1) is the decision directly actionable and implementable? (2) does the decision meaningfully address the issues? (3) does the decision grapple with the necessary levels of complexity? (4) is uncertainty appropriately managed and accounted for? (5) are risks to implementability accounted for?
+    \end{evaluate}
+
+    Final recommendations respond directly to the remit and address values-laden social trade-offs. The outputs are clear in their intent and demonstrate an understanding of relevant uncertainty. The facilitation process ensured that final recommendations were concrete and actionable rather than settling for superficial agreement.
+
+    Throughout the process, experts and policymakers provided input, helping assembly members account for potential implementation challenges and barriers.
+
+    The final outputs are limited in their thoroughness due to practical constraints and so require interpretation during implementation by policymakers.
+    
+\sfsss{Robustness}
+    
+    \begin{describe}[grey]
+        The extent to which the process is robust to suboptimal conditions or adversarial or strategic behavior.
+    \end{describe}
+
+    The sortition process is exposed to some manipulation risks due to demographic reporting and quota settings but informational processes and group decision-making were robust due to clear rules and standards.
+    
+    \begin{evaluate}[grey]
+        To what extent is the process or system vulnerable to: (1) suboptimal conditions or broken assumptions? (e.g., low turnout, larger power asymmetries) (2) strategic behavior and manipulation? (3) false claims? (e.g., of manipulation)
+    \end{evaluate}
+
+    Low turnout would have broken participant recruitment. Recruitment processes were subject to possible manipulation strategies due to the selection process. Transparency, governance integrity, and diverse stakeholder buy-in defeat false claims.
+
+\sfsss{Legibility}
+    
+    \begin{describe}[grey]
+        \vspace{2pt}
+        The extent to which the processes and decisions are accessible, understandable, and verifiable.
+    \end{describe}
+
+    Recommendations are made public. Templated outputs generally require explanatory reasoning. The process is open to observers and scrutineers. Open public communications pre-output pre-empt partisan distrust.
+    
+    \begin{evaluate}[grey]
+        \vspace{2pt}
+        To what extent is information (a) accessible, (b) understandable, (c) verifiable about the: (1) processes/systems used to make decisions? (2) the execution of these processes? (3) decisions being made (4) reasons and inputs feeding into decisions?
+    \end{evaluate}
+
+    All results were made public and data was opened to outside review. However, due to the detailed nature of the work and sheer volume of the data used, not every in-depth element was legible to all outside parties. All captured datapoints were made accessible through a searchable database. Identifiable participant voting records are not made public.
+    
+\sfss{Delegation}
+\sfsss{Integration}
+    
+    \begin{describe}[grey]
+        The extent to which the authority integrates the democratic process into its operations.
+    \end{describe}
+
+    The UK government specifically focused the remit on areas where they had the capability to integrate this process directly into existing and future decision-making around the development of an action plan.
+    
+    \begin{evaluate}[grey]
+        To what extent is the authority structuring its internal communications and operations to effectively: (1) provide critical context to democratic process / system? (2) integrate democratic process outputs in its actions? (3) trigger democratic processes when/if required?
+    \end{evaluate}
+
+    The decisions themselves cannot be automatically implemented due to their long-term strategic nature, which also leaves them open to adjustment by the unilateral authority.
+
+    Departmental staff were directly involved in the process through observation and feedback phases, enriching their understanding of the intent of final recommendations and their overall ability to infer preferences when faced with implementation gaps.
+
+\sfsss{Ability to bind}
+    
+    \begin{describe}[grey]
+        The extent to which the authority is able to technically and legally bind itself to democratic decisions.
+    \end{describe}
+
+    The UK government has agreed to present the resulting recommendations to parliament, but the process is not meant to be binding. 
+    
+    \begin{evaluate}[grey]
+        To what extent can the unilateral authority bind itself to acting in accordance with the democratic decision: (1) technically? (2) legally? (e.g., has developed the needed technical and/or legal infrastructure for binding)
+    \end{evaluate}
+
+    In theory, there are ways that assembly decisions could be made binding by Parliament, but that is out of scope for this particular process.
+    
+    
+    
+\sfsss{Commitment}
+    
+    \begin{describe}[grey]
+        The extent to which the unilateral authority commits to acting in accordance with the democratic decision.
+    \end{describe}
+
+    The UK government pre-committed to publicly responding to the final recommendations and implementing them to the maximum extent possible (conditional on acceptance of the recommendation in principle).
+    
+    \begin{evaluate}[grey]
+        To what extent has the unilateral authority committed to acting in accordance with the democratic decision: (1) internally? (2) privately? (3) publicly?  (regardless of their ability to bind)
+    \end{evaluate}
+
+    There is a verbal commitment to enact the recommendation to the maximum extent possible, although the extent to which this is true is largely up to the unilateral authority and will not be clear for a number of years.
+    
+\sfss{Trust}
+\sfsss{Awareness}
+    
+    \begin{describe}[grey]
+        The extent to which the relevant public is aware of the democratic process.
+    \end{describe}
+
+    The UK public was made aware of the process through a public communications campaign that complemented the process.
+    
+    \begin{evaluate}[grey]
+        To what extent is the relevant public aware: (1) that the democratic system exists? (2) how it works? (3) what it is being used for? (4) how they can be involved?
+    \end{evaluate}
+
+    The public has a low level of awareness. There is some coverage in specialised media and a broader public communications campaign, including advertising pathways to be included, but there is generally little public engagement with government policy-making on this topic.
+
+    Public communications clearly explain that the assembly would inform UK policy on AI persuasion risks, though a detailed understanding of what exactly this process would look like or how exactly the recommendations would influence policy development was limited among the general public.
+
+\sfsss{Participation}
+    
+    \begin{describe}[grey]
+        The extent to which the relevant public is willing to participate in the process.
+    \end{describe}
+
+    Response rates to recruitment invitations are in line with global averages but lower than the most successful examples in neighbouring Ireland.
+    
+    \begin{evaluate}[grey]
+        To what extent is the relevant public: (1) willing to participate? (2) able to participate? (3) appropriately compensated for participating? (4) actually participating?
+    \end{evaluate}
+
+    There was a sufficient pool of the public eager to participate. They were generously reimbursed for their time.
+    
+\sfsss{Accountability}
+    
+    \begin{describe}[grey]
+        The extent to which there are external watchdogs and accountability structures monitoring the execution of the democratic process and the implementation of its outputs.
+    \end{describe}
+
+    An independent governance body is established to oversee the process and hold the UK government to account by reporting on recommendation implementation progress.
+    
+    \begin{evaluate}[grey]
+        To what extent are: (1) there well-understood lines of oversight and accountability? (2) sufficiently influential/powerful organizations focused on holding authorities to their promised levels of democratic involvement? (3) authorities and democratic systems responsive to such accountability mechanisms?
+    \end{evaluate}
+
+    The independent governance body had limited powers to mandate accountability, but its public profile commanded responsive actions where needed.
+
+\sfsss{Buy-in}
+    
+    \begin{describe}[grey]
+        The extent to which the relevant public and key stakeholders buy into the process and its legitimacy.
+    \end{describe}
+
+    Key industry stakeholders, civil servants responsible for implementing recommendations, and political leaders are included in the process planning stage to establish commitments before outputs are generated.
+    
+    \begin{evaluate}[grey]
+        To what extent are the relevant public and key stakeholders accepting of the legitimacy of: (1) the system/process? (2) of the decision?
+    \end{evaluate}
+
+    Their involvement in the process implicates them in building legitimacy. When compared to existing policy-making and political decision-making processes the process is viewed as considered and reasonable because of its resistance to shallow public opinion and electoral incentives.

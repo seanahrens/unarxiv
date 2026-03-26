@@ -1,0 +1,87 @@
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{Beh17}
+Behrens, J.: The origins of liquid democracy. The Liquid Democracy Journal pp.
+  190--220 (2017)
+
+\bibitem{BKN14}
+Behrens, J., Kistner, A., Nitsche, A., Swierczek, B.: The Principles of
+  LiquidFeedback. Interaktive Demokratie e. V. (2014)
+
+\bibitem{BGL19}
+Bloembergen, D., Gross, D., Lackner, M.: On rational delegations in liquid
+  democracy. In: Proceedings of the 33rd Conference on Artificial Intelligence
+  (AAAI). pp. 1796--1803 (2019)
+
+\bibitem{BZ16}
+Blum, C., Zuber, C.: Liquid democracy: Potentials, problems, and perspectives.
+  Journal of Political Philosophy  \textbf{24}(2),  162--182 (2017)
+
+\bibitem{Bri18}
+Brill, M.: Interactive democracy. In: Proceedings of the AAMAS (2018)
+
+\bibitem{BT18}
+Brill, M., Talmon, N.: Pairwise liquid democracy. In: Proceedings of the IJCAI.
+  pp. 137--143 (2018)
+
+\bibitem{CG17}
+Christoff, Z., Grossi, D.: Binary voting with delegable proxy: An analysis of
+  liquid democracy. In: Proceedings of 16th Conference on Theoretical Aspects
+  of Rationality and Knowledge (TARK). pp. 134--150 (2017)
+
+\bibitem{CMM17}
+Cohensius, G., Mannor, S., Meir, R., Meirom, E., Orda, A.: Proxy voting for
+  better outcomes. In: Proceedings of the AAMAS. pp. 858--866 (2017)
+
+\bibitem{Dod1884}
+Dodgson, C.: The Principles of Parliamentary Representation. Harrison and Sons
+  (1884)
+
+\bibitem{EGP19}
+Escoffier, B., Gilbert, H., Pass-Lanneau, A.: The convergence of iterative
+  delegations in liquid democracy in a social network. In: Proceedings of the
+  12th International Symposium on Algorithmic Game Theory (SAGT). pp. 284--297
+  (2019)
+
+\bibitem{For02}
+Ford, B.: Delegative democracy. \url{www.brynosaurus.com/deleg/deleg.pdf}
+  (2002)
+
+\bibitem{GKM18}
+G\"olz, P., Kahng, A., Mackenzie, S., Procaccia, A.: The fluid mechanics of
+  liquid democracy. In: Proceedings of the 14th Conference on Web and Internet
+  Economics (WINE). pp. 188--202 (2018)
+
+\bibitem{GA15}
+Green-Armytage, J.: Direct voting and proxy voting. Constitutional Political
+  Economy  \textbf{26}(2),  190--220 (2015)
+
+\bibitem{KMP18}
+Kahng, A., Mackenzie, S., Procaccia, A.: The fluid mechanics of liquid
+  democracy. In: Proceedings of the 32nd Conference on Artificial Intelligence
+  (AAAI). pp. 1095--1102 (2018)
+
+\bibitem{KR20}
+Kotsialou, G., Riley, L.: Incentivising participation in liquid democracy with
+  breadth first delegation. In: Proceedings of the AAMAS. pp. 638--644 (2020)
+
+\bibitem{Lan95}
+Lanphier, R.: A model for electronic democracy? \url{robla.net/1996/steward/}
+  (1995)
+
+\bibitem{Mil69}
+Miller, J.: A program for direct and proxy voting in the legislative process.
+  Public Choice  \textbf{7}(1),  107--113 (1969)
+
+\bibitem{Tol67}
+Tolluck, G.: Towards a Mathematics of Politics. U of M Press (1967)
+
+\bibitem{ZZ17}
+Zhang, B., Zhou, H.: Brief announcement: Statement voting and liquid democracy.
+  In: 36th Symposium on Principles of Distributed Computing (PODC). pp.
+  359--361 (2017)
+
+\end{thebibliography}

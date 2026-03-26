@@ -1,0 +1,143 @@
+\documentclass[runningheads]{llncs}
+
+
+\usepackage{lipsum}
+%\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumitem}
+%\usepackage{amsthm}
+\usepackage{color}
+\usepackage[english]{babel}
+\usepackage{setspace}
+\usepackage[numbers]{natbib}
+
+ \usepackage{url}
+
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{clm}[thm]{Claim}
+\newtheorem{cor}[thm]{Corollary}
+%\numberwithin{thm}{section}
+
+%\theoremstyle{definition}
+%%\newtheorem{theorem}{Theorem}[section]
+%%\newtheorem{lemma}[theorem]{Lemma}
+%%\newtheorem{claim}[theorem]{Claim}
+%%\newtheorem{proposition}[theorem]{Proposition}
+%%\newtheorem{corollary}[theorem]{Corollary}
+%\newtheorem{fact}[theorem]{Fact}
+%%\newtheorem{example}[theorem]{Example}
+%\newtheorem{notation}[theorem]{Notation}
+\newtheorem{observation}[thm]{Observation}
+%%\newtheorem{conjecture}[theorem]{Conjecture}
+%%\newtheorem{remark}[theorem]{Remark}
+
+%\newtheorem*{lem}{Lemma}
+%\newtheorem*{cor}{Corollary}
+%%\newtheorem{definition}[theorem]{Definition}
+
+\newcommand{\opt}{\mathrm{opt}}
+\newcommand{\sol}{\mathrm{sol}}
+\newcommand{\x}{{\bf x}}
+\newcommand{\y}{{\bf y}}
+\newcommand{\z}{{\bf z}}
+\newcommand{\e}{{\bf e}}
+\newcommand{\s}{{\sigma}}
+\newcommand{\g}{{\gamma}}
+\newcommand{\p}{{\bf p}}
+\renewcommand{\u}{{\bf u}}
+\newcommand{\cl}{{\bf cl}}
+\newcommand{\conf}{{\bf c}}
+\newcommand{\E}{\mathbb{E}}
+
+\newcommand{\Int}{\mathbb{Z}}
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\allC}{\mathcal{C}}
+\newcommand{\welf}{{\texttt{welf}}}
+\newcommand{\dist}{\text{dist}}
+\newcommand{\conv}{\text{conv}}
+\newcommand{\vol}{\text{vol}}
+\newcommand{\aln}[1]{\begin{align*}#1\end{align*}}
+\newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
+
+\newcommand{\SW}{\operatorname{SW}}
+\newcommand{\Opt}{\operatorname{OPT}}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%	
+%\maketitle
+%
+%
+\title{Pirates in Wonderland:\\[0.1cm] Liquid Democracy has Bicriteria Guarantees}
+%
+\titlerunning{Liquid Democracy has Bicriteria Guarantees}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+\author{Jonathan A. Noel\inst{1} \and Mashbat Suzuki\inst{2} \and 
+	Adrian Vetta\inst{2}
+	}
+\authorrunning{J. Noel et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
+\institute{University of Victoria, Victoria, Canada \\
+\email{noelj@uvic.ca}\\[0.2cm]	
+\and
+McGill University, Montreal, Canada \\
+\email{mashbat.suzuki@mail.mcgill.ca, adrian.vetta@mcgill.ca}
+}
+%
+\maketitle              % typeset the header of the contribution
+%
+\begin{abstract}
+Liquid democracy has a natural graphical representation, the delegation graph.
+Consequently, the strategic aspects of liquid democracy can be studied as a game
+over delegation graphs, called the liquid democracy game. 
+Our main result is that this game has bicriteria approximation guarantees, in terms
+of both rationality and social welfare. Specifically, we prove the price of stability for $\epsilon$-Nash equilibria
+is exactly~$\epsilon$ in the liquid democracy game. 
+\end{abstract}
+
+
+\input{introduction.tex}
+
+\input{model.tex}
+
+\input{results.tex}
+
+\input{extensions.tex}
+
+%\input{conclusion.tex}
+
+
+\bibliographystyle{splncs04}
+\bibliography{LD}
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+

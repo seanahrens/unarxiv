@@ -1,0 +1,766 @@
+\begin{thebibliography}{128}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Allen \& Weyl(2024)Allen and Weyl]{allen2024}
+Allen, D. and Weyl, E.~G.
+\newblock {The Real Dangers of Generative AI}.
+\newblock \emph{Journal of Democracy}, 35\penalty0 (1):\penalty0 147--162, 2024.
+
+\bibitem[Andreessen(2023)]{andreessen2023technooptimist}
+Andreessen, M.
+\newblock {The Techno-Optimist Manifesto}, 2023.
+\newblock URL \url{https://a16z.com/the-techno-optimist-manifesto/}.
+\newblock Accessed: January 30, 2025.
+
+\bibitem[{Anthropic}(2023)]{anthropic2023}
+{Anthropic}.
+\newblock Collective {{Constitutional AI}}: {{Aligning}} a {{Language Model}} with {{Public Input}}, 2023.
+\newblock URL \url{https://www.anthropic.com/news/collective-constitutional-ai-aligning-a-language-model-with-public-input}.
+\newblock Accessed: 2024-09-03.
+
+\bibitem[Anthropic(2025)]{sonnet-system-card}
+Anthropic.
+\newblock Claude 3.7 sonnet system card, 2025.
+\newblock URL \url{https://assets.anthropic.com/m/785e231869ea8b3b/original/claude-3-7-sonnet-system-card.pdf}.
+\newblock Accessed: 2025-05-18.
+
+\bibitem[Arnstein(1969)]{arnstein1969}
+Arnstein, S.~R.
+\newblock A ladder of citizen participation.
+\newblock \emph{Journal of the American Institute of Planners}, 35\penalty0 (4):\penalty0 216--224, 1969.
+\newblock \doi{10.1080/01944366908977225}.
+\newblock URL \url{https://doi.org/10.1080/01944366908977225}.
+
+\bibitem[Auernhammer(2020)]{auernhammer2020human}
+Auernhammer, J.
+\newblock {Human-centered {{AI}}: The role of Human-centered Design Research in the development of {{AI}}}.
+\newblock In \emph{Proceedings of Synergy - DRS International Conference 2020}, 2020.
+
+\bibitem[Bai et~al.(2022)Bai, Kadavath, Kundu, Askell, Kernion, Jones, Chen, Goldie, Mirhoseini, McKinnon, et~al.]{bai2022constitutional}
+Bai, Y., Kadavath, S., Kundu, S., Askell, A., Kernion, J., Jones, A., Chen, A., Goldie, A., Mirhoseini, A., McKinnon, C., et~al.
+\newblock Constitutional {{AI}}: Harmlessness from {{AI}} feedback.
+\newblock \emph{arXiv preprint arXiv:2212.08073}, 2022.
+
+\bibitem[Bakker et~al.(2022)Bakker, Chadwick, Sheahan, Tessler, Campbell-Gillingham, Balaguer, McAleese, Glaese, Aslanides, Botvinick, et~al.]{bakker2022fine}
+Bakker, M., Chadwick, M., Sheahan, H., Tessler, M., Campbell-Gillingham, L., Balaguer, J., McAleese, N., Glaese, A., Aslanides, J., Botvinick, M., et~al.
+\newblock Fine-tuning language models to find agreement among humans with diverse preferences.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35:\penalty0 38176--38189, 2022.
+
+\bibitem[Bergman et~al.(2024)Bergman, Marchal, Mellor, Mohamed, Gabriel, and Isaac]{bergman2024}
+Bergman, S., Marchal, N., Mellor, J., Mohamed, S., Gabriel, I., and Isaac, W.
+\newblock {{STELA}}: A community-centred approach to norm elicitation for {{AI}} alignment.
+\newblock \emph{Scientific Reports}, 14\penalty0 (1):\penalty0 6616, 2024.
+\newblock ISSN 2045-2322.
+\newblock \doi{10.1038/s41598-024-56648-4}.
+\newblock URL \url{https://www.nature.com/articles/s41598-024-56648-4}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Birhane et~al.(2022)Birhane, Isaac, Prabhakaran, Diaz, Elish, Gabriel, and Mohamed]{birhane2022}
+Birhane, A., Isaac, W., Prabhakaran, V., Diaz, M., Elish, M.~C., Gabriel, I., and Mohamed, S.
+\newblock {Power to the People? Opportunities and Challenges for Participatory AI}.
+\newblock In \emph{Proceedings of the 2nd ACM Conference on Equity and Access in Algorithms, Mechanisms, and Optimization}, EAAMO '22, New York, NY, USA, 2022. Association for Computing Machinery.
+\newblock ISBN 9781450394772.
+\newblock \doi{10.1145/3551624.3555290}.
+\newblock URL \url{https://doi.org/10.1145/3551624.3555290}.
+
+\bibitem[Bommasani et~al.(2024)Bommasani, Klyman, Kapoor, Longpre, Xiong, Maslej, and Liang]{bommasani2024}
+Bommasani, R., Klyman, K., Kapoor, S., Longpre, S., Xiong, B., Maslej, N., and Liang, P.
+\newblock The {{Foundation Model Transparency Index}} v1.1: {{May}} 2024, 2024.
+\newblock URL \url{http://arxiv.org/abs/2407.12929}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Bradford(2024)]{bradford2024false}
+Bradford, A.
+\newblock {The False Choice Between Digital Regulation and Innovation}.
+\newblock \emph{Northwestern University Law Review}, 118\penalty0 (2), 2024.
+
+\bibitem[{Brookings Institution}(2023)]{Brookings2023}
+{Brookings Institution}.
+\newblock {The Three Challenges of AI Regulation}.
+\newblock \emph{Brookings Institution}, 2023.
+\newblock URL \url{https://www.brookings.edu/articles/the-three-challenges-of-ai-regulation/}.
+
+\bibitem[Broxmeyer(2024)]{broxmeyer2024}
+Broxmeyer, J.
+\newblock Leading the {{Way}} in {{Governance Innovation With Community Forums}} on {{AI}}, 2024.
+\newblock URL \url{https://about.fb.com/news/2024/04/leading-the-way-in-governance-innovation-with-community-forums-on-ai/}.
+\newblock Accessed: 2024-09-03.
+
+\bibitem[Buchanan \& Tullock(1962)Buchanan and Tullock]{BuchananTullock1962}
+Buchanan, J.~M. and Tullock, G.
+\newblock \emph{{The Calculus of Consent: Logical Foundations of Constitutional Democracy}}.
+\newblock University of Michigan Press, Ann Arbor, 1962.
+
+\bibitem[Burton et~al.(2024)Burton, Lopez-Lopez, Hechtlinger, Rahwan, Aeschbach, Bakker, Becker, Berditchevskaia, Berger, Brinkmann, et~al.]{burton2024large}
+Burton, J.~W., Lopez-Lopez, E., Hechtlinger, S., Rahwan, Z., Aeschbach, S., Bakker, M.~A., Becker, J.~A., Berditchevskaia, A., Berger, J., Brinkmann, L., et~al.
+\newblock How large language models can reshape collective intelligence.
+\newblock \emph{Nature human behaviour}, 8\penalty0 (9):\penalty0 1643--1655, 2024.
+
+\bibitem[Capel \& Brereton(2023)Capel and Brereton]{capel2023human}
+Capel, T. and Brereton, M.
+\newblock What is human-centered about human-centered {{AI}}? {{A}} map of the research landscape.
+\newblock In \emph{Proceedings of the 2023 CHI conference on human factors in computing systems}, pp.\  1--23, 2023.
+
+\bibitem[Chan et~al.(2023)Chan, Salganik, Markelius, Pang, Rajkumar, Krasheninnikov, Langosco, He, Duan, Carroll, et~al.]{chan2023harms}
+Chan, A., Salganik, R., Markelius, A., Pang, C., Rajkumar, N., Krasheninnikov, D., Langosco, L., He, Z., Duan, Y., Carroll, M., et~al.
+\newblock Harms from increasingly agentic algorithmic systems.
+\newblock In \emph{Proceedings of the 2023 ACM Conference on Fairness, Accountability, and Transparency}, pp.\  651--666, 2023.
+
+\bibitem[Chang et~al.(2024)Chang, Ciesla, Finch, Fishkin, Gelauff, Goel, Marquez, Mohammed, and Siu]{chang2024}
+Chang, S., Ciesla, E., Finch, M., Fishkin, J.~S., Gelauff, L.~L., Goel, A., Marquez, R.~H., Mohammed, S., and Siu, A.
+\newblock {Meta Community Forum Results Analysis}.
+\newblock Technical report, {Stanford Deliberative Democracy Lab}, 2024.
+\newblock URL \url{https://cddrl.fsi.stanford.edu/publication/meta-community-forum-results-analysis}.
+
+\bibitem[Christiano \& Bajaj(2024)Christiano and Bajaj]{christiano2024}
+Christiano, T. and Bajaj, S.
+\newblock Democracy.
+\newblock In Zalta, E.~N. and Nodelman, U. (eds.), \emph{The {{Stanford Encyclopedia}} of {{Philosophy}}}. Metaphysics Research Lab, Stanford University, summer 2024 edition, 2024.
+\newblock URL \url{https://plato.stanford.edu/archives/sum2024/entries/democracy/}.
+\newblock Accessed: 2024-09-03.
+
+\bibitem[{CIP}(2024)]{collectiveintelligenceproject2024}
+{CIP}.
+\newblock A {{Roadmap}} to {{Democratic AI}}.
+\newblock Technical report, The Collective Intelligence Project, 2024.
+\newblock URL \url{https://cip.org/s/CIP_-A-Roadmap-to-Democratic-AI.pdf}.
+
+\bibitem[Cohen(2002)]{cohen2002}
+Cohen, J.
+\newblock Deliberation and democratic legitimacy.
+\newblock In Matravers, D. and Pike, J. (eds.), \emph{Debates in Contemporary Political Philosophy: An Anthology}. Routledge, 2002.
+
+\bibitem[Cohen(2003)]{cohen2003}
+Cohen, J.
+\newblock Procedure and substance in deliberative democracy.
+\newblock In \emph{Philosophy and Democracy: An Anthology}. Oxford University Press, 02 2003.
+\newblock ISBN 9780195136593.
+\newblock \doi{10.1093/oso/9780195136593.003.0002}.
+\newblock URL \url{https://doi.org/10.1093/oso/9780195136593.003.0002}.
+
+\bibitem[Conitzer et~al.(2024)Conitzer, Freedman, Heitzig, Holliday, Jacobs, Lambert, Moss\'{e}, Pacuit, Russell, Schoelkopf, Tewolde, and Zwicker]{conitzer2024social}
+Conitzer, V., Freedman, R., Heitzig, J., Holliday, W.~H., Jacobs, B.~M., Lambert, N., Moss\'{e}, M., Pacuit, E., Russell, S., Schoelkopf, H., Tewolde, E., and Zwicker, W.~S.
+\newblock Position: social choice should guide ai alignment in dealing with diverse human feedback.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine Learning}, ICML'24. JMLR.org, 2024.
+
+\bibitem[{Connected by Data}(2024)]{connectedbydata2024}
+{Connected by Data}.
+\newblock Options for a {{Global Citizens Assembly}} on {{AI}}, 2024.
+\newblock URL \url{https://connectedbydata.org/projects/2024-gca-ai}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Cooper \& Zafiroglu(2024)Cooper and Zafiroglu]{cooper2024}
+Cooper, N. and Zafiroglu, A.
+\newblock From fitting participation to forging relationships: The art of participatory ml.
+\newblock In \emph{Proceedings of the 2024 CHI Conference on Human Factors in Computing Systems}, CHI '24, New York, NY, USA, 2024. Association for Computing Machinery.
+\newblock ISBN 9798400703300.
+\newblock \doi{10.1145/3613904.3642775}.
+\newblock URL \url{https://doi.org/10.1145/3613904.3642775}.
+
+\bibitem[Cordelli(2020)]{cordelli2020}
+Cordelli, C.
+\newblock \emph{The privatized state}.
+\newblock Princeton University Press, 2020.
+
+\bibitem[Curato et~al.(2021)Curato, Farrell, Geissel, Grönlund, Mockler, Pilet, Renwick, Rose, Setälä, and Suiter]{curato2021}
+Curato, N., Farrell, D.~M., Geissel, B., Grönlund, K., Mockler, P., Pilet, J.-B., Renwick, A., Rose, J., Setälä, M., and Suiter, J.
+\newblock \emph{{Deliberative Mini-Publics: Core Design Features}}.
+\newblock Bristol University Press, 1 edition, 2021.
+\newblock ISBN 9781529214109.
+\newblock URL \url{http://www.jstor.org/stable/j.ctv1sr6gw9}.
+
+\bibitem[Dahl(1956)]{Dahl1956}
+Dahl, R.~A.
+\newblock \emph{A Preface to Democratic Theory}.
+\newblock University of Chicago Press, Chicago, 1956.
+
+\bibitem[Dahl(1989)]{dahl1989democracy}
+Dahl, R.~A.
+\newblock \emph{Democracy and its Critics}.
+\newblock Yale University Press, New Haven, 1989.
+\newblock ISBN 0300049382.
+
+\bibitem[Deldjoo et~al.(2024)Deldjoo, He, McAuley, Korikov, Sanner, Ramisa, Vidal, Sathiamoorthy, Kasirzadeh, and Milano]{deldjoo2024review}
+Deldjoo, Y., He, Z., McAuley, J., Korikov, A., Sanner, S., Ramisa, A., Vidal, R., Sathiamoorthy, M., Kasirzadeh, A., and Milano, S.
+\newblock A review of modern recommender systems using generative models (gen-recsys).
+\newblock In \emph{Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining}, pp.\  6448--6458, 2024.
+
+\bibitem[Delgado et~al.(2023)Delgado, Yang, Madaio, and Yang]{delgado2023}
+Delgado, F., Yang, S., Madaio, M., and Yang, Q.
+\newblock {The Participatory Turn in AI Design: Theoretical Foundations and the Current State of Practice}.
+\newblock In \emph{Proceedings of the 3rd ACM Conference on Equity and Access in Algorithms, Mechanisms, and Optimization}, EAAMO '23, New York, NY, USA, 2023. Association for Computing Machinery.
+\newblock ISBN 9798400703812.
+\newblock \doi{10.1145/3617694.3623261}.
+\newblock URL \url{https://doi.org/10.1145/3617694.3623261}.
+
+\bibitem[DeNardis(2014)]{denardis2014}
+DeNardis, L.
+\newblock \emph{{The Global War for Internet Governance}}.
+\newblock Yale University Press, 2014.
+
+\bibitem[Docherty(2024)]{docherty2024universal}
+Docherty, A.
+\newblock {Universal Ownership: A Call for Practical Implementation}, 2024.
+\newblock URL \url{https://ieefa.org/sites/default/files/2024-06/Universal%20Ownership%20Practical%20Implementation_May%202024_0.pdf}.
+
+\bibitem[Dovi(2018)]{dovi2018}
+Dovi, S.
+\newblock {Political Representation}.
+\newblock In Zalta, E.~N. (ed.), \emph{The {Stanford} Encyclopedia of Philosophy}. Metaphysics Research Lab, Stanford University, {F}all 2018 edition, 2018.
+
+\bibitem[Drago \& Laine(2025)Drago and Laine]{drago2025}
+Drago, L. and Laine, R.
+\newblock The intelligence curse, 2025.
+\newblock URL \url{https://intelligence-curse.ai}.
+\newblock Accessed: 2025-05-19.
+
+\bibitem[Dryzek et~al.(2019)Dryzek, Bächtiger, Chambers, Cohen, Druckman, Felicetti, Fishkin, Farrell, Fung, Gutmann, Landemore, Mansbridge, Marien, Neblo, Niemeyer, Setälä, Slothuus, Suiter, Thompson, and Warren]{dryzek2019}
+Dryzek, J.~S., Bächtiger, A., Chambers, S., Cohen, J., Druckman, J.~N., Felicetti, A., Fishkin, J.~S., Farrell, D.~M., Fung, A., Gutmann, A., Landemore, H., Mansbridge, J., Marien, S., Neblo, M.~A., Niemeyer, S., Setälä, M., Slothuus, R., Suiter, J., Thompson, D., and Warren, M.~E.
+\newblock The crisis of democracy and the science of deliberation.
+\newblock \emph{Science}, 363\penalty0 (6432):\penalty0 1144--1146, 2019.
+\newblock \doi{10.1126/science.aaw2694}.
+\newblock URL \url{https://www.science.org/doi/abs/10.1126/science.aaw2694}.
+
+\bibitem[Elish \& Boyd(2018)Elish and Boyd]{elish2018}
+Elish, M.~C. and Boyd, D.
+\newblock Situating methods in the magic of {{Big Data}} and {{AI}}.
+\newblock \emph{Communication monographs}, 85\penalty0 (1):\penalty0 57--80, 2018.
+
+\bibitem[Eloundou \& Lee(2024)Eloundou and Lee]{eloundou2024}
+Eloundou, T. and Lee, T.
+\newblock Democratic inputs to {{AI}} grant program: Lessons learned and implementation plans, 2024.
+\newblock URL \url{https://openai.com/index/democratic-inputs-to-ai-grant-program-update/}.
+\newblock Accessed: 2024-09-03.
+
+\bibitem[Estlund(2005)]{estlund2005authority}
+Estlund, D.~M.
+\newblock The authority of democracy.
+\newblock \emph{Journal of Political Philosophy}, 13\penalty0 (1):\penalty0 2--23, 2005.
+
+\bibitem[Estlund(2009)]{estlund2009democratic}
+Estlund, D.~M.
+\newblock \emph{Democratic authority: A philosophical framework}.
+\newblock Princeton University Press, Princeton, NJ, 2009.
+
+\bibitem[Fish et~al.(2024)Fish, G\"{o}lz, Parkes, Procaccia, Rusak, Shapira, and W\"{u}thrich]{fish2023generative}
+Fish, S., G\"{o}lz, P., Parkes, D.~C., Procaccia, A.~D., Rusak, G., Shapira, I., and W\"{u}thrich, M.
+\newblock Generative social choice.
+\newblock In \emph{Proceedings of the 25th ACM Conference on Economics and Computation}, EC '24, pp.\  985, New York, NY, USA, 2024. Association for Computing Machinery.
+\newblock ISBN 9798400707049.
+\newblock \doi{10.1145/3670865.3673547}.
+\newblock URL \url{https://doi.org/10.1145/3670865.3673547}.
+
+\bibitem[Fishkin(2011)]{fishkin2011}
+Fishkin, J.~S.
+\newblock \emph{{When the People Speak: Deliberative Democracy and Public Consultation}}.
+\newblock Oxford University Press, 08 2011.
+\newblock ISBN 9780199604432.
+\newblock \doi{10.1093/acprof:osobl/9780199604432.001.0001}.
+\newblock URL \url{https://doi.org/10.1093/acprof:osobl/9780199604432.001.0001}.
+
+\bibitem[Fishkin et~al.(2010)Fishkin, He, Luskin, and Siu]{Fishkin_He_Luskin_Siu_2010}
+Fishkin, J.~S., He, B., Luskin, R.~C., and Siu, A.
+\newblock Deliberative democracy in an unlikely place: Deliberative polling in china.
+\newblock \emph{British Journal of Political Science}, 40\penalty0 (2):\penalty0 435–448, 2010.
+\newblock \doi{10.1017/S0007123409990330}.
+
+\bibitem[Freeman(1984)]{freeman1984}
+Freeman, R.~E.
+\newblock \emph{Strategic management: {{A}} stakeholder approach}.
+\newblock Pitman, 1984.
+
+\bibitem[Friedman(1970)]{Friedman1970}
+Friedman, M.
+\newblock {The Social Responsibility of Business is to Increase its Profits}.
+\newblock \emph{The New York Times}, September 1970.
+\newblock URL \url{https://www.nytimes.com/1970/09/13/archives/the-social-responsibility-of-business-is-to-increase-its-profits.html}.
+
+\bibitem[Ge et~al.(2024)Ge, Halpern, Micha, Procaccia, Shapira, Vorobeychik, and Wu]{ge2024axioms}
+Ge, L., Halpern, D., Micha, E., Procaccia, A.~D., Shapira, I., Vorobeychik, Y., and Wu, J.
+\newblock Axioms for {{AI Alignment}} from {{Human Feedback}}.
+\newblock In Globerson, A., Mackey, L., Belgrave, D., Fan, A., Paquet, U., Tomczak, J., and Zhang, C. (eds.), \emph{Advances in Neural Information Processing Systems}, volume~37, pp.\  80439--80465. Curran Associates, Inc., 2024.
+\newblock URL \url{https://proceedings.neurips.cc/paper_files/paper/2024/file/9328208f88ec69420031647e6ff97727-Paper-Conference.pdf}.
+
+\bibitem[Goldberg et~al.(2024)Goldberg, Acosta-Navas, Bakker, Beacock, Botvinick, Buch, DiResta, Donthi, Fast, Iyer, Jalan, Konya, Danciu, Landemore, Marwick, Miller, Ovadya, Saltz, Schirch, Shalom, Siddarth, Sieker, Small, Stray, Tang, Tessler, and Zhang]{goldberg2024}
+Goldberg, B., Acosta-Navas, D., Bakker, M., Beacock, I., Botvinick, M., Buch, P., DiResta, R., Donthi, N., Fast, N., Iyer, R., Jalan, Z., Konya, A., Danciu, G.~K., Landemore, H., Marwick, A., Miller, C., Ovadya, A., Saltz, E., Schirch, L., Shalom, D., Siddarth, D., Sieker, F., Small, C., Stray, J., Tang, A., Tessler, M.~H., and Zhang, A.
+\newblock {AI and the Future of Digital Public Squares}, 2024.
+\newblock URL \url{https://arxiv.org/abs/2412.09988}.
+
+\bibitem[Groves et~al.(2023)Groves, Peppin, Strait, and Brennan]{groves2023going}
+Groves, L., Peppin, A., Strait, A., and Brennan, J.
+\newblock Going public: the role of public participation approaches in commercial {{AI}} labs.
+\newblock In \emph{Proceedings of the 2023 ACM Conference on Fairness, Accountability, and Transparency}, pp.\  1162--1173, 2023.
+
+\bibitem[Habermas(1962)]{Habermas1962}
+Habermas, J.
+\newblock \emph{Strukturwandel der {\"O}ffentlichkeit: Untersuchungen zu einer {K}ategorie der b{\"u}rgerlichen {G}esellschaft}.
+\newblock Hermann Luchterhand Verlag, Neuwied, 1962.
+
+\bibitem[Habermas(1989)]{Habermas1989}
+Habermas, J.
+\newblock \emph{The Structural Transformation of the Public Sphere: An Inquiry into a Category of Bourgeois Society}.
+\newblock MIT Press, Cambridge, MA, 1989.
+\newblock Translated by Thomas Burger with the assistance of Frederick Lawrence.
+
+\bibitem[Habermas(1992)]{Habermas1992}
+Habermas, J.
+\newblock \emph{Faktizit{\"a}t und Geltung: Beitr{\"a}ge zur Diskurstheorie des Rechts und des demokratischen Rechtsstaats}.
+\newblock Suhrkamp Verlag, Frankfurt am Main, 1992.
+
+\bibitem[Hawley \& Williams(2000)Hawley and Williams]{hawley2000}
+Hawley, J. and Williams, A.
+\newblock {The Emergence of Universal Owners: Some Implications of Institutional Equity Ownership}.
+\newblock \emph{Challenge}, 43\penalty0 (4):\penalty0 43--61, 2000.
+\newblock ISSN 05775132, 15581489.
+\newblock URL \url{http://www.jstor.org/stable/40722019}.
+
+\bibitem[Himmelreich(2023)]{himmelreich2023against}
+Himmelreich, J.
+\newblock {Against ``Democratizing AI''}.
+\newblock \emph{AI \& Society}, 38\penalty0 (4):\penalty0 1333--1346, 2023.
+
+\bibitem[Huang et~al.(2024)Huang, Siddarth, Lovitt, Liao, Durmus, Tamkin, and Ganguli]{huang2024}
+Huang, S., Siddarth, D., Lovitt, L., Liao, T.~I., Durmus, E., Tamkin, A., and Ganguli, D.
+\newblock {Collective Constitutional AI: Aligning a Language Model with Public Input}.
+\newblock In \emph{Proceedings of the 2024 ACM Conference on Fairness, Accountability, and Transparency}, FAccT '24, pp.\  1395–1417, New York, NY, USA, 2024. Association for Computing Machinery.
+\newblock ISBN 9798400704505.
+\newblock \doi{10.1145/3630106.3658979}.
+\newblock URL \url{https://doi.org/10.1145/3630106.3658979}.
+
+\bibitem[{IAP2 Australasia}(2024)]{iap2australasia}
+{IAP2 Australasia}.
+\newblock {IAP2 Public Participation Spectrum}, 2024.
+\newblock URL \url{https://iap2.org.au/resources/spectrum/}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Involve()]{involve2024}
+Involve.
+\newblock {Involve}, 2024.
+\newblock URL \url{https://www.involve.org.uk/}.
+\newblock Democratic Infrastructure Provider.
+
+\bibitem[Kasirzadeh(2024)]{kasirzadeh2024plurality}
+Kasirzadeh, A.
+\newblock Plurality of {{Value Pluralism}} and {{AI}} value alignment.
+\newblock In \emph{Pluralistic Alignment Workshop at NeurIPS 2024}, 2024.
+
+\bibitem[Kasirzadeh \& Gabriel(2025)Kasirzadeh and Gabriel]{kasirzadeh2025characterizing}
+Kasirzadeh, A. and Gabriel, I.
+\newblock Characterizing {{AI Agents}} for {{Alignment and Governance}}.
+\newblock \emph{arXiv preprint arXiv:2504.21848}, 2025.
+
+\bibitem[Kolt(2025)]{kolt2025governing}
+Kolt, N.
+\newblock Governing {AI} agents.
+\newblock \emph{Notre Dame Law Review, Vol. 101, Forthcoming}, 2025.
+
+\bibitem[Konya et~al.(2023)Konya, Turan, Ovadya, Qui, Masood, Devine, Schirch, Roberts, and Forum]{konya2023}
+Konya, A., Turan, D., Ovadya, A., Qui, L., Masood, D., Devine, F., Schirch, L., Roberts, I., and Forum, D.~A.
+\newblock Deliberative technology for alignment, 2023.
+\newblock URL \url{https://arxiv.org/abs/2312.03893}.
+
+\bibitem[Kremer et~al.(2020)Kremer, Levin, and Snyder]{kremer2020advance}
+Kremer, M., Levin, J., and Snyder, C.~M.
+\newblock Advance market commitments: insights from theory and experience.
+\newblock In \emph{AEA Papers and Proceedings}, volume 110, pp.\  269--273. American Economic Association 2014 Broadway, Suite 305, Nashville, TN 37203, 2020.
+
+\bibitem[Kulveit et~al.(2025)Kulveit, Douglas, Ammann, Turan, Krueger, and Duvenaud]{kulveit2025}
+Kulveit, J., Douglas, R., Ammann, N., Turan, D., Krueger, D., and Duvenaud, D.
+\newblock {Gradual Disempowerment: Systemic Existential Risks from Incremental AI Development}, 2025.
+\newblock URL \url{https://arxiv.org/abs/2501.16946}.
+
+\bibitem[Lafont(2019)]{lafont2019}
+Lafont, C.
+\newblock The democratic ideal of self-government.
+\newblock In \emph{Democracy without Shortcuts: A Participatory Conception of Deliberative Democracy}. Oxford University Press, 12 2019.
+\newblock ISBN 9780198848189.
+\newblock \doi{10.1093/oso/9780198848189.003.0002}.
+\newblock URL \url{https://doi.org/10.1093/oso/9780198848189.003.0002}.
+
+\bibitem[Landemore(2013)]{landemore2013democratic}
+Landemore, H.
+\newblock \emph{Democratic Reason: Politics, Collective Intelligence, and the Rule of the Many}.
+\newblock Princeton University Press, Princeton, NJ, 2013.
+\newblock URL \url{http://www.jstor.org/stable/j.ctt1r2gf0}.
+
+\bibitem[Landemore(2020)]{Landemore2020}
+Landemore, H.
+\newblock \emph{Open Democracy: Reinventing Popular Rule for the Twenty-First Century}.
+\newblock Princeton University Press, Princeton, NJ, 2020.
+
+\bibitem[Landemore(2012)]{landemore2012}
+Landemore, H.~E.
+\newblock Why the {{Many Are Smarter}} than the {{Few}} and {{Why It Matters}}.
+\newblock \emph{Journal of Deliberative Democracy}, 8\penalty0 (1), 2012.
+\newblock ISSN 2634-0488.
+\newblock \doi{10.16997/jdd.129}.
+\newblock URL \url{https://delibdemjournal.org/article/id/401/}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Leibo et~al.(2024)Leibo, Vezhnevets, Diaz, Agapiou, Cunningham, Sunehag, Haas, Koster, Du{\'e}{\~n}ez-Guzm{\'a}n, Isaac, et~al.]{leibo2024theory}
+Leibo, J.~Z., Vezhnevets, A.~S., Diaz, M., Agapiou, J.~P., Cunningham, W.~A., Sunehag, P., Haas, J., Koster, R., Du{\'e}{\~n}ez-Guzm{\'a}n, E.~A., Isaac, W.~S., et~al.
+\newblock A theory of appropriateness with applications to generative artificial intelligence.
+\newblock \emph{arXiv preprint arXiv:2412.19010}, 2024.
+
+\bibitem[Leino et~al.(2022)Leino, Kulha, Set{\"a}l{\"a}, and Ylisalo]{Leino2022ExpertHI}
+Leino, M., Kulha, K., Set{\"a}l{\"a}, M., and Ylisalo, J.
+\newblock Expert hearings in mini-publics: How does the field of expertise influence deliberation and its outcomes?
+\newblock \emph{Policy Sciences}, 55:\penalty0 429--450, 2022.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:251434428}.
+
+\bibitem[Lijphart(2012)]{Lijphart2012}
+Lijphart, A.
+\newblock \emph{{Patterns of Democracy: Government Forms and Performance in Thirty-Six Countries}}.
+\newblock Yale University Press, 2nd edition, 2012.
+
+\bibitem[Lin(2024)]{lin2024democratizing}
+Lin, T.-a.
+\newblock ``democratizing {{AI}}'' and the {{Concern}} of {{Algorithmic Injustice}}.
+\newblock \emph{Philosophy \& Technology}, 37\penalty0 (3):\penalty0 103, 2024.
+
+\bibitem[Lindberg et~al.(2014)Lindberg, Coppedge, Gerring, and Teorell]{lindberg2014}
+Lindberg, S.~I., Coppedge, M., Gerring, J., and Teorell, J.
+\newblock V-{{Dem}}: {{A New Way}} to {{Measure Democracy}}.
+\newblock \emph{Journal of Democracy}, 25\penalty0 (3):\penalty0 159--169, 2014.
+\newblock ISSN 1086-3214.
+\newblock \doi{10.1353/jod.2014.0040}.
+\newblock URL \url{https://muse.jhu.edu/article/549506}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Locke(1887)]{locke1887}
+Locke, J.
+\newblock \emph{Two treatises on civil government}, volume~9.
+\newblock G. Routledge and sons, limited, 1887.
+
+\bibitem[Mahajan et~al.(2023)Mahajan, Lim, Sareen, Kumar, and Panwar]{mahajan2023}
+Mahajan, R., Lim, W.~M., Sareen, M., Kumar, S., and Panwar, R.
+\newblock Stakeholder theory.
+\newblock \emph{Journal of Business Research}, 166:\penalty0 114104, 2023.
+
+\bibitem[MASS LBP()]{mass-lbp2024}
+MASS LBP.
+\newblock {MASS LBP}, 2024.
+\newblock URL \url{https://www.masslbp.com/}.
+\newblock Democratic Infrastructure Provider.
+
+\bibitem[Mattison et~al.(2011)Mattison, Trevitt, and van Ast]{mattison2011universal}
+Mattison, R., Trevitt, M., and van Ast, L.
+\newblock Universal ownership: Why environmental externalities matter to institutional investors, 2011.
+\newblock URL \url{https://www.unepfi.org/fileadmin/documents/universal_ownership_full.pdf}.
+\newblock Research commissioned from Trucost Plc.
+
+\bibitem[{Meta Oversight Board}(2024)]{oversight-board2024}
+{Meta Oversight Board}.
+\newblock {Oversight Board Charter}, 3 2024.
+\newblock URL \url{https://www.oversightboard.com/wp-content/uploads/2024/03/OB_Charter_March_2024.pdf}.
+
+\bibitem[Mill(1966)]{mill1966}
+Mill, J.~S.
+\newblock \emph{On liberty}.
+\newblock Springer, 1966.
+
+\bibitem[Mitchell et~al.(2019)Mitchell, Wu, Zaldivar, Barnes, Vasserman, Hutchinson, Spitzer, Raji, and Gebru]{mitchell}
+Mitchell, M., Wu, S., Zaldivar, A., Barnes, P., Vasserman, L., Hutchinson, B., Spitzer, E., Raji, I.~D., and Gebru, T.
+\newblock Model cards for model reporting.
+\newblock In \emph{Proceedings of the Conference on Fairness, Accountability, and Transparency}, FAT* '19, pp.\  220–229, New York, NY, USA, 2019. Association for Computing Machinery.
+\newblock ISBN 9781450361255.
+\newblock \doi{10.1145/3287560.3287596}.
+\newblock URL \url{https://doi.org/10.1145/3287560.3287596}.
+
+\bibitem[MosaicLab()]{mosaic2024}
+MosaicLab.
+\newblock {MosaicLab}, 2024.
+\newblock URL \url{https://www.mosaiclab.com.au/}.
+\newblock Democratic Infrastructure Provider.
+
+\bibitem[Mouffe(1999)]{mouffe1999}
+Mouffe, C.
+\newblock {Deliberative Democracy or Agonistic Pluralism?}
+\newblock \emph{{Social Research}}, 66\penalty0 (3):\penalty0 745--758, 1999.
+\newblock ISSN 0037783X.
+\newblock URL \url{http://www.jstor.org/stable/40971349}.
+
+\bibitem[Mu et~al.(2024)Mu, Helyar, Heidecke, Achiam, Vallone, Kivlichan, Lin, Beutel, Schulman, and Weng]{mu2024}
+Mu, T., Helyar, A., Heidecke, J., Achiam, J., Vallone, A., Kivlichan, I., Lin, M., Beutel, A., Schulman, J., and Weng, L.
+\newblock {Improving Model Safety Behavior with Rule-Based Rewards}.
+\newblock \emph{OpenAI Blog}, 2024.
+\newblock URL \url{https://openai.com/index/improving-model-safety-behavior-with-rule-based-rewards/}.
+\newblock Preprint.
+
+\bibitem[Nexus()]{nexus2024}
+Nexus.
+\newblock {Nexus Institute}, 2024.
+\newblock URL \url{https://nexusinstitut.de/en/}.
+\newblock Democratic Infrastructure Provider.
+
+\bibitem[OECD(2020)]{oecd2020}
+OECD.
+\newblock \emph{Innovative Citizen Participation and New Democratic Institutions}.
+\newblock OECD iLibrary, 2020.
+\newblock \doi{https://doi.org/10.1787/339306da-en}.
+\newblock URL \url{https://www.oecd-ilibrary.org/content/publication/339306da-en}.
+
+\bibitem[{OpenAI}(2024{\natexlab{a}})]{gpt4-system-card}
+{OpenAI}.
+\newblock {GPT-4 System Card}, 2024{\natexlab{a}}.
+\newblock URL \url{https://cdn.openai.com/papers/gpt-4-system-card.pdf}.
+\newblock Accessed: 2025-05-18.
+
+\bibitem[{OpenAI}(2024{\natexlab{b}})]{openai2024}
+{OpenAI}.
+\newblock {Model Spec}, 2024{\natexlab{b}}.
+\newblock URL \url{https://cdn.openai.com/spec/model-spec-2024-05-08.html}.
+\newblock Accessed: 2025-01-31.
+
+\bibitem[{OpenAI}(2025)]{openai2025}
+{OpenAI}.
+\newblock Sycophancy in gpt-4o: What happened and what we’re doing about it, April 2025.
+\newblock URL \url{https://openai.com/index/sycophancy-in-gpt-4o/}.
+\newblock Accessed: 2025-05-19.
+
+\bibitem[Ouyang et~al.(2022)Ouyang, Wu, Jiang, Almeida, Wainwright, Mishkin, Zhang, Agarwal, Slama, Ray, et~al.]{ouyang2022training}
+Ouyang, L., Wu, J., Jiang, X., Almeida, D., Wainwright, C., Mishkin, P., Zhang, C., Agarwal, S., Slama, K., Ray, A., et~al.
+\newblock Training language models to follow instructions with human feedback.
+\newblock \emph{Advances in neural information processing systems}, 35:\penalty0 27730--27744, 2022.
+
+\bibitem[Ovadya(2023{\natexlab{a}})]{ovadya2023}
+Ovadya, A.
+\newblock Reimagining {{Democracy}} for {{AI}}.
+\newblock \emph{Journal of Democracy}, 34\penalty0 (4):\penalty0 162--170, 2023{\natexlab{a}}.
+\newblock ISSN 1086-3214.
+\newblock \doi{10.1353/jod.2023.a907697}.
+\newblock URL \url{https://muse.jhu.edu/article/907697}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Ovadya(2023{\natexlab{b}})]{ovadya2023a}
+Ovadya, A.
+\newblock {Meta Ran a Giant Experiment in Governance. Now It’s Turning to AI}.
+\newblock \emph{Wired}, 2023{\natexlab{b}}.
+\newblock URL \url{https://www.wired.com/story/meta-ran-a-giant-experiment-in-governance-now-its-turning-to-ai/}.
+
+\bibitem[Ovadya(2023{\natexlab{c}})]{ovadya2023b}
+Ovadya, A.
+\newblock {`Generative CI' through Collective Response Systems}.
+\newblock \emph{arXiv preprint arXiv:2302.00672}, 2023{\natexlab{c}}.
+
+\bibitem[Pettit(1997)]{Pettit1997}
+Pettit, P.
+\newblock \emph{Republicanism: A Theory of Freedom and Government}.
+\newblock Oxford Political Theory. Oxford University Press, Oxford, 1997.
+
+\bibitem[Pettit(2012)]{Pettit2012}
+Pettit, P.
+\newblock \emph{On the People's Terms: A Republican Theory and Model of Democracy}.
+\newblock The Seeley Lectures. Cambridge University Press, Cambridge, 2012.
+
+\bibitem[Project(2023)]{cip2023whitepaper}
+Project, T. C.~I.
+\newblock Solving the transformative technology trilemma through governance r\&d, 2023.
+\newblock URL \url{https://www.cip.org/whitepaper}.
+\newblock Accessed: 2025-05-19.
+
+\bibitem[{Public AI Network}(2024)]{publicainetwork2024}
+{Public AI Network}.
+\newblock Public {{AI}}: Infrastructure for the common good.
+\newblock Technical report, The Public AI Network, 2024.
+\newblock URL \url{https://publicai.network/whitepaper}.
+
+\bibitem[Radu(2019)]{radu2019}
+Radu, R.
+\newblock \emph{{Negotiating Internet Governance}}.
+\newblock Oxford University Press, 2019.
+
+\bibitem[Rafailov et~al.(2024)Rafailov, Sharma, Mitchell, Manning, Ermon, and Finn]{rafailov2024direct}
+Rafailov, R., Sharma, A., Mitchell, E., Manning, C.~D., Ermon, S., and Finn, C.
+\newblock Direct preference optimization: Your language model is secretly a reward model.
+\newblock \emph{Advances in Neural Information Processing Systems}, 36, 2024.
+
+\bibitem[Raghavan(2024)]{raghavan2024}
+Raghavan, P.
+\newblock What happened with gemini image generation, February 2024.
+\newblock URL \url{https://blog.google/products/gemini/gemini-image-generation-issue/}.
+\newblock Accessed: 2025-05-19.
+
+\bibitem[Rahwan(2018)]{rahwan2018}
+Rahwan, I.
+\newblock Society-in-the-loop: programming the algorithmic social contract.
+\newblock \emph{Ethics and Information Technology}, 20\penalty0 (1):\penalty0 5--14, Mar 2018.
+\newblock ISSN 1572-8439.
+\newblock \doi{10.1007/s10676-017-9430-8}.
+\newblock URL \url{https://doi.org/10.1007/s10676-017-9430-8}.
+
+\bibitem[Ramakrishnan et~al.(2024)Ramakrishnan, Rohella, Mimani, Jiwani, and Logeshwaran]{ramakrishnan2024employing}
+Ramakrishnan, R., Rohella, P., Mimani, S., Jiwani, N., and Logeshwaran, J.
+\newblock {Employing AI and ML in Risk Assessment for Lending for Assessing Credit Worthiness}.
+\newblock In \emph{2024 2nd International Conference on Disruptive Technologies (ICDT)}, pp.\  561--566. IEEE, 2024.
+
+\bibitem[Reuel et~al.(2024)Reuel, Bucknall, Casper, Fist, Soder, Aarne, Hammond, Ibrahim, Chan, Wills, Anderljung, Garfinkel, Heim, Trask, Mukobi, Schaeffer, Baker, Hooker, Solaiman, Luccioni, Rajkumar, Mo{\"e}s, Ladish, Guha, Newman, Bengio, South, Pentland, Koyejo, Kochenderfer, and Trager]{reuel2024open}
+Reuel, A., Bucknall, B., Casper, S., Fist, T., Soder, L., Aarne, O., Hammond, L., Ibrahim, L., Chan, A., Wills, P., Anderljung, M., Garfinkel, B., Heim, L., Trask, A., Mukobi, G., Schaeffer, R., Baker, M., Hooker, S., Solaiman, I., Luccioni, A.~S., Rajkumar, N., Mo{\"e}s, N., Ladish, J., Guha, N., Newman, J., Bengio, Y., South, T., Pentland, A., Koyejo, S., Kochenderfer, M.~J., and Trager, R.
+\newblock Open problems in technical ai governance.
+\newblock \emph{arXiv preprint arXiv:2407.14981}, 2024.
+\newblock URL \url{https://taig.stanford.edu}.
+
+\bibitem[Riedl(2019)]{riedl2019human}
+Riedl, M.~O.
+\newblock Human-centered artificial intelligence and machine learning.
+\newblock \emph{Human behavior and emerging technologies}, 1\penalty0 (1):\penalty0 33--36, 2019.
+
+\bibitem[Rousseau(1762)]{rousseau1762}
+Rousseau, J.-J.
+\newblock \emph{Du contract social, ou, Principes du droit politique}, volume~3.
+\newblock Chez Marc Michel Rey, 1762.
+
+\bibitem[Sadok et~al.(2022)Sadok, Sakka, and El~Maknouzi]{sadok2022artificial}
+Sadok, H., Sakka, F., and El~Maknouzi, M. E.~H.
+\newblock Artificial intelligence and bank credit analysis: A review.
+\newblock \emph{Cogent Economics \& Finance}, 10\penalty0 (1):\penalty0 2023262, 2022.
+
+\bibitem[{SAE International}(2021)]{sae2021}
+{SAE International}.
+\newblock {Taxonomy and Definitions for Terms Related to Driving Automation Systems for On-Road Motor Vehicles J3016\_202104}.
+\newblock Technical report, {SAE International}, 2021.
+\newblock URL \url{https://www.sae.org/standards/content/j3016_202104/}.
+\newblock Standards Specification.
+
+\bibitem[Seger et~al.(2023)Seger, Ovadya, Siddarth, Garfinkel, and Dafoe]{seger2023}
+Seger, E., Ovadya, A., Siddarth, D., Garfinkel, B., and Dafoe, A.
+\newblock Democratising ai: Multiple meanings, goals, and methods.
+\newblock In \emph{Proceedings of the 2023 AAAI/ACM Conference on AI, Ethics, and Society}, AIES '23, pp.\  715–722, New York, NY, USA, 2023. Association for Computing Machinery.
+\newblock ISBN 9798400702310.
+\newblock \doi{10.1145/3600211.3604693}.
+\newblock URL \url{https://doi.org/10.1145/3600211.3604693}.
+
+\bibitem[Setälä et~al.(2010)Setälä, Grönlund, and Herne]{setala2010}
+Setälä, M., Grönlund, K., and Herne, K.
+\newblock Citizen deliberation on nuclear power: A comparison of two decision-making methods.
+\newblock \emph{Political Studies}, 58\penalty0 (4):\penalty0 688--714, 2010.
+\newblock \doi{10.1111/j.1467-9248.2010.00822.x}.
+\newblock URL \url{https://doi.org/10.1111/j.1467-9248.2010.00822.x}.
+
+\bibitem[Shneiderman(2020)]{shneiderman2020human}
+Shneiderman, B.
+\newblock Human-centered artificial intelligence: Three fresh ideas.
+\newblock \emph{AIS Transactions on Human-Computer Interaction}, 12\penalty0 (3):\penalty0 109--124, 2020.
+
+\bibitem[Shneiderman(2022)]{shneiderman2022human}
+Shneiderman, B.
+\newblock \emph{{Human-centered AI}}.
+\newblock Oxford University Press, 2022.
+
+\bibitem[Sigfrids et~al.(2023)Sigfrids, Leikas, Salo-P{\"o}ntinen, and Koskimies]{sigfrids2023}
+Sigfrids, A., Leikas, J., Salo-P{\"o}ntinen, H., and Koskimies, E.
+\newblock Human-centricity in ai governance: A systemic approach.
+\newblock \emph{{Frontiers in Artificial Intelligence}}, 6:\penalty0 976887, 2023.
+
+\bibitem[Siththaranjan et~al.(2024)Siththaranjan, Laidlaw, and Hadfield-Menell]{siththaranjan2024dpl}
+Siththaranjan, A., Laidlaw, C., and Hadfield-Menell, D.
+\newblock Distributional preference learning: Understanding and accounting for hidden context in rlhf.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Skaaning \& Hudson(2023)Skaaning and Hudson]{skaaning2023}
+Skaaning, S.-E. and Hudson, A.
+\newblock \emph{The {{Global State}} of {{Democracy Indices Methodology}}: {{Conceptualization}} and {{Measurement Framework}}, {{Version}} 7 (2023)}.
+\newblock {International Institute for Democracy and Electoral Assistance (International IDEA)}, 7 edition, 2023.
+\newblock ISBN 978-91-7671-644-1.
+\newblock \doi{10.31752/idea.2023.38}.
+\newblock URL \url{https://idea.int/sites/default/files/GSOD/global-state-of-democracy-indices-methodology-v7-2023.pdf}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Smith(2009)]{Smith_2009}
+Smith, G.
+\newblock \emph{Realising the goods of democratic institutions}, pp.\  162–193.
+\newblock Theories of Institutional Design. Cambridge University Press, 2009.
+
+\bibitem[Sorensen et~al.(2024)Sorensen, Moore, Fisher, Gordon, Mireshghallah, Rytting, Ye, Jiang, Lu, Dziri, Althoff, and Choi]{sorensen2024}
+Sorensen, T., Moore, J., Fisher, J., Gordon, M., Mireshghallah, N., Rytting, C.~M., Ye, A., Jiang, L., Lu, X., Dziri, N., Althoff, T., and Choi, Y.
+\newblock Position: a roadmap to pluralistic alignment.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine Learning}, ICML'24. JMLR.org, 2024.
+
+\bibitem[Stilgoe(2024)]{stilgoe2024}
+Stilgoe, J.
+\newblock {AI} has a democracy problem. {Citizens'} assemblies can help.
+\newblock \emph{Science}, 385\penalty0 (6711):\penalty0 eadr6713, 2024.
+\newblock \doi{10.1126/science.adr6713}.
+\newblock URL \url{https://www.science.org/doi/abs/10.1126/science.adr6713}.
+
+\bibitem[Summerfield et~al.(2024)Summerfield, Argyle, Bakker, Collins, Durmus, Eloundou, Gabriel, Ganguli, Hackenburg, Hadfield, et~al.]{summerfield2024will}
+Summerfield, C., Argyle, L., Bakker, M., Collins, T., Durmus, E., Eloundou, T., Gabriel, I., Ganguli, D., Hackenburg, K., Hadfield, G., et~al.
+\newblock How will advanced {{AI}} systems impact democracy?
+\newblock \emph{arXiv preprint arXiv:2409.06729}, 2024.
+
+\bibitem[Suresh et~al.(2024)Suresh, Tseng, Young, Gray, Pierson, and Levy]{suresh2024}
+Suresh, H., Tseng, E., Young, M., Gray, M., Pierson, E., and Levy, K.
+\newblock Participation in the age of foundation models.
+\newblock In \emph{Proceedings of the 2024 ACM Conference on Fairness, Accountability, and Transparency}, FAccT '24, pp.\  1609–1621, Rio de Janeiro, Brazil, 2024. Association for Computing Machinery.
+\newblock ISBN 9798400704505.
+\newblock \doi{10.1145/3630106.3658992}.
+\newblock URL \url{https://doi.org/10.1145/3630106.3658992}.
+
+\bibitem[Tessler et~al.(2024)Tessler, Bakker, Jarrett, Sheahan, Chadwick, Koster, Evans, Campbell-Gillingham, Collins, Parkes, et~al.]{tessler2024ai}
+Tessler, M.~H., Bakker, M.~A., Jarrett, D., Sheahan, H., Chadwick, M.~J., Koster, R., Evans, G., Campbell-Gillingham, L., Collins, T., Parkes, D.~C., et~al.
+\newblock {{AI}} can help humans find common ground in democratic deliberation.
+\newblock \emph{Science}, 386\penalty0 (6719):\penalty0 eadq2852, 2024.
+
+\bibitem[{The Forum for Ethical AI}(2019)]{rsa2019}
+{The Forum for Ethical AI}.
+\newblock {Democratising Decisions About Technology: A Toolkit }.
+\newblock Technical report, {The RSA}, 2019.
+\newblock URL \url{https://www.thersa.org/globalassets/reports/2019/democratising-decisions-tech-report.pdf}.
+
+\bibitem[Ugarriza \& Caluwaerts(2014)Ugarriza and Caluwaerts]{ugarriza2014democratic}
+Ugarriza, J.~E. and Caluwaerts, D. (eds.).
+\newblock \emph{Democratic Deliberation in Deeply Divided Societies: From Conflict to Common Ground}.
+\newblock Palgrave Macmillan, Basingstoke, UK, 2014.
+\newblock ISBN 9781137357809.
+
+\bibitem[Urbinati(2006)]{urbinati2006}
+Urbinati, N.
+\newblock \emph{{Representative Democracy: Principles and Genealogy}}.
+\newblock University of Chicago Press, 2006.
+
+\bibitem[{U.S.-China Economic and Security Review Commission}(2024)]{USCC2024}
+{U.S.-China Economic and Security Review Commission}.
+\newblock 2024 annual report, 2024.
+\newblock URL \url{https://www.uscc.gov/sites/default/files/2024-11/2024_Annual_Report_to_Congress.pdf}.
+
+\bibitem[Vincent et~al.(2023)Vincent, Bau, Schwettmann, and Tan]{vincent2023a}
+Vincent, N., Bau, D., Schwettmann, S., and Tan, J.
+\newblock An {{Alternative}} to {{Regulation}}: {{The Case}} for {{Public AI}}.
+\newblock In \emph{Proceedings of the {{NeurIPS}} 2023 {{Workshop}} on {{Regulatable ML}}}, 2023.
+\newblock URL \url{https://openreview.net/forum?id=TFWnViI30j}.
+\newblock Accessed: 2024-09-04.
+
+\bibitem[Warren \& Gastil(2015)Warren and Gastil]{Warren2015CanDM}
+Warren, M.~E. and Gastil, J.
+\newblock Can deliberative minipublics address the cognitive challenges of democratic citizenship?
+\newblock \emph{The Journal of Politics}, 77:\penalty0 562--574, 2015.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:155508734}.
+
+\bibitem[Wong et~al.(2022)Wong, Morgan, Straub, Hashem, and Bright]{wong2022key}
+Wong, J., Morgan, D., Straub, V.~J., Hashem, Y., and Bright, J.
+\newblock Key challenges for the participatory governance of {{AI}} in public administration.
+\newblock \emph{SocArXiv Papers: https://osf.io/preprints/socarxiv/pdcrm}, 2022.
+
+\bibitem[Young(2002)]{young2002}
+Young, I.~M.
+\newblock \emph{Inclusion and democracy}.
+\newblock OUP Oxford, 2002.
+
+\bibitem[Zhang et~al.(2021)Zhang, Lu, and Jin]{zhang2021artificial}
+Zhang, Q., Lu, J., and Jin, Y.
+\newblock Artificial intelligence in recommender systems.
+\newblock \emph{Complex \& Intelligent Systems}, 7\penalty0 (1):\penalty0 439--457, 2021.
+
+\bibitem[Ziewitz \& Brown(2013)Ziewitz and Brown]{ziewitz2013}
+Ziewitz, M. and Brown, I.
+\newblock \emph{A prehistory of internet governance}, chapter~1, pp.\  3--26.
+\newblock Edward Elgar Publishing, Cheltenham, UK, 2013.
+\newblock ISBN 9781849805025.
+\newblock \doi{10.4337/9781849805025.00008}.
+\newblock URL \url{https://www.elgaronline.com/view/edcoll/9781849805025/9781849805025.00008.xml}.
+
+\end{thebibliography}
