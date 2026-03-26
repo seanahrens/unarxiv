@@ -329,7 +329,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
   const [view, setView] = useState<"abstract" | "script">("abstract");
-  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded"; llmProvider: string | null; llmModel: string | null; createdAt: string | null }[]>([]);
+  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded"; llmProvider: string | null; llmModel: string | null; createdAt: string | null; charCount: number }[]>([]);
   const [activeScriptTab, setActiveScriptTab] = useState<string>("base");
   const [scriptLoading, setScriptLoading] = useState(false);
   const scriptsFetched = useRef(false);
@@ -425,9 +425,16 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
     (async () => {
       const tabs: typeof scriptTabs = [];
 
+      // Helper: average of non-null goal scores (0.0–1.0 scale)
+      const avgScore = (v: PaperVersion): number | null => {
+        const scores = [v.score_fidelity, v.score_citations, v.score_header, v.score_figures, v.score_tts].filter((s): s is number => s != null);
+        if (scores.length === 0) return null;
+        return scores.reduce((a, b) => a + b, 0) / scores.length;
+      };
+
       // Fetch base transcript
       const base = await fetchTx(transcriptUrl(paper.id));
-      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null });
+      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null, charCount: base.text.length });
 
       // Fetch premium version transcripts
       try {
@@ -436,15 +443,24 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         for (const v of premium) {
           const tx = await fetchTx(transcriptUrl(paper.id, v.id));
           if (tx) {
-            tabs.push({ key: `v${v.id}`, label: `AI Script (${formatLlmModel(v.llm_model)})`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at });
+            const avg = avgScore(v);
+            const scoreLabel = avg != null ? ` (${(avg * 10).toFixed(1)})` : "";
+            tabs.push({ key: `v${v.id}`, label: `AI Script${scoreLabel}`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at, charCount: tx.text.length });
           }
         }
       } catch {}
 
+      // Sort tabs by completion datetime (base first via epoch 0, then by createdAt)
+      tabs.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt + "Z").getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt + "Z").getTime() : 0;
+        return dateA - dateB;
+      });
       setScriptTabs(tabs);
-      // Default to highest quality (AI) tab if available
-      const aiTab = tabs.find(t => t.type === "upgraded");
-      setActiveScriptTab(aiTab?.key ?? tabs[0]?.key ?? "base");
+      // Default to last (most recent) AI tab if available
+      const aiTabs = tabs.filter(t => t.type === "upgraded");
+      const lastAi = aiTabs[aiTabs.length - 1];
+      setActiveScriptTab(lastAi?.key ?? tabs[0]?.key ?? "base");
       setScriptLoading(false);
     })();
   }, [view, paper]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -623,34 +639,6 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             const active = scriptTabs.find(t => t.key === activeScriptTab) ?? scriptTabs[0];
             return (
               <>
-                {/* Metadata + provenance */}
-                {active && (
-                  <div className="mb-2">
-                    <p className="text-xs text-stone-400">
-                      {(() => {
-                        const parts: string[] = [];
-                        if (active.type === "upgraded") {
-                          const provider = formatLlmProvider(active.llmProvider);
-                          const model = formatLlmModel(active.llmModel);
-                          parts.push(provider ? `${provider} / ${model}` : model);
-                        } else {
-                          parts.push("Programmatic Script");
-                        }
-                        const dateStr = active.createdAt || active.date;
-                        if (dateStr) {
-                          const d = active.createdAt ? new Date(dateStr + "Z") : new Date(dateStr);
-                          if (!isNaN(d.getTime())) {
-                            parts.push(d.toLocaleString("en-US", {
-                              year: "numeric", month: "short", day: "numeric",
-                              hour: "numeric", minute: "2-digit",
-                            }));
-                          }
-                        }
-                        return parts.join(" \u00B7 ");
-                      })()}
-                    </p>
-                  </div>
-                )}
                 {/* Tabs */}
                 {scriptTabs.length > 1 && (
                   <div className="flex gap-1 mb-2 border-b border-stone-200">
@@ -670,6 +658,56 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
                   </div>
                 )}
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
+                  {/* Metadata inside the container */}
+                  {active && (
+                    <div className="mb-4 pb-4 border-b border-stone-200">
+                      <p className="text-xs text-stone-400">
+                        {(() => {
+                          const parts: string[] = [];
+                          if (active.type === "upgraded") {
+                            const provider = formatLlmProvider(active.llmProvider);
+                            const model = formatLlmModel(active.llmModel);
+                            parts.push(provider ? `${provider} / ${model}` : model);
+                          } else {
+                            parts.push("Programmatic Script");
+                          }
+                          const dateStr = active.createdAt || active.date;
+                          if (dateStr) {
+                            const d = active.createdAt ? new Date(dateStr + "Z") : new Date(dateStr);
+                            if (!isNaN(d.getTime())) {
+                              parts.push(d.toLocaleString("en-US", {
+                                year: "numeric", month: "short", day: "numeric",
+                                hour: "numeric", minute: "2-digit",
+                              }));
+                            }
+                          }
+                          const charK = active.charCount < 1000 ? `${active.charCount}` : `${(active.charCount / 1000).toFixed(1)}K`;
+                          parts.push(`${charK} chars`);
+                          return parts.join(" \u00B7 ");
+                        })()}
+                      </p>
+                      {/* Itemized scores */}
+                      {active.type === "upgraded" && (() => {
+                        const vId = parseInt(active.key.slice(1));
+                        const v = paperVersions.find(ver => ver.id === vId);
+                        if (!v) return null;
+                        const scoreItems: { label: string; value: number | null }[] = [
+                          { label: "Fidelity", value: v.score_fidelity },
+                          { label: "Citations", value: v.score_citations },
+                          { label: "Headers", value: v.score_header },
+                          { label: "Figures", value: v.score_figures },
+                          { label: "TTS", value: v.score_tts },
+                        ];
+                        const hasAny = scoreItems.some(s => s.value != null);
+                        if (!hasAny) return null;
+                        return (
+                          <p className="text-xs text-stone-400 mt-1">
+                            {scoreItems.filter(s => s.value != null).map(s => `${s.label}: ${(s.value! * 10).toFixed(1)}`).join(" · ")}
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  )}
                   <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
                     {active?.text ?? "Script not available."}
                   </pre>

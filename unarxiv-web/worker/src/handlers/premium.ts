@@ -10,6 +10,7 @@ import {
   claimPaperForPremium,
   insertNarrationVersion,
   getNarrationVersions,
+  getVersionsWithScores,
   getVersionById,
   updateBestVersionId,
   updateScriptCharCount,
@@ -210,7 +211,7 @@ export async function validateProviderKey(
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-3-5-haiku-20241022",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 1,
           messages: [{ role: "user", content: "hi" }],
         }),
@@ -628,7 +629,7 @@ export async function handleGetVersions(env: Env, id: string, baseUrl: string): 
   const paper = await getPaper(env.DB, id);
   if (!paper) return json({ error: "Paper not found" }, 404);
 
-  const versions = await getNarrationVersions(env.DB, id);
+  const versions = await getVersionsWithScores(env.DB, id);
   return json({
     versions: versions.map((v) => ({
       id: v.id,
@@ -645,6 +646,12 @@ export async function handleGetVersions(env: Env, id: string, baseUrl: string): 
       tts_cost: v.tts_cost,
       created_at: v.created_at,
       is_best: v.id === paper.best_version_id,
+      score_fidelity: v.score_fidelity ?? null,
+      score_citations: v.score_citations ?? null,
+      score_header: v.score_header ?? null,
+      score_figures: v.score_figures ?? null,
+      score_tts: v.score_tts ?? null,
+      score_overall: v.score_overall ?? null,
     })),
     best_version_id: paper.best_version_id,
     is_narrating: paper.status === "narrating",

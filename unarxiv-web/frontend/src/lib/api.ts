@@ -711,6 +711,12 @@ export interface PaperVersion {
   duration_seconds: number | null;
   is_best: boolean;
   created_at: string;
+  score_fidelity: number | null;
+  score_citations: number | null;
+  score_header: number | null;
+  score_figures: number | null;
+  score_tts: number | null;
+  score_overall: number | null;
 }
 
 export interface PaperVersionsResponse {

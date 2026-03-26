@@ -15,6 +15,7 @@ interface TranscriptData {
   llmProvider: string | null;
   llmModel: string | null;
   createdAt: string | null; // raw created_at from version
+  charCount: number; // character count of the transcript text
 }
 
 export default function ScriptPageContent() {
@@ -52,7 +53,8 @@ export default function ScriptPageContent() {
         /^[^\n]+\.\n\n(?:By [^\n]+\.\n\n)?(?:Published on [^\n]+\.\n\n)?/,
         ""
       );
-      return { text: stripped || text, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null, llmProvider: null, llmModel: null, createdAt: null };
+      const finalText = stripped || text;
+      return { text: finalText, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null, llmProvider: null, llmModel: null, createdAt: null, charCount: finalText.length };
     } catch {
       return null;
     }
@@ -104,11 +106,20 @@ export default function ScriptPageContent() {
           }
         }
 
-        setTranscripts(txMap);
+        // Sort entries by createdAt (base first via epoch 0, then by date)
+        const sorted = new Map(
+          [...txMap.entries()].sort(([, a], [, b]) => {
+            const dateA = a.createdAt ? new Date(a.createdAt + "Z").getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt + "Z").getTime() : 0;
+            return dateA - dateB;
+          })
+        );
+        setTranscripts(sorted);
 
-        // Default to highest quality transcript
-        if (premiumVersions.length > 0 && txMap.has(`v${premiumVersions[0].id}`)) {
-          setActiveTab(`v${premiumVersions[0].id}`);
+        // Default to most recent AI transcript
+        const aiKeys = [...sorted.entries()].filter(([, t]) => t.scriptType === "upgraded").map(([k]) => k);
+        if (aiKeys.length > 0) {
+          setActiveTab(aiKeys[aiKeys.length - 1]);
         } else {
           setActiveTab("base");
         }
@@ -137,13 +148,28 @@ export default function ScriptPageContent() {
   const tabKeys = Array.from(transcripts.keys());
   const hasTabs = tabKeys.length > 1;
 
-  // Build tab label
+  // Compute average of non-null goal scores for a version (0.0–1.0 scale, displayed as x10)
+  const avgScore = (v: PaperVersion): number | null => {
+    const scores = [v.score_fidelity, v.score_citations, v.score_header, v.score_figures, v.score_tts].filter((s): s is number => s != null);
+    if (scores.length === 0) return null;
+    return scores.reduce((a, b) => a + b, 0) / scores.length;
+  };
+
+  // Format char count: e.g. 1400 -> "1.4K", 52300 -> "52.3K"
+  const formatCharCount = (n: number): string => {
+    if (n < 1000) return `${n}`;
+    return `${(n / 1000).toFixed(1)}K`;
+  };
+
+  // Build tab label — show avg score (out of 10)
   const tabLabel = (key: string): string => {
     if (key === "base") return "Programmatic Script";
     const vId = parseInt(key.slice(1));
     const v = versions.find(ver => ver.id === vId);
     if (!v) return "AI Script";
-    return `AI Script (${formatLlmModel(v.llm_model)})`;
+    const avg = avgScore(v);
+    if (avg != null) return `AI Script (${(avg * 10).toFixed(1)})`;
+    return "AI Script";
   };
 
   return (
@@ -158,39 +184,6 @@ export default function ScriptPageContent() {
       <h1 className="text-xl font-bold text-stone-900 leading-tight mb-1">
         {paper.title || "Untitled"}
       </h1>
-
-      {/* Metadata line: script type + provenance details */}
-      {activeTranscript && (
-        <div className="mb-3">
-          <p className="text-sm text-stone-400 mb-1">
-            {activeTranscript.scriptType === "upgraded" ? "AI-Generated" : "Programmatically-Generated"} Narration Script
-          </p>
-          <p className="text-xs text-stone-400">
-            {(() => {
-              const parts: string[] = [];
-              if (activeTranscript.scriptType === "upgraded") {
-                const provider = formatLlmProvider(activeTranscript.llmProvider);
-                const model = formatLlmModel(activeTranscript.llmModel);
-                parts.push(provider ? `${provider} / ${model}` : model);
-              } else {
-                parts.push("Regex Parser");
-              }
-              // Use created_at from version if available, otherwise fall back to Last-Modified header date
-              const dateStr = activeTranscript.createdAt || activeTranscript.date;
-              if (dateStr) {
-                const d = activeTranscript.createdAt ? new Date(dateStr + "Z") : new Date(dateStr);
-                if (!isNaN(d.getTime())) {
-                  parts.push(d.toLocaleString("en-US", {
-                    year: "numeric", month: "short", day: "numeric",
-                    hour: "numeric", minute: "2-digit",
-                  }));
-                }
-              }
-              return parts.join(" \u00B7 ");
-            })()}
-          </p>
-        </div>
-      )}
 
       {/* Tabs for switching between script versions */}
       {hasTabs && (
@@ -212,6 +205,59 @@ export default function ScriptPageContent() {
       )}
 
       <div className="bg-stone-50 border border-stone-200 rounded-xl p-6">
+        {/* Metadata inside the container */}
+        {activeTranscript && (
+          <div className="mb-4 pb-4 border-b border-stone-200">
+            <p className="text-sm text-stone-400 mb-1">
+              {activeTranscript.scriptType === "upgraded" ? "AI-Generated" : "Programmatically-Generated"} Narration Script
+            </p>
+            <p className="text-xs text-stone-400">
+              {(() => {
+                const parts: string[] = [];
+                if (activeTranscript.scriptType === "upgraded") {
+                  const provider = formatLlmProvider(activeTranscript.llmProvider);
+                  const model = formatLlmModel(activeTranscript.llmModel);
+                  parts.push(provider ? `${provider} / ${model}` : model);
+                } else {
+                  parts.push("Regex Parser");
+                }
+                // Use created_at from version if available, otherwise fall back to Last-Modified header date
+                const dateStr = activeTranscript.createdAt || activeTranscript.date;
+                if (dateStr) {
+                  const d = activeTranscript.createdAt ? new Date(dateStr + "Z") : new Date(dateStr);
+                  if (!isNaN(d.getTime())) {
+                    parts.push(d.toLocaleString("en-US", {
+                      year: "numeric", month: "short", day: "numeric",
+                      hour: "numeric", minute: "2-digit",
+                    }));
+                  }
+                }
+                parts.push(`${formatCharCount(activeTranscript.charCount)} chars`);
+                return parts.join(" \u00B7 ");
+              })()}
+            </p>
+            {/* Itemized scores */}
+            {activeTranscript.scriptType === "upgraded" && activeTranscript.versionId && (() => {
+              const v = versions.find(ver => ver.id === activeTranscript.versionId);
+              if (!v) return null;
+              const scoreItems: { label: string; value: number | null }[] = [
+                { label: "Fidelity", value: v.score_fidelity },
+                { label: "Citations", value: v.score_citations },
+                { label: "Headers", value: v.score_header },
+                { label: "Figures", value: v.score_figures },
+                { label: "TTS", value: v.score_tts },
+              ];
+              const hasAny = scoreItems.some(s => s.value != null);
+              if (!hasAny) return null;
+              return (
+                <p className="text-xs text-stone-400 mt-1">
+                  {scoreItems.filter(s => s.value != null).map(s => `${s.label}: ${(s.value! * 10).toFixed(1)}`).join(" · ")}
+                </p>
+              );
+            })()}
+          </div>
+        )}
+
         <pre className="whitespace-pre-wrap text-sm text-stone-800 leading-relaxed font-sans">
           {activeTranscript?.text ?? "No transcript available."}
         </pre>
