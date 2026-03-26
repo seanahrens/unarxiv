@@ -21,7 +21,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-from parser_v2.script_builder import finalize_body
+from regex_scripter.script_builder import finalize_body
 
 
 def parse_pdf(

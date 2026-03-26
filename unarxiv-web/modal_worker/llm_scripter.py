@@ -1,4 +1,4 @@
-"""llm_scripting.py — LLM-powered narration script generation from LaTeX source.
+"""llm_scripter.py — LLM-powered narration script generation from LaTeX source.
 
 Generates narration scripts directly from the original LaTeX source, chunked
 by sections for papers of any length (up to 4+ hours):
@@ -9,35 +9,29 @@ by sections for papers of any length (up to 4+ hours):
   - Speaks equations in plain English
   - Covers ALL content — never summarizes
 
-Supported LLM providers:
-  - anthropic : Anthropic Claude (default model: claude-sonnet-4-6)
-  - openai    : OpenAI GPT (default model: gpt-4o)
-  - gemini    : Google Gemini (default model: gemini-1.5-pro)
+Provider classes live in llm_providers.py. Figure handling in figure_utils.py.
+LaTeX artifact stripping in latex_post_process.py.
 """
 
 from __future__ import annotations
 
-import base64
 import os
 import re
-from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
 
-# Image types we can send directly to vision LLMs
-_IMAGE_MEDIA_TYPES: dict[str, str] = {
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".gif": "image/gif",
-    ".webp": "image/webp",
-}
-# Types we can convert to PNG via pymupdf before sending
-_CONVERTIBLE_EXTENSIONS = {".pdf", ".eps"}
+# Re-export provider classes and types for backward compatibility
+from llm_providers import (  # noqa: F401
+    LLMResult,
+    LLMProvider,
+    AnthropicProvider,
+    OpenAIProvider,
+    GeminiProvider,
+    get_provider,
+)
+from figure_utils import build_figure_map, images_for_chunk
+from latex_post_process import strip_latex_artifacts
 
-# Max bytes per image (5 MB — lowest common denominator across all providers)
-_MAX_IMAGE_BYTES = 5 * 1024 * 1024
-# Max images to attach per LLM chunk (keep cost/latency bounded)
-_MAX_IMAGES_PER_CHUNK = 5
+# Backward-compat alias
+get_llm_provider = get_provider
 
 
 # ---------------------------------------------------------------------------
@@ -321,146 +315,6 @@ _MAX_CHUNK_CHARS = 50_000
 
 
 # ---------------------------------------------------------------------------
-# Figure image helpers
-# ---------------------------------------------------------------------------
-
-def _build_figure_map(figures_dir: str) -> dict[str, str]:
-    """Scan an extracted LaTeX source directory and return a mapping of
-    figure reference names → absolute file paths.
-
-    Maps both the bare stem (e.g. "fig1") and relative paths without
-    extension (e.g. "figures/fig1") so that \includegraphics{figures/fig1}
-    and \includegraphics{fig1} both resolve correctly.
-    """
-    figure_map: dict[str, str] = {}
-    all_exts = set(_IMAGE_MEDIA_TYPES) | _CONVERTIBLE_EXTENSIONS
-    for root, _, files in os.walk(figures_dir):
-        for fname in files:
-            stem, ext = os.path.splitext(fname)
-            if ext.lower() not in all_exts:
-                continue
-            full_path = os.path.join(root, fname)
-            # Map by bare stem
-            figure_map[stem] = full_path
-            # Map by relative path without extension (e.g. "figures/fig1")
-            rel_no_ext = os.path.splitext(os.path.relpath(full_path, figures_dir))[0]
-            figure_map[rel_no_ext] = full_path
-    return figure_map
-
-
-def _find_figure_refs(chunk: str) -> list[str]:
-    """Extract figure filename references from \\includegraphics commands in a LaTeX chunk.
-
-    Handles both \includegraphics{name} and \includegraphics[opts]{name}.
-    Returns candidate lookup keys (with and without extension).
-    """
-    pattern = re.compile(r'\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}')
-    refs: list[str] = []
-    seen: set[str] = set()
-    for m in pattern.finditer(chunk):
-        ref = m.group(1).strip()
-        for key in (ref, os.path.splitext(ref)[0]):
-            if key not in seen:
-                refs.append(key)
-                seen.add(key)
-    return refs
-
-
-_MAX_IMAGE_PIXELS = 1568  # Claude's internal processing cap; larger images waste tokens
-
-
-def _downscale_if_needed(data: bytes, ext: str) -> tuple[bytes, str]:
-    """Downscale image if any dimension exceeds _MAX_IMAGE_PIXELS.
-
-    Returns (possibly_modified_bytes, media_type). Converts to PNG if resized.
-    Claude internally tiles images at ~1568px, so anything larger just burns
-    extra tokens with no quality gain.
-    """
-    from PIL import Image
-    import io
-
-    img = Image.open(io.BytesIO(data))
-    w, h = img.size
-    if w <= _MAX_IMAGE_PIXELS and h <= _MAX_IMAGE_PIXELS:
-        return data, _IMAGE_MEDIA_TYPES[ext]
-
-    # Scale down proportionally so the largest dimension = _MAX_IMAGE_PIXELS
-    scale = _MAX_IMAGE_PIXELS / max(w, h)
-    new_w, new_h = int(w * scale), int(h * scale)
-    print(f"[llm] Downscaling image from {w}x{h} to {new_w}x{new_h}")
-    img = img.resize((new_w, new_h), Image.LANCZOS)
-
-    buf = io.BytesIO()
-    # Save as PNG for lossless quality after resize
-    img.save(buf, format="PNG")
-    return buf.getvalue(), "image/png"
-
-
-def _load_image(path: str) -> tuple[str, str] | None:
-    """Load an image file and return (media_type, base64_data), or None on failure.
-
-    Directly encodes PNG/JPG/GIF/WEBP. Converts single-page PDF/EPS to PNG
-    via pymupdf if available. Skips files exceeding _MAX_IMAGE_BYTES.
-    Downscales images exceeding 8000px in any dimension (Anthropic API limit).
-    """
-    ext = os.path.splitext(path)[1].lower()
-
-    if ext in _IMAGE_MEDIA_TYPES:
-        try:
-            with open(path, "rb") as f:
-                data = f.read()
-            if len(data) > _MAX_IMAGE_BYTES:
-                print(f"[llm] Skipping oversized image ({len(data):,} bytes): {path}")
-                return None
-            data, media_type = _downscale_if_needed(data, ext)
-            if len(data) > _MAX_IMAGE_BYTES:
-                print(f"[llm] Skipping image after downscale ({len(data):,} bytes): {path}")
-                return None
-            return media_type, base64.b64encode(data).decode()
-        except Exception as e:
-            print(f"[llm] Could not load image {path}: {e}")
-            return None
-
-    if ext in _CONVERTIBLE_EXTENSIONS:
-        try:
-            import fitz  # pymupdf
-            doc = fitz.open(path)
-            if not doc:
-                return None
-            page = doc[0]
-            # 150 DPI — good quality / size balance for LLM vision
-            pix = page.get_pixmap(matrix=fitz.Matrix(150 / 72, 150 / 72))
-            png_bytes = pix.tobytes("png")
-            doc.close()
-            if len(png_bytes) > _MAX_IMAGE_BYTES:
-                print(f"[llm] Skipping oversized converted image ({len(png_bytes):,} bytes): {path}")
-                return None
-            return "image/png", base64.b64encode(png_bytes).decode()
-        except Exception as e:
-            print(f"[llm] Could not convert {path} to PNG: {e}")
-            return None
-
-    return None
-
-
-def _images_for_chunk(chunk: str, figure_map: dict[str, str]) -> list[tuple[str, str]]:
-    """Return (media_type, base64_data) pairs for figures referenced in a LaTeX chunk."""
-    images: list[tuple[str, str]] = []
-    seen_paths: set[str] = set()
-    for ref in _find_figure_refs(chunk):
-        path = figure_map.get(ref)
-        if not path or path in seen_paths:
-            continue
-        seen_paths.add(path)
-        img = _load_image(path)
-        if img:
-            images.append(img)
-            if len(images) >= _MAX_IMAGES_PER_CHUNK:
-                break
-    return images
-
-
-# ---------------------------------------------------------------------------
 # Section splitting
 # ---------------------------------------------------------------------------
 
@@ -543,70 +397,13 @@ def _strip_latex_preamble(latex: str) -> str:
     return latex
 
 
-def _strip_latex_artifacts(text: str) -> str:
-    """Post-processing safety net: strip LaTeX artifacts from LLM output.
-
-    Handles:
-    - Math delimiters: \\( \\) \\[ \\] and equation environments
-    - Cross-reference artifacts: \\ref{...} and ~ref~ passthrough
-    - Backslash macro names: \\ours, \\benchname, etc.
-    """
-    # Strip \( ... \) inline math delimiters (keep inner content)
-    text = re.sub(r'\\\(|\\\)', '', text)
-    # Strip \[ ... \] display math delimiters (keep inner content)
-    text = re.sub(r'\\\[|\\\]', '', text)
-    # Strip \begin{equation}/\end{equation} and similar environments
-    text = re.sub(
-        r'\\begin\{(?:equation|align|gather|multline|eqnarray)\*?\}',
-        '', text
-    )
-    text = re.sub(
-        r'\\end\{(?:equation|align|gather|multline|eqnarray)\*?\}',
-        '', text
-    )
-    # Strip \ref{...} and related cross-reference commands entirely
-    # (includes \ref, \Cref, \cref, \autoref, \pageref, \eqref)
-    text = re.sub(r'\\[cC]?ref\{[^}]*\}', '', text)
-    text = re.sub(r'\\(?:autoref|pageref|eqref)\{[^}]*\}', '', text)
-    # Strip bare "Cref" or "cref" words that leaked through when LLM stripped the backslash
-    # e.g. "Appendix Cref" or "Table cref" should become "Appendix" / "Table"
-    text = re.sub(r'\b[Cc]ref\b', '', text)
-    # Strip tilde-separated ref artifacts: e.g. ~ref~ablation_qual or Figure~ref~foo
-    text = re.sub(r'~ref~\S*', '', text)
-    # Strip "reference label" artifacts where LLM converted \ref{label} to "reference label"
-    # e.g. "Section reference sec:model" → "Section", "Theorem reference thm:upper" → "Theorem"
-    # Discriminator: LaTeX labels contain colons or underscores; plain English "reference" doesn't.
-    text = re.sub(r'\breference\s+[a-zA-Z][a-zA-Z0-9]*(?:[_:][a-zA-Z0-9_:.-]*)?\b', '', text, flags=re.IGNORECASE)
-    # Strip LLM refusal lines ("I'm sorry, I can't assist...") injected when a chunk has no body.
-    # These appear when the LLM receives a style-only or macro-only chunk and defaults to chatbot mode.
-    text = re.sub(r"(?m)^I(?:'m| am) sorry[^\n]*\.\s*$", '', text, flags=re.IGNORECASE)
-    # Strip backslash macros that leaked through (e.g. \ours, \benchname)
-    # Replace \macroname with just "macroname" (the plain word, better than "backslash macroname")
-    text = re.sub(r'\\([A-Za-z]+)\b', r'\1', text)
-    # Strip section-outro artifacts injected by LLMs (persistent failure mode — 4+ rounds).
-    # Matches standalone lines like "This concludes the Introduction section." or
-    # "That concludes our discussion of the proposed method."
-    # These phrases are almost never present in academic source text as isolated sentences.
-    text = re.sub(
-        r'(?m)^(?:This|That) (?:concludes|ends|wraps up) [^\n.]{0,200}\.\s*$',
-        '',
-        text,
-        flags=re.IGNORECASE,
-    )
-    # Strip Markdown bold/italic artifacts where LLM converted \textbf{X} → **X** or \textit{X} → *X*.
-    # TTS engines speak asterisks literally; these must be stripped before reaching audio output.
-    # **bold text** → bold text
-    text = re.sub(r'\*\*([^*\n]+)\*\*', r'\1', text)
-    # *italic text* → italic text  (only single asterisks; avoid matching * in math/code contexts)
-    text = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'\1', text)
-    # Normalize whitespace after stripping
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    return text.strip()
+# Backward-compat aliases for internal functions now in shared modules
+_strip_latex_artifacts = strip_latex_artifacts
 
 
 def _strip_latex_math_delimiters(text: str) -> str:
-    """Kept for backward compatibility — delegates to _strip_latex_artifacts."""
-    return _strip_latex_artifacts(text)
+    """Kept for backward compatibility — delegates to strip_latex_artifacts."""
+    return strip_latex_artifacts(text)
 
 
 def _split_latex_into_sections(latex: str) -> list[str]:
@@ -686,73 +483,8 @@ def _split_on_paragraphs(text: str, max_chars: int) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Cost tables (USD per token)
+# Chunk-level LLM call helpers
 # ---------------------------------------------------------------------------
-
-# Anthropic models available on this API key (all 4.x family):
-#   claude-sonnet-4-6        : ~$3.00 in / $15.00 out  (30k TPM even at Tier 2)
-#   claude-sonnet-4-5-20250929: ~$3.00 in / $15.00 out  (450k TPM at Tier 2)
-#   claude-haiku-4-5-20251001 : ~$0.80 in / $4.00 out   (450k TPM at Tier 2) ← default
-#
-# Set ANTHROPIC_DEFAULT_MODEL in Modal secrets to switch without a redeploy.
-_ANTHROPIC_COSTS = {
-    "claude-opus-4-6":             (15.00 / 1_000_000, 75.00 / 1_000_000),
-    "claude-sonnet-4-6":           ( 3.00 / 1_000_000, 15.00 / 1_000_000),
-    "claude-sonnet-4-5-20250929":  ( 3.00 / 1_000_000, 15.00 / 1_000_000),
-    "claude-haiku-4-5-20251001":   ( 0.80 / 1_000_000,  4.00 / 1_000_000),
-}
-_ANTHROPIC_COST_IN, _ANTHROPIC_COST_OUT = _ANTHROPIC_COSTS["claude-haiku-4-5-20251001"]  # default
-
-# gpt-4o: $2.50 / MTok input, $10 / MTok output
-_OPENAI_COST_IN = 2.50 / 1_000_000
-_OPENAI_COST_OUT = 10.0 / 1_000_000
-
-# gemini-1.5-pro (≤128 K context): $1.25 / MTok input, $5 / MTok output
-_GEMINI_COST_IN = 1.25 / 1_000_000
-_GEMINI_COST_OUT = 5.0 / 1_000_000
-
-
-# ---------------------------------------------------------------------------
-# Result dataclass
-# ---------------------------------------------------------------------------
-
-@dataclass
-class LLMResult:
-    improved_script: str
-    input_tokens: int
-    output_tokens: int
-    cost_usd: float
-    provider: str
-    model: str
-
-
-# ---------------------------------------------------------------------------
-# Provider protocol + implementations
-# ---------------------------------------------------------------------------
-
-@runtime_checkable
-class LLMProvider(Protocol):
-    def generate_script(
-        self,
-        source: str,
-        is_latex: bool = True,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        """Generate a narration script from source (LaTeX or free-tier script).
-
-        images: optional list of (media_type, base64_data) pairs for figures
-        referenced in this chunk, used for multimodal vision descriptions.
-        """
-        ...
-
-    def improve_script(
-        self,
-        script: str,
-        raw_source: str | None = None,
-        figures_dir: str | None = None,
-    ) -> LLMResult:
-        ...
-
 
 def _compute_max_tokens(chunk_chars: int) -> int:
     """Compute max output tokens for a chunk. Narration is roughly 0.3-0.5x
@@ -762,228 +494,36 @@ def _compute_max_tokens(chunk_chars: int) -> int:
     return max(4096, min(estimated_tokens, 16384))
 
 
-class AnthropicProvider:
-    DEFAULT_MODEL = "claude-haiku-4-5-20251001"   # best cost/quality: 8.6/10 at ~$0.12/paper, 450k TPM
-    HAIKU_MODEL   = "claude-haiku-4-5-20251001"   # same as default
-    SONNET_MODEL  = "claude-sonnet-4-6"          # best quality: 15x cost vs haiku-3, 30k TPM limit
-
-    def __init__(self, api_key: str, model: str | None = None):
-        self._api_key = api_key
-        self._model = model or self.DEFAULT_MODEL
-
-    def _call_llm(
-        self,
-        system: str,
-        user: str,
-        max_tokens: int,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        import time
-        import anthropic  # noqa: PLC0415
-
-        client = anthropic.Anthropic(api_key=self._api_key)
-        # Build user content: images first, then text
-        if images:
-            content: list = [
-                {
-                    "type": "image",
-                    "source": {"type": "base64", "media_type": mt, "data": b64},
-                }
-                for mt, b64 in images
-            ]
-            content.append({"type": "text", "text": user})
-        else:
-            content = user  # type: ignore[assignment]
-
-        # Retry with exponential backoff on rate limit (429) errors.
-        # Keeps retrying for up to 30 minutes before giving up — this means
-        # the paper stays in "narrating" state and no error is surfaced to the
-        # user until we've truly exhausted all options.
-        _RATE_LIMIT_TIMEOUT = 30 * 60  # 30 minutes total
-        _INITIAL_DELAY = 60            # 60s first wait (resets a 1-min token bucket)
-        _MAX_DELAY = 300               # cap individual waits at 5 minutes
-        deadline = time.monotonic() + _RATE_LIMIT_TIMEOUT
-        delay = _INITIAL_DELAY
-        attempt = 0
-        while True:
-            try:
-                message = client.messages.create(
-                    model=self._model,
-                    max_tokens=max_tokens,
-                    system=system,
-                    messages=[{"role": "user", "content": content}],
-                )
-                break
-            except anthropic.RateLimitError as e:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    print(f"[llm] Rate limit: gave up after 30 minutes of retrying.")
-                    raise
-                wait = min(delay, remaining)
-                attempt += 1
-                print(f"[llm] Rate limit hit (attempt {attempt}), "
-                      f"retrying in {wait:.0f}s ({remaining:.0f}s budget remaining): {e}")
-                time.sleep(wait)
-                delay = min(delay * 2, _MAX_DELAY)
-
-        improved = message.content[0].text
-        in_tok = message.usage.input_tokens
-        out_tok = message.usage.output_tokens
-        cost_in, cost_out = _ANTHROPIC_COSTS.get(self._model, (_ANTHROPIC_COST_IN, _ANTHROPIC_COST_OUT))
-        cost = round(in_tok * cost_in + out_tok * cost_out, 6)
-        return LLMResult(improved, in_tok, out_tok, cost, "anthropic", self._model)
-
-    def generate_script(
-        self,
-        source: str,
-        is_latex: bool = True,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
-        user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
-        user_msg = user_tmpl.format(source=source)
-        max_tok = _compute_max_tokens(len(source))
-        return self._call_llm(sys_prompt, user_msg, max_tok, images=images)
-
-    def improve_script(
-        self,
-        script: str,
-        raw_source: str | None = None,
-        figures_dir: str | None = None,
-    ) -> LLMResult:
-        if raw_source:
-            return generate_from_source(self, raw_source, fallback_script=script, figures_dir=figures_dir)
-        return self.generate_script(script, is_latex=False)
+def _generate_chunk(
+    provider: LLMProvider,
+    source: str,
+    is_latex: bool = True,
+    images: list[tuple[str, str]] | None = None,
+) -> LLMResult:
+    """Process a single chunk of source text through the LLM."""
+    sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
+    user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
+    user_msg = user_tmpl.format(source=source)
+    max_tok = _compute_max_tokens(len(source))
+    return provider._call_llm(sys_prompt, user_msg, max_tok, images=images)
 
 
-class OpenAIProvider:
-    DEFAULT_MODEL = "gpt-4o"
+def generate_script(
+    provider: LLMProvider,
+    raw_source: str,
+    fallback_script: str = "",
+    figures_dir: str | None = None,
+) -> LLMResult:
+    """Full LLM rewrite pipeline — the public entry point.
 
-    def __init__(self, api_key: str, model: str | None = None):
-        self._api_key = api_key
-        self._model = model or self.DEFAULT_MODEL
-
-    def _call_llm(
-        self,
-        system: str,
-        user: str,
-        max_tokens: int,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        from openai import OpenAI  # noqa: PLC0415
-
-        client = OpenAI(api_key=self._api_key)
-        # Build user content: images first, then text
-        if images:
-            user_content: list = [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:{mt};base64,{b64}",
-                        "detail": "low",
-                    },
-                }
-                for mt, b64 in images
-            ]
-            user_content.append({"type": "text", "text": user})
-        else:
-            user_content = user  # type: ignore[assignment]
-        response = client.chat.completions.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user_content},
-            ],
-        )
-        improved = response.choices[0].message.content or ""
-        in_tok = response.usage.prompt_tokens
-        out_tok = response.usage.completion_tokens
-        cost = round(in_tok * _OPENAI_COST_IN + out_tok * _OPENAI_COST_OUT, 6)
-        return LLMResult(improved, in_tok, out_tok, cost, "openai", self._model)
-
-    def generate_script(
-        self,
-        source: str,
-        is_latex: bool = True,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
-        user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
-        user_msg = user_tmpl.format(source=source)
-        max_tok = _compute_max_tokens(len(source))
-        return self._call_llm(sys_prompt, user_msg, max_tok, images=images)
-
-    def improve_script(
-        self,
-        script: str,
-        raw_source: str | None = None,
-        figures_dir: str | None = None,
-    ) -> LLMResult:
-        if raw_source:
-            return generate_from_source(self, raw_source, fallback_script=script, figures_dir=figures_dir)
-        return self.generate_script(script, is_latex=False)
-
-
-class GeminiProvider:
-    DEFAULT_MODEL = "gemini-1.5-pro"
-
-    def __init__(self, api_key: str, model: str | None = None):
-        self._api_key = api_key
-        self._model = model or self.DEFAULT_MODEL
-
-    def _call_llm(
-        self,
-        system: str,
-        user: str,
-        _max_tokens: int,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        import google.generativeai as genai  # noqa: PLC0415
-
-        genai.configure(api_key=self._api_key)
-        model = genai.GenerativeModel(self._model, system_instruction=system)
-        if images:
-            parts: list = [
-                {"inline_data": {"mime_type": mt, "data": b64}}
-                for mt, b64 in images
-            ]
-            parts.append(user)
-            response = model.generate_content(parts)
-        else:
-            response = model.generate_content(user)
-        improved = response.text
-        usage = response.usage_metadata
-        in_tok = usage.prompt_token_count
-        out_tok = usage.candidates_token_count
-        cost = round(in_tok * _GEMINI_COST_IN + out_tok * _GEMINI_COST_OUT, 6)
-        return LLMResult(improved, in_tok, out_tok, cost, "gemini", self._model)
-
-    def generate_script(
-        self,
-        source: str,
-        is_latex: bool = True,
-        images: list[tuple[str, str]] | None = None,
-    ) -> LLMResult:
-        sys_prompt = _SYSTEM_PROMPT if is_latex else _SYSTEM_PROMPT_FALLBACK
-        user_tmpl = _USER_TEMPLATE if is_latex else _USER_TEMPLATE_FALLBACK
-        user_msg = user_tmpl.format(source=source)
-        max_tok = _compute_max_tokens(len(source))
-        return self._call_llm(sys_prompt, user_msg, max_tok, images=images)
-
-    def improve_script(
-        self,
-        script: str,
-        raw_source: str | None = None,
-        figures_dir: str | None = None,
-    ) -> LLMResult:
-        if raw_source:
-            return generate_from_source(self, raw_source, fallback_script=script, figures_dir=figures_dir)
-        return self.generate_script(script, is_latex=False)
+    Generates a narration script from LaTeX source (or free-tier script),
+    chunked by sections. This is the function narrate.py calls.
+    """
+    return generate_from_source(provider, raw_source, fallback_script=fallback_script, figures_dir=figures_dir)
 
 
 # ---------------------------------------------------------------------------
-# Section-chunked generation (the core improvement)
+# Section-chunked generation (the core pipeline)
 # ---------------------------------------------------------------------------
 
 def generate_from_source(
@@ -1038,7 +578,7 @@ def generate_from_source(
     # Build figure map once if a figures directory was provided
     figure_map: dict[str, str] = {}
     if figures_dir and is_latex:
-        figure_map = _build_figure_map(figures_dir)
+        figure_map = build_figure_map(figures_dir)
         print(f"[llm] Figure map: {len(figure_map)} entries from {figures_dir}")
 
     # Process each chunk sequentially
@@ -1052,10 +592,10 @@ def generate_from_source(
     for i, chunk in enumerate(chunks):
         # Prepend macro definitions so the LLM can expand \newcommand macros
         chunk_with_macros = macro_prefix + chunk if macro_prefix else chunk
-        images = _images_for_chunk(chunk, figure_map) if figure_map else []
+        images = images_for_chunk(chunk, figure_map) if figure_map else []
         img_note = f", {len(images)} image(s)" if images else ""
         print(f"[llm] Processing chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars{img_note})...")
-        result = provider.generate_script(chunk_with_macros, is_latex=is_latex, images=images or None)
+        result = _generate_chunk(provider, chunk_with_macros, is_latex=is_latex, images=images or None)
         cleaned = _strip_latex_artifacts(result.improved_script)
         if cleaned != result.improved_script:
             print(f"[llm] WARNING: chunk {i + 1} contained LaTeX artifacts — stripped")
@@ -1080,27 +620,3 @@ def generate_from_source(
     )
 
 
-# ---------------------------------------------------------------------------
-# Factory
-# ---------------------------------------------------------------------------
-
-_PROVIDERS: dict[str, type] = {
-    "anthropic": AnthropicProvider,
-    "openai": OpenAIProvider,
-    "gemini": GeminiProvider,
-}
-
-
-def get_llm_provider(
-    provider_name: str,
-    api_key: str,
-    model: str | None = None,
-) -> LLMProvider:
-    """Return an LLMProvider instance for the given provider name."""
-    cls = _PROVIDERS.get(provider_name)
-    if cls is None:
-        raise ValueError(
-            f"Unknown LLM provider: {provider_name!r}. "
-            f"Choose from: {sorted(_PROVIDERS)}"
-        )
-    return cls(api_key=api_key, model=model)

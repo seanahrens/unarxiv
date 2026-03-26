@@ -440,15 +440,15 @@ class FreeTTSProvider:
     def synthesize(self, text: str, on_chunk_done: ChunkProgressCallback | None = None) -> TTSResult:
         import sys  # noqa: PLC0415
         sys.path.insert(0, "/app")
-        import tex_to_audio  # noqa: PLC0415
+        import tts_utils  # noqa: PLC0415
 
-        chunks = tex_to_audio._split_into_chunks(text)
+        chunks = tts_utils._split_into_chunks(text)
         audio_parts: list[bytes] = []
         t0 = time.monotonic()
         with tempfile.TemporaryDirectory() as tmp:
             for i, chunk in enumerate(chunks):
                 path = os.path.join(tmp, f"chunk_{i:03d}.mp3")
-                tex_to_audio._tts_chunk(chunk, path, self._voice)
+                tts_utils._tts_chunk(chunk, path, self._voice)
                 with open(path, "rb") as f:
                     audio_parts.append(f.read())
                 if on_chunk_done:

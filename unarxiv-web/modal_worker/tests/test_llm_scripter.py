@@ -1,4 +1,4 @@
-"""Tests for llm_scripting.py — LLM provider factory and implementations."""
+"""Tests for llm_scripter.py and llm_providers.py — LLM provider factory, _call_llm, and pipeline."""
 import sys
 import types
 from unittest.mock import MagicMock, patch
@@ -8,76 +8,46 @@ import pytest
 # Ensure modal_worker directory is on the path
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 
-from llm_scripting import (
+from llm_providers import (
     LLMResult,
-    _build_user_message,
-    _MAX_SOURCE_CHARS_IN_PROMPT,
-    get_llm_provider,
+    get_provider,
     AnthropicProvider,
     OpenAIProvider,
     GeminiProvider,
 )
+from llm_scripter import _generate_chunk
 
 
 # ─── factory tests ────────────────────────────────────────────────────────────
 
-def test_get_llm_provider_anthropic():
-    p = get_llm_provider("anthropic", api_key="sk-ant-test")
+def test_get_provider_anthropic():
+    p = get_provider("anthropic", api_key="sk-ant-test")
     assert isinstance(p, AnthropicProvider)
 
 
-def test_get_llm_provider_openai():
-    p = get_llm_provider("openai", api_key="sk-test")
+def test_get_provider_openai():
+    p = get_provider("openai", api_key="sk-test")
     assert isinstance(p, OpenAIProvider)
 
 
-def test_get_llm_provider_gemini():
-    p = get_llm_provider("gemini", api_key="AIza-test")
+def test_get_provider_gemini():
+    p = get_provider("gemini", api_key="AIza-test")
     assert isinstance(p, GeminiProvider)
 
 
-def test_get_llm_provider_unknown():
+def test_get_provider_unknown():
     with pytest.raises(ValueError, match="Unknown LLM provider"):
-        get_llm_provider("badprovider", api_key="x")
+        get_provider("badprovider", api_key="x")
 
 
-def test_get_llm_provider_default_model_anthropic():
-    p = get_llm_provider("anthropic", api_key="k")
+def test_get_provider_default_model_anthropic():
+    p = get_provider("anthropic", api_key="k")
     assert p._model == AnthropicProvider.DEFAULT_MODEL
 
 
-def test_get_llm_provider_custom_model():
-    p = get_llm_provider("openai", api_key="k", model="gpt-4-turbo")
+def test_get_provider_custom_model():
+    p = get_provider("openai", api_key="k", model="gpt-4-turbo")
     assert p._model == "gpt-4-turbo"
-
-
-# ─── _build_user_message ────────────────────────────────────────────────────
-
-def test_build_user_message_script_only():
-    msg = _build_user_message("script text", raw_source=None)
-    assert "script text" in msg
-    assert "TeX SOURCE" not in msg
-
-
-def test_build_user_message_with_short_source():
-    msg = _build_user_message("script", raw_source="\\section{Intro}")
-    assert "TeX SOURCE" in msg
-    assert "\\section{Intro}" in msg
-    assert "script" in msg
-
-
-def test_build_user_message_source_too_long():
-    """Sources longer than _MAX_SOURCE_CHARS_IN_PROMPT are dropped."""
-    long_src = "x" * (_MAX_SOURCE_CHARS_IN_PROMPT + 1)
-    msg = _build_user_message("my script", raw_source=long_src)
-    assert "TeX SOURCE" not in msg
-    assert "my script" in msg
-
-
-def test_build_user_message_empty_source():
-    msg = _build_user_message("script", raw_source="")
-    # Empty string is falsy, so should use script-only template
-    assert "TeX SOURCE" not in msg
 
 
 # ─── AnthropicProvider ────────────────────────────────────────────────────────
@@ -97,11 +67,11 @@ def _make_anthropic_mock(text: str, in_tok: int = 100, out_tok: int = 200):
     return mock_anthropic_mod, mock_client
 
 
-def test_anthropic_improve_script():
+def test_anthropic_generate_chunk():
     mock_mod, mock_client = _make_anthropic_mock("Improved script text", in_tok=50, out_tok=150)
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
         provider = AnthropicProvider(api_key="sk-ant-test")
-        result = provider.improve_script("Draft script", raw_source=None)
+        result = _generate_chunk(provider, "Draft script", is_latex=False)
 
     assert isinstance(result, LLMResult)
     assert result.improved_script == "Improved script text"
@@ -112,29 +82,20 @@ def test_anthropic_improve_script():
 
 
 def test_anthropic_cost_calculation():
-    # 1000 in / 1000 out at $3/MTok in, $15/MTok out → $0.003 + $0.015 = $0.018
+    # Haiku default: $0.80/MTok in, $4.00/MTok out
     mock_mod, _ = _make_anthropic_mock("x", in_tok=1_000_000, out_tok=1_000_000)
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
-        result = AnthropicProvider(api_key="k").improve_script("x")
-    assert abs(result.cost_usd - (3.0 + 15.0)) < 0.01
+        result = _generate_chunk(AnthropicProvider(api_key="k"), "x", is_latex=False)
+    assert abs(result.cost_usd - (0.80 + 4.00)) < 0.01
 
 
 def test_anthropic_passes_system_prompt():
     mock_mod, mock_client = _make_anthropic_mock("ok")
     with patch.dict("sys.modules", {"anthropic": mock_mod}):
-        AnthropicProvider(api_key="k").improve_script("script")
+        _generate_chunk(AnthropicProvider(api_key="k"), "script", is_latex=False)
     call_kwargs = mock_client.messages.create.call_args.kwargs
     assert call_kwargs["system"] != ""
     assert "audio" in call_kwargs["system"].lower() or "script" in call_kwargs["system"].lower()
-
-
-def test_anthropic_passes_raw_source_when_provided():
-    mock_mod, mock_client = _make_anthropic_mock("ok")
-    with patch.dict("sys.modules", {"anthropic": mock_mod}):
-        AnthropicProvider(api_key="k").improve_script("script", raw_source="\\section{A}")
-    call_kwargs = mock_client.messages.create.call_args.kwargs
-    user_content = call_kwargs["messages"][0]["content"]
-    assert "TeX SOURCE" in user_content
 
 
 # ─── OpenAIProvider ───────────────────────────────────────────────────────────
@@ -156,10 +117,10 @@ def _make_openai_mock(text: str, in_tok: int = 100, out_tok: int = 200):
     return mock_openai, mock_client
 
 
-def test_openai_improve_script():
+def test_openai_generate_chunk():
     mock_mod, _ = _make_openai_mock("OpenAI improved", in_tok=80, out_tok=120)
     with patch.dict("sys.modules", {"openai": mock_mod}):
-        result = OpenAIProvider(api_key="sk-test").improve_script("draft")
+        result = _generate_chunk(OpenAIProvider(api_key="sk-test"), "draft", is_latex=False)
 
     assert result.improved_script == "OpenAI improved"
     assert result.input_tokens == 80
@@ -172,16 +133,16 @@ def test_openai_cost_calculation():
     # $2.50/MTok in, $10/MTok out
     mock_mod, _ = _make_openai_mock("x", in_tok=1_000_000, out_tok=1_000_000)
     with patch.dict("sys.modules", {"openai": mock_mod}):
-        result = OpenAIProvider(api_key="k").improve_script("x")
+        result = _generate_chunk(OpenAIProvider(api_key="k"), "x", is_latex=False)
     assert abs(result.cost_usd - (2.50 + 10.00)) < 0.01
 
 
 def test_openai_empty_response_fallback():
-    """None response.choices[0].message.content → empty string."""
+    """None response.choices[0].message.content -> empty string."""
     mock_mod, mock_client = _make_openai_mock("ok")
     mock_client.chat.completions.create.return_value.choices[0].message.content = None
     with patch.dict("sys.modules", {"openai": mock_mod}):
-        result = OpenAIProvider(api_key="k").improve_script("x")
+        result = _generate_chunk(OpenAIProvider(api_key="k"), "x", is_latex=False)
     assert result.improved_script == ""
 
 
@@ -202,10 +163,10 @@ def _make_gemini_mock(text: str, in_tok: int = 100, out_tok: int = 200):
     return {"google.generativeai": mock_genai}, mock_model_instance
 
 
-def test_gemini_improve_script():
+def test_gemini_generate_chunk():
     modules, _ = _make_gemini_mock("Gemini improved", in_tok=60, out_tok=180)
     with patch.dict("sys.modules", modules):
-        result = GeminiProvider(api_key="AIza-test").improve_script("draft")
+        result = _generate_chunk(GeminiProvider(api_key="AIza-test"), "draft", is_latex=False)
 
     assert result.improved_script == "Gemini improved"
     assert result.input_tokens == 60
@@ -217,14 +178,14 @@ def test_gemini_cost_calculation():
     # $1.25/MTok in, $5/MTok out
     modules, _ = _make_gemini_mock("x", in_tok=1_000_000, out_tok=1_000_000)
     with patch.dict("sys.modules", modules):
-        result = GeminiProvider(api_key="k").improve_script("x")
+        result = _generate_chunk(GeminiProvider(api_key="k"), "x", is_latex=False)
     assert abs(result.cost_usd - (1.25 + 5.00)) < 0.01
 
 
 def test_gemini_passes_system_instruction():
     modules, mock_model_instance = _make_gemini_mock("ok")
     with patch.dict("sys.modules", modules):
-        GeminiProvider(api_key="k").improve_script("script")
+        _generate_chunk(GeminiProvider(api_key="k"), "script", is_latex=False)
     genai = sys.modules.get("google.generativeai") or modules["google.generativeai"]
     call_kwargs = genai.GenerativeModel.call_args.kwargs
     assert call_kwargs.get("system_instruction") != ""

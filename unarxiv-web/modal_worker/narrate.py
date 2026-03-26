@@ -3,11 +3,11 @@ unarXiv Modal Worker — Narrates arXiv papers and uploads MP3s to R2.
 
 Deploy: modal deploy narrate.py
 
-Parser versions:
-  - parser_v2 (default): Modular next-gen parser with better math, citation,
+Scripter versions:
+  - regex_scripter (default): Modular next-gen scripter with better math, citation,
     and formatting handling. Always uses arXiv-scraped metadata.
-  - tex_to_audio_legacy: Original monolithic parser, kept for A/B comparison.
-    Set PARSER_VERSION=legacy to use it.
+  - legacy_regex_scripter: Original monolithic scripter, kept for A/B comparison.
+    Set SCRIPTER_VERSION=legacy to use it.
 """
 
 import modal
@@ -38,13 +38,13 @@ image = (
     .apt_install("ffmpeg")
     .pip_install("edge-tts>=6.1.0", "mutagen>=1.47.0", "httpx>=0.27.0", "boto3>=1.34.0", "fastapi[standard]", "pymupdf>=1.24.0")
     .run_commands("python -c 'import edge_tts; print(edge_tts.__version__)'")  # verify edge-tts installed
-    # Legacy parser (kept for A/B switching via PARSER_VERSION=legacy)
-    .add_local_file("tex_to_audio_legacy.py", "/app/tex_to_audio_legacy.py", copy=True)
-    # Active parser_v2 modules
-    .add_local_file("tex_to_audio.py", "/app/tex_to_audio.py", copy=True)
+    # Legacy scripter (kept for A/B switching via SCRIPTER_VERSION=legacy)
+    .add_local_file("legacy_regex_scripter.py", "/app/legacy_regex_scripter.py", copy=True)
+    # Active regex_scripter modules
+    .add_local_file("tts_utils.py", "/app/tts_utils.py", copy=True)
     .add_local_file("source_download.py", "/app/source_download.py", copy=True)
     .add_local_file("r2paths.py", "/app/r2paths.py", copy=True)
-    .add_local_dir("parser_v2", "/app/parser_v2", copy=True, ignore=["test_data/*", "__pycache__/*"])
+    .add_local_dir("regex_scripter", "/app/regex_scripter", copy=True, ignore=["test_data/*", "__pycache__/*"])
 )
 
 # Premium image extends the base image with LLM and premium TTS packages.
@@ -58,7 +58,10 @@ premium_image = (
         "elevenlabs>=1.0",
         "Pillow>=10.0",
     )
-    .add_local_file("llm_scripting.py", "/app/llm_scripting.py", copy=True)
+    .add_local_file("llm_scripter.py", "/app/llm_scripter.py", copy=True)
+    .add_local_file("llm_providers.py", "/app/llm_providers.py", copy=True)
+    .add_local_file("figure_utils.py", "/app/figure_utils.py", copy=True)
+    .add_local_file("latex_post_process.py", "/app/latex_post_process.py", copy=True)
     .add_local_file("premium_tts.py", "/app/premium_tts.py", copy=True)
 )
 
@@ -67,7 +70,7 @@ premium_image = (
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
 #   CALLBACK_SECRET (shared with Worker's MODAL_WEBHOOK_SECRET)
 # Optional:
-#   PARSER_VERSION: "v2" (default) or "legacy"
+#   SCRIPTER_VERSION: "v2" (default) or "legacy"
 #
 # All services now use the "unarxiv" naming convention:
 #   Modal secret: "unarxiv-secrets", R2 bucket: "unarxiv-audio",
@@ -125,8 +128,8 @@ def _download_from_r2(r2_key: str) -> str | None:
 
 
 def _use_legacy_parser() -> bool:
-    """Check if the legacy parser should be used instead of parser_v2."""
-    return os.environ.get("PARSER_VERSION", "v2").lower() == "legacy"
+    """Check if the legacy scripter should be used instead of regex_scripter."""
+    return os.environ.get("SCRIPTER_VERSION", "v2").lower() == "legacy"
 
 
 def _categorize_error(exc: Exception, stage: str = "unknown") -> str:
@@ -172,8 +175,8 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
     import sys
     sys.path.insert(0, "/app")
 
-    # tex_to_audio is always loaded for TTS utilities (chunking, voice, tagging)
-    import tex_to_audio
+    # tts_utils is always loaded for TTS utilities (chunking, voice, tagging)
+    import tts_utils
     import httpx
 
     use_legacy = _use_legacy_parser()
@@ -181,7 +184,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
     print(f"Using parser: {parser_label}")
 
     if use_legacy:
-        import tex_to_audio_legacy as legacy_parser
+        import legacy_regex_scripter as legacy_parser
 
     secret = os.environ.get("CALLBACK_SECRET", "")
 
@@ -192,7 +195,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
 
     try:
         speech = None
-        _source_stats: dict = {}  # populated below when using parser_v2
+        _source_stats: dict = {}  # populated below when using regex_scripter
         _stage = "source_download"  # track current pipeline stage for error categorization
 
         if mode == "narration_only":
@@ -221,7 +224,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                     return r
 
             # ---------------------------------------------------------------
-            # parser_v2 processing functions
+            # regex_scripter processing functions
             # ---------------------------------------------------------------
 
             def _save_source(data: bytes, filename: str) -> str:
@@ -232,9 +235,9 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                 return path
 
             def _process_v2(source_path: str, pdf_path: str | None = None) -> str:
-                """Route to parser_v2 with arXiv metadata."""
-                from parser_v2 import parse_paper
-                return parse_paper(
+                """Route to regex_scripter with arXiv metadata."""
+                from regex_scripter import generate_script
+                return generate_script(
                     source_path=source_path,
                     source_priority=source_priority,
                     fallback_title=paper_title,
@@ -304,7 +307,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                         print(f"Downloaded LaTeX source: {len(resp.content)} bytes")
                         with open(tar_path, "wb") as f:
                             f.write(resp.content)
-                        if tex_to_audio.is_pdf_file(tar_path):
+                        if tts_utils.is_pdf_file(tar_path):
                             speech = _process_legacy_pdf(resp.content)
                         else:
                             speech = _process_legacy_latex(resp.content, resp.headers.get("content-type", ""))
@@ -314,13 +317,13 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                     print(f"Downloaded {len(resp.content)} bytes")
                     with open(tar_path, "wb") as f:
                         f.write(resp.content)
-                    if tex_to_audio.is_pdf_file(tar_path):
+                    if tts_utils.is_pdf_file(tar_path):
                         print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
                         speech = _process_legacy_pdf(resp.content)
                     else:
                         speech = _process_legacy_latex(resp.content, resp.headers.get("content-type", ""))
             else:
-                # ---- parser_v2 path (default) ----
+                # ---- regex_scripter path (default) ----
                 from source_download import download_and_parse
                 parsed = download_and_parse(
                     arxiv_id=arxiv_id,
@@ -366,7 +369,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         # Strip the version tag before TTS — it's for the transcript only
         import re
         tts_text = re.sub(r"\n\n%%%+ .+ %%%+\s*$", "", speech)
-        chunks = tex_to_audio._split_into_chunks(tts_text)
+        chunks = tts_utils._split_into_chunks(tts_text)
         total_chunks = len(chunks)
         print(f"Generating audio... ({total_chunks} chunks)")
 
@@ -387,7 +390,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         for i, chunk in enumerate(chunks):
             chunk_path = os.path.join(tmp_dir, f"chunk_{i:03d}.mp3")
             print(f"  chunk {i + 1}/{total_chunks}...")
-            tex_to_audio._tts_chunk(chunk, chunk_path, tex_to_audio.DEFAULT_VOICE)
+            tts_utils._tts_chunk(chunk, chunk_path, tts_utils.DEFAULT_VOICE)
             chunk_paths.append(chunk_path)
 
             # Report progress after every chunk for responsive ETA updates
@@ -426,7 +429,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         # Tag the MP3 — always use arXiv-scraped metadata
         tag_title = paper_title or "Untitled"
         tag_author = paper_author or "Unknown"
-        tex_to_audio.tag_mp3(output_path, title=tag_title, author=tag_author, arxiv_id=arxiv_id)
+        tts_utils.tag_mp3(output_path, title=tag_title, author=tag_author, arxiv_id=arxiv_id)
 
         # Get duration
         duration_seconds = None
@@ -555,7 +558,7 @@ def narrate_paper_premium(
 
     Pipeline:
       1. Download arXiv source (LaTeX-first or PDF-first per source_priority)
-      2. Parse with parser_v2 to produce the free-tier script
+      2. Parse with regex_scripter to produce the free-tier script
       3. LLM rewrite for audio (describe figures, humanise equations, smooth transitions)
       4. Premium TTS synthesis (or free edge-tts when tts_provider="free")
       5. Upload versioned audio + transcript to R2
@@ -572,10 +575,11 @@ def narrate_paper_premium(
     import uuid
     sys.path.insert(0, "/app")
 
-    import tex_to_audio
-    from llm_scripting import get_llm_provider
+    import tts_utils
+    from llm_providers import get_provider
+    from llm_scripter import generate_script as llm_generate_script
     from premium_tts import get_tts_provider, PROVIDER_CONFIGS
-    from parser_v2.script_builder import _build_header, _build_footer, _format_date
+    from regex_scripter.script_builder import _build_header, _build_footer, _format_date
     from source_download import download_and_parse
     import re
 
@@ -604,7 +608,7 @@ def narrate_paper_premium(
                     version_id=version_id)
 
         # ---------------------------------------------------------------
-        # Stage 2: Download + parse source with parser_v2
+        # Stage 2: Download + parse source with regex_scripter
         # ---------------------------------------------------------------
         _stage = "parsing"
         send_status(callback_url, secret, arxiv_id,
@@ -642,7 +646,7 @@ def narrate_paper_premium(
         # Use the provider's chunk config for accurate estimates
         provider_cfg = PROVIDER_CONFIGS.get(tts_provider, PROVIDER_CONFIGS["free"])
         tts_secs_per_chunk = provider_cfg.secs_per_chunk
-        chunks_est = len(tex_to_audio._split_into_chunks(tts_text))
+        chunks_est = len(tts_utils._split_into_chunks(tts_text))
         tts_time_est = chunks_est * tts_secs_per_chunk
 
         llm_result = None
@@ -675,8 +679,8 @@ def narrate_paper_premium(
                 # Model resolution: explicit param from caller → provider class default
                 resolved_model = llm_model or None
                 print(f"Running LLM script generation ({llm_provider}/{resolved_model or 'default'}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
-                provider = get_llm_provider(llm_provider, resolved_llm_key, model=resolved_model)
-                llm_result = provider.improve_script(tts_text, raw_source=raw_source_text, figures_dir=parsed.figures_dir)
+                provider = get_provider(llm_provider, resolved_llm_key, model=resolved_model)
+                llm_result = llm_generate_script(provider, raw_source_text, fallback_script=tts_text, figures_dir=parsed.figures_dir)
                 tts_text = llm_result.improved_script
                 print(
                     f"LLM done: {llm_result.input_tokens} in / {llm_result.output_tokens} out "
@@ -736,7 +740,7 @@ def narrate_paper_premium(
         # Stage 4: Premium TTS synthesis
         # ---------------------------------------------------------------
         _stage = "tts"
-        final_chunks_count = len(tex_to_audio._split_into_chunks(tts_text))
+        final_chunks_count = len(tts_utils._split_into_chunks(tts_text))
         final_tts_eta = final_chunks_count * tts_secs_per_chunk
         send_status(callback_url, secret, arxiv_id,
                     status="narrating",
@@ -801,7 +805,7 @@ def narrate_paper_premium(
             f.write(tts_result.audio_bytes)
 
         # Tag the MP3
-        tex_to_audio.tag_mp3(
+        tts_utils.tag_mp3(
             audio_local,
             title=paper_title or "Untitled",
             author=paper_author or "Unknown",

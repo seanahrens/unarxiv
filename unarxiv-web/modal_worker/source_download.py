@@ -5,7 +5,7 @@ Centralizes the duplicated logic for:
 - HTTP download with retry
 - Source file saving
 - PDF vs LaTeX source detection and routing
-- parser_v2 invocation
+- regex_scripter invocation
 - Raw source text extraction for LLM context
 """
 
@@ -322,7 +322,7 @@ def download_and_parse(
     extract_raw_source: bool = False,
 ) -> ParseResult:
     """
-    Download arXiv source, parse with parser_v2, and return speech text.
+    Download arXiv source, parse with regex_scripter, and return speech text.
 
     Args:
         arxiv_id: The arXiv paper ID.
@@ -338,7 +338,7 @@ def download_and_parse(
     """
     import sys
     sys.path.insert(0, "/app")
-    import tex_to_audio
+    import tts_utils
 
     work_dir = tempfile.mkdtemp()
     pdf_url = f"https://arxiv.org/pdf/{arxiv_id}"
@@ -361,7 +361,7 @@ def download_and_parse(
         try:
             resp = _http_download(tex_source_url)
             lp = _save_to_dir(resp.content, work_dir, f"{arxiv_id}.tar.gz")
-            if tex_to_audio.is_pdf_file(lp):
+            if tts_utils.is_pdf_file(lp):
                 if not pdf_local_path:
                     pdf_local_path = lp
             else:
@@ -379,12 +379,12 @@ def download_and_parse(
         print(f"Downloaded {len(resp.content):,} bytes")
         lp = _save_to_dir(resp.content, work_dir, f"{arxiv_id}.tar.gz")
 
-        if tex_to_audio.is_pdf_file(lp):
+        if tts_utils.is_pdf_file(lp):
             print("Source is a PDF (no LaTeX available). Using PDF pipeline...")
             pdf_local_path = lp
         else:
             latex_path = lp
-            # Also grab PDF as fallback for parser_v2
+            # Also grab PDF as fallback for regex_scripter
             try:
                 pdf_resp = _http_download(pdf_url)
                 pdf_local_path = _save_to_dir(pdf_resp.content, work_dir, f"{arxiv_id}.pdf")
@@ -413,9 +413,9 @@ def download_and_parse(
         if not raw_source_text and pdf_local_path:
             raw_source_text = _extract_raw_pdf_text(pdf_local_path)
 
-    # Parse with parser_v2
-    from parser_v2 import parse_paper
-    speech = parse_paper(
+    # Parse with regex_scripter
+    from regex_scripter import generate_script
+    speech = generate_script(
         source_path=source_path,
         source_priority=source_priority,
         fallback_title=paper_title,
@@ -423,7 +423,7 @@ def download_and_parse(
         fallback_date=paper_date,
         pdf_path=pdf_local_path,
     )
-    print(f"Parser_v2 script: {len(speech):,} chars")
+    print(f"Regex scripter output: {len(speech):,} chars")
 
     # Extract title from the parser output (first line of the header)
     first_line = speech.split("\n", 1)[0].rstrip(".").strip() if speech else ""

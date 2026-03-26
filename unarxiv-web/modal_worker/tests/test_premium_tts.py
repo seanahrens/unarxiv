@@ -16,11 +16,6 @@ from premium_tts import (
     AmazonPollyProvider,
     AzureSpeechProvider,
     FreeTTSProvider,
-    _ELEVENLABS_CHUNK_MAX,
-    _OPENAI_TTS_CHUNK_MAX,
-    _GOOGLE_TTS_CHUNK_MAX,
-    _POLLY_CHUNK_MAX,
-    _AZURE_CHUNK_MAX,
 )
 
 
@@ -386,7 +381,7 @@ def test_free_tts_provider_has_zero_cost():
 
     mock_tex_to_audio._tts_chunk.side_effect = fake_tts_chunk
 
-    with patch.dict("sys.modules", {"tex_to_audio": mock_tex_to_audio}), \
+    with patch.dict("sys.modules", {"tts_utils": mock_tex_to_audio}), \
          patch("premium_tts._concatenate_mp3_bytes", side_effect=_mock_concatenate), \
          patch("premium_tts._mp3_duration", return_value=5.0):
         result = FreeTTSProvider().synthesize("test text")

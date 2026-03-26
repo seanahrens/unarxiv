@@ -21,9 +21,9 @@ import re
 import tarfile
 from typing import Optional
 
-from parser_v2.math_to_speech import math_to_speech, inline_math_to_speech
-from parser_v2.latex_accents import latex_accents_to_unicode, GREEK_TO_ENGLISH
-from parser_v2.script_builder import finalize_body
+from regex_scripter.math_to_speech import math_to_speech, inline_math_to_speech
+from regex_scripter.latex_accents import latex_accents_to_unicode, GREEK_TO_ENGLISH
+from regex_scripter.script_builder import finalize_body
 
 
 # ---------------------------------------------------------------------------

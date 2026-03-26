@@ -10,7 +10,7 @@ import tarfile
 from typing import Optional
 
 
-def parse_paper(
+def generate_script(
     source_path: str,
     source_priority: str = "latex",
     fallback_title: str = "",
@@ -55,7 +55,7 @@ def parse_paper(
                 return _try_pdf(path, fallback_title, fallback_authors, fallback_date)
         except Exception as e:
             last_error = e
-            print(f"  parser_v2: {parser_type} parser failed: {e}")
+            print(f"  regex_scripter: {parser_type} parser failed: {e}")
             continue
 
     raise RuntimeError(
@@ -70,8 +70,8 @@ def _try_latex(
     date: str,
 ) -> str:
     """Attempt LaTeX parsing from a tar/gz or .tex file."""
-    from parser_v2.latex_parser import parse_latex_tar, parse_latex_file
-    from parser_v2.script_builder import build_script
+    from regex_scripter.latex_parser import parse_latex_tar, parse_latex_file
+    from regex_scripter.script_builder import build_script
 
     ext = os.path.splitext(path)[1].lower()
     if ext in (".tar", ".gz", ".tgz"):
@@ -103,8 +103,8 @@ def _try_pdf(
     date: str,
 ) -> str:
     """Attempt PDF parsing."""
-    from parser_v2.pdf_parser import parse_pdf
-    from parser_v2.script_builder import build_script
+    from regex_scripter.pdf_parser import parse_pdf
+    from regex_scripter.script_builder import build_script
 
     body = parse_pdf(path, title=title, authors=authors)
     return build_script(body, title, authors, date, source_type="PDF")

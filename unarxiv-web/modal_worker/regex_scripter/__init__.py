@@ -1,14 +1,14 @@
 """
-parser_v2 — Next-generation arXiv paper → TTS script parser.
+regex_scripter — Deterministic regex-based arXiv paper → TTS script generator.
 
 Two independent parsers:
   - latex_parser: Parses LaTeX source into narration-ready plaintext
   - pdf_parser:   Parses PDF files into narration-ready plaintext
 
 Usage:
-    from parser_v2 import parse_paper
+    from regex_scripter import generate_script
 
-    script = parse_paper(
+    script = generate_script(
         source_path="paper.tar",   # .tar/.gz or .pdf
         source_priority="latex",   # "latex" or "pdf"
         fallback_title="...",
@@ -17,6 +17,6 @@ Usage:
     )
 """
 
-from parser_v2.orchestrator import parse_paper
+from regex_scripter.orchestrator import generate_script
 
-__all__ = ["parse_paper"]
+__all__ = ["generate_script"]
