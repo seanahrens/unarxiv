@@ -23,7 +23,7 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 - R2 bucket: `unarxiv-audio` (audio + transcripts)
 - Domain: `unarxiv.org` (frontend), `api.unarxiv.org` (worker API)
 - `wrangler` is invoked via `npx wrangler` (install with `npm install -g wrangler` or use local devDep)
-- Admin password stored as Worker secret (`ADMIN_PASSWORD`)
+- Admin password stored as Worker secret (`ADMIN_PASSWORD`); local copy in `unarxiv-web/worker/.prod.vars` (gitignored) for CLI/API use
 - Rate limits: 24/day/IP (default, set via `PER_IP_DAILY_LIMIT`); `DAILY_GLOBAL_LIMIT` env var exists but is not currently enforced in code
 
 ### Service Names

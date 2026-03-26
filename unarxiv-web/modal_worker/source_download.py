@@ -137,11 +137,31 @@ def _collect_source_stats(latex_path: str, work_dir: str) -> tuple[int, int, int
     return tar_bytes, latex_char_count, figure_count
 
 
-def _find_main_tex(extract_dir: str) -> str | None:
-    """Find the main .tex file in a LaTeX archive (the one with \documentclass).
+def _tex_body_length(path: str) -> int:
+    """Return char count of the body between \\begin{document} and \\end{document}.
 
-    Checks root-level files first (most common), then searches subdirectories.
-    Returns the absolute path or None if not found.
+    Strips comments and whitespace to measure real content. Returns 0 if the
+    file can't be read or has no document body.
+    """
+    import re
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            src = fh.read()
+    except Exception:
+        return 0
+    m = re.search(r'\\begin\{document\}(.*?)\\end\{document\}', src, re.DOTALL)
+    if not m:
+        return 0
+    body = re.sub(r'%[^\n]*', '', m.group(1))  # strip comments
+    return len(body.strip())
+
+
+def _find_main_tex(extract_dir: str) -> str | None:
+    """Find the main .tex file in a LaTeX archive (the one with \\documentclass).
+
+    Among candidates with \\documentclass, picks the one with the most body
+    content (chars between \\begin{document} and \\end{document}) to avoid
+    selecting empty stubs like a bare main.tex that shadows the real paper.
     """
     import re
     candidates: list[str] = []
@@ -150,28 +170,33 @@ def _find_main_tex(extract_dir: str) -> str | None:
             if fname.endswith(".tex"):
                 candidates.append(os.path.join(root, fname))
 
-    # Prefer files at the root level with \documentclass
-    root_files = [p for p in candidates if os.path.dirname(p) == extract_dir]
-    for path in root_files:
-        try:
-            with open(path, encoding="utf-8", errors="replace") as fh:
-                head = fh.read(4096)
+    def _score_candidates(paths: list[str]) -> str | None:
+        """Return the best \\documentclass file from paths, by body length."""
+        scored = []
+        for path in paths:
+            try:
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    head = fh.read(4096)
+            except Exception:
+                continue
             if re.search(r'\\documentclass', head):
-                return path
-        except Exception:
-            pass
+                scored.append((path, _tex_body_length(path)))
+        if not scored:
+            return None
+        scored.sort(key=lambda t: t[1], reverse=True)
+        return scored[0][0]
 
-    # Fall back to any file anywhere with \documentclass
-    for path in candidates:
-        if path in root_files:
-            continue
-        try:
-            with open(path, encoding="utf-8", errors="replace") as fh:
-                head = fh.read(4096)
-            if re.search(r'\\documentclass', head):
-                return path
-        except Exception:
-            pass
+    # Prefer root-level files
+    root_files = [p for p in candidates if os.path.dirname(p) == extract_dir]
+    best = _score_candidates(root_files)
+    if best:
+        return best
+
+    # Fall back to subdirectory files
+    sub_files = [p for p in candidates if p not in root_files]
+    best = _score_candidates(sub_files)
+    if best:
+        return best
 
     # Last resort: return main.tex or first .tex file at root level
     for name in ("main.tex", "paper.tex", "manuscript.tex"):

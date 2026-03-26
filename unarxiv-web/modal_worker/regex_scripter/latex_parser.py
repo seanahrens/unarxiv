@@ -161,17 +161,13 @@ def _read_latex_from_tar(tar_path: str) -> str:
 
 def _find_entry_tex(tf, members: dict, read_member) -> object:
     """Locate the root .tex file using priority rules:
-    1. main.tex (shallowest depth)
-    2. Any .tex with \\documentclass + \\begin{document} (prefer those with \\title)
+    1. Any .tex with \\documentclass + \\begin{document}, ranked by body length
+       (avoids empty stubs like a bare main.tex that shadows the real paper)
+    2. main.tex as last resort if no \\documentclass files found
     """
     tex_members = [m for m in members.values() if m.name.lower().endswith(".tex")]
 
-    # Priority 1: main.tex
-    mains = [m for m in tex_members if os.path.basename(m.name).lower() == "main.tex"]
-    if mains:
-        return min(mains, key=lambda m: m.name.count("/"))
-
-    # Priority 2: .tex with full document structure
+    # Find all files with full document structure, rank by body content length
     roots = []
     for m in tex_members:
         try:
@@ -179,13 +175,21 @@ def _find_entry_tex(tf, members: dict, read_member) -> object:
         except Exception:
             continue
         if r"\documentclass" in src and r"\begin{document}" in src:
-            has_title = -1 if r"\title{" in src else 0
-            roots.append((has_title, m.name.count("/"), m))
+            body_match = re.search(
+                r'\\begin\{document\}(.*?)\\end\{document\}', src, re.DOTALL
+            )
+            body_len = len(body_match.group(1).strip()) if body_match else 0
+            roots.append((-body_len, m.name.count("/"), m))
 
     if roots:
         return min(roots)[2]
 
-    raise FileNotFoundError(f"No root .tex file found in archive")
+    # Fallback: main.tex by name even without \documentclass
+    mains = [m for m in tex_members if os.path.basename(m.name).lower() == "main.tex"]
+    if mains:
+        return min(mains, key=lambda m: m.name.count("/"))
+
+    raise FileNotFoundError("No root .tex file found in archive")
 
 
 # ---------------------------------------------------------------------------

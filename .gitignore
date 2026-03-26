@@ -15,6 +15,7 @@ next-env.d.ts
 .env.local
 .env*.local
 .dev.vars
+.prod.vars
 .wrangler/
 wrangler.production.toml
 
