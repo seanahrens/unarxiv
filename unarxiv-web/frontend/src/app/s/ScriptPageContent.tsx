@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { fetchPaper, transcriptUrl, getPaperVersions, type Paper, type PaperVersion } from "@/lib/api";
-import { getTierFromProvider } from "@/lib/voiceTiers";
-import { getUpgradedVersions } from "@/lib/versionUtils";
+import { getUpgradedVersions, formatLlmModel, formatLlmProvider } from "@/lib/versionUtils";
 import { ScriptPageSkeleton } from "@/components/Skeleton";
 
 interface TranscriptData {
@@ -13,6 +12,9 @@ interface TranscriptData {
   date: string | null; // formatted date+time in user's local timezone
   scriptType: "base" | "upgraded";
   versionId: number | null;
+  llmProvider: string | null;
+  llmModel: string | null;
+  createdAt: string | null; // raw created_at from version
 }
 
 export default function ScriptPageContent() {
@@ -50,7 +52,7 @@ export default function ScriptPageContent() {
         /^[^\n]+\.\n\n(?:By [^\n]+\.\n\n)?(?:Published on [^\n]+\.\n\n)?/,
         ""
       );
-      return { text: stripped || text, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null };
+      return { text: stripped || text, date, scriptType: versionId ? "upgraded" : "base", versionId: versionId ?? null, llmProvider: null, llmModel: null, createdAt: null };
     } catch {
       return null;
     }
@@ -92,9 +94,13 @@ export default function ScriptPageContent() {
         for (const v of premiumVersions) {
           const tx = await fetchTranscript(id, v.id);
           if (tx) {
-            tx.scriptType = "upgraded";
-            const tier = getTierFromProvider(v.tts_provider);
-            txMap.set(`v${v.id}`, { ...tx, scriptType: "upgraded" });
+            txMap.set(`v${v.id}`, {
+              ...tx,
+              scriptType: "upgraded",
+              llmProvider: v.llm_provider,
+              llmModel: v.llm_model,
+              createdAt: v.created_at,
+            });
           }
         }
 
@@ -137,7 +143,7 @@ export default function ScriptPageContent() {
     const vId = parseInt(key.slice(1));
     const v = versions.find(ver => ver.id === vId);
     if (!v) return "AI Script";
-    return "AI Script";
+    return `AI Script (${formatLlmModel(v.llm_model)})`;
   };
 
   return (
@@ -153,17 +159,36 @@ export default function ScriptPageContent() {
         {paper.title || "Untitled"}
       </h1>
 
-      {/* Metadata line: script type + date, top right above script */}
+      {/* Metadata line: script type + provenance details */}
       {activeTranscript && (
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm text-stone-400">
+        <div className="mb-3">
+          <p className="text-sm text-stone-400 mb-1">
             {activeTranscript.scriptType === "upgraded" ? "AI-Generated" : "Programmatically-Generated"} Narration Script
           </p>
-          {activeTranscript.date && (
-            <p className="text-xs text-stone-400">
-              {activeTranscript.date}
-            </p>
-          )}
+          <p className="text-xs text-stone-400">
+            {(() => {
+              const parts: string[] = [];
+              if (activeTranscript.scriptType === "upgraded") {
+                const provider = formatLlmProvider(activeTranscript.llmProvider);
+                const model = formatLlmModel(activeTranscript.llmModel);
+                parts.push(provider ? `${provider} / ${model}` : model);
+              } else {
+                parts.push("Regex Parser");
+              }
+              // Use created_at from version if available, otherwise fall back to Last-Modified header date
+              const dateStr = activeTranscript.createdAt || activeTranscript.date;
+              if (dateStr) {
+                const d = activeTranscript.createdAt ? new Date(dateStr + "Z") : new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                  parts.push(d.toLocaleString("en-US", {
+                    year: "numeric", month: "short", day: "numeric",
+                    hour: "numeric", minute: "2-digit",
+                  }));
+                }
+              }
+              return parts.join(" \u00B7 ");
+            })()}
+          </p>
         </div>
       )}
 

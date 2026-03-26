@@ -56,6 +56,7 @@ premium_image = (
         "openai>=1.40",
         "google-generativeai>=0.8",
         "elevenlabs>=1.0",
+        "Pillow>=10.0",
     )
     .add_local_file("llm_scripting.py", "/app/llm_scripting.py", copy=True)
     .add_local_file("premium_tts.py", "/app/premium_tts.py", copy=True)
@@ -128,6 +129,30 @@ def _use_legacy_parser() -> bool:
     return os.environ.get("PARSER_VERSION", "v2").lower() == "legacy"
 
 
+def _categorize_error(exc: Exception, stage: str = "unknown") -> str:
+    """Map an exception to a structured error category.
+
+    Categories: source_download, parsing, llm, rate_limit, image_processing,
+    tts, upload, timeout, unknown.
+    """
+    msg = str(exc).lower()
+
+    # Rate limit errors from LLM/TTS providers
+    if "429" in msg or "rate limit" in msg or "rate_limit" in msg or "too many requests" in msg:
+        return "rate_limit"
+
+    # Image processing errors (e.g. PIL dimension issues)
+    if "image" in msg and ("decompression" in msg or "dimension" in msg or "pixel" in msg or "exceed" in msg):
+        return "image_processing"
+
+    # Timeout
+    if isinstance(exc, TimeoutError) or "timeout" in msg or "timed out" in msg:
+        return "timeout"
+
+    # Fall back to the stage if known
+    return stage
+
+
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("unarxiv-secrets")],
@@ -168,6 +193,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
     try:
         speech = None
         _source_stats: dict = {}  # populated below when using parser_v2
+        _stage = "source_download"  # track current pipeline stage for error categorization
 
         if mode == "narration_only":
             # --- Download existing transcript from R2 ---
@@ -311,6 +337,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
                     figure_count=parsed.figure_count,
                 )
 
+            _stage = "parsing"
             print(f"Generated speech text ({parser_label}): {len(speech):,} chars")
 
             # Save transcript to R2
@@ -335,6 +362,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             return
 
         # --- Generate audio (full + narration_only modes) ---
+        _stage = "tts"
         # Strip the version tag before TTS — it's for the transcript only
         import re
         tts_text = re.sub(r"\n\n%%%+ .+ %%%+\s*$", "", speech)
@@ -413,6 +441,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         print(f"Audio generated: {file_size / (1024*1024):.1f} MB, {duration_seconds}s")
 
         # --- Upload to R2 ---
+        _stage = "upload"
         r2_key = versioned_audio_key(arxiv_id, version_id)
         print(f"Uploading to R2: {r2_key}")
         upload_to_r2(output_path, r2_key)
@@ -434,11 +463,13 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
         print(f"Done: {arxiv_id}")
 
     except Exception as e:
-        print(f"Error processing {arxiv_id}: {e}")
+        error_category = _categorize_error(e, _stage)
+        print(f"Error processing {arxiv_id} (stage={_stage}, category={error_category}): {e}")
         send_status(
             callback_url, secret, arxiv_id,
             status="failed",
             error_message=str(e)[:500],
+            error_category=error_category,
             narration_tier="base",
         )
         raise
@@ -502,6 +533,7 @@ def trigger_narration(request: dict):
     secrets=[modal.Secret.from_name("unarxiv-secrets")],
     timeout=7200,  # 2 hours max (LLM + premium TTS can both be slow)
     retries=0,
+    max_containers=4,  # max simultaneous LLM narrations; extras queue automatically
 )
 def narrate_paper_premium(
     arxiv_id: str,
@@ -513,6 +545,7 @@ def narrate_paper_premium(
     source_priority: str = "latex",
     llm_provider: str = "anthropic",
     llm_api_key: str = "",
+    llm_model: str = "",
     tts_provider: str = "elevenlabs",
     tts_api_key: str = "",
     version_id: str = "",
@@ -560,6 +593,7 @@ def narrate_paper_premium(
     transcript_r2_key = f"transcripts/{arxiv_id}/v{version_id}.txt"
 
     parsed = None  # initialised here so the finally block can always reference it
+    _stage = "source_download"  # track current pipeline stage for error categorization
     try:
         # ---------------------------------------------------------------
         # Stage 1: Send initial status
@@ -572,6 +606,7 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 2: Download + parse source with parser_v2
         # ---------------------------------------------------------------
+        _stage = "parsing"
         send_status(callback_url, secret, arxiv_id,
                     status="narrating",
                     progress_detail="Parsing source...",
@@ -589,6 +624,11 @@ def narrate_paper_premium(
         speech = parsed.speech_text
         raw_source_text = parsed.raw_source_text
         work_dir = parsed.work_dir
+
+        # Use parser-extracted title as fallback when caller didn't pass one
+        if not paper_title and parsed.extracted_title:
+            paper_title = parsed.extracted_title
+            print(f"Using parser-extracted title: {paper_title}")
         print(f"Free-tier script: {len(speech):,} chars")
 
         # Strip version tag before passing to LLM / TTS
@@ -597,6 +637,7 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 3: LLM script improvement (skipped if existing_script provided)
         # ---------------------------------------------------------------
+        _stage = "llm"
         # Estimate total remaining time: LLM + TTS
         # Use the provider's chunk config for accurate estimates
         provider_cfg = PROVIDER_CONFIGS.get(tts_provider, PROVIDER_CONFIGS["free"])
@@ -614,27 +655,35 @@ def narrate_paper_premium(
                         progress_detail="Script ready, synthesising audio...",
                         eta_seconds=tts_time_est,
                         version_id=version_id)
-        elif llm_api_key:
-            # Estimate LLM time: ~1 token per 4 chars output, ~60 tokens/sec throughput
-            llm_output_tokens_est = len(tts_text) / 4
-            llm_time_est = max(20, int(llm_output_tokens_est / 60))
-            total_est = llm_time_est + tts_time_est
-            send_status(callback_url, secret, arxiv_id,
-                        status="narrating",
-                        progress_detail="Improving script with LLM...",
-                        eta_seconds=total_est,
-                        version_id=version_id)
-            has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
-            print(f"Running LLM script generation ({llm_provider}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
-            provider = get_llm_provider(llm_provider, llm_api_key)
-            llm_result = provider.improve_script(tts_text, raw_source=raw_source_text, figures_dir=parsed.figures_dir)
-            tts_text = llm_result.improved_script
-            print(
-                f"LLM done: {llm_result.input_tokens} in / {llm_result.output_tokens} out "
-                f"tokens, ${llm_result.cost_usd:.4f}"
-            )
         else:
-            print("No LLM api_key provided — skipping LLM improvement")
+            # Resolve API key: caller-supplied key takes priority; fall back to
+            # provider-specific env var stored in the Modal "unarxiv-secrets" secret.
+            resolved_llm_key = llm_api_key or os.environ.get(
+                f"{llm_provider.upper()}_API_KEY", ""
+            )
+            if resolved_llm_key:
+                # Estimate LLM time: ~1 token per 4 chars output, ~60 tokens/sec throughput
+                llm_output_tokens_est = len(tts_text) / 4
+                llm_time_est = max(20, int(llm_output_tokens_est / 60))
+                total_est = llm_time_est + tts_time_est
+                send_status(callback_url, secret, arxiv_id,
+                            status="narrating",
+                            progress_detail="Improving script with LLM...",
+                            eta_seconds=total_est,
+                            version_id=version_id)
+                has_latex = raw_source_text and ("\\section" in raw_source_text or "\\begin{document}" in raw_source_text)
+                # Model resolution: explicit param from caller → provider class default
+                resolved_model = llm_model or None
+                print(f"Running LLM script generation ({llm_provider}/{resolved_model or 'default'}, {'from LaTeX' if has_latex else 'from free-tier script'})...")
+                provider = get_llm_provider(llm_provider, resolved_llm_key, model=resolved_model)
+                llm_result = provider.improve_script(tts_text, raw_source=raw_source_text, figures_dir=parsed.figures_dir)
+                tts_text = llm_result.improved_script
+                print(
+                    f"LLM done: {llm_result.input_tokens} in / {llm_result.output_tokens} out "
+                    f"tokens, ${llm_result.cost_usd:.4f}"
+                )
+            else:
+                print(f"No API key for {llm_provider} (checked llm_api_key and {llm_provider.upper()}_API_KEY env var) — skipping LLM improvement")
 
         # Wrap with standard header/footer only when the LLM ran and produced
         # body-only output.  The free-tier programmatic script (parsed.speech_text)
@@ -686,6 +735,7 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 4: Premium TTS synthesis
         # ---------------------------------------------------------------
+        _stage = "tts"
         final_chunks_count = len(tex_to_audio._split_into_chunks(tts_text))
         final_tts_eta = final_chunks_count * tts_secs_per_chunk
         send_status(callback_url, secret, arxiv_id,
@@ -745,6 +795,7 @@ def narrate_paper_premium(
         # ---------------------------------------------------------------
         # Stage 5: Upload audio to R2
         # ---------------------------------------------------------------
+        _stage = "upload"
         audio_local = os.path.join(work_dir, f"{arxiv_id}-v{version_id}.mp3")
         with open(audio_local, "wb") as f:
             f.write(tts_result.audio_bytes)
@@ -799,13 +850,15 @@ def narrate_paper_premium(
         print(f"Premium narration done: {arxiv_id} (v{version_id}), total cost ${total_cost:.4f}")
 
     except Exception as e:
-        print(f"Error in premium narration for {arxiv_id}: {e}")
+        error_category = _categorize_error(e, _stage)
+        print(f"Error in premium narration for {arxiv_id} (stage={_stage}, category={error_category}): {e}")
         send_status(
             callback_url, secret, arxiv_id,
             status="failed",
             narration_tier=narration_tier,
             version_id=version_id,
             error_message=str(e)[:500],
+            error_category=error_category,
         )
         raise
     finally:
@@ -857,6 +910,7 @@ def trigger_premium_narration(request: dict):
 
     llm_provider = request.get("llm_provider", "anthropic")
     llm_api_key = request.get("llm_api_key", "")
+    llm_model = request.get("llm_model", "")
     tts_provider = request.get("tts_provider", "elevenlabs")
     tts_api_key = request.get("tts_api_key", "")
 
@@ -883,6 +937,7 @@ def trigger_premium_narration(request: dict):
         source_priority=source_priority,
         llm_provider=llm_provider,
         llm_api_key=llm_api_key,
+        llm_model=llm_model,
         tts_provider=tts_provider,
         tts_api_key=tts_api_key,
         version_id=version_id,

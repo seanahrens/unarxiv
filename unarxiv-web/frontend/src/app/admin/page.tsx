@@ -724,6 +724,16 @@ const externalLinks = [
     ),
   },
   {
+    label: "Modal Secrets",
+    url: "https://modal.com/seanahrens/main/secrets/unarxiv-secrets",
+    description: "R2 keys, Anthropic key, callback secret",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="8" cy="15" r="4" /><path d="M11 12l9-9" /><path d="M18 6l2 2" /><path d="M15 9l2 2" />
+      </svg>
+    ),
+  },
+  {
     label: "Workers API",
     url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/workers/services/view/unarxiv-api",
     description: "API worker settings & analytics",
@@ -731,6 +741,16 @@ const externalLinks = [
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" />
         <path d="M7 8l3 3-3 3" /><path d="M13 14h4" />
+      </svg>
+    ),
+  },
+  {
+    label: "Worker Secrets",
+    url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/workers/services/view/unarxiv-api/production/settings/bindings",
+    description: "MODAL_WEBHOOK_SECRET, ADMIN_PASSWORD, ENCRYPTION_KEY",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
       </svg>
     ),
   },
@@ -748,7 +768,7 @@ const externalLinks = [
   {
     label: "R2 Storage",
     url: "https://dash.cloudflare.com/4c9d05e2d48211dd3456d108f246e340/r2/overview",
-    description: "Audio files bucket",
+    description: "Audio files bucket — API tokens at /r2/api-tokens",
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2h-7.93a2 2 0 01-1.66-.9l-.82-1.2A2 2 0 007.93 3H4a2 2 0 00-2 2v13a2 2 0 002 2z" />

@@ -45,6 +45,8 @@ export interface Paper {
   published_date: string;
   status: PaperStatus;
   error_message: string | null;
+  error_category: string | null;
+  retry_count: number;
   progress_detail: string | null;
   eta_seconds: number | null;
   audio_r2_key: string | null;
@@ -80,6 +82,8 @@ export interface PaperResponse {
   published_date: string;
   status: PaperStatus;
   error_message: string | null;
+  error_category: string | null;
+  retry_count: number;
   progress_detail: string | null;
   eta_seconds: number | null;
   audio_url: string | null;
@@ -131,6 +135,8 @@ export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse 
     published_date: paper.published_date,
     status: paper.status,
     error_message: paper.error_message,
+    error_category: paper.error_category,
+    retry_count: paper.retry_count ?? 0,
     progress_detail: paper.progress_detail,
     eta_seconds: paper.eta_seconds,
     audio_url: paper.audio_r2_key ? `${apiOrigin}/api/papers/${paper.id}/audio` : null,

@@ -38,6 +38,10 @@ class ParseResult:
     """Directory containing extracted figure image files (PNG, JPG, PDF, EPS, etc.)
     from the LaTeX source archive. Used for multimodal LLM figure descriptions."""
 
+    extracted_title: str = ""
+    """Title extracted from the source (LaTeX \\title{} or PDF first line).
+    Used as fallback when paper_title is not passed by the caller."""
+
     work_dir: str = ""
     """Temporary working directory (caller should clean up)."""
 
@@ -421,6 +425,10 @@ def download_and_parse(
     )
     print(f"Parser_v2 script: {len(speech):,} chars")
 
+    # Extract title from the parser output (first line of the header)
+    first_line = speech.split("\n", 1)[0].rstrip(".").strip() if speech else ""
+    _extracted_title = first_line if first_line and first_line != "Untitled" else ""
+
     return ParseResult(
         speech_text=speech,
         source_path=source_path,
@@ -428,6 +436,7 @@ def download_and_parse(
         pdf_path=pdf_local_path,
         raw_source_text=raw_source_text,
         figures_dir=figures_dir,
+        extracted_title=_extracted_title,
         work_dir=work_dir,
         tar_bytes=tar_bytes,
         latex_char_count=latex_char_count,

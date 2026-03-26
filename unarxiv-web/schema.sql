@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS papers (
     status          TEXT NOT NULL DEFAULT 'unnarrated'
                     CHECK(status IN ('unnarrated','narrating','narrated','failed')),
     error_message   TEXT,
+    error_category  TEXT,                        -- structured error type (e.g. 'llm', 'tts', 'rate_limit')
+    retry_count     INTEGER NOT NULL DEFAULT 0,  -- number of narration attempts
     progress_detail TEXT,                       -- admin reprocess status messages
     eta_seconds     INTEGER,                    -- estimated seconds remaining (set by Modal)
 

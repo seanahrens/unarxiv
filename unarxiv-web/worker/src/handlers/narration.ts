@@ -134,6 +134,7 @@ export async function recoverStalePapers(env: Env): Promise<void> {
   if (!env.MODAL_FUNCTION_URL) return;
 
   const baseUrl = "https://api.unarxiv.org";
+  const MAX_RETRIES = 3;
 
   try {
     const stuck = await env.DB.prepare(
@@ -142,8 +143,21 @@ export async function recoverStalePapers(env: Env): Promise<void> {
     ).all<Paper>();
 
     for (const paper of stuck.results) {
-      console.log(`Recovering stale paper: ${paper.id}`);
-      await updatePaperStatus(env.DB, paper.id, "narrating", { eta_seconds: null });
+      const currentRetries = paper.retry_count ?? 0;
+      if (currentRetries >= MAX_RETRIES) {
+        console.log(`Paper ${paper.id} exceeded max retries (${currentRetries}/${MAX_RETRIES}), marking as failed`);
+        await updatePaperStatus(env.DB, paper.id, "failed", {
+          error_message: `Gave up after ${currentRetries} attempts`,
+          error_category: "timeout",
+        });
+        continue;
+      }
+
+      console.log(`Recovering stale paper: ${paper.id} (attempt ${currentRetries + 1}/${MAX_RETRIES})`);
+      // Increment retry_count for the recovery attempt
+      await env.DB.prepare(
+        "UPDATE papers SET retry_count = COALESCE(retry_count, 0) + 1, eta_seconds = NULL, updated_at = datetime('now') WHERE id = ?"
+      ).bind(paper.id).run();
       await dispatchToModal(env, paper, baseUrl);
     }
   } catch (e: any) {
@@ -416,6 +430,7 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     status: string;
     progress_detail?: string;
     error_message?: string;
+    error_category?: string;
     eta_seconds?: number;
     audio_r2_key?: string;
     audio_size_bytes?: number;
@@ -505,6 +520,7 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
   await updatePaperStatus(env.DB, body.arxiv_id, body.status as PaperStatus, {
     progress_detail: body.progress_detail,
     error_message: body.error_message,
+    error_category: body.error_category,
     eta_seconds: body.eta_seconds,
     audio_r2_key: body.audio_r2_key,
     audio_size_bytes: body.audio_size_bytes,

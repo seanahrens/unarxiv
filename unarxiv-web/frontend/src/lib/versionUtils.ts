@@ -11,6 +11,51 @@ import type { PaperVersion } from "./api";
 import { VOICE_TIERS, type VoiceTier } from "./voiceTiers";
 
 /**
+ * LLM model ID → short display name mapping.
+ * Handles common Anthropic and OpenAI model IDs.
+ */
+const LLM_DISPLAY_NAMES: Record<string, string> = {
+  "claude-haiku-4-5-20251001": "Haiku 4.5",
+  "claude-3-5-haiku-20241022": "Haiku 3.5",
+  "claude-sonnet-4-5-20250514": "Sonnet 4.5",
+  "claude-sonnet-4-6": "Sonnet 4.6",
+  "gpt-4o": "GPT-4o",
+  "gpt-4o-mini": "GPT-4o Mini",
+};
+
+/**
+ * Format an LLM model ID into a short, user-friendly display name.
+ * Returns "Programmatic" for null (base/regex scripts with no LLM).
+ */
+export function formatLlmModel(llmModel: string | null): string {
+  if (!llmModel) return "Programmatic";
+  if (LLM_DISPLAY_NAMES[llmModel]) return LLM_DISPLAY_NAMES[llmModel];
+  // Fallback: try partial matching for versioned Anthropic models
+  if (llmModel.startsWith("claude-haiku-4-5")) return "Haiku 4.5";
+  if (llmModel.startsWith("claude-3-5-haiku")) return "Haiku 3.5";
+  if (llmModel.startsWith("claude-sonnet-4-5")) return "Sonnet 4.5";
+  if (llmModel.startsWith("claude-sonnet-4-6")) return "Sonnet 4.6";
+  if (llmModel.startsWith("claude-sonnet-4-")) return "Sonnet 4";
+  if (llmModel.startsWith("claude-opus-4-")) return "Opus 4";
+  if (llmModel.startsWith("gpt-4o-mini")) return "GPT-4o Mini";
+  if (llmModel.startsWith("gpt-4o")) return "GPT-4o";
+  // Last resort: return the raw model ID
+  return llmModel;
+}
+
+/**
+ * Format the LLM provider name for display.
+ */
+export function formatLlmProvider(llmProvider: string | null): string {
+  if (!llmProvider) return "";
+  const providers: Record<string, string> = {
+    anthropic: "Anthropic",
+    openai: "OpenAI",
+  };
+  return providers[llmProvider] ?? llmProvider;
+}
+
+/**
  * True for any narration that represents an upgrade over the default base
  * narration (upgraded TTS, LLM-improved script, or both).
  *

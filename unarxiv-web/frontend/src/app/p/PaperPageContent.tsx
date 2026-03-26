@@ -7,7 +7,7 @@ import NarrationProgress from "@/components/NarrationProgress";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import { fetchPaper, previewPaper, submitPaper, recordVisit, fetchRating, submitRating, deleteRating, requestNarration, formatPaperDate, transcriptUrl, getPaperVersions, type Paper, type Rating, type PaperVersion } from "@/lib/api";
 import { VOICE_TIERS, getBestTierFromVersions, getTierFromProvider, type VoiceTier } from "@/lib/voiceTiers";
-import { getUpgradedVersions, resolveTierForVersion } from "@/lib/versionUtils";
+import { getUpgradedVersions, formatLlmModel, formatLlmProvider } from "@/lib/versionUtils";
 import PlusIcons from "@/components/PlusIcons";
 import { PaperDetailSkeleton, Skeleton } from "@/components/Skeleton";
 import { track } from "@/lib/analytics";
@@ -329,7 +329,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [narrationError, setNarrationError] = useState("");
   const [view, setView] = useState<"abstract" | "script">("abstract");
-  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded" }[]>([]);
+  const [scriptTabs, setScriptTabs] = useState<{ key: string; label: string; text: string; date: string | null; type: "base" | "upgraded"; llmProvider: string | null; llmModel: string | null; createdAt: string | null }[]>([]);
   const [activeScriptTab, setActiveScriptTab] = useState<string>("base");
   const [scriptLoading, setScriptLoading] = useState(false);
   const scriptsFetched = useRef(false);
@@ -427,7 +427,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
 
       // Fetch base transcript
       const base = await fetchTx(transcriptUrl(paper.id));
-      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base" });
+      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null });
 
       // Fetch premium version transcripts
       try {
@@ -436,8 +436,7 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         for (const v of premium) {
           const tx = await fetchTx(transcriptUrl(paper.id, v.id));
           if (tx) {
-            const tier = resolveTierForVersion(v);
-            tabs.push({ key: `v${v.id}`, label: `AI Script (${tier.providerName})`, text: tx.text, date: tx.date, type: "upgraded" });
+            tabs.push({ key: `v${v.id}`, label: `AI Script (${formatLlmModel(v.llm_model)})`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at });
           }
         }
       } catch {}
@@ -568,9 +567,24 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
       {isFailed && (
         <div className="max-w-md bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="font-medium text-red-800">Narration failed</p>
-          {paper.error_message && (
-            <p className="text-sm text-red-600 mt-1">{paper.error_message}</p>
-          )}
+          <p className="text-sm text-red-600 mt-1">
+            {(() => {
+              switch (paper.error_category) {
+                case "rate_limit": return "Rate limited \u2014 will retry automatically";
+                case "source_download": return "Could not download paper source from arXiv";
+                case "image_processing": return "Error processing paper figures";
+                case "llm": return "Script generation error";
+                case "tts": return "Audio generation error";
+                case "upload": return "Upload error";
+                case "timeout": return "Processing timed out";
+                case "parsing": return "Error parsing paper source";
+                default: return paper.error_message || "An unexpected error occurred";
+              }
+            })()}
+            {(paper.retry_count > 0) && (
+              <span className="ml-1 text-red-400">(attempt {paper.retry_count + 1} of 3)</span>
+            )}
+          </p>
         </div>
       )}
 
@@ -609,13 +623,32 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
             const active = scriptTabs.find(t => t.key === activeScriptTab) ?? scriptTabs[0];
             return (
               <>
-                {/* Metadata + date */}
+                {/* Metadata + provenance */}
                 {active && (
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <p className="text-xs text-stone-400">
-                      {active.type === "upgraded" ? "AI-Generated" : "Programmatically-Generated"} Script
+                      {(() => {
+                        const parts: string[] = [];
+                        if (active.type === "upgraded") {
+                          const provider = formatLlmProvider(active.llmProvider);
+                          const model = formatLlmModel(active.llmModel);
+                          parts.push(provider ? `${provider} / ${model}` : model);
+                        } else {
+                          parts.push("Programmatic Script");
+                        }
+                        const dateStr = active.createdAt || active.date;
+                        if (dateStr) {
+                          const d = active.createdAt ? new Date(dateStr + "Z") : new Date(dateStr);
+                          if (!isNaN(d.getTime())) {
+                            parts.push(d.toLocaleString("en-US", {
+                              year: "numeric", month: "short", day: "numeric",
+                              hour: "numeric", minute: "2-digit",
+                            }));
+                          }
+                        }
+                        return parts.join(" \u00B7 ");
+                      })()}
                     </p>
-                    {active.date && <p className="text-xs text-stone-400">{active.date}</p>}
                   </div>
                 )}
                 {/* Tabs */}

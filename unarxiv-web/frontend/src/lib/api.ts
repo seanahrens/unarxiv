@@ -20,6 +20,8 @@ export interface Paper {
   published_date: string;
   status: string;
   error_message: string | null;
+  error_category: string | null;
+  retry_count: number;
   progress_detail: string | null;
   eta_seconds: number | null;
   audio_url: string | null;
@@ -704,6 +706,7 @@ export interface PaperVersion {
   tts_provider: string | null;
   tts_model: string | null;
   llm_provider: string | null;
+  llm_model: string | null;
   audio_url: string | null;
   duration_seconds: number | null;
   is_best: boolean;

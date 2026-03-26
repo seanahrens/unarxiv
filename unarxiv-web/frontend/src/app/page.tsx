@@ -59,6 +59,8 @@ function arxivResultToPaper(result: ArxivSearchResult): Paper {
     published_date: result.published_date,
     status: "unnarrated" as const,
     error_message: null,
+    error_category: null,
+    retry_count: 0,
     progress_detail: null,
     eta_seconds: null,
     audio_url: null,

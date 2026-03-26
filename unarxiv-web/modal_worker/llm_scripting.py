@@ -366,11 +366,42 @@ def _find_figure_refs(chunk: str) -> list[str]:
     return refs
 
 
+_MAX_IMAGE_PIXELS = 1568  # Claude's internal processing cap; larger images waste tokens
+
+
+def _downscale_if_needed(data: bytes, ext: str) -> tuple[bytes, str]:
+    """Downscale image if any dimension exceeds _MAX_IMAGE_PIXELS.
+
+    Returns (possibly_modified_bytes, media_type). Converts to PNG if resized.
+    Claude internally tiles images at ~1568px, so anything larger just burns
+    extra tokens with no quality gain.
+    """
+    from PIL import Image
+    import io
+
+    img = Image.open(io.BytesIO(data))
+    w, h = img.size
+    if w <= _MAX_IMAGE_PIXELS and h <= _MAX_IMAGE_PIXELS:
+        return data, _IMAGE_MEDIA_TYPES[ext]
+
+    # Scale down proportionally so the largest dimension = _MAX_IMAGE_PIXELS
+    scale = _MAX_IMAGE_PIXELS / max(w, h)
+    new_w, new_h = int(w * scale), int(h * scale)
+    print(f"[llm] Downscaling image from {w}x{h} to {new_w}x{new_h}")
+    img = img.resize((new_w, new_h), Image.LANCZOS)
+
+    buf = io.BytesIO()
+    # Save as PNG for lossless quality after resize
+    img.save(buf, format="PNG")
+    return buf.getvalue(), "image/png"
+
+
 def _load_image(path: str) -> tuple[str, str] | None:
     """Load an image file and return (media_type, base64_data), or None on failure.
 
     Directly encodes PNG/JPG/GIF/WEBP. Converts single-page PDF/EPS to PNG
     via pymupdf if available. Skips files exceeding _MAX_IMAGE_BYTES.
+    Downscales images exceeding 8000px in any dimension (Anthropic API limit).
     """
     ext = os.path.splitext(path)[1].lower()
 
@@ -381,7 +412,11 @@ def _load_image(path: str) -> tuple[str, str] | None:
             if len(data) > _MAX_IMAGE_BYTES:
                 print(f"[llm] Skipping oversized image ({len(data):,} bytes): {path}")
                 return None
-            return _IMAGE_MEDIA_TYPES[ext], base64.b64encode(data).decode()
+            data, media_type = _downscale_if_needed(data, ext)
+            if len(data) > _MAX_IMAGE_BYTES:
+                print(f"[llm] Skipping image after downscale ({len(data):,} bytes): {path}")
+                return None
+            return media_type, base64.b64encode(data).decode()
         except Exception as e:
             print(f"[llm] Could not load image {path}: {e}")
             return None
@@ -654,25 +689,19 @@ def _split_on_paragraphs(text: str, max_chars: int) -> list[str]:
 # Cost tables (USD per token)
 # ---------------------------------------------------------------------------
 
-# Anthropic models — per MTok pricing:
-#   claude-sonnet-4-6      : $3.00 in / $15.00 out  (~$0.45/paper, ~8 min)
-#   claude-3-5-haiku-latest: $0.80 in / $4.00 out   (~$0.12/paper, ~3-4 min) ← best value
-#   claude-3-haiku-latest  : $0.25 in / $1.25 out   (~$0.03/paper, older/weaker)
+# Anthropic models available on this API key (all 4.x family):
+#   claude-sonnet-4-6        : ~$3.00 in / $15.00 out  (30k TPM even at Tier 2)
+#   claude-sonnet-4-5-20250929: ~$3.00 in / $15.00 out  (450k TPM at Tier 2)
+#   claude-haiku-4-5-20251001 : ~$0.80 in / $4.00 out   (450k TPM at Tier 2) ← default
 #
 # Set ANTHROPIC_DEFAULT_MODEL in Modal secrets to switch without a redeploy.
-# Use the friendly names below — no date suffixes needed.
 _ANTHROPIC_COSTS = {
-    # Current flagship (new naming scheme — no date suffix)
-    "claude-sonnet-4-6":         (3.00 / 1_000_000, 15.00 / 1_000_000),
-    # Latest aliases — Anthropic keeps these pointed at the newest version
-    "claude-3-5-haiku-latest":   (0.80 / 1_000_000,  4.00 / 1_000_000),
-    "claude-3-5-sonnet-latest":  (3.00 / 1_000_000, 15.00 / 1_000_000),
-    "claude-3-haiku-latest":     (0.25 / 1_000_000,  1.25 / 1_000_000),
-    # Pinned versions (fallback if you need reproducibility)
-    "claude-3-5-haiku-20241022": (0.80 / 1_000_000,  4.00 / 1_000_000),
-    "claude-3-haiku-20240307":   (0.25 / 1_000_000,  1.25 / 1_000_000),
+    "claude-opus-4-6":             (15.00 / 1_000_000, 75.00 / 1_000_000),
+    "claude-sonnet-4-6":           ( 3.00 / 1_000_000, 15.00 / 1_000_000),
+    "claude-sonnet-4-5-20250929":  ( 3.00 / 1_000_000, 15.00 / 1_000_000),
+    "claude-haiku-4-5-20251001":   ( 0.80 / 1_000_000,  4.00 / 1_000_000),
 }
-_ANTHROPIC_COST_IN, _ANTHROPIC_COST_OUT = _ANTHROPIC_COSTS["claude-3-haiku-latest"]  # default
+_ANTHROPIC_COST_IN, _ANTHROPIC_COST_OUT = _ANTHROPIC_COSTS["claude-haiku-4-5-20251001"]  # default
 
 # gpt-4o: $2.50 / MTok input, $10 / MTok output
 _OPENAI_COST_IN = 2.50 / 1_000_000
@@ -734,9 +763,9 @@ def _compute_max_tokens(chunk_chars: int) -> int:
 
 
 class AnthropicProvider:
-    DEFAULT_MODEL = "claude-3-5-haiku-latest"    # mid-tier; testing after sonnet-4-6 passed at 9.1/10
-    HAIKU_MODEL   = "claude-3-5-haiku-latest"    # mid-tier: 4x cost vs haiku-3, 2-3x faster
-    SONNET_MODEL  = "claude-sonnet-4-6"          # best quality: 15x cost vs haiku-3
+    DEFAULT_MODEL = "claude-haiku-4-5-20251001"   # best cost/quality: 8.6/10 at ~$0.12/paper, 450k TPM
+    HAIKU_MODEL   = "claude-haiku-4-5-20251001"   # same as default
+    SONNET_MODEL  = "claude-sonnet-4-6"          # best quality: 15x cost vs haiku-3, 30k TPM limit
 
     def __init__(self, api_key: str, model: str | None = None):
         self._api_key = api_key

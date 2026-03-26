@@ -75,6 +75,7 @@ export async function updatePaperStatus(
   details?: {
     progress_detail?: string;
     error_message?: string;
+    error_category?: string;
     eta_seconds?: number | null;
     audio_r2_key?: string;
     audio_size_bytes?: number;
@@ -84,6 +85,11 @@ export async function updatePaperStatus(
   const sets = ["status = ?", "updated_at = datetime('now')"];
   const values: (string | number | null)[] = [status];
 
+  // Clear error fields when transitioning to non-failed states
+  if (status === "narrating" || status === "narrated") {
+    sets.push("error_message = NULL", "error_category = NULL");
+  }
+
   if (details?.progress_detail !== undefined) {
     sets.push("progress_detail = ?");
     values.push(details.progress_detail);
@@ -91,6 +97,10 @@ export async function updatePaperStatus(
   if (details?.error_message !== undefined) {
     sets.push("error_message = ?");
     values.push(details.error_message);
+  }
+  if (details?.error_category !== undefined) {
+    sets.push("error_category = ?");
+    values.push(details.error_category);
   }
   if (details?.eta_seconds !== undefined) {
     sets.push("eta_seconds = ?");
@@ -290,7 +300,7 @@ export async function resetPaperForReprocess(
   await db
     .prepare(
       `UPDATE papers SET title = ?, authors = ?, abstract = ?, published_date = ?,
-       status = 'narrating', eta_seconds = NULL, progress_detail = NULL, error_message = NULL,
+       status = 'narrating', eta_seconds = NULL, progress_detail = NULL, error_message = NULL, error_category = NULL,
        audio_r2_key = NULL, audio_size_bytes = NULL, duration_seconds = NULL, completed_at = NULL,
        updated_at = datetime('now')
        WHERE id = ?`
@@ -711,8 +721,15 @@ export async function getRecentPublicLists(
  * Returns true if this caller won the race, false if someone else already claimed it.
  */
 export async function claimPaperForNarration(db: D1Database, id: string): Promise<boolean> {
+  // Increment retry_count when retrying from failed, clear error fields
   const result = await db
-    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = NULL, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed')")
+    .prepare(
+      `UPDATE papers SET status = 'narrating', eta_seconds = NULL,
+       error_message = NULL, error_category = NULL,
+       retry_count = CASE WHEN status = 'failed' THEN COALESCE(retry_count, 0) + 1 ELSE COALESCE(retry_count, 0) END,
+       updated_at = datetime('now')
+       WHERE id = ? AND status IN ('unnarrated', 'failed')`
+    )
     .bind(id)
     .run();
   return (result.meta?.changes ?? 0) > 0;
@@ -723,8 +740,15 @@ export async function claimPaperForNarration(db: D1Database, id: string): Promis
  * Like claimPaperForNarration, but also allows already-narrated papers.
  */
 export async function claimPaperForPremium(db: D1Database, id: string): Promise<boolean> {
+  // Increment retry_count when retrying from failed, clear error fields
   const result = await db
-    .prepare("UPDATE papers SET status = 'narrating', eta_seconds = NULL, progress_detail = NULL, updated_at = datetime('now') WHERE id = ? AND status IN ('unnarrated', 'failed', 'narrated')")
+    .prepare(
+      `UPDATE papers SET status = 'narrating', eta_seconds = NULL,
+       error_message = NULL, error_category = NULL, progress_detail = NULL,
+       retry_count = CASE WHEN status = 'failed' THEN COALESCE(retry_count, 0) + 1 ELSE COALESCE(retry_count, 0) END,
+       updated_at = datetime('now')
+       WHERE id = ? AND status IN ('unnarrated', 'failed', 'narrated')`
+    )
     .bind(id)
     .run();
   return (result.meta?.changes ?? 0) > 0;
