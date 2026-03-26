@@ -1,0 +1,1079 @@
+%%%%%%%% ICML 2026 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
+
+\documentclass{article}
+
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs} % for professional tables
+
+% hyperref makes hyperlinks in the resulting PDF.
+% If your build breaks (sometimes temporarily if a hyperlink spans a page)
+% please comment out the following usepackage line and replace
+% \usepackage{icml2026} with \usepackage[nohyperref]{icml2026} above.
+\usepackage{hyperref}
+
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Use the following line for the initial blind version submitted for review:
+% \usepackage{icml2026}
+
+% For preprint, use
+\usepackage[preprint]{icml2026}
+
+% If accepted, instead use the following line for the camera-ready submission:
+% \usepackage[accepted]{icml2026}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+
+% if you use cleveref..
+\usepackage[capitalize,noabbrev]{cleveref}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THEOREMS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Todonotes is useful during development; simply uncomment the next line
+%    and comment out the line below the next line to turn off comments
+%\usepackage[disable,textsize=tiny]{todonotes}
+\usepackage[textsize=tiny]{todonotes}
+
+% added
+\usepackage{tabularx}
+\usepackage{multirow}
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{GradMem: Learning to Write Context into Memory with Test-Time Gradient Descent}
+
+\begin{document}
+
+\twocolumn[
+  \icmltitle{GradMem: Learning to Write Context into Memory\\with Test-Time Gradient Descent}
+
+  % It is OKAY to include author information, even for blind submissions: the
+  % style file will automatically remove it for you unless you've provided
+  % the [accepted] option to the icml2026 package.
+
+  % List of affiliations: The first argument should be a (short) identifier you
+  % will use later to specify author affiliations Academic affiliations
+  % should list Department, University, City, Region, Country Industry
+  % affiliations should list Company, City, Region, Country
+
+  % You can specify symbols, otherwise they are numbered in order. Ideally, you
+  % should not use this facility. Affiliations will be numbered in order of
+  % appearance and this is the preferred way.
+  \icmlsetsymbol{equal}{*}
+
+  \begin{icmlauthorlist}
+    \icmlauthor{Yuri Kuratov}{aa,bb} %{equal, yyy}
+    \icmlauthor{Matvey Kairov}{bb}
+    \icmlauthor{Aydar Bulatov}{aa,bb}
+    \icmlauthor{Ivan Rodkin}{cc,bb}
+    \icmlauthor{Mikhail Burtsev}{dd}
+  \end{icmlauthorlist}
+
+  \icmlaffiliation{aa}{Cognitive AI Systems Lab, Moscow, Russia}
+  \icmlaffiliation{bb}{MIRAI, Moscow, Russia}
+  \icmlaffiliation{cc}{MBZUAI, Abu Dhabi, UAE}
+  \icmlaffiliation{dd}{London Institute for Mathematical Sciences, London, UK}
+
+  \icmlcorrespondingauthor{Yuri Kuratov}{kuratov@cogailab.com}
+
+  % You may provide any keywords that you find helpful for describing your
+  % paper; these are used to populate the "keywords" metadata in the PDF but
+  % will not be shown in the document
+  \icmlkeywords{Machine Learning, Deep Learning, test-time training, test-time optimization, context compression, transformers, memory mechanisms}
+
+  \vskip 0.3in
+]
+
+% this must go after the closing bracket ] following \twocolumn[ ...
+
+% This command actually creates the footnote in the first column listing the
+% affiliations and the copyright notice. The command takes one argument, which
+% is text to display at the start of the footnote. The \icmlEqualContribution
+% command is standard text for equal contribution. Remove it (just {}) if you
+% do not need this facility.
+
+% Use ONE of the following lines. DO NOT remove the command.
+% If you have no special notice, KEEP empty braces:
+\printAffiliationsAndNotice{}  % no special notice (required even if empty)
+% Or, if applicable, use the standard equal contribution text:
+% \printAffiliationsAndNotice{\icmlEqualContribution}
+
+\begin{abstract}
+% Many large language model applications require conditioning on long contexts.
+% Transformers typically support this with KV caching, which incurs substantial memory overhead.
+% We study \emph{compressive memory}: read a context once, store it in a compact state, and answer many queries from that state.
+% We formalize this as \emph{context removal} setting, where the model must generate an answer without access to the original context at inference time.
+% We introduce \textbf{GradMem}, which writes to memory via \emph{per-sample test-time optimization}.  Given a new context, GradMem performs a few steps of gradient descent on a small set of prefix \emph{memory tokens}, optimizing an explicit, model-level self-supervised context reconstruction loss while keeping model weights frozen.
+% This gives a loss-driven write operation with iterative error correction.
+% On associative key--value retrieval, GradMem substantially outperforms forward-only memory writers at the same memory budget, and extra gradient steps scale capacity much more effectively than repeated forward writes.
+% Combined with pre-trained language models, GradMem solves natural language memory tasks, including PhoneBook, bAbI, and SQuAD variants. 
+
+Many large language model applications require conditioning on long contexts.
+Transformers typically support this by storing a large per-layer KV-cache of past activations, which incurs substantial memory overhead.
+A desirable alternative is \emph{compressive memory}: read a context once, store it in a compact state, and answer many queries from that state.
+We study this in a context removal setting, where the model must generate an answer without access to the original context at inference time.
+We introduce \textbf{GradMem}, which writes context into memory via \emph{per-sample test-time optimization}.
+Given a context, GradMem performs a few steps of gradient descent on a small set of prefix \emph{memory tokens} while keeping model weights frozen.
+GradMem explicitly optimizes a model-level self-supervised context reconstruction loss, resulting in a loss-driven write operation with iterative error correction, unlike forward-only methods.
+On associative key--value retrieval, GradMem outperforms forward-only memory writers with the same memory size, and additional gradient steps scale capacity much more effectively than repeated forward writes.
+We further show that GradMem transfers beyond synthetic benchmarks: with pretrained language models, it attains competitive results on natural language tasks including bAbI and SQuAD variants, relying only on information encoded in memory.
+
+
+%%% aydar suggests:
+% Many large language model applications require conditioning on long contexts, which are typically stored in the Transformer's KV cache. Compressing memory can substantially reduce this overhead: the context is read once and stored in a compact state that can be used to answer many future queries.
+% We introduce \textbf{GradMem}, an architecture that compresses context into memory via \emph{per-sample test-time optimization}.
+% Given a context, GradMem performs a few steps of gradient descent on a small set of prefix \emph{memory tokens}, while keeping the base LLM weights frozen. The compression is learned by completely removing the KV cache, forcing the model to rely solely on the memory tokens to generate answers. GradMem explicitly optimizes a model-level self-supervised context reconstruction loss, resulting in an objective-driven write operation with iterative error correction.
+% On associative key-value retrieval, GradMem substantially outperforms forward-only memory writing models at the same memory budget, and additional gradient steps scale capacity much more effectively than repeated forward writes.
+% Combined with pre-trained language models, GradMem solves natural-language memory tasks, including PhoneBook, bAbI, and SQuAD variants.
+
+\end{abstract}
+
+
+
+
+\section{Introduction}
+\label{sec:intro}
+
+Large language models are increasingly deployed in settings where task-relevant information resides in long, external contexts: documents, codebases, tool interactions in agent workflows, and dialogue histories spanning multiple sessions~\citep{lewis2020rag,zhang-etal-2023-repocoder,team2024gemini,kimiteam2026kimik2openagentic}. In these regimes, the challenge is not only to support long contexts, but to do so efficiently and \emph{reusably}---ideally, the model reads a context once, stores what matters, and answers many queries without repeatedly re-processing the same tokens. The dominant approach is to retain intermediate activations via the KV-cache (and various compression schemes thereof), which reduces recomputation but can impose substantial memory overhead and does not naturally produce a portable representation of the context. A complementary alternative is to provide the model with a \emph{compact memory state} that is constructed from a context and then reused across subsequent queries. Crucially, many applications require incorporating new information \emph{without retraining or fine-tuning the full model}: we want to adapt the model to the current context by writing into a separate memory representation, while keeping the pretrained parameters fixed.
+
+\begin{figure}[t]
+  \begin{center}
+    \centerline{\includegraphics[width=0.95\linewidth]{figs/GradMem_overview_short.png}}
+    % \caption{\textbf{GradMem} learns to write context into memory by per-sample test-time optimization. It has direct feedback from reconstruction objective to update memory state. Initial memory state is meta-learned to compress context into memory with few gradient steps.}
+    \caption{\textbf{GradMem learns to write context into memory via per-sample test-time optimization.} Given a context, GradMem performs a few test-time gradient updates on memory state to minimize a self-supervised reconstruction loss (WRITE).  The memory initialization is meta-learned so that useful context representations can be written with only a few gradient steps. At inference, the model answers queries using only the optimized memory and the query (READ), without access to the original context.}
+\label{fig:gradmem_overview}
+  \end{center}
+  \vspace{-0.4in}
+\end{figure}
+
+
+%Despite this progress, it remains unclear how to \emph{reliably construct a compact memory state from a single context} using only a small number of inference-time updates, and how the choice of \emph{write operation} (e.g., forward-only versus gradient-based updates) affects the capacity and usefulness of the memory.
+
+
+
+
+% short description of gradmem
+
+
+Recent work on \emph{test-time training} shows that a model can adapt to the current context via gradient-based updates during inference, and that iterative optimization of input embeddings can losslessly encode thousands of tokens given enough steps~\citep{sun2025l2l, kuratov2025cramming}.
+% Recent work shows that iterative optimization of input embeddings can losslessly encode thousands of tokens given sufficient optimization steps~\citep{sun2025l2l, kuratov2025cramming}.
+Motivated by this observation, we introduce \textbf{GradMem}.\footnote{Code is available at \url{https://github.com/yurakuratov/gradmem}.} GradMem writes context into memory by \emph{direct per-sample optimization} at test time (\cref{fig:gradmem_overview}). Specifically, GradMem treats embeddings of special memory tokens as \emph{writable state} and performs a small number of \emph{gradient descent} updates on this state for each context. This is \emph{test-time training in the literal sense}: during inference, we execute a short inner-loop optimization on the current example. Crucially, GradMem cleanly separates \emph{memory} from \emph{model weights}: the base model parameters remain fixed, while adaptation to new contexts occurs solely through updates to the memory state. Unlike forward-only writing rules, this loss-driven inner loop provides per-example feedback, enabling GradMem to iteratively correct write errors as it forms a compact memory representation.
+
+A key design choice in GradMem is the use of an \emph{explicit, model-level WRITE objective} that is independent of the downstream supervision.
+In this paper, we focus on a simple self-supervised WRITE objective---\emph{reconstruction}---computed from the language model's own predictions and backpropagated to the memory tokens.
+Because the objective is explicit, GradMem provides a direct way to trade compute for compression: additional gradient steps lead to a better memory state.
+
+
+% motivation why it should work
+The intuition behind GradMem is simple.
+First, standard training with SGD can be viewed as a mechanism that \emph{writes data into parameters} of a model via gradient updates (i.e., train set memorization); analogously, we treat memory as a parameter-like state to store the current context.
+Second, unlike one-shot forward writing (e.g., with text encoders), optimization provides an explicit signal of \emph{what has not been encoded yet}: the reconstruction loss concentrates on the parts of the context that the model currently predicts poorly.
+Thus, gradient-based writing naturally prioritizes novel, unpredictable or high-entropy inputs and iteratively reduces reconstruction error.
+Third, while \emph{lossless} context encoding via iterative optimization is known to be possible, it typically requires \emph{hundreds to thousands} of gradient steps to achieve near-perfect reconstruction~\citep{kuratov2025cramming}. In contrast, GradMem targets the few-step regime: by meta-learning the memory initialization and model parameters, we enable effective context writing with only a small number of test-time gradient steps.
+
+
+% bridge to contributions
+We evaluate GradMem primarily on associative KV-retrieval task under context removal setting, a clean synthetic benchmark that directly measures how much information can be stored in a fixed-size memory.
+Across a wide range of settings, GradMem stores more key--value pairs than forward-only methods that encode the context into memory with the same memory size.
+Our results also show that \emph{how} the memory state is updated matters as much as \emph{how many times} it is updated: even a single gradient-based WRITE update can write more information than a single forward-only update, and additional gradient descent steps further increase capacity.
+In contrast, repeating WRITE using only forward operations (e.g., re-processing the context multiple times) yields much weaker or less consistent gains.
+Beyond this synthetic setting, we study how performance varies with the number of WRITE steps, context length, and demonstrate that the same task-agnostic reconstruction objective transfers to pretrained language models on natural language tasks such as QA on bAbI, short SQuAD variants, and language modeling.
+% contributions
+% - we introduce gradmem
+% - it works
+% - gradient based writing operation can write more than a forward-only based writing
+% - we can write even more if we increase number of memory state updates (K). But it does not work for forward only.
+% - we show that GradMem applies to pre-trained models and NLP tasks.
+
+This paper makes the following \textbf{contributions}:
+
+% 1. \textbf{GradMem: gradient-based context memorization.} We introduce GradMem, a memory mechanism that encodes a context into a compact memory state by performing a small number of explicit gradient descent steps on memory tokens at test time, while keeping the base model weights fixed.
+
+% 2. \textbf{Explicit, model-level write objective.} GradMem constructs memory using an explicit self-supervised WRITE loss (reconstruction) computed at the model level, without requiring specialized per-layer memory update rules.
+
+1. \textbf{GradMem: gradient-based context memorization.}
+We introduce GradMem, a memory mechanism that encodes a context into a compact memory state by performing a small number of test-time gradient descent steps on memory tokens while keeping the base model weights fixed. 
+GradMem constructs memory using an explicit self-supervised WRITE objective (context reconstruction) computed at the model level, without requiring specialized per-layer memory update rules.
+
+2. \textbf{Few-step gradient writing.} We show that a small set of memory tokens can be meta-trained so that $K \leq 5$ gradient descent steps reliably write task-relevant information into memory, enabling downstream tasks prediction with the original context removed.
+
+% 3. \textbf{Gradient updates outperform forward-only memory updates at fixed memory size.} We demonstrate that gradient-based updates write substantially more information into a fixed-size memory state than WRITE mechanisms that use only forward computation.
+
+% 4. \textbf{Scaling with the number of memory updates.} As we increase the number of memory-state updates, GradMem consistently gains capacity from additional gradient steps, whereas repeating forward-only updates (e.g., re-processing the same context multiple times) yields much weaker or less consistent improvements.
+
+3. \textbf{Gradient-based memory updates outperform forward-only writing.}
+On associative retrieval, gradient-based updates store substantially more information in a fixed-size memory state than WRITE mechanisms that use only forward computation. Moreover, increasing the number of gradient updates consistently improves memory capacity, whereas repeating forward-only writes provides limited or inconsistent gains.
+
+4. \textbf{Capacity scaling and transfer to natural language.} We characterize how performance scales with the number of WRITE steps and context length on associative retrieval, and provide evidence of transfer to pretrained language models on natural language tasks (e.g., bAbI, SQuAD variants, language modeling) using the same task-agnostic reconstruction objective.
+
+
+\section{GradMem}
+\label{sec:method}
+
+\begin{figure*}[ht]
+  \vskip 0.2in
+  \begin{center}
+    \centerline{\includegraphics[width=\linewidth]{figs/GradMem_main_figure_v1.drawio.png}}
+    \caption{
+\textbf{GradMem overview.}
+\textbf{(a)} Each task sample is represented as context $C$, query $Q$, and target $Y$. A context encoder $E_{\theta}$ compresses $C$ into a fixed-size memory $\hat{\mathcal{M}}$ in a WRITE phase, and the model predicts $Y$ from $[\hat{\mathcal{M}}; Q]$ in a READ phase, without access to $C$.
+\textbf{(b)} Meta-learning view: a shared initialization $\mathcal{M}_0$ and model parameters $\theta$ are learned across training examples (outer loop), while at test time each context $C_i$ adapts its own memory $\hat{\mathcal{M}}(C_i)$ via a few gradient steps (dotted trajectory).
+\textbf{(c)} Test-time gradient descent on memory.
+    Starting from the meta-learned initialization $\mathcal{M}_0$, GradMem updates the per-sample memory state during WRITE with $K$ steps of gradient descent on the context reconstruction loss $\mathcal{L}_{\text{write}}(\mathcal{M}; C)$.
+    At READ, the model predicts the task target using only $[\hat{\mathcal{M}}; Q]$.
+    During training, $\theta$ and $\mathcal{M}_0$ are optimized by backpropagating through the WRITE outer loop, so the model learns to use gradient descent as an operation that writes useful information about $C$ into memory; at inference, only the per-sample memory state is updated.
+% GradMem adapts memory state $\mathcal{M}_0$ to a context $C$ by \emph{direct per-sample optimization} of memory: starting from the meta-learned initialization $\mathcal{M}_0$, the per-sample memory state is updated during WRITE with $K$ gradient descent steps on the context reconstruction loss.
+% At READ, model predicts the task target using only $[\hat{\mathcal{M}};Q]$.
+% During training, model parameters $\theta$ and the initialization $\mathcal{M}_0$ are optimized in the outer loop by backpropagating through the WRITE test-time optimization, so model learns to use gradient descent as operation that writes useful information into a memory; at inference time, only the per-sample memory state is updated.
+}
+    \label{fig:gradmem}
+  \end{center}
+  \vspace{-0.3in}
+\end{figure*}
+
+
+\subsection{Problem Setup: Context Removal Setting}
+\label{sec:problem_setup}
+Many sequence modeling problems can be expressed by separating (i) external information that can be used, (ii) a task specification, and (iii) the desired output. We formalize this by representing each task instance as three sequences: \emph{context} $C$, \emph{query} $Q$, and \emph{target} $Y$. Our goal is to enable prediction of $Y$ from $Q$ without direct access to $C$ at inference time, by first compressing $C$ into a small, fixed-size memory $\mathcal{M}$. 
+% This formulation does not limit the range of possible tasks. Instead,  it provides a convenient interface that allows us to compare different methods, models, and memory mechanisms under a unified setting.
+
+The context $C$ contains information that the model can use, but which may be long or expensive to repeatedly process (e.g., a document, a list of facts, a repository codebase, or previous dialogue). The query $Q$ specifies what should be done with this information (e.g., a question, a key for retrieval, an instruction, or a prompt). The target $Y$ is the sequence to be predicted. 
+%Either $C$ or $Q$ may be empty: $C=\emptyset$ recovers standard prompting/language modeling without external context, while $Q=\emptyset$ corresponds to settings where the model is tuned to perform a fixed task given only $C$ (e.g., text classification). In this work we focus on the nontrivial setting $C \neq \emptyset$, where solving the task requires incorporating external information from the provided context.
+
+Let $f_\theta$ be a causal language model parameterized by $\theta$.
+% We use $f_\theta(Y \mid X)$ to denote the model-assigned likelihood of an output sequence $Y$ conditioned on an input sequence $X$ (via the standard autoregressive factorization).
+We use $f_\theta(Y \mid X)$ to denote the probability assigned by the model to an output sequence $Y$ conditioned on an input sequence $X$ under the standard autoregressive factorization.
+In the standard causal language modeling setting, the model conditions on the concatenation of context and query:
+% The standard full-context prediction conditions on the concatenation of context and query:
+\begin{equation}
+f_\theta(Y \mid C, Q) \triangleq f_\theta\bigl(Y \mid [C;Q]\bigr).
+\end{equation}
+This approach requires repeatedly attending to the full context for each query at increased compute cost. We instead consider a memory-augmented view with a \textbf{WRITE/READ} phase decomposition.
+We introduce a memory representation $\mathcal{M}$ (e.g., KV-cache, or $m$ input vectors of dimension $d$, or recurrent state) and define two phases:
+
+\textbf{WRITE (encode context into memory).}
+A \emph{context encoder} produces a memory state from the context:
+\begin{equation}
+\mathcal{M} = \mathcal{E}_\theta(C).
+\end{equation}
+
+\textbf{READ (decode using memory and query).}
+The model predicts the target from the memory and the query:
+\begin{equation}
+f_\theta(Y \mid \mathcal{M}, Q) \triangleq f_\theta\bigl(Y \mid [\mathcal{M};Q]\bigr).
+\end{equation}
+
+The central evaluation constraint we consider is the \emph{context removal}: during READ phase, the model does not have direct access to the original context $C$.
+All information needed to predict $Y$ must pass through the memory state $\mathcal{M}$ computed in WRITE phase. Under this setting (\cref{fig:gradmem}a), a method is considered successful if the memory $\mathcal{M}$ captures enough task-relevant information from $C$ to solve the task \emph{using memory and query only}. 
+%For reference, a full-context model that conditions on $[C;Q]$ can be viewed as an upper bound for approaches that rely solely on $\mathcal{M}$. 
+%However, our goal is not to reproduce the full-context distribution, but rather to evaluate the highest possible task performance when $C$ is removed from direct access.
+
+% Finally, the setting is characterized by two resource constraints: a \emph{memory budget} (controlled by the "size" of memory state) and a \emph{write compute budget} (controlled by the cost of producing $M$, e.g., number of passes over the context or number of gradient steps).
+% In Section~\ref{sec:experiments} we compare different writers under matched memory size and study how performance scales with both memory and write compute.
+
+
+
+\subsection{GradMem: Test-Time Gradient Descent Memory}
+% Gradient-Writtent Memory
+\label{sec:gradmem}
+
+\textbf{GradMem} \emph{directly optimizes} the memory representation $\mathcal{M}$:
+%Many WRITE mechanisms are possible in principle, for example, a learned encoder that outputs $\mathcal{M}$ in a single forward pass, recurrent and segment-recurrent models that accumulate state across tokens/text chunks, or implicit update rules \textcolor{red}{ADD REFS!}. In contrast, 
+%The defining feature of GradMem is \textbf{direct per-sample optimization}
+for every example, it performs \emph{test-time training} by running a few gradient descent steps. Crucially, parameters of the model are frozen; instead, only the memory states $\mathcal{M}$ are trained on the current context $C$, resulting in context-relevant representation for the subsequent READ phase.
+
+\textbf{Memory parameterization.}
+We represent memory as $m$ vectors of dimension $d$, $\mathcal{M} \in \mathbb{R}^{m \times d}$. In a decoder-only transformer, these vectors are used as \emph{prefix embeddings} prepended to the model input. GradMem maintains a meta-learned initialization $\mathcal{M}_0$ shared across examples, and produces an example-specific memory $\mathcal{M}_K$ after $K$ WRITE updates. While transformer stores KV-cache of size $\text{num\_layers} \times N\times d \times 2$ for context of length $N$, GradMem memory $\mathcal{M}$ is independent of context length and requires only $m$ $d$-dim vectors.
+
+%\textbf{Relation to Test-Time Training (TTT).}
+GradMem is closely related to Test-Time Training (TTT) layers~\citep{sun2025l2l}, where an update is performed by gradient descent \emph{online per token} (or small token mini-batches).
+%, which update a sequence-dependent state by gradient descent on a self-supervised loss \emph{during inference}. 
+% producing a trajectory of adapted states $W_1,\dots,W_N$ for each input sequence.
+The self-supervised objective in TTT is typically an $\ell_2$ reconstruction loss on the \emph{layer input} $x_i$.
+% , so $x_t$ can correspond to hidden activations in upper layers.
+TTT layers reconstruct layer inputs/activations, while GradMem reconstructs the context tokens, and does so once per context rather than at every layer and every token.
+%Concretely, GradMem applies the same \emph{training at test time} principle at the \emph{context level}: we optimize a single compact memory $\mathcal{M}$ using the entire context $C$ in a dedicated WRITE phase, and then answer queries in a separate READ phase using only $[\hat{\mathcal{M}};Q]$ with the original context removed. 
+Conceptually, instead of maintaining and updating a separate adaptive state in every layer, GradMem concentrates all test-time adaptation into a single memory state at the model input.
+%We compare key parts of TTT layers with GradMem in~\cref{tab:ttt_comparison}.
+
+\textbf{WRITE: optimize memory to encode the context.}
+Given a context sequence $C=(t_1,\dots,t_N)$ of $N$ tokens, GradMem uses an explicit WRITE objective that is task-agnostic and depends only on the ability of the model to reconstruct the context when conditioned on memory:
+\begin{equation}
+\mathcal{L}_{\text{write}}(\mathcal{M}; C)
+\;=\;
+-\sum_{i=1}^{N} \log f_\theta\!\left(t_i \mid [\mathcal{M}; t_{<i}] \right),
+\label{eq:write_loss}
+\end{equation}
+i.e., an autoregressive cross-entropy loss over the context tokens computed while prepending the current memory $\mathcal{M}$.
+Intuitively, minimizing $\mathcal{L}_{\text{write}}$ forces memory $\mathcal{M}$ to encode information about $C$ that is \emph{not} predictable from the prefix $t_{<i}$ alone (e.g., in high-entropy, novel or surprising contexts). In such setting, reducing the $\mathcal{L}_{\text{write}}$ loss requires the model to use the fixed-size prefix $\mathcal{M}$ for storing context content.
+
+Starting from the meta-learned initialization $\mathcal{M}_0$, GradMem performs $K$ steps of gradient descent \emph{on the memory parameters only}:
+\begin{equation}
+\mathcal{M}_{k+1}
+\;=\;
+\mathcal{M}_k \;-\; \alpha \, \nabla_{\mathcal{M}_k}\mathcal{L}_{\text{write}}(\mathcal{M}_k; C), 
+\label{eq:inner_update}
+\end{equation}
+where $\alpha$ is a WRITE-phase learning rate.
+We denote the final memory by $\hat{\mathcal{M}} \triangleq \mathcal{M}_K$, and define the context encoder as the composition of these optimization steps:
+\begin{equation}
+\hat{\mathcal{M}} \;=\; \mathcal{E}_\theta(C) \;\triangleq\; \mathrm{GD}_K\!\left(\mathcal{M}_0,\; \mathcal{L}_{\text{write}}(\cdot; C)\right).
+\end{equation}
+{In practice, the update in \cref{eq:inner_update} can be stabilized with standard techniques such as gradient clipping. We also augmented it with (i) a learned linear layer applied to the memory before/after the updates and (ii) separate prediction heads for the WRITE and READ phases (we discuss these implementation variants in \cref{sec:training_details}).
+
+\textbf{READ: predict only from memory and query.}
+In the READ phase, the model receives only $\hat{\mathcal{M}}$ and the query $Q$ and predicts the target:
+\begin{equation}
+f_\theta(Y \mid \hat{\mathcal{M}}, Q).
+% \;\triangleq\;
+% f_\theta\!\left(Y \mid [\hat{\mathcal{M}}; Q]\right).
+\label{eq:read_def}
+\end{equation}
+The overall training objective is the downstream task loss (e.g., next-token cross-entropy on $Y$) computed in the READ phase under context removal:
+\begin{equation}
+\mathcal{L}_{\text{task}}(\hat{\mathcal{M}}, Q, Y)
+\;=\;
+-\log f_\theta\!\left(Y \mid \hat{\mathcal{M}}, Q\right).
+%\quad \hat{\mathcal{M}}=\mathcal{E}_\theta(C).
+\label{eq:task_loss}
+\vspace{-0.1in}
+\end{equation}
+
+During training, we minimize $\mathcal{L}_{\text{task}}(\hat{\mathcal{M}}, Q, Y)$ w.r.t. $\theta$ and $\mathcal{M}_0$ by differentiating through the WRITE phase optimization steps that produce $\hat{\mathcal{M}}$. In this way, the model learns to use few gradient descent optimization steps as operation to write useful information about current context $C$ into memory.
+Importantly, the WRITE objective $\mathcal{L}_{\text{write}}$ is not designed for any specific downstream task; it is a generic reconstruction loss used to form a memory state. GradMem training is summarized on the \cref{fig:gradmem}c.
+
+%\textbf{Connection to meta-learning.}
+GradMem can be viewed through a meta-learning lens (\cref{fig:gradmem}b,~\citet{maml}): the WRITE phase performs a small number of per-sample optimization steps on $\mathcal{M}$, while the model parameters $\theta$ and the shared initialization $\mathcal{M}_0$ are trained so that these few steps reliably produce useful memories.
+In this view, the WRITE updates in \cref{eq:inner_update} correspond to an \emph{inner optimization (inner loop)} over per-sample memory variables, and the task loss in \cref{eq:task_loss} defines an \emph{outer objective (outer loop)} used to learn $\theta$ and $\mathcal{M}_0$ across training examples.
+We backpropagate through the WRITE optimization (yielding second-order gradients).
+%In our setup, first-order approximations were not sufficient to reach strong performance, so we use the second-order variant in all experiments unless noted otherwise.
+% At inference time, the WRITE phase is executed per example to obtain $\hat{\mathcal{M}}$, after which all downstream computation uses only $[\hat{\mathcal{M}};Q]$.
+
+%\textbf{Relation to forward-only context encoders.}
+A common way to implement the WRITE phase is with a forward-only context encoder that maps $C \mapsto \mathcal{M}$ in a single pass (e.g., an encoder network, or a recurrent/segment-level state update)~\citep{le2014distributed,kiros2015skip,cer2018USE,li2024500xcompressor,gao2024selfcp,rae2019compressive,chevalier2023adapting,behrouz2024titans}. Such encoders must learn to produce a useful memory \emph{without any per-sample feedback} at inference time: once $\mathcal{M}$ is emitted, the write operation cannot verify whether the context was encoded well enough, nor correct mistakes made during compression. GradMem instead treats memory formation as an explicit optimization problem. By defining a task-agnostic reconstruction objective $\mathcal{L}_{\text{write}}(\mathcal{M};C)$ and taking a small number of gradient descent steps on $\mathcal{M}$, GradMem obtains a direct signal of \emph{how well} the current memory explains the context and can iteratively refine $\mathcal{M}$ to reduce this loss. This iterative, loss-driven write mechanism is more expressive than a fixed forward computation: it can allocate compute to the specific context at hand, correct earlier write errors, and trade additional test-time compute (more gradient steps) for improved memory capacity.
+
+
+\section{Experiments and Results}
+\label{sec:experiments}
+
+\subsection{Datasets}
+\label{sec:datasets}
+All experiments follow the context removal setting (\cref{sec:problem_setup}) with two input segments for each of READ and WRITE phases.
+Each example is decomposed into a \emph{context} $C$, a \emph{query} $Q$, and a \emph{target} $Y$.
+
+\textbf{Associative KV-retrieval.}
+Associative retrieval is our main synthetic and controllable benchmark for comparing different memory mechanisms.
+Each example contains $N$ key--value pairs $(k_i, v_i)$, where each key and each value consists of 2 symbols from a 62-character vocabulary. The context is a sequence of key--value pairs with special delimiters:
+\[
+C = \texttt{!}k_1\texttt{:}v_1\texttt{!!}k_2\texttt{:}v_2\texttt{!}\cdots\texttt{!}k_N\texttt{:}v_N\texttt{!}
+\]
+The query $Q$ asks for the value associated with key $k_j$ and the target $Y$ is the corresponding value:
+\[
+Q = \texttt{?!}k_j\texttt{:}, \qquad Y = v_j.
+\]
+The model can answer correctly only if the mapping from keys to values is written into memory during WRITE phase. 
+%We use exact match (EM) as the evaluation metric. 
+
+\textbf{bAbI}~\citep{WestonBCM15_babi}
+is a question answering benchmark that tests reasoning over stories (e.g., tracking entities, locations, and interactions across multiple sentences).
+We use tasks QA1--QA5, which progressively increase the amount of multi-sentence composition required: QA1--QA3 require combining one, two, or three supporting facts, while QA4--QA5 require reasoning over two-argument and three-argument relations expressed across sentences.
+Each example consists of a story (a sequence of sentences) followed by a question and a short answer.
+We define the context $C$ as the story text, the query $Q$ as the question, and the target $Y$ as the ground truth answer string.
+%We report exact match (EM).
+
+
+\textbf{SQuAD}
+~\citep{rajpurkar2016squad} is an extractive question answering dataset, where each example consists of a paragraph, a question, and an answer span within the paragraph.
+We construct a short context variant (Short SQuAD) to control context length and isolate whether GradMem's writing mechanism transfers to natural language by extracting sentences containing the annotated answer span only.
+%: we split the paragraph into sentences and select the sentence that contains the annotated answer span, replacing the original paragraph with this single sentence while keeping the question and answer unchanged. 
+We define the context $C$ as the passage with the answer span, the query $Q$ as the question, and the target $Y$ as the answer text.% to be generated.
+%We report exact match (EM) metric.
+
+\textbf{Language Modeling}
+task evaluates next-token prediction ability of the model, where conditioning on a preceding context typically reduces the cross-entropy loss (perplexity) on subsequent tokens.
+We use WikiText-103~\citep{merity2016pointer} (\texttt{wikitext-103-raw-v1}) and form examples by taking contiguous 256-token chunks.
+%, training all models with the standard autoregressive cross-entropy objective.
+For segmented models (RMT, ARMT, GradMem), we split each chunk into two 128-token segments: the first segment is the context $C$ and the second is the target $Y$.
+There is no separate query in this setup ($Q=\emptyset$): after writing $C$ into memory, the model must predict the continuation $Y$ from memory alone.
+% To evaluate generic sequence modeling under context removal, we run next-token prediction on WikiText-103~\citep{merity2016pointer} (\texttt{wikitext-103-raw-v1}).
+% We form examples by taking contiguous 256-token chunks and train all models with the standard autoregressive cross-entropy objective.
+% For segmented models (RMT, ARMT, GradMem), we split each 256-token chunk into two 128-token segments.
+% Segment 1 is processed first (WRITE / prefix processing), producing the model’s carried state (memory tokens and/or associative memory), and segment 2 is then processed (READ / continuation) without access to segment-1 tokens beyond what is stored in memory.
+% We report average cross-entropy separately on the first 128 tokens (segment 1, context) and on the last 128 tokens (segment 2, target).
+We report average cross-entropy on the last 128 tokens of each segment (segment 2, target).
+% For non-segmented models, we compute the same two metrics by averaging token-level losses over positions 0--127 and 128--255 of the chunk, enabling a position-matched comparison to the segmented setting.
+For non-segmented models, we compute the same metric by averaging token-level losses over positions 128--255 of the chunk, enabling a position-matched comparison to the segmented setting.
+
+\subsection{Baselines}
+
+\textbf{Full-Attention Transformer}
+This trivial baseline
+%for our architecture is the decoder-only Transformer. For a model of given number of parameters, layers and hidden state size, it 
+presents an upper bound of what can be memorized: the memory of a Transformer is uncompressed and contains all input hidden states. For associative retrieval experiments we train a small 4-layer Llama model~\citep{touvron2023llama}, and for downstream tasks we finetune pretrained GPT-2~\citep{radford2019language} and Pythia~\citep{biderman2023pythia} models.
+% For our associative retrieval experiments, we train a 4-layer llama with hidden\_size 128 and 4 attention heads, while for our natural language tasks we use pretrained GPT-2 (124M) and Pythia (160M).
+
+\textbf{Mamba}
+We include pretrained Mamba-2 model (130M) as a strong state-space baseline for sequence modeling~\citep{dao2024transformersssmsgeneralizedmodels}.
+Mamba replaces quadratic self-attention with a selective state-space model (SSM) update, yielding linear-time processing in sequence length while retaining strong performance via input-dependent selection/gating.
+In our experiments, Mamba provides a natural comparison point: it maintains an internal recurrent state that summarizes the prefix and can be reused when processing subsequent tokens, without requiring an explicit attention cache.
+%We use a pretrained Mamba (130M) configuration and evaluate it under the same input/output protocol as the other baselines.
+
+% 2-segment
+\textbf{RMT}
+The Recurrent Memory Transformer (RMT)~\citep{rmt_2022} is used as the straightforward forward-only memory write baseline. RMT splits the context into segments and iteratively processes them one after another with an LLM. It passes special memory vectors alongside segment tokens in order to memorize important information and reuse it. We use 2-segment version of RMT: the first segment contains the context, and the second one starts with the query and generate the answer. In this setting RMT is fully equivalent to GradMem except for the memory write operation that is performed by the forward pass. For associative retrieval experiments we wrap the 4-layer llama model with hidden\_size 128 and 4 attention heads, while for our natural language experiments we wrap the GPT-2 (124M) model. The same applies to ARMT model. For more training details see the \autoref{sec:training_details}.
+
+\begin{table*}[h]
+  \caption{\textbf{KV-retrieval: gradient-based WRITE outperforms forward-only WRITE.} Exact match retrieval accuracy (mean$\pm$std over 3 runs) for predicting a 2-token value from a 2-token key as the number of key--value pairs increases. \textbf{Upper bound:} a standard Transformer with full KV-cache retains all past activations. \textbf{Per-layer memory baselines:} Mamba and ARMT maintain state in every layer. \textbf{Same memory state:} RMT (forward-only write) and GradMem both use the same base architecture and the same memory size of $m{=}8$ vectors, but different WRITE rule. Repeating the forward-only WRITE by re-reading the same context segment (x2--x5) gives limited or inconsistent gains, whereas additional gradient-based WRITE steps (x2, x5) consistently improve retrieval at larger numbers of pairs.}
+  \label{tab:kv_retrieval}
+  \begin{center}
+    \begin{small}
+      \begin{sc}
+      % \renewcommand{\arraystretch}{1.2}
+    \resizebox{\linewidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{6}{c}{Number of KV-pairs} \\
+Model & 4 & 8 & 16 & 32 & 64 & 96 \\
+\midrule
+Transformer: $\mathcal{M}$=KV-cache & 100.0{\tiny$\pm$0.0} & 100.0{\tiny$\pm$0.0} & 99.8{\tiny$\pm$0.0} & 99.8{\tiny$\pm$0.3} & 96.5{\tiny$\pm$2.9} & 98.8{\tiny$\pm$0.0} \\
+\midrule
+Mamba: $\mathcal{M}$=per-layer recurrent state & 99.9{\tiny$\pm$0.1} & 98.9{\tiny$\pm$0.4} & 98.7{\tiny$\pm$0.2} & 90.2{\tiny$\pm$10.2} & 95.2{\tiny$\pm$0.1} & \textbf{92.2}{\tiny$\pm$0.4} \\
+ARMT: $\mathcal{M}$=per-layer associative matrix & 99.0{\tiny$\pm$0.3} & 98.5{\tiny$\pm$0.5} & 97.4{\tiny$\pm$0.3} & 54.9{\tiny$\pm$2.1} & 22.6{\tiny$\pm$3.9} & 15.2{\tiny$\pm$0.2} \\
+\midrule
+Forward-only write (RMT): $\mathcal{M}$=8 mem vectors & \textbf{100.0}{\tiny$\pm$0.0} & \textbf{100.0}{\tiny$\pm$0.0} & 45.5{\tiny$\pm$0.2} & 44.3{\tiny$\pm$0.0} & 19.3{\tiny$\pm$3.1} & 12.9{\tiny$\pm$0.2} \\
+\hfill x2 memory updates &  &  & 69.6{\tiny$\pm$28.1} & 18.7{\tiny$\pm$3.4} & -- & -- \\
+\hfill x3 memory updates &  &  & 60.0{\tiny$\pm$42.0} & 38.1{\tiny$\pm$0.0} & -- & -- \\
+\hfill x4 memory updates &  &  & -- & 31.5{\tiny$\pm$0.0} & -- & -- \\
+\hfill x5 memory updates &  &  & -- & 37.0{\tiny$\pm$1.7} & -- & -- \\
+\midrule
+GradMem: $\mathcal{M}$=8 mem vectors & \textbf{100.0}{\tiny$\pm$0.0} & 99.7{\tiny$\pm$0.0} & 96.3{\tiny$\pm$0.9} & 86.9{\tiny$\pm$0.5} & 58.6{\tiny$\pm$0.7} & 32.6{\tiny$\pm$0.1} \\
+\hfill x2 memory updates & \textbf{100.0}{\tiny$\pm$0.0} & \textbf{100.0}{\tiny$\pm$0.0} & 99.6{\tiny$\pm$0.1} & 98.3{\tiny$\pm$0.1} & 72.8{\tiny$\pm$0.5} & 34.2{\tiny$\pm$0.1} \\
+\hfill x5 memory updates & \textbf{100.0}{\tiny$\pm$0.0} & \textbf{100.0}{\tiny$\pm$0.0} & \textbf{100.0}{\tiny$\pm$0.0} & \textbf{99.9}{\tiny$\pm$0.1} & \textbf{99.1}{\tiny$\pm$0.3} & 88.4{\tiny$\pm$2.3} \\
+\hfill x1, w/o meta-learning &  & 12.9{\tiny$\pm$8.1} & 3.0{\tiny$\pm$0.6} & -- & -- & -- \\
+\hfill x2, w/o meta-learning &  & 46.7{\tiny$\pm$8.3} & 4.2{\tiny$\pm$0.7} & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+}
+\end{sc}
+\end{small}
+\end{center}
+\vspace{-0.2in}
+\end{table*}
+
+\textbf{ARMT}
+% ivan
+Associative Recurrent Memory Transformer~\citep{rodkin2024associative} accumulates information  segment by segment into a small set of memory tokens and stores them in an associative matrix with a DeltaNet-style update~\citep{yang2024parallelizing}.
+ARMT performs a forward-only WRITE: as it processes a segment, it produces memory tokens and writes them into the associative memory on each layer, which is then queried over future segments.
+In this paper we use a two-segment setup as for RMT.
+This makes ARMT a strong baseline for assessing whether \emph{gradient-based} writing (GradMem) into memory tokens stores more task-relevant information than \emph{forward-only} writing into per-layer associative matrices.
+
+
+
+
+
+
+
+\subsection{Results on KV-retrieval task}
+\label{sec:kv_retrieval_results}
+
+We start with associative KV-retrieval and organize compared methods into four groups (\cref{tab:kv_retrieval}).
+First, a standard Transformer that attends to the full context serves as an \textbf{upper bound}: it is not a compressive-memory method, since it retains all past activations (KV-cache).
+Second, sequence models with \emph{per-layer} memory (e.g., Mamba and ARMT) implement a different memory interface: their state is distributed across layers and is therefore not directly matched to a single model-level memory state.
+We include them as strong reference points, but focus our main comparison on methods that write into the same memory parameterization (RMT, GradMem).
+Third, we consider \textbf{forward-only writing} into a memory (RMT), which updates memory purely through forward computation.
+Finally, we evaluate \textbf{GradMem}, which uses the same base architecture and the same memory size ($m{=}8$ memory vectors), but differs in the WRITE rule: GradMem updates memory tokens by a small number of test-time gradient steps. All models we compare here have 4 layers and 128-dim (for transformer-based models we use 4 attention heads). Unless stated otherwise, we use the same number of KV-pairs and memory updates for training and inference (RMT, GradMem). Once a method's accuracy dropped sharply at smaller $N$, we did not scale it further (entries marked with ``--'' in the \cref{tab:kv_retrieval}).
+
+\textbf{Gradient-based WRITE improves performance and scales with more steps.}
+\cref{fig:kv_retrieval_forward_vs_backward} compares forward-only writing (RMT) with GradMem under the same memory size, and varying the number of WRITE updates.
+We can see three trends.
+(i) Gradient-based updates of a model-level memory state are effective: by directly optimizing memory tokens per example at test-time, GradMem writes context information into a compact memory and attains high retrieval accuracy compared to RMT with forward-only memory update.
+(ii) Even a single gradient-based WRITE step ($K{=}1$) substantially outperforms a forward-only write at the same memory size.
+(iii) Allocating more WRITE compute to gradient updates further improves performance: increasing to $K{=}5$ enables accurate retrieval at much larger numbers of key--value pairs.
+
+\begin{figure}[t]
+  \begin{center}
+    \centerline{\includegraphics[width=\linewidth]{figs/kv_retrieval_forward_vs_gradmem_v1.pdf}}
+    \caption{\textbf{Gradient-based memory updates (GradMem) outperform forward-only updates at the same memory size.} With a memory state of 8 vectors, GradMem retrieves any of 16 key--value pairs with 95\% accuracy, whereas a forward-only update rule stores only 8 pairs with high accuracy. More gradient steps increases the capacity of the same 8-vector memory to 96 pairs at 88\% retrieval accuracy. Transformer with KV-cache as non-compressive memory serves as an upper bound.}
+\label{fig:kv_retrieval_forward_vs_backward}
+  \end{center}
+  \vspace{-0.4in}
+\end{figure}
+
+
+
+\textbf{Repeated forward writes provide limited gains compared to gradient updates.}
+\cref{tab:kv_retrieval} reports the full set of results on KV-retrieval.
+Among methods that write into a \emph{single memory state} of 8 vectors, GradMem consistently achieves higher accuracy than forward-only writing (RMT).
+Moreover, repeating the forward-only WRITE by \emph{re-reading the same context segment multiple times} yields weak or inconsistent improvements, whereas additional gradient-based WRITE steps reliably increase performance.
+These results support conclusion that gradient-based updates provide a more expressive write operation than forward-only computation, and additional gradient steps offer a way to trade test-time compute for better memory quality.
+We also found that first-order approximations (\cref{tab:kv_retrieval}, w/o meta-learning) were not sufficient to reach strong performance, so we use the second-order variant (MAML,~\citet{maml}) in further experiments.
+
+% \begin{figure}[ht!]
+%     \centering
+%     \includegraphics[width=\linewidth]{figs/kv_extrapolation.pdf}
+%     \caption{\textbf{More gradient steps at test-time leads to better performance without fine-tuning.} Results for $K_{\text{train}}$ values of GradMem setups that could not achieve 99\% exact match during fine-tuning. Red dashed lines denote the beginning of extrapolation.}
+%     \label{fig:kv_extrapolation}
+% \end{figure}
+
+\begin{table*}[t]
+\caption{\textbf{GradMem remains competitive on downstream language tasks.} Results on bAbI (QA1--5), SQuAD (short) shown as Exact Match (EM) in \%, and language modeling (cross-entropy on token ranges). We use 32 mem tokens for SQuAD and LM, and 8 on bAbI. We report mean$\pm$std over 3 runs.}
+\label{tab:nlp_results}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+% \renewcommand{\arraystretch}{1.05}
+% \begin{tabular}{lccccc c cc}
+\begin{tabular}{llllll l l}
+\toprule
+ & \multicolumn{5}{c}{bAbI (EM$\uparrow$)} & \multicolumn{1}{c}{SQuAD (EM$\uparrow$)} & \multicolumn{1}{c}{LM (CE$\downarrow$)} \\
+\cmidrule(lr){2-6}\cmidrule(lr){7-7}\cmidrule(lr){8-8}
+ & QA1 & QA2 & QA3 & QA4 & QA5 & short & 128--255 \\
+\midrule
+Input length (tokens) & $\sim$40 & $\sim$100 & $\sim$300 & $\sim$20 & $\sim$20 & $\sim$40 & 256 \\
+\midrule
+\multicolumn{8}{c}{\textit{Full context models (upper bound)}}\\
+GPT-2-124m & 100.0{\tiny$\pm$0.0} & 100.0{\tiny$\pm$0.0} & 99.8{\tiny$\pm$0.1} & 100.0{\tiny$\pm$0.0} & 99.4{\tiny$\pm$0.1} & 64.2{\tiny$\pm$0.3} & 2.72{\tiny$\pm$0.00} \\
+\smallskip
+\quad Limit context to 128 tokens &  &  &  &  &  &  & 3.20{\tiny$\pm$0.00} \\
+Pythia-160m & 100.0{\tiny$\pm$0.0} & 99.7{\tiny$\pm$0.1} & 95.5{\tiny$\pm$2.7} & 100.0{\tiny$\pm$0.0} & 99.0{\tiny$\pm$0.1} & 48.9{\tiny$\pm$0.4} & 2.84{\tiny$\pm$0.05} \\
+\midrule 
+\multicolumn{8}{c}{\textit{Recurrent models}}\\
+Mamba-130m-hf & 100.0{\tiny$\pm$0.0} & 100.0{\tiny$\pm$0.0} & 96.7{\tiny$\pm$0.2} & 100.0{\tiny$\pm$0.0} & 99.7{\tiny$\pm$0.09} & 63.3{\tiny$\pm$0.2} & 2.69{\tiny$\pm$0.00} \\
+RMT (GPT-2) & 100.0{\tiny$\pm$0.0} & 93.9{\tiny$\pm$0.1} & 87.9{\tiny$\pm$0.4} & 100.0{\tiny$\pm$0.0} & 93.9{\tiny$\pm$6.9} & 42.6{\tiny$\pm$0.3} & 2.91{\tiny$\pm$0.00} \\
+ARMT (GPT-2) & 100.0{\tiny$\pm$0.0} & 93.8{\tiny$\pm$0.6} & 92.3{\tiny$\pm$0.8} & 100.0{\tiny$\pm$0.0} & 98.9{\tiny$\pm$0.1} & 39.0{\tiny$\pm$0.2} & 2.85{\tiny$\pm$0.00} \\
+\midrule
+GradMem (GPT-2, $K=1$) & 100.0{\tiny$\pm$0.0} & 94.2{\tiny$\pm$0.4} & 80.0{\tiny$\pm$0.2} & 100.0{\tiny$\pm$0.0} & 99.2{\tiny$\pm$0.1} & 38.1{\tiny$\pm$0.1} & 2.92{\tiny$\pm$0.00} \\
+GradMem (GPT-2, increased $K$) & 100.0{\tiny$\pm$0.0} & 93.9{\tiny$\pm$0.5} & 79.3{\tiny$\pm$0.2} & 100.0{\tiny$\pm$0.0} & 99.2{\tiny$\pm$0.1} & 54.9{\tiny$\pm$0.4} & -- \\
+% GradMem (GPT-2, $m$: $8\rightarrow32$, bAbI) & - & - & 74.42{\tiny$\pm$3.33} & - & - & - & - \\
+\bottomrule
+\end{tabular}
+
+\end{table*}
+
+
+\begin{figure}[ht]
+\centering
+
+\begin{minipage}[c]{0.06\linewidth}
+  \centering\textbf{(a)}
+\end{minipage}%
+\begin{minipage}[c]{0.94\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{figs/kv_extrapolation.pdf}
+\end{minipage}
+\vspace{0.2em}
+
+\begin{minipage}[c]{0.06\linewidth}
+  \centering\textbf{(b)}
+\end{minipage}%
+\begin{minipage}[c]{0.94\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{figs/n96_em-ce_relation.pdf}
+\end{minipage}
+
+\caption{\textbf{More gradient steps at test-time lead to better performance without fine-tuning.} \textbf{(a)} Results for $K_{\text{train}}$ values of GradMem setups that could not achieve 99\% exact match during fine-tuning. Red dashed lines denote the beginning of extrapolation. \textbf{(b)} Downstream task quality (Exact Match) correlates with WRITE objective in inner loop (reconstruction). Notably, GradMem reconstructs \emph{values} better than \emph{keys}, despite the WRITE objective treating them equally. Results on 96-pair KV-retrieval.}
+\vspace{-0.2in}
+\label{fig:kv_extrapolation}
+
+\end{figure}
+
+\subsection{Scaling inference compute with more WRITE iterations}
+% \todo[inline]{matvey -- add figure, N32-trained on K1,K2, N64/N96, trained on K-?, Y - 1,2,3,4,5,<10,<20,<30}
+
+In GradMem, we find that increasing the number of WRITE iterations at evaluation time provides a substantial accuracy lift on KV-retrieval task. Figure~\ref{fig:kv_extrapolation}(a) shows a trend across settings with different numbers of key--value pairs where for some models extrapolating from the training-time value $K_{\text{train}}$ to larger $K_{\text{eval}}$ yields improvements in exact match. Importantly, these gains are obtained with \emph{fixed} model parameters and therefore reflect the effect of allocating additional WRITE refinement steps at inference.
+%rather than additional learning. 
+We connect this effect to better convergence on the inner task.
+By decomposing the inner loss into loss on key or value tokens (Figure~\ref{fig:kv_extrapolation}(b)) we observe that inner loss correlates strongly with exact match (more results are in Appendix~\ref{sec:em-ce_relation}).
+% More inner loss results are in 
+
+This behavior induces a practical compute--accuracy trade-off and a way to scale computation beyond training without re-optimization. Larger $K_{\text{train}}$ is expensive under our meta-learning objective, and it becomes increasingly cumbersome to fine-tune models that must backpropagate through long WRITE trajectories---particularly when longer contexts and larger $K$ are required. In contrast, increasing $K_{\text{eval}}$ only at inference time shifts this cost to evaluation, enabling higher accuracy without any fine-tuning while preserving a small-$K$ training pipeline.
+
+
+
+
+
+\subsection{GradMem with pre-trained models on NLP tasks}
+% ivan & aydar
+We next evaluate GradMem with pretrained language models on natural language benchmarks to test whether the gradient-based WRITE method and reconstruction-based WRITE objective can produce useful memory states outside the controlled KV-retrieval setting. %To reduce the effect of long, distractor-heavy contexts on performance we report results on Short SQuAD, where the context is restricted to the answer-containing sentence.
+
+\textbf{GradMem remains competitive on downstream language tasks and scales well with $K$.}
+The NLP task evaluation spans across three task groups: bAbI reasoning benchmark, single-sentence SQuAD QA and the LM task on the Wikitext dataset (see Table~\ref{tab:nlp_results}). 
+The bAbI evaluation exhibits significant variability of scores on different reasoning tasks. The context size of QA1, QA4 and QA5 generally does not exceed 40 tokens, and all evaluated methods solve them well, matching the upper bound Transformer performance. QA2 and QA3 require to memorize more facts and detect them among more noise, which poses a challenge to compressive models. Mamba performs the best among recurrent models since the memory operations are already learned during extensive pretraining, unlike GradMem and recurrent Transformers. ARMT follows short, its strong performance on QA2 and QA3 can be attributed to the largest memory state size in its class and added parameters in associative layers. GradMem matches or outperforms forward-only RMT on all QA tasks except QA3 with the highest information density, and performance improves with larger $K$.
+
+To reduce the effect of long, distractor-heavy contexts on performance we evaluate text understanding on Short SQuAD, where the context is restricted to the answer-containing sentence; for dataset details refer to Section~\ref{sec:datasets} and Appendix~\ref{sec:training_details}. GradMem with $K=1$ outperforms forward-only RMT, and by scaling $K$ achieves the best performance among recurrent Transformers and even the non-compressive Pythia model, GPT-2 still remains the upper bound. On the Wikitext language modeling task, recurrent models are required to compress diverse information from context to correctly predict the next token of the current segment. All compressive Transformers learn to use memory and noticeably outperform GPT-2 with context size 128; full-context GPT-2 remains the upper bound. ARMT with more capacious memory takes the lead, followed by RMT and GradMem.%; increasing $K$ also improves GradMem performance.
+
+
+\section{Discussion and Conclusions}
+
+% - gradmem requires backpropagating through inner loop - it is unfolds computational graph and therefore needs more compute and gpu ram, but there are methods from meta-learning that try to address these problems. We implemented more memory efficient and fast implementation of double backward and provide details in~\cref{sec:double_backward} (Appendix), Flash Attention is fast but it does not support calling backward on its backward function.
+\textbf{Compute and memory overhead.}
+A core cost of GradMem is that it backpropagates through the WRITE inner loop and, during training, differentiates through the unrolled optimization steps.
+This increases both compute and GPU memory usage compared to forward-only writers and standard full-context training, since the computational graph must be retained across WRITE steps.
+In practice, this also constrains the choice of attention implementation: common high-performance kernels such as FlashAttention~\citep{flashattention} and PyTorch SDPA are designed for efficient first-order backpropagation, but do not support the higher-order differentiation required by GradMem training (i.e., taking gradients through the WRITE updates).
+As a result, we implement a custom double-backward that is both \emph{more memory-efficient} and \emph{faster} than a naive eager implementation, described in Appendix~\ref{sec:double_backward}.
+More broadly, the meta-learning literature provides methods that are more computationally efficient first-order/implicit approaches such as iMAML~\citep{imaml} and Reptile~\citep{nichol2018reptile}, which could further improve the efficiency of GradMem meta-learning training.
+
+\textbf{When test-time WRITE compute is worthwhile.}
+At inference time, the WRITE phase with $K$ gradient steps is more expensive than a single forward pass over the context.
+Nevertheless, in applications where the same context is reused across multiple queries, the additional WRITE compute can be amortized: after encoding a long context $C$ into a compact memory $\mathcal{M}$ once, subsequent READ computations attend only over $[\mathcal{M};Q]$ rather than $[C;Q]$. When $|C| \gg |\mathcal{M}|$, this can reduce per-query computation and memory, making gradient-based writing a more compute-reasonable option. We analyze this in~\cref{sec:compute_analysis}.
+
+
+% - when we tried to skip gradients path through inner loop model was not converging
+
+
+% - we use simple token-by-token reconstruction task and the choice may not be optimal, but still our results show that even such objective for memory state optimization shows good results. of course this can be improved if memory objective was specifically design for a specific downstream task. We find direction of learning to find such memory objectives be very promising, and it already had been touched in literature.
+
+\textbf{Write objectives beyond reconstruction.}
+We use a simple token-level reconstruction objective for $\mathcal{L}_{\text{write}}$, which is task-agnostic and easy to apply across domains.
+Despite its simplicity, it is already sufficient to yield strong gains on associative retrieval and to transfer to natural language tasks.
+At the same time, reconstruction is unlikely to be optimal for all downstream tasks.
+Related work on TTT layers~\citep{sun2025l2l} already explored learning self-supervised reconstruction objectives via input transformations, but considered relatively restricted (e.g., linear) transformations.
+A promising direction is to learn WRITE objectives that better preserve task-relevant information, while retaining the key constraint that WRITE remains self-supervised on the available context.
+
+% cramming paper method can compress text into vectors only for decoding, we use same mechanism but trained model to write context into vectors such that they can be used in other tasks, not only for reconstruction. кремминг: сжимает, но не решает задачи, а gradmem: засчет сжимания учится решать задачи.
+% \textbf{Relation to iterative context compression.}
+% Prior work such as Cramming~\citep{kuratov2025cramming} shows that iterative optimization of input embeddings can encode long sequences into a small number of vectors for accurate reconstruction.
+% GradMem builds on the same underlying mechanism---optimization as a compression operator---but differs in goal and training signal.
+% Rather than optimizing embeddings solely to reconstruct the input, GradMem meta-trains memory writing so that the resulting compressed representation is \emph{useful for downstream prediction} under context removal.
+% In other words, Cramming demonstrates that text can be compressed into vectors for decoding, whereas GradMem trains models to compress contexts into vectors that support solving tasks beyond reconstruction.
+
+\textbf{Conclusions.}
+% todo: conclusion paragraph
+We introduced GradMem, a WRITE/READ memory mechanism where a model \emph{writes} a context into a small set of memory tokens by running a few steps of test-time gradient descent while keeping model weights fixed.
+Across controlled KV-retrieval experiments, this direct per-sample optimization gives a stronger WRITE rule than forward-only updates under the same architecture and memory size. Increasing the number of gradient WRITE steps reliably improves retrieval as the number of stored key--value pairs grows, unlike repeating forward WRITE passes.
+We further showed that the same reconstruction-based WRITE objective can be applied to pretrained language models in natural language tasks (bAbI, short SQuAD, language modeling).
+% , though closing the gap to full-context QA remains an open problem.
+Overall, our results establish gradient-based test-time optimization of a model-level memory state as a promising alternative to forward-only memory writers, and motivate future work on more efficient training, scaling to longer contexts and larger models, and better self-supervised WRITE objectives.
+
+
+
+
+% Acknowledgements should only appear in the accepted version.
+% \section*{Acknowledgements}
+
+
+% \section*{Impact Statement}
+% This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none which we feel must be specifically highlighted here.
+
+% In the unusual situation where you want a paper to appear in the
+% references without citing it in the main text, use \nocite
+% \nocite{langley00}
+
+\bibliography{main}
+\bibliographystyle{icml2026}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\appendix
+\onecolumn
+
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Long-context modeling and efficient attention.}
+A large body of work aims to extend the effective context length of transformers by changing the architecture or attention mechanism, thereby reducing the need for an explicit external memory.
+Compressive Transformers~\citep{rae2019compressive} augment the standard recurrent memory with a compressed memory stream, retaining a lossy summary of distant past activations.
+Recurrent memory transformers such as RMT~\citep{rmt_2022} and their extensions~\citep{chevalier2023adapting} segment long inputs into chunks and pass a trainable state between segments, enabling processing of sequences far beyond the native context window.
+Other approaches leverage associative memories and efficient attention mechanisms to scale to long contexts~\citep{rodkin2024associative, ramsauer2020hopfield}.
+%These methods primarily focus on architectural changes that allow the model to propagate information across long inputs, whereas our work focuses on a compact, reusable memory state that is explicitly optimized from the context and reused across queries under context removal.
+
+\textbf{Context compression and reusable representations.}
+%The task of information compression is closely tied to inference and prediction, and in many formulations is taken as a proxy for intelligence~\citep{hutterprize}.
+In NLP, compression has long been studied for constructing compact sentence- or document-level representations~\citep{le2014distributed, kiros2015skip, cer2018USE}, often via autoencoding pipelines~\citep{bowman-etal-2016-generating, pmlr-v48-miao16}.
+In the context of large language models, input compression is used both to reduce the quadratic cost of self-attention and to create persistent representations that can be stored or reused.
+For compressed data storage in LLMs, one can use dense continuous vectors or memory tokens~\citep{burtsev2021memory}, but also LoRA parameters~\citep{hu2022lora}, intermediate hidden states~\citep{li2024500xcompressor}, associative memories~\citep{rodkin2024associative, ramsauer2020hopfield}, or the KV-cache directly~\citep{chari2025kv, karamitrellis}.
+Some works focus on compressing only part of the input, such as prompts~\citep{lester2021power, li2021prefix} or in-context examples~\citep{ge2023incontext, eyuboglu2025cartridges}, while others iteratively compress the entire sequence by splitting it into smaller chunks and processing them sequentially~\citep{rae2019compressive, rmt_2022, chevalier2023adapting, prakash2025attention}.
+Approaches such as task vectors~\citep{ilharco2022editing} and Cartridges~\citep{eyuboglu2025cartridges} compress information from multiple task samples into persistent vectors that can be reused to steer the model on those tasks, amortizing the cost of processing across many downstream queries.
+
+A straightforward way to compress information into memory is to use the model itself as an encoder, e.g., via segment-level memory tokens in RMT-style architectures~\citep{rmt_2022, chevalier2023adapting, gao2024selfcp}.
+ICAE~\citep{ge2023incontext} and SelfCP~\citep{gao2024selfcp} train base LLMs to compress context using autoencoding-style objectives and other losses targeted at text understanding~\citep{li2024500xcompressor}.
+%In contrast to these forward-only encoders, GradMem uses an explicit optimization process over memory tokens driven by a model-level WRITE objective, and we study how capacity and downstream performance scale with the number of WRITE steps under context removal.
+
+\textbf{Fast weights, delta rules, and associative memory} offer another path to context-dependent memory.
+Early work used fast weights as high-level controllers~\citep{schmidhuber1992learning} or as associative storage over past representations~\citep{hinton1987using}.
+Recent formulations adapt fast weights to modern architectures, often in the form of associative memories or gated recurrent states that implement a learned approximation to a delta rule.
+Associative-memory transformers~\citep{rodkin2024associative} and modern Hopfield networks~\citep{ramsauer2020hopfield} can be interpreted as storing and retrieving key--value pairs in a continuous memory, with the write operation implemented purely via forward computation.
+These mechanisms generally rely on \emph{forward-only} update rules that are applied once per token or timestep, without an explicit per-example optimization objective that is iteratively minimized for a given context.
+%GradMem instead treats the memory state as an explicit optimization variable and performs multiple gradient-based updates per context under a model-level reconstruction loss.
+
+\textbf{Test-time training.}
+GradMem is closely related to test-time training (TTT) methods that perform gradient-based adaptation during inference.
+TTT layers~\citep{sun2025l2l} introduce lightweight, sequence-dependent state that is updated online using self-supervised objectives, typically by reconstructing layer activations at each timestep.
+%In contrast, GradMem performs a dedicated WRITE phase once per context and optimizes a single compact memory at the model input to encode the context tokens themselves.
+%In this sense, GradMem applies the ``learning at test time'' principle at the \emph{context level}: the whole transformer behaves as a single adaptive module whose writable state is the memory $\mathcal{M}$.
+A related line of work uses optimization as a way to compress large amounts of data into a fixed number of weights or embeddings.
+Early formulations viewed fast weights as auxiliary parameters that are updated via gradient-based rules~\citep{schmidhuber1992learning}.
+More recent work proposes unsupervised objectives for compressing context via test-time optimization~\citep{sun2025l2l}, and adapts these ideas to transformers by introducing additional memory modules, routing mechanisms~\citep{behrouz2024titans, behrouz2025atlas} and end-to-end training objectives~\citep{tandon2025end}.
+The study of~\citet{kuratov2025cramming} shows that, by optimizing a simple reconstruction objective with gradient descent, it is possible to achieve extremely high compression ratios (up to $\sim$1500$\times$) into a single vector; however, this requires up to tens of thousands of gradient updates and produces representations that are primarily useful for text reconstruction rather than downstream tasks.
+
+\begin{table*}[h]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\caption{Comparison of GradMem to test-time training (TTT) layers. Both approaches perform learning at inference time via a self-supervised loss, but differ in \emph{what} is adapted (layer parameters vs.\ memory tokens), \emph{when} it is adapted (token-level online vs.\ context-level WRITE), and \emph{what} the self-supervised signal reconstructs (layer inputs/activations vs.\ context tokens).}
+\begin{tabularx}{\linewidth}{lXX}
+\toprule
+ & \textbf{TTT layers}~\citep{sun2025l2l} & \textbf{GradMem (ours)} \\
+\midrule
+Usage pattern
+& Sequence-modeling layer: updates state online while processing tokens
+& Explicit two-phase WRITE/READ setting \\
+
+Inner-loop input
+& Token $x_t$ (or token mini-batches)
+& Whole context segment $C$ (WRITE once per context) \\
+
+Test-time parameters
+& Layer-specific parameters $W_t$ (updated from the layer's inputs/activations), \emph{per layer}
+& Prefix memory tokens $\mathcal{M}_k \in \mathbb{R}^{m \times d}$ (single memory state), \emph{per model} \\
+
+Self-supervised loss
+& Activation/input reconstruction, e.g. $\ell(W;x_t)=\|f(\tilde{x}_t;W)-x_t\|_2^2$
+(or learned multi-view projections)
+& Context reconstruction $\mathcal{L}_{\text{write}}(\mathcal{M};C)$ \\
+
+Outer-loop objective
+& Next-token prediction (LM training)
+& Downstream task loss with $C$ removed at READ \\
+
+Outer-loop parameters
+& Model params $\theta$ + reconstruction task/view params
+& Model params $\theta$ + memory init $\mathcal{M}_0$ (optional: memory projections / control tokens) \\
+
+% Reuse across queries
+% & Not explicit: state evolves with the stream as tokens arrive
+% & $\hat{\mathcal{M}}$ reusable for multiple queries $Q$ about the same $C$ \\
+\bottomrule
+\end{tabularx}
+\label{tab:ttt_comparison}
+\end{table*}
+
+%\textbf{Titans and related architectures.}
+%Titans introduces a neural memory module whose state is updated at inference time during an implicit optimization process~\citep{behrouz2025titans, behrouz2024titans, behrouz2025atlas}.
+% At a high level, both Titans and GradMem adapt a compact memory state to the current sequence during inference.
+% The key difference lies in the WRITE mechanism: Titans uses a learned online update rule (one update per token) without an explicit per-example optimization objective minimized over the full context, whereas GradMem formulates writing as \emph{direct, per-example optimization} of memory tokens under an explicit model-level reconstruction loss (\cref{eq:write_loss}).
+% This makes GradMem a fully objective-driven writer with iterative error correction: it can perform multiple gradient steps per context, and additional WRITE compute naturally trades off against memory quality and downstream performance.
+
+\textbf{Comparison to our approach}
+Our work is distinguished from prior memory and TTT approaches along three main axes.
+First, GradMem uses a \emph{single input-level memory state} that is written once per context, rather than per-layer or per-token states updated online.
+Second, the WRITE mechanism is \emph{explicitly optimization-based}: memory tokens are treated as parameters and updated by gradient descent on a model-level reconstruction loss, rather than via a learned forward-only update rule.
+Third, we target the \emph{few-step} regime, meta-training the base model and memory initialization so that a small number of gradient steps ($K \leq 5$) suffices for effective writing, in contrast to hundreds or thousands of iterations used in prior embedding-optimization work.
+%Together, these choices yield a compact, reusable memory that can be evaluated under context removal, supports principled compute--quality tradeoffs via the number of WRITE steps, and integrates cleanly with pretrained language models without modifying their weights.
+
+
+% \textbf{Test-time training.}
+% GradMem is related to test-time training (TTT) layers~\citep{sun2025l2l}, which also perform gradient-based adaptation during inference.
+% However, the interface and objective are different.
+% TTT layers typically update per-layer states online and reconstruct layer activations for each timestep, whereas GradMem performs a dedicated WRITE phase once per context and optimizes a single compact memory at the model input to encode the context tokens themselves.
+% In this sense, GradMem applies the ``learning at test time'' principle at the \emph{context level}: the whole transformer behaves like a single adaptive module whose writable state is $\mathcal{M}$.
+
+% \textbf{Text encoders/compressors.}
+% The task of information compression often requires deep understanding of the patterns in data and thus the ability to compress is closely related to intelligence~\citep{hutterprize}. In NLP, compression has been actively studied for the purpose of creating compact sentence-level text representation~\citep{le2014distributed, kiros2015skip, cer2018USE}, including autoencoding pipelines~\citep{bowman-etal-2016-generating, pmlr-v48-miao16}.
+
+% In relation to LLMs, input compression aims to reduce the amount of computation required by the quadratic self-attention mechanism or change the model behavior. For compressed data storage, it is common to use dense continuous vectors or memory tokens~\citep{burtsev2021memory}), but it is possible to utilize LoRA~\citep{hu2022lora} parameters(), intermediate hidden states~\citep{li2024500xcompressor}, associative memories~\citep{rodkin2024associative, ramsauerhopfield} or KV-cache directly~\citep{chari2025kv}. 
+% Some works compress only parts of input such as prompts~\citep{lester2021power,li2021prefix} and in-context examples~\citep{ge2023incontext, eyuboglu2025cartridges} and other iteratively compress the whole input by splitting into smaller chunks and processing them one by one~\citep{rae2019compressive, rmt_2022, chevalier2023adapting}.
+% Alternatively, approaches like task vectors~\citep{ilharco2022editing} and Cartridges~\citep{eyuboglu2025cartridges} provide a way to compress information from multiple task samples into vectors and use them to guide the model on these tasks. 
+
+% A straighforward way of compressing information to memory is using the model itself~\citep{rmt_2022, chevalier2023adapting, gao2024selfcp}. ICAE~\cite{ge2023incontext} and SelfCP~\cite{gao2024selfcp} train the base LLM to compress using the autoencoding and other objectives targeted at text understanding~\citep{li2024500xcompressor}. 
+
+% Another approach relies on optimization methods as a way of compressing large amounts of data into a fixed number of weights. Early works used fast weights as high-level controllers~\citep{schmidhuber1992learning} and working with past representations~\citep{hinton1987using}. Recent works adapt fast weights for test-time training along with unsupervised objectives in order to compress context information~\citep{sunlearning}. Other works bring these ideas to Transformer~\citep{behrouz2024titans,behrouz2025atlas} and introduce additional objectives that route memory write operation. The study by~\citep{kuratov2025cramming} finds that by optimizing a simple reconstruction objective with gradient descent, it is possible to achieve up to 1500x lossless information compression to a single vector. However this result requires up to ten thousand gradient updates, which is infeasible in practice. Furthermore, achieve representations are hard to interpret and are unusable for any practical problem, other than text reconstruction. 
+
+% Our work has some definitive differences from existing test-time training approaches. We compress and learn to use the whole context all at once and on model-level, not limited by compressing separate associations.
+% We also do not introduce new objectives and reuse the cross entropy reconstruction loss, but train the base model itself to perform more cost-efficient and task-oriented context compression.
+% Additionally, the true power of gradient descent is uncovered only when after performing a sufficient number of iterations. Guided by this observation, we perform analysis on the effect of scaling test time compute on the downstream task performance in Section~\ref{}. 
+
+
+% \textbf{Titans and ...}
+% % aydar & ivan
+% Titans introduces a neural memory module whose state is updated at inference time, during the implicit optimization process~\citep{behrouz2025titans,behrouz2024titans,behrouz2025atlas}.
+% At a high level, Titans and GradMem both aim to adapt a compact memory state to the current sequence during inference.
+% The key difference is in the WRITE mechanism: Titans uses a learned online update rule (one update per token) without an explicit per-example optimization objective that is minimized during writing, whereas GradMem formulates writing as \emph{direct per-sample optimization} of memory tokens under an explicit model-level reconstruction loss (\cref{eq:write_loss}).
+% This makes GradMem a fully objective-driven writer with iterative error correction: it can perform multiple gradient steps per context, and additional WRITE compute naturally trades off against memory quality and downstream performance.
+
+\section{Hyperparameters and training details}
+\label{sec:training_details}
+
+We provide the source code as supplementary material with the submission.
+
+Table~\ref{tab:training_details} summarizes the memory configuration and training initialization used across tasks.
+We keep the memory embedding dimension fixed to $d_{\text{mem}}=64$ in all ARMT experiments, and vary only the number of memory tokens depending on the task.
+Unless otherwise noted, ``from pretrained model'' means initializing the base LM weights from a standard pretrained checkpoint (e.g., GPT-2 (124M) / Pythia (160M) / Mamba (130M)) and then fine-tuning with the corresponding memory mechanism.
+
+For associative retrieval (AR), we train models from scratch and use a curriculum over context lengths: training for a larger number of key--value pairs is initialized from the final checkpoint obtained at a smaller length. For GradMem, the curriculum starts from 32 key--value pairs, as we found that the model achieves perfect retrieval on smaller contexts even without curriculum training.
+For bAbI, most models are fine-tuned from pretrained checkpoints; the exception is RMT, which we found to be sensitive to initialization and therefore train it starting from a GPT-2 (124M) checkpoint already fine-tuned on bAbI.
+For language modeling, all models are fine-tuned from pretrained checkpoints; additionally, we report a variant where GradMem is initialized from an RMT checkpoint trained on the same language modeling objective.
+
+For GradMem, we tune the inner learning rate $\alpha \in [0.01,\,10]$. We observe that model performance does not depend strongly on its value, until it is in a reasonable range and found $\alpha=0.4$ to be a relatively strong default value for experiments on NLP tasks. For the KV-retrieval task, we still perform small search over $\alpha$ and report the scores for the best setup with every $K$, but we do not tune $\alpha$ exhaustively in every experiment. We also augment both GradMem and RMT with (i) a learned linear layer applied to the memory before/after the updates and (ii) separate prediction heads (output embeddings) for the WRITE and READ phases. These augmentations are used in all experiments unless stated otherwise. We backpropagate through the unrolled WRITE optimization by default; we explicitly note experiments that disable this meta-learning path (e.g., ~\cref{tab:kv_retrieval}, w/o meta-learning).
+
+\begin{table}[h]
+\centering
+\caption{Task-specific memory hyperparameters and training initialization. In experiments ARMT uses $d_{\text{armt\_mem}}=64$ for associative matrix memory. Memory tokens in RMT, ARMT, and GradMem have the same dimension as models input embeddings.}
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lccl}
+\toprule
+\textbf{Task} & \textbf{num\_mem\_tokens} &  & \textbf{Training technique} \\
+\midrule
+Associative retrieval (AR) & 8  &  & 
+\begin{tabular}[c]{@{}l@{}}
+Curriculum learning by number of KV-pairs (4, 8, 16, ...);\\
+from randomly init model (4 layers, 4 heads, 128 hid)
+\end{tabular}\\
+\midrule
+Short SQuAD               & 32 & &
+\begin{tabular}[c]{@{}l@{}}
+From pretrained model;\\
+GradMem trained without learned memory projection
+\end{tabular}\\
+\midrule
+bAbI                      & 8  & &
+\begin{tabular}[c]{@{}l@{}}
+From pretrained model
+% From pretrained model (all except RMT);\\
+% RMT starts from a GPT-2 checkpoint fine-tuned on bAbI 
+\end{tabular} \\
+\midrule
+Language modeling         & 32 & &
+\begin{tabular}[c]{@{}l@{}}
+From pretrained model (all models);\\
+GradMem trained without separate WRITE head;\\
+% additionally report GradMem initialized from an RMT LM checkpoint
+\end{tabular} \\
+\bottomrule
+\end{tabular}
+\label{tab:training_details}
+\end{table}
+
+
+\section{Accelerating double backwards through attention.}
+\label{sec:double_backward}
+
+In our meta-learning setting, the dominant computational challenge is that the inner-loop optimization requires backwards-over-backwards through attention, which substantially increases both runtime and GPU memory compared to standard training.  We implement an efficient double-backward for attention that significantly reduces this overhead on longer sequences: for $L{=}1024$ tokens, backward time drops from $\sim$1000\,ms to $\sim$600\,ms and peak GPU memory from $\sim$60\,GB to $\sim$30\,GB in our setup. This improvement is critical for scaling GradMem to longer contexts and larger WRITE step counts. In order to accelerate our experiments, we evaluated a few approaches to make the double backward of GradMem more efficient:
+
+\begin{itemize}
+    \item \textbf{Eager}: a baseline which fully relies on PyTorch's autograd for first- and second-order differentiation.
+    
+    \item \textbf{Fast forward $\rightarrow$ manual backward}: the forward pass is computed using PyTorch’s SDPA kernel. The first-order backward is written analytically, and the second-order derivatives are obtained by differentiating the analytical backward with autograd.
+    
+    \item \textbf{Fast forward $\rightarrow$ autograd}: the forward pass also uses SDPA, but constructs the backward by recomputing the attention forward inside the backward and letting autograd differentiate it, enabling second-order derivatives without storing forward intermediates at the cost of recomputation. 
+    
+    \item \textbf{Manual HVP}: a fully analytical implementation of forward, backward, and double backward in pure PyTorch.
+    
+    \item \textbf{Flash HVP}: fused forward and backward kernels, combined with an analytical double backward.
+    
+\end{itemize}
+
+We compare the speed of backward methods in Figure~\ref{fig:gradmem_sdpa}. While on shorter sequences eager attention is the most practical solution, longer contexts benefit from our optimizations, with Fast forward $\rightarrow$ autograd being the fastest and Manual HVP by far the most memory-efficient. In general, Flash HVP is the most balanced approach, coming in second in both speed and memory requirements.
+
+\begin{figure}[htbp!]
+  \centering
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figs/sdpa_bwd.pdf}
+    % \caption{Left image}
+    \label{fig:gradmem-bwd-speed}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figs/sdpa_fwd_bwd.pdf}
+    \label{fig:gradmem-fwd-bwd-speed}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figs/sdpa_mem_resv.pdf}
+    \label{fig:gradmem-mem-resv}
+  \end{subfigure}
+
+  \caption{\textbf{Comparison of speed and memory consumption for attention backwards-over-backwards in GradMem.} These results were obtained using an A100 GPU, with GPT-2 as the base model for GradMem with 8 memory tokens, a query size of 24, 1 inner SGD step and a batch size of 16.}
+  \label{fig:gradmem_sdpa}
+\end{figure}
+
+\section{Computational analysis: when GradMem is compute-efficient}
+\label{sec:compute_analysis}
+
+GradMem introduces additional WRITE-time compute (test-time optimization) in exchange for cheaper READ-time inference, since subsequent queries attend only over a short memory prefix rather than the full context.
+Here we characterize when this trade-off is favorable.
+
+Let $c$ be the context length, $q$ the query length with $q \ll c$ is negligible, $m$ the number of memory tokens, $N$ the number of queries asked about the \emph{same} context, and $K$ the number of gradient updates in the WRITE phase.
+We use $R$ to denote the ratio between the cost of one memory update step and the cost of one forward pass over the context. We compare (i) standard full-context transformer inference that reuses the context for each query, and (ii) GradMem, which pays a WRITE cost once and then answers queries using only memory.
+
+For a transformer-style model, self-attention over a sequence of length $L$ costs $\mathcal{O}(L^2)$, and cross-attention from a query of length $q$ to a context of length $c$ costs $\mathcal{O}(cq)$.
+If we cache the context representations, standard transformer inference incurs a one-time cost to process $C$, plus a per-query cross-attention cost:
+\begin{equation}
+    T_{\text{full}} \approx c^2  +c q N.
+\end{equation}
+
+For GradMem, the WRITE phase runs $K$ gradient descent steps on the context.
+Each step costs $R$ times a forward pass over $C$, giving a WRITE cost of $R c^2 K$.
+At READ time, we process $m$ memory tokens once and each query attends only over the memory tokens and query $q$ tokens. In total giving following cost of both WRITE and multiple reads:
+\begin{equation}
+    T_{\text{GradMem}} \approx R (c+m)^2 K + m^2 + m q N.
+\end{equation}
+
+\textbf{Break-even condition.}
+GradMem is compute-efficient when the total cost is lower than full-context inference: $T_{\text{full}} / T_{\text{GradMem}} > 1.$
+% \begin{equation}
+%     \frac{T_{\text{full}}}{T_{\text{GradMem}}}
+%     \;=\;
+%     \frac{c^2 + c q N}{R c^2 K + m^2 + m q N}
+%     \;>\; 1.
+% \end{equation}
+Equivalently,
+\begin{align}
+    % c^2 + c q N \;&>\; R c^2 K + m^2 + m q N, \\
+    % q N (c - m) \;&>\; c^2(RK - 1) + m^2, \\
+    N \;&>\; \frac{c^2(RK - 1) + (1+RK)m^2 + 2cmRK}{q (c - m)}.
+    \label{eq:gradmem_break_even}
+\end{align}
+In the regime where $q$ is treated as a small constant factor and, this reduces to the simpler heuristic threshold
+\(
+N \gtrsim \bigl(c(RK - 1)\bigr)/q,
+\)
+which matches the form used in our empirical discussion.
+
+Thus, when the same context is reused for more than the threshold in~\cref{eq:gradmem_break_even} and $c > m$, GradMem yields lower total compute than repeatedly answering from the full context (\cref{fig:n_queries_per_context}).
+In practice, the regime $c \gg m$ and large $N$ (many queries per context) is the most favorable for GradMem, since the amortized savings in READ grow linearly with $N$ while the WRITE cost is paid only once per context.
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.4\linewidth]{figs/n_queries_per_context.pdf}
+    \caption{\textbf{Break-even number of queries for GradMem compute efficiency.}
+The curve shows the minimum number of queries per context $N$ required for GradMem to use less total compute than full-context inference with cached context representations. Estimates use query length $q{=}128$ and memory size $m{=}32$; points above the curve favor GradMem.}
+    \label{fig:n_queries_per_context}
+\end{figure}
+
+\textbf{Real-use READ/WRITE latency.}
+On a GPU, models can be bound by factors other than theoretical model complexity, i.e. memory bandwidth or kernel efficiency. In order to control for those factors, we evaluate GradMem against GPT-2 (124M) and Mamba-130m baselines in terms of measured READ and WRITE operation latencies. We treat building the KV-cache in GPT-2 and the recurrent state in Mamba as WRITE operations, while subsequent forward passes using the caches correspond to READ operations.
+
+\cref{fig:gradmem_read_speed} reports the total latency of a WRITE phase followed by $N$ READ (subsequent queries to the same context) operations from the cached representations for contexts of length 64, 256 and 1024 tokens. GradMem has a large initial cost due to the complexity of gradient-based WRITE, which appears as a higher initial offset. However, the complexity of repeating the READ phase is smaller for GradMem compared to other models, since the underlying transformer attends only to a small set of memory tokens instead of the entire context. In contrast, GPT-2 must repeatedly process its KV-cache, resulting in a higher latency per query.
+
+As the number of READ operations rises, the initial overhead of GradMem WRITE operation becomes less pronounced. GradMem consistently outperforms Mamba across all evaluated context lengths, and breaks even with GPT-2 after approximately 64 READ phases for the same context (for context size 256 and 1024).
+
+\begin{figure}[t]
+\centering
+
+\begin{minipage}{0.33\textwidth}
+\centering
+\raisebox{7.5\height}{\textbf{(a)}}\hspace{0.1em}%
+\includegraphics[width=0.9\linewidth]{figs/gradmem_vs_time_64_bs16.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.33\textwidth}
+\centering
+\raisebox{7.5\height}{\textbf{(b)}}\hspace{0.1em}%
+\includegraphics[width=0.9\linewidth]{figs/gradmem_vs_time_256_bs16.pdf}
+\end{minipage}
+\hfill
+\begin{minipage}{0.33\textwidth}
+\centering
+\raisebox{7.5\height}{\textbf{(c)}}\hspace{0.1em}%
+\includegraphics[width=0.9\linewidth]{figs/gradmem_vs_time_1024_bs16.pdf}
+\end{minipage}
+
+\caption{\textbf{GradMem is competitive in latency when the same context is reused across many READ operations.} Results obtained on an A100 GPU. WRITE+READ latency is shown for contexts of length 64 (a), 256 (b), and 1024 (c) tokens. The query length is 24 tokens and the batch size is 16. GradMem uses GPT-2 as the base model with $K=1$. For GPT-2 and Mamba-130M, the WRITE operation corresponds to building the KV-cache and the recurrent state, respectively. The y-axis uses a logarithmic scale; the absolute latency difference (ms) increases with the number of queries per context.}
+\label{fig:gradmem_read_speed}
+\end{figure}
+
+
+
+
+% \begin{algorithm}[t!]
+% \caption{Double Backward of SDPA Backward}
+% \label{alg:sdpa_double_backward}
+% \begin{algorithmic}[1]
+
+% \REQUIRE Matrices $\mathbf{Q, K, V, dO, \bar{dO}} \in \mathbb{R}^{N \times d}$
+
+% % \ENSURE \overline{dQ},\overline{dK},\overline{dV}
+% % $\partial(dO),\partial Q,\partial K,\partial V$
+
+% \STATE Recompute $S = QK^\top, P = \mathrm{softmax}(S)$
+% \STATE Recompute $dP = dO\,V^\top, \mathrm{Ssm} = \sum(dP\odot P), dS = (dP-\mathrm{Ssm})\odot P$
+
+% \STATE $\overline{dS} \leftarrow (\overline{dQ}K^\top + Q\overline{dK}^\top)$
+% \STATE $\beta \leftarrow \sum(\overline{dS}\odot P)$
+% \STATE $\overline{dP} \leftarrow P\odot(\overline{dS}-\beta)$
+% \STATE $\overline{P} \leftarrow dO\,\overline{dV}^\top + \overline{dS}\odot(dP-\mathrm{Ssm}) - dP\odot\beta$
+
+% \STATE $\gamma \leftarrow \sum(\overline{P}\odot P)$
+% \STATE $\overline{S} \leftarrow P\odot(\overline{P}-\gamma)$
+
+% \STATE $\partial(dO) \leftarrow P\,\overline{dV} + \overline{dP}\,V$
+% \STATE $\partial Q \leftarrow (dS\,\overline{dK} + \overline{S}\,K)$
+% \STATE $\partial K \leftarrow (dS^\top\overline{dQ} + \overline{S}^\top Q)$
+% \STATE $\partial V \leftarrow \overline{dP}^\top dO$
+
+% \STATE \textbf{return} $(\partial(dO),\partial Q,\partial K,\partial V)$
+
+% \end{algorithmic}
+% \end{algorithm}
+
+\section{Relation between Exact Match and inner loss}
+\label{sec:em-ce_relation}
+
+To better understand why extrapolating the number of WRITE iterations improves downstream performance, we analyze the behavior of the inner objective during the WRITE phase. Figure~\ref{fig:kv_inner_loss} shows that increasing $K$ yields a reduction in the inner loss, indicating that additional WRITE iterations produce a more accurate memory state under the reconstruction objective. Moreover, the reduction in inner loss correlates with improvements in Exact Match when evaluating with larger $K_{\text{eval}}$. These results provide evidence that improved context retention---as measured by the inner objective---translates into better task-level accuracy in the context-removal setting.
+
+We further analyze \emph{what} information is being retained by decomposing the reconstruction loss over context tokens into contributions from \textbf{key} tokens and \textbf{value} tokens in the associative retrieval data. Notably, the loss on key tokens remains comparatively stable across WRITE iterations, while the loss on value tokens decreases as $K_{\text{eval}}$ increases. This behavior suggests that the learned memory is \emph{selective}: rather than attempting to store the full context verbatim, the model primarily refines those parts of the representation that are useful for answering queries, i.e., the values that must be produced at READ time. In this regime, keys function mainly as retrieval cues, so improving value reconstruction only is sufficient for increasing Exact Match. This supports two conclusions: (i) better memory fidelity under the inner objective leads to higher downstream accuracy, and (ii) the memory mechanism learns to allocate representational capacity toward answer-relevant content, producing a structured compression in which values are retained more precisely than the keys that index them.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figs/em-ce_line.pdf}
+    \caption{\textbf{On KV-retrieval, GradMem learns to decrease inner loss on value tokens only.} This figure was obtained for GradMem fine-tuned on 64-pair KV-retrieval with $K_\text{train}=2$.}
+    \label{fig:kv_inner_loss}
+\end{figure}
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=0.7\linewidth]{figs/n96_em-ce_relation.pdf}
+%     \caption{\textcolor{red}{2ND IMAGE VARIANT} Correlation between Exact Match and inner loss for GradMem trained on KV-retrieval on 96 pairs.}
+%     \label{fig:kv_inner_loss_v2}
+% \end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\end{document}
+
+% This document was modified from the file originally made available by
+% Pat Langley and Andrea Danyluk for ICML-2K. This version was created
+% by Iain Murray in 2018, and modified by Alexandre Bouchard in
+% 2019 and 2021 and by Csaba Szepesvari, Gang Niu and Sivan Sabato in 2022.
+% Modified again in 2023 and 2024 by Sivan Sabato and Jonathan Scarlett.
+% Previous contributors include Dan Roy, Lise Getoor and Tobias
+% Scheffer, which was slightly modified from the 2010 version by
+% Thorsten Joachims & Johannes Fuernkranz, slightly modified from the
+% 2009 version by Kiri Wagstaff and Sam Roweis's 2008 version, which is
+% slightly modified from Prasad Tadepalli's 2007 version which is a
+% lightly changed version of the previous year's version by Andrew
+% Moore, which was in turn edited from those of Kristian Kersting and
+% Codrina Lauth. Alex Smola contributed to the algorithmic style files.

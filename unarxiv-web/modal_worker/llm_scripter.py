@@ -113,9 +113,16 @@ Guidelines:
    word "reference" followed by the label name — that is an artifact.
    "Section reference sec:model" is WRONG. The entire \\ref{} must be
    silently deleted, leaving only the surrounding prose: e.g. "In Section"
-   or "Theorem" with no trailing label text; section heading commands
-   (\\section{}, \\subsection{}, etc.) — do NOT output the heading as a
-   standalone line or label.
+   or "Theorem" with no trailing label text.
+   IMPORTANT: The plain English word "reference" used as a noun or adjective
+   in prose MUST be preserved verbatim. Only the LaTeX command \\ref{label}
+   (backslash + "ref" + braces) is deleted — NOT the standalone word
+   "reference" in ordinary prose. Examples that must be preserved:
+   "reference model", "reference annotation", "reference implementation",
+   "reference frame", "ground-truth reference". These are ordinary English
+   phrases and must appear in the output unchanged.
+   Section heading commands (\\section{}, \\subsection{}, etc.) — do NOT
+   output the heading as a standalone line or label.
    CRITICAL — formatting commands: Strip ALL LaTeX text-formatting commands
    and keep only the plain text inside: \\textbf{X} → "X", \\textit{X} → "X",
    \\emph{X} → "X", \\text{X} → "X", \\noindent → (nothing). Do NOT convert

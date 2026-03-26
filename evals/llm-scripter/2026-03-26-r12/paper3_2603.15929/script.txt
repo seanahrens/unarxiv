@@ -1,0 +1,289 @@
+Semi-Autonomous Formalization of the Vlasov-Maxwell-Landau Equilibrium.
+
+By Vasily Ilin.
+
+Published on March 16, 2026.
+
+We present a complete Lean 4 formalization of the equilibrium characterization in the Vlasov-Maxwell-Landau (VML) system, which describes the motion of charged plasma. The project demonstrates the full AI-assisted mathematical research loop: an AI reasoning model (Gemini DeepThink) generated the proof from a conjecture, an agentic coding tool (Claude Code) translated it into Lean from natural-language prompts, a specialized prover (Aristotle) closed 111 lemmas, and the Lean kernel verified the result. A single mathematician supervised the process over 10 days at a cost of $200, writing zero lines of code.
+
+The entire development process is public: all 229 human prompts, and 213 git commits are archived in the repository. We report detailed lessons on AI failure modes — hypothesis creep, definition-alignment bugs, agent avoidance behaviors — and on what worked: the abstract/concrete proof split, adversarial self-review, and the critical role of human review of key definitions and theorem statements. Notably, the formalization was completed before the final draft of the corresponding math paper was finished.
+
+Next, consider Table 1, which compares recent research-level formalizations with publicly available code, sorted by lines of code. The table has nine columns: Project, Prover, lines of code, New theorem, New definitions, Team size, AI role, Logs availability, and Domain. There are nine rows of projects compared.
+
+The first entry is Gauss, using Lean 4, with 181 thousand lines of code — the largest by far. It has no new theorems and no new definitions, was produced by a team of six or more contributors, and the AI role was sorry elimination. No development logs are public. The domain is Geometry. A footnote clarifies that approximately 22 thousand lines of definitions and statements were written by human experts, and Gauss eliminated approximately 160 thousand lines of sorry's in 3 weeks, with six or more named contributors on the blog post rather than a formal paper.
+
+The second entry is Bayer and David, using Isabelle, with 20 thousand lines of code. It has both new theorems and new definitions, was produced by a team of 15, with no AI role, no public logs, and covers Number theory.
+
+The third entry is this work — shown in bold — using Lean 4, with only 10 thousand lines of code. It has both new theorems and new definitions, was produced by a team of just 1, the AI role was all code generation from natural-language prompts, public logs are available, and the domain is Mathematical physics.
+
+The fourth entry is Numina, using Lean 4, with approximately 8 thousand lines of code. It has new theorems and new definitions, a team of 13, a collaborative human-AI role, no public logs, and covers Analysis.
+
+The fifth entry is AxiomProver's first project, using Lean 4, with 4.3 thousand lines of code. It has new theorems, lightweight new definitions, a team of 21, a fully autonomous AI role, no public logs, and covers Number theory.
+
+The sixth entry is another AxiomProver project, using Lean 4, with 2.7 thousand lines of code. It has new theorems, lightweight new definitions, a team of 21, fully autonomous AI, no public logs, and covers Algebra.
+
+The seventh entry is 2HDM, using Lean 4, with 1.6 thousand lines of code. It has no new theorems — with a footnote noting that this project actually discovered an error in the published proof — but does have new definitions, a team of 1, minimal AI involvement, no public logs, and covers Physics.
+
+The eighth entry is Aristotle, using Lean 4, with 1.4 thousand lines of code. It has new theorems but no new definitions, a team of 1, a fully autonomous AI role, no public logs, and covers Combinatorics.
+
+The ninth and final entry is another AxiomProver project, using Lean 4, with only 0.2 thousand lines of code. It has new theorems, lightweight new definitions, a team of 5, fully autonomous AI, no public logs, and covers Algebraic geometry.
+
+The key takeaway from this comparison is that this work is uniquely distinguished: it is the only project where AI generated all proof-assistant code from natural-language prompts, the full development process including all commits, prompts, and interaction logs is publicly available, and it was completed by a single person. It sits third-largest by lines of code, yet required the smallest team and the most comprehensive AI involvement of any project that also produced new theorems and new substantial definitions.
+
+Formal verification of mathematics in proof assistants like Lean 4 has traditionally required deep expertise in both the mathematics and the proof assistant itself. The learning curve is steep: even experienced mathematicians report months of effort to formalize results that take pages to prove on paper. This bottleneck has limited formal verification to a small community of specialists.
+
+Recent advances in AI-assisted theorem proving are changing this landscape rapidly, as illustrated by the figure we describe now. The figure is a vertical bar chart titled "ArXiv math papers referencing the Lean theorem prover, by year." The horizontal axis shows years from 2014 through 2026, and the vertical axis shows the number of papers, ranging from 0 to 50. Dark blue bars represent full years, and a light blue bar represents the partial year 2026, measured as of March 16th. Starting from the left: 2014 had 1 paper, 2015 had 2, 2017 had 2, 2018 had 4, and 2019 had 6. In 2020, the count dipped slightly to 4, then jumped to 13 in 2021 — annotated on the chart as the year of the Liquid Tensor Experiment. 2022 saw 8 papers, then 2023 rose to 12, annotated as the year the Mathlib 4 port was complete. Growth continued strongly: 16 papers in 2024, 38 papers in 2025, and already 21 papers in 2026 as of March 16th. The overall trajectory shows a dramatic acceleration, with 2025 alone accounting for 38 of the 106 full-year papers tracked. The caption reads: ArXiv papers using Lean for formalization, by year. Data from the arXiv metadata snapshot, March 2026, filtered for references to the Lean theorem prover.
+
+Large language models can now generate Lean tactics, agentic coding tools can manage entire Lean projects, and cloud-based automated theorem provers can close individual lemmas without human intervention.
+
+Yet most published work on AI-assisted formalization focuses on competition mathematics — IMO, Putnam — or textbook results. Recent breakthroughs include AxiomProver autonomously generating a formal Lean proof of Fel's open conjecture from a natural-language problem statement alone, GPT-5.2 generating informal proofs of open Erdős problems that were then auto-formalized in Lean by Aristotle, and Google DeepMind's Aletheia agent autonomously producing research papers in natural language. Numina formalized effective Brascamp-Lieb inequalities — approximately 8,000 lines — with human experts collaborating on the Lean code, and David Bayer formalized their own new theorem in Isabelle in parallel with the mathematical research, writing the proof assistant code themselves.
+
+Our work is distinguished not by full autonomy — AxiomProver's Fel's conjecture result is more autonomous — but by the combination of several features that, to our knowledge, no single prior project shares.
+
+First, scale and depth: 34 files and 10,000-plus lines of Lean, in hard analysis covering Coulomb singularity cancellation, the Leibniz integral rule, and energy methods on the torus.
+
+Second, new theory: the theorem cannot even be stated with existing Mathlib — the Landau operator, torus differential structure, and VML system had to be defined from scratch.
+
+Third, new result: the characterization of smooth steady states of the full VML system with Coulomb collisions and electromagnetic coupling does not appear in the prior literature in this precise form and is, to our knowledge, new as a stated and proved result.
+
+Fourth, fully documented process: a single mathematician wrote zero code while actively steering the formalization over 10 days; every prompt, commit, and tool call is public.
+
+The contributions are as follows. First, a demonstration of the full AI-assisted mathematical research loop: from an open conjecture, through AI-generated resolution and detailed proof — using Gemini DeepThink, requiring no mathematical corrections — to a complete machine-verified formalization using Claude Code and Aristotle, all with the human acting solely as supervisor. To our knowledge, this is the first project to close this entire pipeline on a research-level result in hard analysis.
+
+Second, a complete Lean 4 formalization of a new theorem in mathematical physics — the VML steady-state characterization — verified with zero sorrys.
+
+Third, a detailed, fully transparent account of the process: every prompt, every commit, every tool call is public.
+
+Fourth, lessons learned about the capabilities and failure modes of current AI tools for formalization, including a definition-alignment bug caught by an expert reviewer post-completion.
+
+Fifth, evidence that research-level formalization is now accessible to mathematicians without deep Lean expertise, at minimal cost: a two-hundred dollar subscription, plus zero dollars for Aristotle and Gemini.
+
+Moving on to the theorem.
+
+The Vlasov-Maxwell-Landau system, or VML system, is a system of PDEs modeling the dynamics of a charged plasma. The full time-dependent system evolves a particle distribution function f of t, x, and v, an electric field E of t and x, and a magnetic field B of t and x, via the Vlasov equation coupled to Maxwell's equations with the Landau collision operator.
+
+We are interested in steady states: solutions with no time dependence. Setting all time derivatives to zero, the unknowns reduce to f of x and v, which is strictly greater than zero on the three-dimensional torus cross R cubed, along with E of x and B of x, and the system becomes the following set of equations.
+
+First, v dotted with the gradient of f with respect to x, plus the quantity E plus v cross B, dotted with the gradient of f with respect to v, equals nu times Q of f and f. This is the Vlasov equation.
+
+Second, the curl of B equals J, which equals the integral over R cubed of v times f dv. This is Ampere's law.
+
+Third, the divergence of E equals the integral over R cubed of f dv, minus rho sub ion. This is Gauss's law.
+
+Fourth, the divergence of B equals zero. This is the no-magnetic-monopoles condition.
+
+Here, Q of f and f is the Landau collision operator with the Coulomb kernel Psi of r equal to r to the power of negative three. Note that Faraday's law, which in the time-dependent system reads the partial derivative of B with respect to t equals negative the curl of E, becomes the curl of E equals zero at equilibrium. This is not listed as a hypothesis because it is derived in the proof — it follows from the other equations.
+
+We now turn to the main result.
+
+Theorem (Informal). Let f greater than 0 be a smooth steady-state solution of the VML system with Coulomb collisions on the three-dimensional torus, that is, the real line modulo the integers, raised to the third power, with Schwartz-class velocity decay and a polynomial log-growth bound. Then: first, f is a spatially uniform Maxwellian — f of x and v equals rho-ion divided by the quantity 2 pi T to the three-halves power, times the exponential of negative one-half times the norm of v squared divided by T, for some temperature T greater than zero. Second, the electric field vanishes: E of x equals zero. Third, the magnetic field is constant: B of x equals B-naught.
+
+The formal Lean statement is shown in the figure we describe now. It is a code listing of the Lean 4 theorem named CoulombConcreteTheorem42. The theorem takes as inputs a distribution function f mapping from the three-torus cross a three-dimensional real velocity space to the reals, electric and magnetic fields E and B each mapping from the three-torus to three-dimensional real vectors, and two real parameters nu and rho-ion. It then takes 12 hypotheses, all with clear physical meaning.
+
+Hypothesis 1: h-nu states that nu is strictly positive. Hypothesis 2: h-rho-ion states that rho-ion is strictly positive. Hypothesis 3: h-f-pos states that f is strictly positive everywhere, for all x and v. Hypothesis 4: h-f-smooth-v states that for each fixed x, the function f of x is three-times continuously differentiable in v. Hypothesis 5: h-f-smooth-x states that for each fixed v, the periodic lift of the function mapping x to f of x and v is two-times continuously differentiable. Hypothesis 6: h-B-smooth states that for each component i, the periodic lift of the i-th component of B is two-times continuously differentiable. Hypothesis 7: h-Schwartz states that f satisfies uniform Schwartz decay. Hypothesis 8: h-GradBound states that there exist constants C-g and K-g such that for all x on the torus, all velocities v, and all coordinate directions i, the absolute value of the directional derivative of f of x at v in direction i is bounded above by C-g times the quantity 1 plus the norm of v, raised to the power K-g, times f of x and v. This is the polynomial score bound. Hypothesis 9: h-Vlasov states the Vlasov equation: for all x and v, the dot product of v with the spatial torus gradient of f at x, plus the dot product of the Lorentz force E of x plus v cross B of x with the velocity gradient of f of x at v, equals nu times the Landau operator applied with the Coulomb kernel to f of x, evaluated at v. Hypothesis 10: h-Ampere states Ampere's law: for all x, the torus curl of B at x equals the current density, namely the integral over v of v-sub-i times f of x and v, for each component i. Hypothesis 11: h-Gauss states Gauss's law: for all x, the torus divergence of E at x equals the integral over v of f of x and v, minus rho-ion. Hypothesis 12: h-DivB states the no-monopoles condition: for all x, the torus divergence of B at x equals zero.
+
+The conclusion of the theorem asserts the existence of a temperature T-eq greater than zero and a constant magnetic field vector B-naught, such that: f of x and v equals the equilibrium Maxwellian with parameters rho-ion and T-eq evaluated at v, for all x and v; E of x equals zero for all x; and B of x equals B-naught for all x.
+
+The caption of this figure notes that the proof, which is omitted from the listing, consists of 80 lines of tactic invocations that assemble the seven-step argument described in the proof architecture section. In the code, Torus3 is defined as Fin 3 arrow AddCircle 1, periodicLift lifts torus functions to three-dimensional real space for the purpose of differentiation, and equilibriumMaxwellian is the Maxwellian defined as rho-ion divided by the quantity 2 pi T to the three-halves, times the exponential of negative norm of v squared over 2 T.
+
+Returning to the surrounding discussion: the formal Lean statement takes 12 hypotheses comprising 2 physical parameters — nu greater than 0 and rho-ion greater than 0 — strict positivity of f, smoothness conditions (C-3 in velocity, C-2 in space via periodic lift, C-2 for B), Schwartz-class velocity decay, a polynomial score bound of the form the absolute value of the partial derivative of f with respect to v-sub-i is at most C times the quantity 1 plus the norm of v, to the power K, times f, and the four steady-state equations. The polynomial score bound is a genuine assumption not derivable from Schwartz decay alone; it is satisfied by Maxwellians and physically reasonable perturbations. A 13th hypothesis — a polynomial log-growth bound stating that the absolute value of log f of x and v is at most C times the quantity 1 plus the norm of v, to the power K — is derived from the score bound and smoothness inside the proof itself.
+
+The proof follows a classical entropy method in seven steps, illustrated in the dependency graph figure.
+
+First, the H-theorem: Entropy dissipation D of f is less than or equal to zero; the Landau matrix is positive semi-definite.
+
+Second, the Nullspace step: D of f equals zero implies f is a local Maxwellian, meaning log f of x and v equals a of x, plus b of x dotted with v, plus c of x times the magnitude of v squared.
+
+Third, Transport: Substituting into the Vlasov equation yields a polynomial in v that must vanish identically.
+
+Fourth, Polynomial matching: The order magnitude of v cubed terms force the gradient of c to equal zero, giving constant temperature; the order magnitude of v squared terms yield Killing's equation for b.
+
+Fifth, Killing's equation: On the flat torus, the only smooth Killing fields are constants, so b equals b-naught.
+
+Sixth, the Maximum principle: Ampère's law forces b-naught to equal zero; Gauss's law forces E to equal zero and yields uniform density.
+
+Seventh, Harmonic analysis: With J equal to zero, curl B equals zero and div B equals zero, which imply B is harmonic on the three-dimensional torus, and hence constant.
+
+The dependency graph figure is a large directed acyclic graph, generated with LeanBlueprint, displayed as a web of green nodes connected by dashed arrows indicating proof dependencies. All nodes are colored green, meaning every result is fully proved. The graph is laid out from top to bottom. At the top sit the primitive definitions: normSq, eucNorm, and landauMatrix, shown as green rectangles. From these, arrows flow downward through a broad middle layer of intermediate results shown as green ellipses, including landauMatrix_posSemidef, landauMatrix_quadForm_eq_zero_iff, landau_ibp, velocity_ibp, landauOperator, lorentz_force_div_zero, bulk_velocity_zero, entropyDissipation — highlighted with a darker green border — force_transport_zero, D_zero_implies_maxwellian, magnetic_field_constant, electric_field_zero, transport_entropy_from_vlasov, H_theorem, nullspace_sufficiency, poisson_boltzmann_from_vlasov, polynomial_identity_from_vlasov, isMaxwellian, equilibriumMaxwellian, steady_state_is_local_maxwellian, main_steady_state, main_from_physics, velocityDecayConditions, fubini_symmetrization_logf, and schwartzDecayEB. On the upper right sits flatTorus3 as a green rectangle. At the bottom of the graph, the flow converges on theorem42 and torusInstance as green rectangles, then further down to coulomb_concrete, which is the concrete Coulomb instantiation of the main theorem. Multiple long dashed arrows from across the graph reach down into theorem42 and coulomb_concrete, reflecting the broad dependencies of the final result. An interactive version of this graph is available in the repository.
+
+Moving on to the tools used in this project.
+
+The project used four AI systems, none of which required any Lean code to be written by hand.
+
+Claude Code, from Anthropic. An agentic coding tool that operates in the terminal, with access to file reading and editing, shell commands, and MCP, or Model Context Protocol, integrations. Claude Code was the primary workhorse: it generated all Lean code, managed the project structure, ran diagnostics via the Lean LSP, and orchestrated submissions to Aristotle. The subscription costs two hundred dollars per month on the Claude Max plan.
+
+Gemini DeepThink, from Google DeepMind. A mathematical reasoning model accessed via MCP. Gemini generated the initial natural-language proof of the theorem in a five-turn dialogue, identified the relevant literature, and was consulted during the project for planning decisions — for example, choosing the torus representation.
+
+Aristotle, from Harmonic. A cloud-based automated theorem prover for Lean 4. Lemma statements were extracted from the project, submitted via a Python script, and results were automatically integrated. Aristotle proved 111 lemmas, disproved 28 false conjectures, and returned 66 with sorrys still present. The service was free during the project period.
+
+Finally, the Lean LSP tools. The Lean Language Server Protocol, accessed via MCP, provided real-time compilation feedback, goal-state inspection, tactic suggestions, and library search through LeanSearch and Loogle. These tools generated 3,194 calls over the course of the project.
+
+Moving on to the process.
+
+The project unfolded over 10 days of active development, from March 1 through March 10, 2026, preceded by a Gemini DeepThink session on February 28. The following table summarizes the key milestones and tracks how the sorry count evolved throughout the project.
+
+The table has three columns: Date, Event, and Sorry count. On February 28, Gemini generated the natural-language proof, with no sorry count recorded at that stage. On March 1, the first Lean code was committed as a monolithic file, with approximately 25 sorries. On March 2, the first Aristotle submissions were made and hypothesis creep began, with the sorry count holding at 25. On March 3, the file was split into a main directory and Aristotle results arrived, bringing the sorry count down from 25 to 7. On March 5, a concrete torus representation was chosen with Gemini's involvement, but this introduced new sorries, bringing the count to 7 plus 22. On March 7, the abstract theorem reached 0 sorries. Also on March 7, the /critique adversarial review was introduced, with the sorry count remaining at 0. On March 8, at 1:09 in the morning, the /babysit automation loop was created, still at 0 sorries. Later that same day, the Coulomb kernel instantiation was begun and a university server came online, adding 35 new sorries. On March 9, at 11:15 PM, the Coulomb theorem reached 0 sorries. Finally, on March 10, a cleanup pass removed 3,000 lines, and the non-vacuousness theorem was proved, with the sorry count remaining at 0.
+
+The project began with a question posed to Gemini DeepThink:
+
+"What is known about the equilibrium of the Vlasov-Maxwell-Landau equations with Coulomb collisions, and a single species? Does it have to be a global Maxwellian? With what covariance? How is it shown?"
+
+Gemini produced a detailed six-step proof, identified the relevant literature, and refined the argument over five turns. Crucially, the proof required no mathematical corrections: the mathematician verified the argument by hand and found it complete and correct, needing only the identification of exact supporting theorems from the cited papers. The final natural-language proof became the blueprint for the formalization.
+
+Moving on to Phase 2: Scaffolding, covering March 1st through 2nd.
+
+The formalization prompt was: "Look at H-theorem-formal.tex. I want to formalize that the steady state of the VML."
+
+Claude Code generated a monolithic one-thousand-plus line Lean file within hours, with sorry's marking every gap. Claude estimated the full formalization would require "multiple months." The mathematician's role was to reject false paths and enforce design principles, particularly hypothesis discipline:
+
+"You keep doing the same thing — adding hypotheses that are actually lemmas to be proven! Why do you do that?" — March 2nd.
+
+This became the project's central methodological principle, codified in CLAUDE.md: a sorry — an acknowledged gap — is preferable to an unnecessary hypothesis, which silently weakens the theorem.
+
+Moving on to Phase 3: Abstract Proof Chain, covering March 3 through 7.
+
+The monolithic file was split into a main/ directory with separate files for each section of the proof. A FlatTorus3 typeclass abstracted the spatial domain, specifying integration by parts, curl/divergence identities, a maximum principle, and constancy of harmonic functions — without fixing a particular manifold. The mathematical argument, covering Sections 2 through 8, was formalized against this interface.
+
+A concrete TorusInstance module proved that T cubed, that is, the quotient of R by Z, all raised to the third power, satisfies all 22 fields of FlatTorus3, using the Mathlib representation "Fin 3 → AddCircle 1". The representation was chosen in consultation with Gemini. Periodicity is automatic: functions on the torus factor through the quotient map from R to R mod Z.
+
+By March 7, all sorry's in the abstract proof chain were closed — the abstract theorem was fully proved.
+
+On March 7, an adversarial self-review process was introduced. The prompt given was: "You are a hostile reviewer trying to REJECT this formalization. Your job is to find every weakness, gap, and dishonesty."
+
+The output, critique dot md, identified false hypotheses, unnecessary assumptions, and dead code. On March 8 at 1:09 AM, the automation suite was created in a 20-minute session. The initial /babysit loop combined four slash commands — /critique, /prove, /check-aristotle, and /cleanup — and was set to run on a 10-minute timer. Over the following days, the loop was iteratively expanded to 11 steps, adding /plan, /simplify, /strengthen, /submit-aristotle, /log, /commit, and /alert, which provided Telegram notifications. This expanded loop executed 122 documented cycles over the course of the project.
+
+With the abstract theorem proved, the final challenge was instantiating it for the physical Coulomb kernel, where Psi of r equals r to the negative third power. This required proving that the Landau collision operator satisfies all 17 integrability, differentiability, and continuity conditions in the VelocityDecayConditions bundle.
+
+The Coulomb singularity at r equals zero makes the absolute value of A sub i j of z behave like the norm of z to the negative one, which is barely integrable in three-dimensional Euclidean space. Each integrability proof required decomposing the domain into a ball around the origin — handled by local integrability of the norm of z to the negative one — and the complement, handled by Schwartz decay. This phase was the hardest part of the formalization, producing approximately 4,000 lines of analytical estimates.
+
+A university server was brought online on March 8 to run /babysit loops concurrently with the local machine, enabling continuous progress. The sorry count dropped from 35 to 0 on March 9, with the last sorry closed at 11:15 PM.
+
+With zero sorries achieved, the /babysit loop shifted to code quality: removing dead code — minus 3 thousand lines — eliminating unnecessary maxHeartbeats overrides, and re-enabling linters. A separate non-vacuousness theorem, CoulombConcreteTheorem42_nonvacuous, verified that the 12 hypotheses are satisfiable — the equilibrium Maxwellian with E equals 0 and B equals 0 witnesses all conditions. This sanity check was suggested independently by expert reviewers on the Lean Zulip.
+
+Moving on to the project statistics.
+
+The summary table presents key metrics for the project. There were 34 Lean 4 files, totaling 10,445 lines of code. The project contains 39 theorems, 186 lemmas, and 28 definitions, with zero sorry's remaining. The development period spanned 10 days, over which 213 git commits were made. There were 32 Claude Code sessions across 2 machines, 229 human prompts excluding slash commands, 122 /babysit cycles, and 27,186 assistant turns. Tool calls totaled 17,334. Tokens consumed came to 2.8 billion on input and 11 million on output, yielding an input-to-output ratio of 254 to 1. Of 220 Aristotle submissions, 111 were proved (50%), 28 were disproved (13%), 66 were returned with sorry's still present (30%), and 15 failed (7%). The 229 human prompts exclude bare slash commands like /babysit; all are archived with timestamps. The mathematician estimates approximately 50 hours of active supervision over 10 days.
+
+The 2.8 billion input tokens are dominated by cache reads of the Lean codebase and Mathlib context — the 254 to 1 input-to-output ratio reflects the read-heavy nature of formal verification. At Opus 4 API pricing with prompt caching, this would cost approximately $6,300: $4,071 in cache reads at $1.50 per million tokens, $1,401 in cache creation at $18.75 per million tokens, $826 in output at $75 per million tokens, and $6 in fresh input at $15 per million tokens. Without prompt caching, the same workload would cost approximately $42,700 — caching saves 85%. The mathematician paid only $200 for the Claude Max subscription, which provides generous usage.
+
+The development trajectory is shown in the sorry count and lines-of-code history figures. The sorry count follows a sawtooth pattern as scaffolding and proving alternate, while the lines-of-code history shows the four-phase structure of the project. Roughly half of the final codebase is supporting infrastructure — definitions, the torus instance, Coulomb kernel integrability files, and decay helpers — rather than the core proof chain. This reflects the substantial gap between Mathlib's current coverage and the background material needed for research-level mathematical physics: the Landau operator, torus differential calculus, Schwartz decay machinery, and Coulomb singularity estimates all had to be built from scratch. Session activity shows near-round-the-clock coverage across two machines during the final sprint. Token consumption reveals the 254 to 1 input-to-output ratio characteristic of formal verification. Tool usage spans 17,334 invocations, and the Aristotle figure shows the outcomes of 220 submissions.
+
+The first figure is a line chart titled "Sorry Count Over Time," covering March 1 through March 11, with the y-axis measuring the number of sorry's from 0 to above 40. The line is drawn in orange-red over a shaded area of the same color. The sorry count in the main branch over time spans 85 commits. The sawtooth pattern reflects alternating phases of scaffolding, where sorry's accumulate, and proving campaigns, where sorry's are eliminated. Key events are annotated directly on the chart: a peak of 25 sorry's on March 2 when the abstract proof chain was stated; a drop from 25 to 7 on March 3 following the monolithic split and Aristotle proofs; the first 0 sorry's on March 7 when the abstract theorem was proved; a spike of plus 35 sorry's on March 8 when CoulombConcrete was added and Coulomb kernel instantiation began; a sprint bringing the count from 35 back to 0 on March 9 when the torus and decay were closed and Coulomb was proved; and a brief plus 1 on March 10 for the non-vacuousness theorem, which was immediately resolved, followed by 0 sorry's as the final state on March 11.
+
+The second figure is a line chart titled "Formalization Progress: Lines of Lean 4 Code," spanning March 2 through March 13, with the y-axis measuring lines of Lean code from 0 to 14,000. The line grows steadily from about 800 lines on March 2 to a peak of roughly 10,200 lines around March 10, dips sharply to about 7,900 after dead code removal of minus 3,000 lines, then climbs again to approximately 10,500 by March 13. The project progressed in four phases: first, the abstract proof chain from March 3 through 6, formalized against an abstract FlatTorus3 typeclass; second, Coulomb kernel analysis from March 7 through 9, handling the singularity at r equals 0 — the sharp lines-of-code increase reflects approximately 4,000 lines of analytical estimates; third, cleanup in early March 10, where approximately 3,000 lines of dead code, redundant lemmas, and unnecessary heartbeat overrides were removed; and fourth, non-vacuousness in late March 10, establishing satisfiability of the 12 hypotheses. The chart also annotates the validation of 22 axioms on the 3-torus, the beginning of Coulomb kernel analysis, and the final addition of log growth bound derivation via the mean value theorem.
+
+The third figure is titled "Claude Code: 836 Interactive plus 210 Automated Prompts yielding 27,197 Assistant Turns over 11 Days." It contains two panels. The top panel is a bar chart of messages per hour from March 1 through March 11, with three stacked series: blue for assistant turns totaling 27,197, orange for automated slash commands totaling 210, and red for interactive human prompts totaling 836. The assistant turn bars dominate throughout, with notable peaks around March 2 at roughly 470 messages per hour, March 6 at about 500, and March 11 reaching the highest peak of approximately 600. Human prompts (red) remain small but become more visible from March 9 onward. The bottom panel is an activity heatmap of assistant turns by hour of day from February 28 through March 10, with colors ranging from pale yellow (near 0 turns) through orange to deep red (600 turns per hour). Early in the project, activity is concentrated in afternoon and evening hours. By March 8 through March 10, nearly every hour of the day shows orange or red intensity, confirming near-round-the-clock coverage. The 27,186 assistant turns versus 229 human prompts give a 119 to 1 ratio, reflecting the high autonomy of each /babysit cycle, which typically involves 20 to 50 tool calls per invocation.
+
+The fourth figure is titled "Claude Code Token Usage: 2.8B Input plus 11M Output equals 2.8B Total." It contains two panels. The top panel shows cumulative token usage over time from March 1 through March 11. The blue line tracks cumulative input tokens including cache on the left y-axis in billions, rising from 0 to approximately 2.79 billion. The red line tracks cumulative output tokens on the right y-axis in millions, rising from 0 to 11.0 million. Both lines grow roughly in parallel, with a noticeably steeper slope beginning around March 6, corresponding to intensive Coulomb kernel analysis. The 254 to 1 input-to-output ratio reflects the read-heavy nature of formal verification — Claude reads far more context than it writes. The bottom panel shows per-turn context size in thousands of tokens over the same period, with blue dots scattered between 0 and roughly 175,000 tokens and 164 red vertical lines marking autocompact events. The sawtooth pattern is visible as context windows fill to approximately 175,000 tokens and then reset. Dense compaction clusters on March 6 through March 10 correspond to the intensive Coulomb kernel analysis and /babysit loop periods.
+
+The fifth figure is titled "Claude Code Tool Usage: 17,334 Calls Across 49 Tools over 12 Days." It contains two panels. The left panel is a horizontal bar chart showing total calls by tool category. The core editing loop dominates: Bash leads with 3,975 calls, followed by Read at 3,416, Lean LSP tools at 3,194 combined, Edit at 2,495, Grep at 1,701, and Write at 900. Further down the list are ToolSearch at 534, Agent at 271, Aristotle at 226, Glob at 129, TaskUpdate at 122, Skill at 86, Lean Explore at 69, TaskOutput at 68, TaskCreate at 66, Axle at 22, Gemini at 15, WebFetch at 12, TodoWrite at 11, CronCreate at 8, TaskList at 4, TaskStop at 3, WebSearch at 3, and EnterPlanMode, ExitPlanMode, AskUserQuestion, and CronDelete each at 1. The right panel is a stacked bar chart showing daily tool call counts from February 28 through March 11, color-coded by tool category. Daily totals ramp from under 200 calls in late February to over 3,500 on March 10 and March 11, with Bash, Read, Lean LSP, and Edit consistently the largest categories throughout.
+
+Next, the figure on sorry count history, whose caption and key events have already been described above in detail, is followed by the lines-of-code history figure already described.
+
+The session activity figure caption specifies that Claude Code operated across two machines — a local machine and a university server — with 27,186 assistant turns versus 229 human prompts giving a 119 to 1 ratio, and the heatmap shows near-round-the-clock activity on March 9 through 10 when both machines ran /babysit loops concurrently.
+
+The token consumption figure caption notes the sawtooth pattern in per-turn context size as the context window fills to approximately 175,000 tokens and resets at each of the 164 autocompacts, with dense compaction clusters on March 6 through 10.
+
+The tool usage figure caption reiterates that the core editing loop — Bash, Read, Edit, Grep, Write — dominates, and that Lean LSP tools provided real-time feedback, with the daily breakdown showing ramp-up from exploratory work in late February through peak activity on March 6 through 10 when both machines ran /babysit loops concurrently.
+
+Moving on to the Aristotle outcomes figure. This is a stacked bar chart showing outcomes of 220 Aristotle submissions. Aristotle proved 111 lemmas cleanly at 50%, disproved 28 false statements at 13%, returned 66 with sorry's still present at 30%, and 15 failed or were never started at 7%. The disproved statements were particularly valuable — they caught false conjectures early, for example missing measurability hypotheses, Vitali-set counterexamples, and incorrect Schwartz decay estimates for the Coulomb kernel. The stacked bar chart shows peak submission activity on March 2 with 57 jobs and March 6 with 45 jobs.
+
+The Aristotle turnaround time figure presents outcomes for 214 submissions, colored by outcome. The left panel is a histogram. Proved lemmas in green cluster in the first bins with a median of 9 minutes, while "returned with sorry" in red dominates the long tail. The right panel shows median turnaround by category. The overall median was 19 minutes. Disproved statements took 29 minutes on median for counterexample construction; submissions returned with sorry took a median of 5.6 hours — Aristotle exhausts its time budget before giving up.
+
+The lines-of-code breakdown figure shows LOC by file group over time. Red shades represent the mathematical proof chain covering Sections 2 through 8, including Theorem42, VMLInputDerive, and CoulombConcreteTheorem42. Blue shades represent supporting infrastructure including definitions, the torus instance, Coulomb kernel integrability files, and decay helpers. At completion, infrastructure accounts for roughly half of the codebase — reflecting the substantial gap between Mathlib's current coverage and the background material needed for research-level mathematical physics. The sharp blue growth on March 7 through 8 is the Coulomb kernel analysis, approximately 4,000 lines of analytical estimates for the singularity at r equals 0. The cleanup phase on March 10 primarily removed blue infrastructure code, while the red proof chain remained stable.
+
+Finally, the git churn figure shows lines of Lean code added and deleted per day. Most days are net-positive with new content, with two exceptions: March 3, where the monolithic file was split into the main directory — the same code reorganized — and March 9 through 10, where the cleanup phase removed approximately 3,000 lines of dead code, redundant lemmas, and unnecessary heartbeat overrides. The project totals plus 21,783 lines added, minus 13,478 lines deleted, for a net of plus 8,305 lines.
+
+Moving on to lessons learned.
+
+The most persistent failure mode of Claude Code was hypothesis creep: when faced with a difficult lemma, the agent's default behavior was to assume it as a hypothesis of the main theorem rather than prove it. By March 4, the main theorem had accumulated 42 hypotheses — most of which should have been derived lemmas.
+
+This failure mode is insidious because it is syntactically valid: the Lean code compiles, the sorry count stays low, and the proof "works." But the theorem statement is progressively weakened. In the extreme case, one could "prove" any theorem by assuming its conclusion as a hypothesis.
+
+The fix required persistent human intervention. On March 3, the following instruction was given: "I have told you time and again to keep the hypotheses to Theorem42 minimal. If you need a mathematical fact, it should be a lemma with a sorry, not a hypothesis!"
+
+This was codified in the CLAUDE.md file: "The goal is not to end up with 0 sorries! The goal is to make an honest formalization of the main theorem, with only the genuinely needed mathematical and physical assumptions." The 42 hypotheses were systematically reduced: velocity-space decay conditions were bundled into a single VelocityDecayConditions structure, replacing 15 scattered hypotheses, and regularity facts like continuity of the density rho were derived inside the proof from domination bounds. The final concrete theorem has 12 hypotheses, all physically meaningful.
+
+The cloud-based theorem prover Aristotle was the single most impactful tool after Claude Code itself. Of 220 submissions, 111 were proved outright — that is 50 percent — and 28 were disproved: Aristotle found counterexamples or proved the negation.
+
+The disproved statements were arguably more valuable than the proved ones. They caught false conjectures early: missing measurability hypotheses, claims that fail on pathological counterexamples such as Vitali sets, and Schwartz decay estimates that are actually false for the Coulomb kernel. The fix-and-resubmit cycle served as the primary mechanism for catching bugs in the formalization.
+
+Aristotle's overall median turnaround was 19 minutes. Proved lemmas returned in a median of 9 minutes; disproved statements took 29 minutes for counterexample construction; but submissions returned with sorry had a median of 5.6 hours, as Aristotle exhausted its time budget searching before giving up. We recommend decomposing proofs aggressively into small lemmas and submitting each to an automated prover — even lemmas that seem hard.
+
+After the formalization was announced on the Lean Zulip, Sébastien Gouëzel, a Mathlib maintainer, immediately identified a definition-alignment bug: the original theorem used ContDiff R top, which in Mathlib means analytic, not C-infinity as intended. Neither the AI agent nor the mathematician caught this during 10 days of development. Gouëzel remarked: "I find it a little bit worrisome that AI can overlook such discrepancies — if there is one in the only line I've checked, how many others are there?"
+
+The fix was straightforward — replacing top with explicit finite smoothness, specifically C-3 in velocity and C-2 in space — and the resulting theorem is actually stronger, since it assumes less. But the episode illustrates a fundamental risk of AI-generated formalizations: the code compiles and the proof checks, yet the theorem does not state what was intended. Gouëzel also suggested formalizing that the equilibrium Maxwellian satisfies all 12 hypotheses, the non-vacuousness theorem, which was implemented as an additional sanity check.
+
+This lesson is perhaps the most important for the community: compilation is not correctness. Expert review of definitions and theorem statements remains essential, and cannot yet be delegated to the AI.
+
+The /babysit loop ran for 122 cycles over the project. It was valuable for overnight progress and for maintaining momentum on tedious tasks like linter cleanup and dead code removal. However, the most important breakthroughs — closing the abstract theorem, proving the Coulomb integrability estimates — happened during interactive sessions with direct human guidance.
+
+The automation was most effective for three things. First, maintaining code quality: the adversarial /critique step caught issues that would otherwise accumulate, such as unused imports, stale comments, and false docstrings. Second, Aristotle polling: checking for completed Aristotle jobs and integrating results. Third, overnight progress: running unattended on two machines while the mathematician slept or traveled.
+
+It was less effective for two things. First, novel proof strategies: the agent often got stuck in loops, retrying the same failing approach rather than reconsidering the proof strategy. Second, architectural decisions: choosing representations, structuring typeclasses, and deciding what to abstract required human judgment.
+
+Gemini DeepThink served two distinct roles: first, generating the initial proof blueprint, and second, providing mathematical advice during the formalization. For the first role, it was excellent — the proof it produced served as the complete blueprint for the 10,000-line formalization. For the second role, it was useful but not essential: Claude Code's own mathematical reasoning was often sufficient for tactical decisions. In the mathematician's own assessment: "I did not find Gemini to be that terribly useful beyond the initial proof. It was mostly for experimental sake."
+
+The key insight is that the full loop of mathematical research — from conjecture to resolution to detailed proof — can now be completed by AI with the human acting as verifier rather than creator. Proof generation and proof formalization are different skills, and a model that excels at informal mathematical reasoning, namely Gemini, can be productively combined with a model that excels at code generation, namely Claude, with each handling its strength. The Lean kernel then provides the final guarantee of correctness that neither model can offer alone.
+
+Moving on to the agent getting "lazy."
+
+Beyond hypothesis creep, Claude Code exhibited several avoidance behaviors.
+
+First, premature sorry: marking a goal as sorry and moving on, rather than attempting the proof.
+
+Second, excessive heartbeats: setting maxHeartbeats 800000 to suppress timeouts rather than simplifying the proof.
+
+Third, dead code accumulation: leaving unused lemmas, commented-out code, and stale helper definitions rather than cleaning up.
+
+Fourth, over-engineering: creating unnecessary abstraction layers, helper functions, and intermediate definitions when a direct proof would suffice.
+
+Fifth, no-op cycles: during automated /babysit runs, the agent would sometimes complete a cycle with no meaningful changes despite open issues in critique.md, requiring prompt rewrites to enforce progress.
+
+These behaviors are not bugs per se — they are rational strategies for an agent optimizing for compilation success rather than proof quality. The fix is explicit instructions in CLAUDE.md and persistent human supervision. The adversarial /critique step in the /babysit loop partially automated this supervision.
+
+Separating the proof into an abstract framework — the FlatTorus3 typeclass — and a concrete instantiation — the TorusInstance — was an early design decision that paid dividends throughout. When the torus proofs required rewrites — removing false hypotheses, changing the representation of spatial differentiability — the abstract proof chain, covering Sections 2 through 8, was completely unaffected. This separation of concerns is standard software engineering practice, but it is not the default behavior of the AI agent, which tends to produce monolithic proofs.
+
+No Lean Code Required.
+
+The mathematician wrote zero lines of Lean code and zero lines of any other programming language. All Lean code was generated by Claude Code from natural-language prompts. Of the 229 human prompts sent to Claude Code — excluding bare slash commands and context continuations — most were short directives or confirmations. The mathematician estimates approximately 50 hours of active supervision, an average of 5 hours per day watching Claude Code work in real time.
+
+The mathematician's contributions were as follows. First, posing the conjecture. Second, checking the final theorem statement — 12 hypotheses, each evaluated for physical correctness. Third, enforcing hypothesis discipline and architectural decisions. Fourth, providing mathematical intuition when the agent was stuck. And fifth, designing and iterating on the automation suite.
+
+The mathematician did read key definitions and theorem statements in Lean to verify alignment with the intended mathematics, but did not debug proofs or lemma statements directly.
+
+Moving on to related work.
+
+A comparison table compares recent research-level formalizations with publicly available code.
+
+Starting with AI-assisted theorem proving. Seed-Prover achieves state-of-the-art results on competition mathematics using reinforcement learning with Lean feedback. Harmonic's Aristotle achieved gold-medal performance on the 2025 IMO and auto-formalized GPT-5.2-generated proofs of open Erdős problems in Lean. Google DeepMind's Aletheia agent autonomously produced research papers in natural language, including solutions to four open Erdős conjectures. AxiomProver autonomously generated formal Lean proofs of Fel's open conjecture, a result on partial regularity of primes, and parity of k-differentials — all from natural-language problem statements with zero human guidance. Unlike our work, these systems are specialized for theorem proving, and the formalized results are typically short combinatorial or algebraic arguments rather than large-scale formalizations requiring hard analysis — such as Coulomb singularity estimates and PDE energy methods.
+
+Moving on to agentic formalization. Numina-Lean-Agent combines Claude Code with MCP tools and formalized effective Brascamp-Lieb inequalities — approximately 8,000 lines — with two human experts collaborating on the Lean code. Archon uses a dual-agent architecture and demonstrated full automation of FirstProof problems. Davidbayer and colleagues formalized their own new theorem on Diophantine complexity bounds in 20,000 lines of Isabelle in parallel with the mathematical research — an "in-situ formalization" — with 13 student collaborators writing the proof assistant code by hand and no AI assistance. Our work differs in that a single mathematician wrote zero code of any kind: the mathematical proof was generated by Gemini, and all Lean code was generated by Claude Code from natural-language prompts.
+
+Next, large-scale autoformalization. Math.Inc's Gauss agent eliminated approximately 160,000 lines of sorries in the sphere packing formalization — Viazovska's Fields Medal-winning result — in three weeks, growing the codebase from approximately 22,000 to 181,000 lines. The theorem statements and definitions had been written by a team of six or more human experts; Gauss's role was sorry elimination — filling in proofs where the goal was unambiguous. Urban and colleagues formalized 130,000 lines of Munkres' topology textbook in two weeks for approximately 100 dollars, using ChatGPT and Claude Sonnet with a fast proof checker called Megalodon. Both projects are larger in scale but formalize known results; our work targets a new theorem requiring new definitions.
+
+Turning to formalization in physics. Tooby-Smith and colleagues formalized the stability of the two-Higgs-doublet-model potential in Lean and PhysLean — 1,600 lines — discovering an error in a widely cited 2006 paper. This is an example of formalization catching bugs in published proofs. Unlike our work, this formalized existing results with minimal AI assistance.
+
+Finally, on the topic of transparency. A distinguishing feature of our work is full transparency. Systems like Seed-Prover are closed-source, and even open systems like Numina-Lean-Agent do not publish the complete interaction logs. We publish all 229 human prompts with timestamps, all 213 commits, the full Gemini dialogue, and the complete development log of all 122 /babysit cycles.
+
+Moving on to limitations.
+
+On the topic of mathematical novelty: The theorem — that every smooth positive steady state of the full VML system with Coulomb collisions on the torus must be a global Maxwellian — does not appear in the literature as a stated and proved result. Each proof technique is individually classical: the H-theorem and null-space characterization of the Landau operator are standard; the polynomial-matching argument that forces constant temperature and Killing's equation on the bulk velocity appears in prior work by Cercignani and by Desvillettes and colleagues; and the maximum-principle argument for the nonlinear Poisson–Boltzmann equation is textbook. However, prior work assembles these ingredients only for simpler systems. Desvillettes and colleagues prove steady-state uniqueness for the spatially inhomogeneous Boltzmann equation without electromagnetic fields, that is, with E equals B equals zero. Guo studies the full VML and Vlasov–Poisson–Landau systems but proves dynamical stability of small perturbations near an assumed Maxwellian, embedding the relevant macroscopic constraints inside linearized energy estimates rather than stating static uniqueness as a standalone result. What is new is the complete static characterization for the electromagnetically coupled system: the observation that the Lorentz force contributes only terms of order absolute value of v to the first power to the Vlasov equation for a local Maxwellian — because the quantity v cross B, dotted with v, equals zero — so the order absolute value of v cubed and order absolute value of v squared constraints carry over unchanged; the Ampère-law integration argument that forces the bulk velocity to vanish; and the closure via Gauss's law with a neutralizing background. These steps are individually straightforward, but their assembly into a single self-contained proof for the full VML system appears to be new.
+
+On the topic of definition alignment: As discussed earlier in the lessons section, the definition-alignment bug that survived the entire development process illustrates a broader risk: similar undetected misalignments in other definitions — for example, torusCurlX and LandauOperator — cannot be ruled out without a thorough expert audit.
+
+On reproducibility: The process depends on the specific capabilities of Claude Opus 4 from March 2026, Aristotle from March 2026, and Gemini from February 2026. These models are updated frequently; the same process may yield different results with future or past model versions.
+
+On cost: While the subscription cost was two hundred dollars, the API-equivalent cost was approximately six thousand three hundred dollars with prompt caching, or approximately forty-two thousand seven hundred dollars without. The gap between the subscription and API cost reflects the Claude Max plan's unlimited usage model. At API pricing without caching, the project would not be as accessible.
+
+On human effort: Although no code was written, the process required significant mathematical expertise and approximately fifty hours of active supervision, as shown in the statistics table. It requires a mathematician who understands the proof well enough to detect when the agent is weakening the theorem. As one Zulip commenter noted, "the human verification process... is critical" and cannot yet be replaced by another LLM.
+
+We have demonstrated that the full loop of AI-assisted mathematical research can be closed in a matter of days: starting from an open conjecture, an AI reasoning model — Gemini DeepThink — correctly resolved the question and produced a detailed proof requiring no corrections; an agentic coding tool — Claude Code — translated this proof into 10,000-plus lines of Lean 4 from natural-language prompts alone; a cloud-based prover — Aristotle — closed individual lemmas and caught false conjectures; and the Lean kernel verified the final result with guaranteed logical correctness. A single mathematician supervised the entire process at a cost of two hundred dollars, writing zero lines of code.
+
+The process is not yet fully autonomous — the human's role in maintaining theorem integrity is essential and cannot currently be delegated to the AI. But the barrier to entry has dropped dramatically: from years of Lean expertise to the ability to supervise an AI agent and evaluate theorem statements.
+
+A striking feature of this project is that the formalization was completed before the traditional mathematics paper containing the informal proof. The 10-day formalization finished on March 10; the companion math paper, which requires cleaning up the natural-language arguments and obtaining co-author sign-off, is still in preparation. This reversal of the usual order — where formalization lags publication by months or years — suggests that AI-assisted formalization has reached a point where it takes comparable effort to produce a machine-checked proof and to write a polished mathematical manuscript.
+
+We believe this workflow — conjecture, generate proof, formalize, verify, review — will become a common mode of computer-assisted mathematical research. Each stage of the pipeline is now within reach of current AI systems: reasoning models can resolve conjectures and produce detailed proofs, coding agents can translate these proofs into formal languages, automated provers can close gaps and catch errors, and proof kernels provide the final guarantee of correctness. The mathematician's role shifts from writing proofs to posing questions and evaluating claims — a supervisor of an AI-driven research pipeline rather than its sole executor.
+
+Thanks for listening. This has been an audio narration of Semi-Autonomous Formalization of the Vlasov-Maxwell-Landau Equilibrium. By Vasily Ilin. Published on March 16, 2026. Narrated by un. archive dot org, an app made by Sean Ahrens and Claude.
