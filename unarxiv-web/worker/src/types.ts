@@ -11,6 +11,7 @@ export interface Env {
   PAPER_SUBMISSION_DAILY_LIMIT: string;
   ADMIN_PASSWORD: string;
   ENCRYPTION_KEY: string; // AES-256-GCM key material for encrypting user API keys
+  ANTHROPIC_API_KEY?: string; // Server-side Anthropic key for sponsored plus1 narrations
   HF_LIST_ID?: string;
 }
 

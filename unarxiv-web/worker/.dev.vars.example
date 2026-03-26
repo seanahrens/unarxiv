@@ -16,3 +16,7 @@ MODAL_FUNCTION_URL=
 #   openssl rand -base64 32
 # Then set via: wrangler secret put ENCRYPTION_KEY
 ENCRYPTION_KEY=localdev-encryption-key-change-in-production
+# ANTHROPIC_API_KEY is used for sponsored plus1 narrations (server-side LLM scripting).
+# User-initiated narrations use this key for LLM script improvement + free Microsoft TTS.
+# Set via: wrangler secret put ANTHROPIC_API_KEY
+ANTHROPIC_API_KEY=

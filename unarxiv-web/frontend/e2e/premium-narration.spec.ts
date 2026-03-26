@@ -27,13 +27,13 @@ const WORKER_URL = process.env.WORKER_URL ?? testEnv["WORKER_URL"] ?? "http://lo
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? testEnv["WEBHOOK_SECRET"] ?? "dev-secret-change-me";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? testEnv["ADMIN_PASSWORD"] ?? "localdev";
 
-/** Open the Upgrade Narration modal from a narrated paper page. */
+/** Open the Upgrade Voice modal from a narrated paper page. */
 async function openPremiumModal(page: Page) {
   await page.click('[data-testid="open-paper-actions"]');
   const premiumBtn = page.locator('[data-testid="premium-narration"]');
   await expect(premiumBtn).toBeVisible({ timeout: 5000 });
   await premiumBtn.click();
-  await expect(page.locator('h2').filter({ hasText: 'Upgrade Narration' })).toBeVisible();
+  await expect(page.locator('h2').filter({ hasText: 'Upgrade Voice' })).toBeVisible();
 }
 
 /** Wait for option cards to finish loading (skeleton pulse animation gone). */
@@ -52,7 +52,7 @@ async function selectOptionAndContinue(page: Page, qualityLabel: string) {
   await page.getByRole('button', { name: /Continue|Review & Confirm/ }).click();
 }
 
-test.describe("Upgrade Narration Modal", () => {
+test.describe("Upgrade Voice Modal", () => {
   test.beforeEach(async ({ page }) => {
     // Clean up premium versions so the paper is in base state (not fully upgraded)
     await fetch(`${WORKER_URL}/api/admin/papers/${PAPER_ID}/premium-versions`, {
@@ -148,13 +148,13 @@ test.describe("Upgrade Narration Modal", () => {
   test("8. Cancel closes modal", async ({ page }) => {
     await openPremiumModal(page);
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.locator('h2').filter({ hasText: 'Upgrade Narration' })).not.toBeVisible();
+    await expect(page.locator('h2').filter({ hasText: 'Upgrade Voice' })).not.toBeVisible();
   });
 
   test("9. Backdrop click closes modal", async ({ page }) => {
     await openPremiumModal(page);
     await page.mouse.click(10, 10);
-    await expect(page.locator('h2').filter({ hasText: 'Upgrade Narration' })).not.toBeVisible();
+    await expect(page.locator('h2').filter({ hasText: 'Upgrade Voice' })).not.toBeVisible();
   });
 
   test("10. Back navigation — step 2 back returns to step 1", async ({ page }) => {
@@ -176,7 +176,7 @@ test.describe("Upgrade Narration Modal", () => {
 // Full upgrade flow: webhook simulation → UI indicators
 // ---------------------------------------------------------------------------
 
-test.describe("Upgrade Narration Full Flow", () => {
+test.describe("Upgrade Voice Full Flow", () => {
   // Tests modify shared DB state (webhook inserts versions), so must run in order
   test.describe.configure({ mode: 'serial' });
 
@@ -244,10 +244,10 @@ test.describe("Upgrade Narration Full Flow", () => {
     await expect(page.locator('[data-testid="play-stars"]')).toBeVisible();
   });
 
-  test("14. Fully upgraded → all options disabled, Upgrade Narration hidden from menu", async ({ page }) => {
+  test("14. Fully upgraded → all options disabled, Upgrade Voice hidden from menu", async ({ page }) => {
     // Paper already has elevenlabs (5★) from test 13 — fully upgraded
 
-    // Open menu and verify "Upgrade Narration" is no longer shown
+    // Open menu and verify "Upgrade Voice" is no longer shown
     await page.click('[data-testid="open-paper-actions"]');
     await expect(page.locator('[data-testid="premium-narration"]')).not.toBeVisible();
   });

@@ -640,12 +640,9 @@ export async function requestPremiumNarration(
       encrypted_llm_key: config.encrypted_keys[llmProv],
     };
   } else {
-    // plus1 voice: just needs LLM key for script improvement
-    const llmProv = config.llm_provider ?? "openai";
+    // plus1 voice: server-sponsored LLM scripting (no user key needed)
     body = {
-      type: "free_voice",
-      llm_provider: llmProv,
-      encrypted_llm_key: config.encrypted_keys[llmProv],
+      type: "sponsored_plus1",
     };
   }
 

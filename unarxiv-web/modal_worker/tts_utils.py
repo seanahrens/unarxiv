@@ -42,11 +42,13 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 #: Default edge-tts voice used when no voice is specified.
-DEFAULT_VOICE = "en-US-AriaNeural"
+#: GuyNeural is a male Microsoft voice for base narrations;
+#: EricNeural is reserved for plus1 premium narrations.
+DEFAULT_VOICE = "en-US-GuyNeural"
 
 #: Short alias keys → full edge-tts BCP-47 voice names.
 VOICE_PRESETS: dict[str, str] = {
-    "en":    "en-US-AriaNeural",
+    "en":    "en-US-GuyNeural",
     "en-gb": "en-GB-RyanNeural",
     "en-au": "en-AU-NatashaNeural",
 }

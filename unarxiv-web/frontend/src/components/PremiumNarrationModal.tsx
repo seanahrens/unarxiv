@@ -93,11 +93,11 @@ const DUAL_KEY_OPTIONS: OptionConfig[] = [
   },
 ];
 
-// unarXiv Voice — free TTS, just needs LLM key
+// unarXiv Voice — free TTS + server-sponsored LLM scripting (no user key needed)
 const FREE_OPTION: OptionConfig = {
   id: "plus1",
   provider: "free",
-  needsLlmKey: true,
+  needsLlmKey: false,
   unifiedKey: false,
   keyLabel: "",
   providerLink: { label: "", url: "" },
@@ -107,8 +107,6 @@ const ALL_OPTIONS: OptionConfig[] = [FREE_OPTION, ...UNIFIED_KEY_OPTIONS, ...DUA
 
 const LLM_PROVIDERS = [
   { id: "openai", label: "OpenAI", link: "https://platform.openai.com/api-keys" },
-  { id: "google", label: "Google Gemini", link: "https://aistudio.google.com/app/apikey" },
-  { id: "anthropic", label: "Anthropic", link: "https://console.anthropic.com/settings/keys" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -357,8 +355,6 @@ const KEY_MGMT_PROVIDERS: {
   isScriptingCapable: boolean;
 }[] = [
   { id: "openai", label: "OpenAI", link: "https://platform.openai.com/api-keys", placeholder: "sk-...", isScriptingCapable: true },
-  { id: "google", label: "Google Gemini", link: "https://aistudio.google.com/app/apikey", placeholder: "AIza...", isScriptingCapable: true },
-  { id: "anthropic", label: "Anthropic", link: "https://console.anthropic.com/settings/keys", placeholder: "sk-ant-...", isScriptingCapable: true },
   { id: "elevenlabs", label: "ElevenLabs", link: "https://elevenlabs.io/app/settings/api-keys", placeholder: "sk_...", isScriptingCapable: false },
 ];
 
@@ -740,7 +736,7 @@ export default function PremiumNarrationModal({
     const withKey = available.find((e) => {
       const c = cfg(e.option_id);
       if (!c) return false;
-      if (c.id === "plus1") return hasLlm; // needs an LLM key
+      if (c.id === "plus1") return true; // server-sponsored, always available
       if (c.unifiedKey) return hasKeyForProvider(c.provider);
       return hasKeyForProvider(c.provider) && hasLlm;
     });
@@ -768,7 +764,7 @@ export default function PremiumNarrationModal({
   // Determine if we can skip step 2 (returning user with stored keys)
   const canSkipKeys = (() => {
     if (selectedConfig.id === "plus1") {
-      return hasLlmKeyStored(llmProvider);
+      return true; // plus1 is server-sponsored, no user keys needed
     }
     if (selectedConfig.unifiedKey) {
       return hasTtsKey;
@@ -823,8 +819,10 @@ export default function PremiumNarrationModal({
       setSubmitError("Please provide an API key.");
       return;
     }
-    if (selectedConfig.id === "plus1" && !llmKeyRaw.trim() && !hasLlmKeyStored(llmProvider)) {
-      setSubmitError("Please provide an LLM API key.");
+    if (selectedConfig.id === "plus1") {
+      // plus1 is server-sponsored, no user keys needed — skip to step 3
+      setSubmitError("");
+      setStep(3);
       return;
     }
 
@@ -894,7 +892,7 @@ export default function PremiumNarrationModal({
                 <rect x="1.8" y="7.5" width="1.2" height="5" rx="0.3" />
                 <rect x="17" y="7.5" width="1.2" height="5" rx="0.3" />
               </svg>
-              Upgrade Narration
+              Upgrade Voice
             </h2>
             <div className="flex items-center gap-3 ml-4 shrink-0">
               <button
@@ -948,10 +946,10 @@ export default function PremiumNarrationModal({
                   {estimates.map((est) => {
                     const cfg = ALL_OPTIONS.find((o) => o.id === est.option_id);
                     if (!cfg) return null;
-                    const isSupported = cfg.unifiedKey
+                    const isSupported = cfg.id === "plus1"
+                      ? false  // plus1 is server-sponsored, no key badge needed
+                      : cfg.unifiedKey
                       ? hasKeyForProvider(cfg.provider)
-                      : cfg.id === "plus1"
-                      ? hasLlmKeyStored(llmProvider)
                       : hasKeyForProvider(cfg.provider);
                     const isCompleted = (VOICE_TIERS[est.option_id]?.rank ?? 0) <= highestCompletedRank;
                     // A tier is in-progress if the paper is narrating and there's a partial
@@ -1194,7 +1192,7 @@ export default function PremiumNarrationModal({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                 )}
-                Start Narration Upgrade
+                Start Voice Upgrade
               </button>
             </>
           )}

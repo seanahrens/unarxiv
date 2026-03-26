@@ -60,9 +60,9 @@ interface PaperActionsMenuProps {
   onToggleScript?: () => void;
   /** Current view mode — "abstract" or "script" */
   currentView?: "abstract" | "script";
-  /** Called when user clicks Upgrade Narration — opens the modal in the parent */
+  /** Called when user clicks Upgrade Voice — opens the modal in the parent */
   onOpenPremiumModal?: () => void;
-  /** Hide the Upgrade Narration option (e.g. when paper is fully upgraded) */
+  /** Hide the Upgrade Voice option (e.g. when paper is fully upgraded) */
   hideUpgradeNarration?: boolean;
   /** Available narration versions for per-version play items */
   versions?: PaperVersion[];
@@ -203,7 +203,7 @@ export default function PaperActionsMenu({
         <NarrationVersionSubmenu versions={versions} onPlayVersion={onPlayVersion} onClose={onClose} />
       )}
 
-      {/* Upgrade Narration — only when has audio and not fully upgraded */}
+      {/* Upgrade Voice — only when has audio and not fully upgraded */}
       {hasAudio && !hideUpgradeNarration && (
         <>
           <div className={DIVIDER} />
@@ -213,7 +213,7 @@ export default function PaperActionsMenu({
             className={MENU_ITEM}
           >
             <SerifPlus size={14} className="text-stone-600" />
-            Upgrade Narration
+            Upgrade Voice
           </button>
         </>
       )}

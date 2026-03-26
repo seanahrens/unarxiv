@@ -25,6 +25,7 @@ import { arxivSrcUrl, scrapeArxivMetadata } from "../arxiv";
 import { json, requireAdmin, getClientIp } from "./helpers";
 import { computeQualityRank } from "./premium";
 import { legacyBaseTranscriptKey } from "./r2paths";
+import { claimPaperForPremium, findExistingPremiumScript } from "../db";
 
 // ─── Narration Trigger ───────────────────────────────────────────────────────
 
@@ -40,26 +41,28 @@ export async function handleNarratePaper(
     return json({ error: "Paper not found" }, 404);
   }
 
-  // Atomic claim: only one caller wins the race from unnarrated/failed → narrating.
-  // Everyone else gets a success response with the current paper state (already in progress).
+  // If we have a server-side Anthropic key, user-initiated narrations get a
+  // sponsored plus1 upgrade (LLM-improved script + free Microsoft TTS voice).
+  if (env.ANTHROPIC_API_KEY) {
+    return handleSponsoredPlus1(request, env, paper, id, baseUrl, ctx);
+  }
+
+  // Fallback: base narration (no LLM scripting, no server key configured)
   const claimed = await claimPaperForNarration(env.DB, id);
 
   if (claimed) {
-    // We won the race — do rate limit check and record submission
     const ip = getClientIp(request);
     const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
     if (!isAdmin) {
       const limit = parseInt(env.PER_IP_DAILY_LIMIT || "24");
       const count = await getSubmissionCount(env.DB, ip);
       if (count >= limit) {
-        // Revert the claim — they're over limit
         await updatePaperStatus(env.DB, id, "unnarrated");
         return json({ error: "Daily narration limit reached. Try again tomorrow." }, 429);
       }
     }
     await recordSubmission(env.DB, ip);
 
-    // Dispatch to Modal after responding
     const dispatch = getPaper(env.DB, id).then((p) => {
       if (p && p.status === "narrating") {
         return dispatchToModal(env, p, baseUrl);
@@ -69,7 +72,110 @@ export async function handleNarratePaper(
     else void dispatch;
   }
 
-  // Return current state — whether we claimed it or someone else already did
+  const updated = await getPaper(env.DB, id);
+  return json(paperToResponse(updated!, baseUrl));
+}
+
+/**
+ * Sponsored plus1 narration: uses the server's own Anthropic API key for LLM
+ * script improvement + free Microsoft TTS (Eric voice). No user key required.
+ */
+async function handleSponsoredPlus1(
+  request: Request,
+  env: Env,
+  paper: Paper,
+  id: string,
+  baseUrl: string,
+  ctx?: ExecutionContext
+): Promise<Response> {
+  // Use premium claim (allows narrated → narrating for upgrades)
+  const claimed = await claimPaperForPremium(env.DB, id);
+  if (!claimed) {
+    // Fall back to standard claim for unnarrated/failed papers
+    const baseClaimed = await claimPaperForNarration(env.DB, id);
+    if (!baseClaimed) {
+      // Already narrating
+      const updated = await getPaper(env.DB, id);
+      return json(paperToResponse(updated!, baseUrl));
+    }
+  }
+
+  // Rate limit check
+  const ip = getClientIp(request);
+  const isAdmin = request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD && !!env.ADMIN_PASSWORD;
+  if (!isAdmin) {
+    const limit = parseInt(env.PER_IP_DAILY_LIMIT || "24");
+    const count = await getSubmissionCount(env.DB, ip);
+    if (count >= limit) {
+      await updatePaperStatus(env.DB, id, paper.status as PaperStatus);
+      return json({ error: "Daily narration limit reached. Try again tomorrow." }, 429);
+    }
+  }
+  await recordSubmission(env.DB, ip);
+
+  // Dispatch sponsored plus1 to Modal premium endpoint
+  const previousStatus = paper.status as PaperStatus;
+  const dispatch = async () => {
+    if (!env.MODAL_FUNCTION_URL) {
+      console.log(`[local-dev] Skipping sponsored plus1 dispatch for ${id}`);
+      return;
+    }
+    try {
+      // Check for existing premium script to reuse
+      let existingScript: string | null = null;
+      const scriptR2Key = await findExistingPremiumScript(env.DB, id);
+      if (scriptR2Key) {
+        try {
+          const obj = await env.AUDIO_BUCKET.get(scriptR2Key);
+          if (obj) existingScript = await obj.text();
+        } catch {}
+      }
+
+      const payload: Record<string, string | null> = {
+        arxiv_id: id,
+        tex_source_url: arxivSrcUrl(id),
+        callback_url: `${baseUrl}/api/webhooks/modal`,
+        paper_title: paper.title,
+        paper_author: (JSON.parse(paper.authors) as string[]).join(", "),
+        paper_date: paper.published_date || "",
+        narration_mode: "premium",
+        llm_provider: "anthropic",
+        llm_api_key: env.ANTHROPIC_API_KEY!,
+        llm_model: "",  // Modal picks default
+        tts_provider: "free",
+        tts_api_key: "",
+        tts_model: "",
+        source_preference: "tex",
+        scripter_mode: "hybrid",
+        _secret: env.MODAL_WEBHOOK_SECRET,
+      };
+      if (existingScript) {
+        payload.existing_script = existingScript;
+      }
+
+      const premiumUrl = env.MODAL_PREMIUM_FUNCTION_URL
+        || env.MODAL_FUNCTION_URL.replace(/trigger-narration/, "trigger-premium-narration");
+      const resp = await fetch(premiumUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.MODAL_WEBHOOK_SECRET}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        console.error(`Sponsored plus1 dispatch failed for ${id}: ${resp.status}`);
+        await updatePaperStatus(env.DB, id, previousStatus);
+      }
+    } catch (e: any) {
+      console.error(`Failed to dispatch sponsored plus1 for ${id}:`, e);
+      await updatePaperStatus(env.DB, id, previousStatus);
+    }
+  };
+
+  if (ctx) ctx.waitUntil(dispatch());
+  else void dispatch();
+
   const updated = await getPaper(env.DB, id);
   return json(paperToResponse(updated!, baseUrl));
 }

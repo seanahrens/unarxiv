@@ -291,7 +291,11 @@ export interface FreeVoiceRequest {
   llm_model?: string;
 }
 
-export type NarratePremiumRequest = (UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest) & {
+export interface SponsoredPlus1Request {
+  type: "sponsored_plus1";
+}
+
+export type NarratePremiumRequest = (UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest | SponsoredPlus1Request) & {
   /** "llm" (default) or "hybrid" — selects the scripting pipeline on Modal */
   scripter_mode?: string;
 };
@@ -320,8 +324,8 @@ export async function handleNarratePremium(
     return json({ error: "Invalid JSON body" }, 400);
   }
 
-  if (!body.type || !["unified", "dual", "free_voice"].includes(body.type)) {
-    return json({ error: "type must be 'unified', 'dual', or 'free_voice'" }, 400);
+  if (!body.type || !["unified", "dual", "free_voice", "sponsored_plus1"].includes(body.type)) {
+    return json({ error: "type must be 'unified', 'dual', 'free_voice', or 'sponsored_plus1'" }, 400);
   }
 
   const aesKey = await deriveAesKey(env.ENCRYPTION_KEY);
@@ -357,8 +361,7 @@ export async function handleNarratePremium(
       ttsProvider = req.tts_provider;
       ttsApiKey = await aesDecrypt(req.encrypted_tts_key, aesKey);
       ttsModel = req.tts_model || (DEFAULT_MODELS.tts as any)[req.tts_provider] || null;
-    } else {
-      // free_voice
+    } else if (body.type === "free_voice") {
       const req = body as FreeVoiceRequest;
       if (!req.llm_provider || !req.encrypted_llm_key) {
         return json({ error: "llm_provider and encrypted_llm_key required" }, 400);
@@ -366,6 +369,14 @@ export async function handleNarratePremium(
       llmProvider = req.llm_provider;
       llmApiKey = await aesDecrypt(req.encrypted_llm_key, aesKey);
       llmModel = req.llm_model || "";  // empty → Modal picks default from llm_providers.py
+    } else {
+      // sponsored_plus1: server-side Anthropic key, no user key needed
+      if (!env.ANTHROPIC_API_KEY) {
+        return json({ error: "Sponsored narration not configured" }, 503);
+      }
+      llmProvider = "anthropic";
+      llmApiKey = env.ANTHROPIC_API_KEY;
+      llmModel = "";  // Modal picks default
     }
   } catch {
     return json({ error: "Failed to decrypt key — was it encrypted with this server?" }, 400);
