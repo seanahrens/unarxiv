@@ -33,6 +33,8 @@ export interface NarrationVersion {
   actual_input_tokens: number | null;
   actual_output_tokens: number | null;
   provider_model: string | null; // e.g. "anthropic:claude-sonnet-4-6"
+  scripter_mode: string | null;   // 'regex' | 'llm' | 'hybrid'
+  script_latency_ms: number | null;
   created_at: string;
 }
 

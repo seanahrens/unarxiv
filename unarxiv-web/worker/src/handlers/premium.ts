@@ -291,7 +291,10 @@ export interface FreeVoiceRequest {
   llm_model?: string;
 }
 
-export type NarratePremiumRequest = UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest;
+export type NarratePremiumRequest = (UnifiedKeyRequest | DualKeyRequest | FreeVoiceRequest) & {
+  /** "llm" (default) or "hybrid" — selects the scripting pipeline on Modal */
+  scripter_mode?: string;
+};
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
@@ -436,6 +439,12 @@ export async function handleNarratePremium(
         } catch {}
       }
 
+      // Validate scripter_mode if provided; default is "hybrid" (regex prose + targeted LLM)
+      const scripterMode = (body as NarratePremiumRequest).scripter_mode;
+      const validScripterModes = ["llm", "hybrid"];
+      const resolvedScripterMode = scripterMode && validScripterModes.includes(scripterMode)
+        ? scripterMode : "hybrid";
+
       const payload: Record<string, string | null> = {
         arxiv_id: id,
         tex_source_url: arxivSrcUrl(id),
@@ -451,6 +460,7 @@ export async function handleNarratePremium(
         tts_api_key: ttsApiKey ?? "",
         tts_model: ttsModel ?? "",
         source_preference: "tex",
+        scripter_mode: resolvedScripterMode,
         _secret: env.MODAL_WEBHOOK_SECRET,
       };
       // Only include existing_script when we actually have one (avoids sending null)

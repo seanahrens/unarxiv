@@ -925,6 +925,8 @@ export async function insertNarrationVersion(
     actual_input_tokens?: number | null;
     actual_output_tokens?: number | null;
     provider_model?: string | null;
+    scripter_mode?: string | null;
+    script_latency_ms?: number | null;
   }
 ): Promise<NarrationVersion> {
   const result = await db
@@ -934,8 +936,9 @@ export async function insertNarrationVersion(
           tts_provider, tts_model, llm_provider, llm_model,
           audio_r2_key, transcript_r2_key, duration_seconds,
           actual_cost, llm_cost, tts_cost,
-          actual_input_tokens, actual_output_tokens, provider_model)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          actual_input_tokens, actual_output_tokens, provider_model,
+          scripter_mode, script_latency_ms)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`
     )
     .bind(
@@ -955,6 +958,8 @@ export async function insertNarrationVersion(
       v.actual_input_tokens ?? null,
       v.actual_output_tokens ?? null,
       v.provider_model ?? null,
+      v.scripter_mode ?? null,
+      v.script_latency_ms ?? null,
     )
     .first<NarrationVersion>();
   return result!;
@@ -1133,6 +1138,7 @@ export interface ScoreDailyRow {
   /** ISO timestamp of the earliest score in this group — used for x-axis ordering. */
   period_start: string;
   narration_tier: string;
+  scripter_mode: string;
   avg_overall: number | null;
   avg_fidelity: number | null;
   avg_citations: number | null;
@@ -1144,6 +1150,7 @@ export interface ScoreDailyRow {
 
 export interface ScoreSummaryRow {
   narration_tier: string;
+  scripter_mode: string;
   avg_overall: number | null;
   avg_fidelity: number | null;
   avg_citations: number | null;
@@ -1154,14 +1161,17 @@ export interface ScoreSummaryRow {
   avg_7d: number | null;
   count_7d: number;
   avg_prior_7d: number | null;
+  avg_cost: number | null;
+  avg_latency_ms: number | null;
 }
 
 /**
- * Per-tier stats for the most recent parser commit that has scores (up to 10 most recent papers).
+ * Per-scripter-mode stats for the most recent parser commit that has scores (up to 10 most recent papers).
  * Used as the "current headline" in the Quality Insights panel.
  */
 export interface ScoreCurrentRow {
   narration_tier: string;
+  scripter_mode: string;
   /** The period (commit hash or date) this represents */
   period: string;
   avg_overall: number | null;
@@ -1172,6 +1182,8 @@ export interface ScoreCurrentRow {
   avg_tts: number | null;
   /** Number of papers averaged (up to 10) */
   count: number;
+  avg_cost: number | null;
+  avg_latency_ms: number | null;
 }
 
 /** Register a parser commit hash so it appears on the Quality Insights chart even before scoring. */
@@ -1193,11 +1205,16 @@ export async function registerParserVersion(
  * Used by the admin Quality Insights panel.
  */
 export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDailyRow[]; summary: ScoreSummaryRow[]; current: ScoreCurrentRow[] }> {
+  // Derive scripter_mode from the version when not explicitly set (backward compat).
+  // SM(alias) returns the expression for a given table alias.
+  const SM = (a = "nv") => `COALESCE(${a}.scripter_mode, CASE WHEN ${a}.narration_tier='base' THEN 'regex' ELSE 'llm' END)`;
+
   const [dailyResult, summaryResult, currentResult] = await Promise.all([
     db.prepare(`
       SELECT COALESCE(ns.parser_commit, date(ns.scored_at)) as period,
              MIN(ns.scored_at)       as period_start,
              nv.narration_tier,
+             ${SM()}                   as scripter_mode,
              AVG(ns.score_overall)   as avg_overall,
              AVG(ns.score_fidelity)  as avg_fidelity,
              AVG(ns.score_citations) as avg_citations,
@@ -1208,13 +1225,14 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
       FROM narration_scores ns
       JOIN narration_versions nv ON nv.id = ns.version_id
       WHERE ns.scored_at >= date('now', '-90 days')
-      GROUP BY COALESCE(ns.parser_commit, date(ns.scored_at)), nv.narration_tier
+      GROUP BY COALESCE(ns.parser_commit, date(ns.scored_at)), ${SM()}
 
       UNION ALL
 
       SELECT pv.commit_hash      as period,
              pv.registered_at   as period_start,
              pv.tier            as narration_tier,
+             CASE WHEN pv.tier = 'base' THEN 'regex' ELSE 'llm' END as scripter_mode,
              NULL               as avg_overall,
              NULL               as avg_fidelity,
              NULL               as avg_citations,
@@ -1228,7 +1246,7 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
         FROM narration_scores ns2
         JOIN narration_versions nv2 ON nv2.id = ns2.version_id
         WHERE COALESCE(ns2.parser_commit, date(ns2.scored_at)) = pv.commit_hash
-          AND nv2.narration_tier = pv.tier
+          AND ${SM("nv2")} = CASE WHEN pv.tier = 'base' THEN 'regex' ELSE 'llm' END
           AND ns2.scored_at >= date('now', '-90 days')
       )
       AND pv.registered_at >= date('now', '-90 days')
@@ -1238,6 +1256,7 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
 
     db.prepare(`
       SELECT nv.narration_tier,
+             ${SM()}                   as scripter_mode,
              AVG(ns.score_overall)   as avg_overall,
              AVG(ns.score_fidelity)  as avg_fidelity,
              AVG(ns.score_citations) as avg_citations,
@@ -1249,27 +1268,34 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
              SUM(CASE WHEN ns.scored_at >= date('now','-7 days') THEN 1 ELSE 0 END)         as count_7d,
              AVG(CASE WHEN ns.scored_at >= date('now','-14 days')
                        AND ns.scored_at < date('now','-7 days')
-                      THEN ns.score_overall END) as avg_prior_7d
+                      THEN ns.score_overall END) as avg_prior_7d,
+             AVG(nv.llm_cost)         as avg_cost,
+             AVG(nv.script_latency_ms) as avg_latency_ms
       FROM narration_scores ns
       JOIN narration_versions nv ON nv.id = ns.version_id
-      GROUP BY nv.narration_tier
+      GROUP BY ${SM()}
     `).all<ScoreSummaryRow>(),
 
-    // Most recent commit period per tier, up to 10 most recent scores each
+    // Most recent commit period per scripter_mode, up to 10 most recent scores each
     db.prepare(`
-      WITH period_max AS (
-        SELECT nv.narration_tier,
+      WITH versioned AS (
+        SELECT nv.*, ${SM()} as sm
+        FROM narration_versions nv
+      ),
+      period_max AS (
+        SELECT v.sm as scripter_mode,
+               v.narration_tier,
                COALESCE(ns.parser_commit, date(ns.scored_at)) AS period,
                MAX(ns.scored_at) AS max_scored_at
         FROM narration_scores ns
-        JOIN narration_versions nv ON nv.id = ns.version_id
-        GROUP BY nv.narration_tier, COALESCE(ns.parser_commit, date(ns.scored_at))
+        JOIN versioned v ON v.id = ns.version_id
+        GROUP BY v.sm, COALESCE(ns.parser_commit, date(ns.scored_at))
       ),
       latest_period AS (
-        SELECT narration_tier, period
+        SELECT scripter_mode, narration_tier, period
         FROM (
-          SELECT narration_tier, period,
-                 ROW_NUMBER() OVER (PARTITION BY narration_tier ORDER BY max_scored_at DESC) AS rn
+          SELECT scripter_mode, narration_tier, period,
+                 ROW_NUMBER() OVER (PARTITION BY scripter_mode ORDER BY max_scored_at DESC) AS rn
           FROM period_max
         )
         WHERE rn = 1
@@ -1277,25 +1303,28 @@ export async function getScoreTrends(db: D1Database): Promise<{ daily: ScoreDail
       ranked_scores AS (
         SELECT ns.score_overall, ns.score_fidelity, ns.score_citations,
                ns.score_header, ns.score_figures, ns.score_tts,
-               nv.narration_tier, lp.period,
-               ROW_NUMBER() OVER (PARTITION BY nv.narration_tier ORDER BY ns.scored_at DESC) AS rn
+               v.narration_tier, v.sm as scripter_mode, lp.period,
+               v.llm_cost, v.script_latency_ms,
+               ROW_NUMBER() OVER (PARTITION BY v.sm ORDER BY ns.scored_at DESC) AS rn
         FROM narration_scores ns
-        JOIN narration_versions nv ON nv.id = ns.version_id
+        JOIN versioned v ON v.id = ns.version_id
         JOIN latest_period lp
-          ON lp.narration_tier = nv.narration_tier
+          ON lp.scripter_mode = v.sm
          AND lp.period = COALESCE(ns.parser_commit, date(ns.scored_at))
       )
-      SELECT narration_tier, period,
-             AVG(score_overall)   AS avg_overall,
-             AVG(score_fidelity)  AS avg_fidelity,
-             AVG(score_citations) AS avg_citations,
-             AVG(score_header)    AS avg_header,
-             AVG(score_figures)   AS avg_figures,
-             AVG(score_tts)       AS avg_tts,
-             COUNT(*)             AS count
+      SELECT narration_tier, scripter_mode, period,
+             AVG(score_overall)      AS avg_overall,
+             AVG(score_fidelity)     AS avg_fidelity,
+             AVG(score_citations)    AS avg_citations,
+             AVG(score_header)       AS avg_header,
+             AVG(score_figures)      AS avg_figures,
+             AVG(score_tts)          AS avg_tts,
+             COUNT(*)                AS count,
+             AVG(llm_cost)           AS avg_cost,
+             AVG(script_latency_ms)  AS avg_latency_ms
       FROM ranked_scores
       WHERE rn <= 10
-      GROUP BY narration_tier, period
+      GROUP BY scripter_mode, period
     `).all<ScoreCurrentRow>(),
   ]);
 

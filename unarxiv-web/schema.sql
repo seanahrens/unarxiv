@@ -195,6 +195,9 @@ CREATE TABLE IF NOT EXISTS narration_versions (
     actual_input_tokens  INTEGER,  -- actual LLM input tokens consumed
     actual_output_tokens INTEGER,  -- actual LLM output tokens consumed
     provider_model       TEXT,     -- e.g. "anthropic:claude-sonnet-4-6"
+    -- Scripting pipeline tracking (migration 012)
+    scripter_mode        TEXT,     -- 'regex' | 'llm' | 'hybrid' | null (legacy)
+    script_latency_ms    INTEGER,  -- wall-clock ms for script generation phase
     created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

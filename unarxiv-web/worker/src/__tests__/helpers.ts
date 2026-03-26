@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS narration_versions (
   actual_input_tokens  INTEGER,
   actual_output_tokens INTEGER,
   provider_model       TEXT,
+  scripter_mode        TEXT,
+  script_latency_ms    INTEGER,
   created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS model_coefficients (

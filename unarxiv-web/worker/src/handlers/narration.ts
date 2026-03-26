@@ -191,13 +191,17 @@ export async function handleReprocessPaper(
   let wipeReviews = false;
   let mode = "full";
   let sourcePriority = "latex";
+  let scripterMode = "regex";
   try {
-    const body = await request.json<{ wipe_reviews?: boolean; mode?: string; source_priority?: string }>();
+    const body = await request.json<{ wipe_reviews?: boolean; mode?: string; source_priority?: string; scripter_mode?: string }>();
     wipeReviews = !!body?.wipe_reviews;
     if (body?.mode && ["full", "script_only", "narration_only"].includes(body.mode)) {
       mode = body.mode;
     }
     if (body?.source_priority === "pdf") sourcePriority = "pdf";
+    if (body?.scripter_mode && ["regex", "llm", "hybrid"].includes(body.scripter_mode)) {
+      scripterMode = body.scripter_mode;
+    }
   } catch {
     // No body or invalid JSON is fine
   }
@@ -276,6 +280,7 @@ export async function handleReprocessPaper(
           paper_date: metadata?.published_date || paper.published_date || "",
           mode,
           source_priority: sourcePriority,
+          scripter_mode: scripterMode,
           _secret: env.MODAL_WEBHOOK_SECRET,
         }),
       });
@@ -455,6 +460,9 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
     actual_output_tokens?: number;
     provider_model?: string;
     version_id?: string;
+    // Track 3: scripting pipeline tracking
+    scripter_mode?: string;
+    script_latency_ms?: number;
   }>();
 
   if (!body.arxiv_id || !body.status) {
@@ -503,6 +511,8 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       actual_input_tokens: body.actual_input_tokens ?? null,
       actual_output_tokens: body.actual_output_tokens ?? null,
       provider_model: body.provider_model ?? null,
+      scripter_mode: body.scripter_mode ?? null,
+      script_latency_ms: body.script_latency_ms ?? null,
     });
     return json({ ok: true });
   }
@@ -558,6 +568,8 @@ export async function handleModalWebhook(request: Request, env: Env): Promise<Re
       actual_input_tokens: body.actual_input_tokens ?? null,
       actual_output_tokens: body.actual_output_tokens ?? null,
       provider_model: body.provider_model ?? null,
+      scripter_mode: body.scripter_mode ?? null,
+      script_latency_ms: body.script_latency_ms ?? null,
     });
 
     // Only update best_version_id when the version has audio (script_only versions don't)

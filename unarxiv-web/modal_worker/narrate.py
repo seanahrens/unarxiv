@@ -462,6 +462,7 @@ def narrate_paper(arxiv_id: str, tex_source_url: str, callback_url: str, paper_t
             transcript_r2_key=transcript_r2_key,
             version_id=version_id,
             script_char_count=len(tts_text),
+            scripter_mode="regex",
             **_source_stats,
         )
         print(f"Done: {arxiv_id}")
@@ -655,6 +656,7 @@ def narrate_paper_premium(
         tts_time_est = chunks_est * tts_secs_per_chunk
 
         llm_result = None
+        script_start_time = time.time()
         if existing_script:
             print(f"Reusing existing LLM script ({len(existing_script):,} chars) — skipping LLM generation")
             tts_text = existing_script
@@ -720,6 +722,8 @@ def narrate_paper_premium(
             else:
                 print(f"No API key for {llm_provider} (checked llm_api_key and {llm_provider.upper()}_API_KEY env var) — skipping LLM improvement")
 
+        script_latency_ms = int((time.time() - script_start_time) * 1000)
+
         # Wrap with standard header/footer only when the LLM ran and produced
         # body-only output.  The free-tier programmatic script (parsed.speech_text)
         # and any existing_script transcript already contain header+footer, so
@@ -766,7 +770,10 @@ def narrate_paper_premium(
                     # Track 2: actual LLM token usage
                     actual_input_tokens=llm_result.input_tokens if llm_result else 0,
                     actual_output_tokens=llm_result.output_tokens if llm_result else 0,
-                    provider_model=f"{llm_result.provider}:{llm_result.model}" if llm_result else None)
+                    provider_model=f"{llm_result.provider}:{llm_result.model}" if llm_result else None,
+                    # Track 3: scripting pipeline
+                    scripter_mode=scripter_mode,
+                    script_latency_ms=script_latency_ms)
 
         # ---------------------------------------------------------------
         # Stage 4: Premium TTS synthesis
@@ -882,6 +889,9 @@ def narrate_paper_premium(
             actual_input_tokens=llm_result.input_tokens if llm_result else 0,
             actual_output_tokens=llm_result.output_tokens if llm_result else 0,
             provider_model=f"{llm_result.provider}:{llm_result.model}" if llm_result else None,
+            # Track 3: scripting pipeline
+            scripter_mode=scripter_mode,
+            script_latency_ms=script_latency_ms,
         )
         print(f"Premium narration done: {arxiv_id} (v{version_id}), total cost ${total_cost:.4f}")
 

@@ -337,6 +337,7 @@ interface ScoreDailyRow {
   period: string;       // commit hash (7-char) or YYYY-MM-DD date fallback
   period_start: string; // ISO timestamp for ordering
   narration_tier: string;
+  scripter_mode: string; // 'regex' | 'llm' | 'hybrid'
   avg_overall: number | null;
   avg_fidelity: number | null;
   avg_citations: number | null;
@@ -348,6 +349,7 @@ interface ScoreDailyRow {
 
 interface ScoreSummaryRow {
   narration_tier: string;
+  scripter_mode: string;
   avg_overall: number | null;
   avg_7d: number | null;
   avg_prior_7d: number | null;
@@ -358,10 +360,13 @@ interface ScoreSummaryRow {
   avg_header: number | null;
   avg_figures: number | null;
   avg_tts: number | null;
+  avg_cost: number | null;
+  avg_latency_ms: number | null;
 }
 
 interface ScoreCurrentRow {
   narration_tier: string;
+  scripter_mode: string;
   period: string;
   avg_overall: number | null;
   avg_fidelity: number | null;
@@ -370,6 +375,8 @@ interface ScoreCurrentRow {
   avg_figures: number | null;
   avg_tts: number | null;
   count: number;
+  avg_cost: number | null;
+  avg_latency_ms: number | null;
 }
 
 interface ScoreStats {
@@ -416,13 +423,15 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
     new Map(daily.map((r) => [r.period, r.period_start])).entries()
   ).sort((a, b) => a[1].localeCompare(b[1])).map(([p]) => p);
 
-  // Group rows by "base" vs "llm", keyed by period
+  // Group rows by scripter_mode, keyed by period
   const seriesMap: Record<string, Map<string, number | null>> = {
-    base: new Map(),
+    regex: new Map(),
     llm: new Map(),
+    hybrid: new Map(),
   };
   for (const r of daily) {
-    const key = r.narration_tier === "base" ? "base" : "llm";
+    const key = r.scripter_mode || (r.narration_tier === "base" ? "regex" : "llm");
+    if (!seriesMap[key]) seriesMap[key] = new Map();
     const existing = seriesMap[key].get(r.period);
     if (existing == null) {
       seriesMap[key].set(r.period, r.avg_overall);
@@ -467,9 +476,10 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
   const firstPeriod = periodOrder[0];
   const lastPeriod = periodOrder[periodOrder.length - 1];
 
-  // hasBase/hasLlm: true only if there are actual scored (non-null) data points for legend/line
-  const hasBase = Array.from(seriesMap.base.values()).some((v) => v != null);
+  // Check which series have actual scored (non-null) data points
+  const hasRegex = Array.from(seriesMap.regex.values()).some((v) => v != null);
   const hasLlm = Array.from(seriesMap.llm.values()).some((v) => v != null);
+  const hasHybrid = Array.from(seriesMap.hybrid.values()).some((v) => v != null);
   // hasAnyPeriods: true if there are any periods at all (including unscored future commits)
   const hasAnyPeriods = periodOrder.length > 0;
 
@@ -500,8 +510,9 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
         {/* Y=0 baseline */}
         <line x1={PAD.left} y1={scoreToY(0)} x2={PAD.left + cW} y2={scoreToY(0)} stroke="#a8a29e" strokeWidth="1" />
         {/* Series */}
-        {hasBase && renderSeries("base", "#ef4444", "#ef4444")}
+        {hasRegex && renderSeries("regex", "#ef4444", "#ef4444")}
         {hasLlm && renderSeries("llm", "#3b82f6", "#3b82f6")}
+        {hasHybrid && renderSeries("hybrid", "#8b5cf6", "#8b5cf6")}
         {/* X-axis labels */}
         {firstPeriod && (
           <text x={periodToX(firstPeriod)} y={H - 4} textAnchor="middle" fontSize="8" fill="#a8a29e">
@@ -521,7 +532,7 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
       </svg>
       {/* Legend */}
       <div className="flex gap-4 justify-end mt-1">
-        {hasBase && (
+        {hasRegex && (
           <span className="flex items-center gap-1 text-xs" style={{ color: "#ef4444" }}>
             <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#ef4444" }} />
             Regex
@@ -531,6 +542,12 @@ function ScoreTrendChart({ daily }: { daily: ScoreDailyRow[] }) {
           <span className="flex items-center gap-1 text-xs" style={{ color: "#3b82f6" }}>
             <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#3b82f6" }} />
             LLM
+          </span>
+        )}
+        {hasHybrid && (
+          <span className="flex items-center gap-1 text-xs" style={{ color: "#8b5cf6" }}>
+            <span className="inline-block w-3 h-0.5 rounded" style={{ backgroundColor: "#8b5cf6" }} />
+            Hybrid
           </span>
         )}
       </div>
@@ -546,10 +563,16 @@ const GOAL_TOOLTIPS: Record<string, string> = {
   TTS: "TTS readability — does the script read naturally aloud with proper math verbalization and no unpronounceable sequences?",
 };
 
-/** Horizontal bar rows for each goal, one column per tier */
+/** Horizontal bar rows for each goal, one column per scripter mode */
 function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
-  const base = current.find((r) => r.narration_tier === "base");
-  const llm = current.find((r) => r.narration_tier !== "base");
+  const regex = current.find((r) => r.scripter_mode === "regex");
+  const llm = current.find((r) => r.scripter_mode === "llm");
+  const hybrid = current.find((r) => r.scripter_mode === "hybrid");
+  const modes = [
+    { data: regex, label: "Regex", color: "text-red-400" },
+    { data: llm, label: "LLM", color: "text-blue-400" },
+    { data: hybrid, label: "Hybrid", color: "text-violet-400" },
+  ].filter((m) => m.data);
 
   const goals: { label: string; key: keyof ScoreCurrentRow }[] = [
     { label: "Fidelity", key: "avg_fidelity" },
@@ -582,18 +605,37 @@ function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
     <div className="mt-4">
       <div className="flex mb-1">
         <div className="w-28 shrink-0" />
-        {base && <div className="flex-1 text-xs text-red-400 text-center">Regex</div>}
-        {llm && <div className="flex-1 text-xs text-blue-400 text-center">LLM</div>}
+        {modes.map((m) => (
+          <div key={m.label} className={`flex-1 text-xs ${m.color} text-center`}>{m.label}</div>
+        ))}
       </div>
       {goals.map(({ label, key }) => (
         <div key={String(key)} className="flex items-center gap-2 py-1">
           <div className="w-28 shrink-0 text-xs text-stone-400" title={GOAL_TOOLTIPS[label]}>
             <span className="cursor-help border-b border-dashed border-stone-300">{label}</span>
           </div>
-          {base && <Bar value={base[key] as number | null} />}
-          {llm && <Bar value={llm[key] as number | null} />}
+          {modes.map((m) => (
+            <Bar key={m.label} value={m.data![key] as number | null} />
+          ))}
         </div>
       ))}
+      {/* Cost & Latency row */}
+      <div className="flex items-center gap-2 py-1.5 mt-1 border-t border-stone-100">
+        <div className="w-28 shrink-0 text-xs text-stone-400">Avg Cost</div>
+        {modes.map((m) => (
+          <div key={m.label} className="flex-1 text-xs text-stone-500 text-center font-mono">
+            {m.data!.avg_cost != null ? `$${m.data!.avg_cost.toFixed(4)}` : "—"}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 py-1">
+        <div className="w-28 shrink-0 text-xs text-stone-400">Avg Latency</div>
+        {modes.map((m) => (
+          <div key={m.label} className="flex-1 text-xs text-stone-500 text-center font-mono">
+            {m.data!.avg_latency_ms != null ? `${(m.data!.avg_latency_ms / 1000).toFixed(1)}s` : "—"}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -607,15 +649,16 @@ function QualityInsightsPanel({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  // Current period stats (most recent commit, up to 10 papers)
-  const base = stats.current.find((r) => r.narration_tier === "base");
-  const llm = stats.current.find((r) => r.narration_tier !== "base");
+  // Current period stats (most recent commit, up to 10 papers) per scripter_mode
+  const regex = stats.current.find((r) => r.scripter_mode === "regex");
+  const llm = stats.current.find((r) => r.scripter_mode === "llm");
+  const hybrid = stats.current.find((r) => r.scripter_mode === "hybrid");
+  const modeRows = [regex, llm, hybrid].filter(Boolean) as ScoreCurrentRow[];
   const totalEvals = stats.current.reduce((s, r) => s + r.count, 0);
 
-  // Compute trend by comparing last two periods in daily for each tier
-  function getTierTrend(isBase: boolean): ReturnType<typeof trendLabel> {
-    const rows = stats.daily.filter((r) => (isBase ? r.narration_tier === "base" : r.narration_tier !== "base"));
-    // Merge multiple LLM sub-tiers per period by averaging
+  // Compute trend by comparing last two periods in daily for each mode
+  function getModeTrend(mode: string): ReturnType<typeof trendLabel> {
+    const rows = stats.daily.filter((r) => r.scripter_mode === mode);
     const byPeriod = new Map<string, { sum: number; n: number; start: string }>();
     for (const r of rows) {
       if (r.avg_overall == null) continue;
@@ -631,14 +674,20 @@ function QualityInsightsPanel({
     return trendLabel(latest.sum / latest.n, prior.sum / prior.n);
   }
 
+  const MODE_COLORS: Record<string, string> = { regex: "text-red-500", llm: "text-blue-500", hybrid: "text-violet-500" };
+  const MODE_LABELS: Record<string, string> = { regex: "Regex", llm: "LLM", hybrid: "Hybrid" };
+  const MODE_BG: Record<string, string> = { regex: "bg-red-50", llm: "bg-blue-50", hybrid: "bg-violet-50" };
+  const MODE_LABEL_COLOR: Record<string, string> = { regex: "text-red-600", llm: "text-blue-700", hybrid: "text-violet-700" };
+  const MODE_VALUE_COLOR: Record<string, string> = { regex: "text-red-800", llm: "text-blue-800", hybrid: "text-violet-800" };
+
   const TierPill = ({ row }: { row: ScoreCurrentRow }) => {
-    const isBase = row.narration_tier === "base";
-    const trend = getTierTrend(isBase);
+    const mode = row.scripter_mode || (row.narration_tier === "base" ? "regex" : "llm");
+    const trend = getModeTrend(mode);
     const pct = row.avg_overall != null ? Math.round(row.avg_overall * 100) : null;
-    const color = isBase ? "text-red-500" : "text-blue-500";
+    const color = MODE_COLORS[mode] ?? "text-stone-500";
     return (
       <span className={`inline-flex items-center gap-1 text-xs font-medium ${color}`}>
-        {isBase ? "Regex" : "LLM"}
+        {MODE_LABELS[mode] ?? mode}
         {pct != null && <span className="font-mono">{pct}%</span>}
         {trend && <span className={trend.color}>{trend.symbol}</span>}
       </span>
@@ -655,8 +704,7 @@ function QualityInsightsPanel({
         <span className="flex items-center gap-3">
           <span className="text-xs font-medium text-stone-400 uppercase tracking-wider">Quality Insights</span>
           <span className="flex items-center gap-2.5">
-            {base && <TierPill row={base} />}
-            {llm && <TierPill row={llm} />}
+            {modeRows.map((r) => <TierPill key={r.scripter_mode} row={r} />)}
             {totalEvals > 0 && (
               <span className="text-xs text-stone-300">{totalEvals} eval{totalEvals !== 1 ? "s" : ""}</span>
             )}
@@ -674,20 +722,19 @@ function QualityInsightsPanel({
       {expanded && (
         <div className="px-4 pb-4 border-t border-stone-50">
           {/* Summary pills */}
-          {(base || llm) && (
-            <div className="flex gap-4 pt-3 pb-2">
-              {[base, llm].filter(Boolean).map((row) => {
-                const r = row!;
-                const isBase = r.narration_tier === "base";
-                const trend = getTierTrend(isBase);
+          {modeRows.length > 0 && (
+            <div className="flex gap-4 pt-3 pb-2 flex-wrap">
+              {modeRows.map((r) => {
+                const mode = r.scripter_mode || (r.narration_tier === "base" ? "regex" : "llm");
+                const trend = getModeTrend(mode);
                 const pct = r.avg_overall != null ? Math.round(r.avg_overall * 100) : null;
                 return (
-                  <div key={r.narration_tier} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isBase ? "bg-red-50" : "bg-blue-50"}`}>
-                    <span className={`text-xs font-semibold ${isBase ? "text-red-600" : "text-blue-700"}`}>
-                      {isBase ? "Regex" : "LLM"}
+                  <div key={mode} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${MODE_BG[mode] ?? "bg-stone-50"}`}>
+                    <span className={`text-xs font-semibold ${MODE_LABEL_COLOR[mode] ?? "text-stone-600"}`}>
+                      {MODE_LABELS[mode] ?? mode}
                     </span>
                     {pct != null && (
-                      <span className={`text-sm font-bold font-mono ${isBase ? "text-red-800" : "text-blue-800"}`}>
+                      <span className={`text-sm font-bold font-mono ${MODE_VALUE_COLOR[mode] ?? "text-stone-800"}`}>
                         {pct}%
                       </span>
                     )}
@@ -695,6 +742,12 @@ function QualityInsightsPanel({
                       <span className={`text-xs ${trend.color}`}>{trend.symbol} {trend.delta}</span>
                     )}
                     <span className="text-xs text-stone-300">{r.count}ev</span>
+                    {r.avg_cost != null && (
+                      <span className="text-xs text-stone-300 font-mono">${r.avg_cost.toFixed(3)}</span>
+                    )}
+                    {r.avg_latency_ms != null && (
+                      <span className="text-xs text-stone-300 font-mono">{(r.avg_latency_ms / 1000).toFixed(1)}s</span>
+                    )}
                   </div>
                 );
               })}
