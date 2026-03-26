@@ -10,6 +10,7 @@ Eval date: 2026-03-26 | Papers evaluated: 5 (2603.23994, 2503.05830, 2311.02242,
 **Severity**: high — unlistenable section with emails, ORCID numbers, table of contents
 **Frequency**: 1/5 papers (2503.05830)
 **Paper(s)**: 2503.05830
+**Status**: ⚠️ PARTIALLY FIXED — `628cec3` strips `\section*{Author contributions}` blocks; core TOC/affiliation-as-prose issue deferred (needs template-specific detection)
 
 ### What the scripter produced
 > "Revel and Penigaud (2025)
@@ -46,6 +47,7 @@ The paper uses a journal article LaTeX template with structured `\author{}` bloc
 **Severity**: high — sentence becomes incomprehensible without the referenced section number
 **Frequency**: 1/5 papers but 10+ instances within that paper (2312.03893)
 **Paper(s)**: 2312.03893
+**Status**: ✅ FIXED — `628cec3` adds case-insensitive `(section )` / `(sections -)` cleanup in `_normalize_text()` and "in sections and" cleanup in `_strip_citations()`
 
 ### What the scripter produced
 > "focuses on answering this question; starting with a philosophical definition (section ), then building up to something which can be digitally stored (section ) and physically sensed (section )."
@@ -71,6 +73,7 @@ The paper uses a journal article LaTeX template with structured `\author{}` bloc
 **Severity**: medium — awkward speech output but meaning is recoverable
 **Frequency**: 4 instances in 1/5 papers (2602.13920)
 **Paper(s)**: 2602.13920
+**Status**: ✅ FIXED — `628cec3` detects `th`/`st`/`nd`/`rd` superscripts (including `\text{th}` wrappers) in `math_to_speech.py:_convert_superscripts()`
 
 ### What the scripter produced
 > "posted within the range from 27 to the power of th , January, 2026 to 10 to the power of th , February, 2026"
@@ -94,6 +97,7 @@ The paper uses a journal article LaTeX template with structured `\author{}` bloc
 **Severity**: medium — confusing/unpronounceable token
 **Frequency**: 2 instances in 1/5 papers (2603.23994)
 **Paper(s)**: 2603.23994
+**Status**: ✅ FIXED — `628cec3` adds precise `\\[hv]space\*?\{...\}` and `\\vrule` stripping in `_strip_non_prose()` before the greedy catch-all runs
 
 ### What the scripter produced
 > "We are given an initial system (1em0.6em) that takes an input and produces an output, and an oracle to give feedback (1em0.6em) that can serve as a signal for optimizing."
@@ -117,6 +121,7 @@ The `\hspace{1em}\vrule\hspace{0.6em}` is a diagram separator in the LaTeX sourc
 **Severity**: medium — "(figure )" audibly meaningless, disrupts flow
 **Frequency**: 7 instances in 1/5 papers (2311.02242)
 **Paper(s)**: 2311.02242
+**Status**: ✅ FIXED — `628cec3` adds case-insensitive Figure/Table/Section cleanup and explicit `(figure )` / `(table )` / `(section )` parenthetical removal in `_normalize_text()`
 
 ### What the scripter produced
 > "During each turn of the dialogue, participants are sent either a read-only message (text, image, or video), a poll, or an open-ended prompt that kicks off a collective response process (figure )."
@@ -142,6 +147,7 @@ The `\hspace{1em}\vrule\hspace{0.6em}` is a diagram separator in the LaTeX sourc
 **Severity**: low — jarring but content continues after the artifact
 **Frequency**: 1/5 papers (2311.02242)
 **Paper(s)**: 2311.02242
+**Status**: ✅ FIXED — `628cec3` extends acknowledgements regex to also strip `\section*{Author contributions}` and `\paragraph*{Author contributions}` blocks in `_strip_non_prose()`
 
 ### What the scripter produced
 > (after abstract):

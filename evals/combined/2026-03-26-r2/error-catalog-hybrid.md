@@ -12,6 +12,7 @@ Eval date: 2026-03-26 | Papers evaluated: 2 (2211.12434, 2302.00672)
 **Severity**: high — entire paper body missing, output is useless
 **Frequency**: 1/2 papers (2211.12434)
 **Paper(s)**: 2211.12434
+**Status**: ✅ FIXED — `628cec3` adds 200-char minimum body-length guard after regex pipeline step in `hybrid_scripter/__init__.py`; falls back to pure regex pipeline when body is too short
 
 ### What the scripter produced
 ```
@@ -48,6 +49,7 @@ Fix: Add a post-processing guard in the orchestrator: `if len(body.strip()) < 20
 **Severity**: medium — header/footer structurally incomplete
 **Frequency**: 1/2 papers (2302.00672)
 **Paper(s)**: 2302.00672
+**Status**: ⚠️ DEFERRED — root cause (how source_path is passed to hybrid orchestrator) needs investigation; arXiv-ID fallback exists in `_extract_metadata()` but may not be triggered
 
 ### What the scripter produced
 ```
@@ -88,6 +90,7 @@ The hybrid scripter's metadata extractor returned `None` for `metadata.date`. Th
 **Severity**: medium — "in sections and" is meaningless to listeners
 **Frequency**: 1/2 papers, 1 instance (2302.00672)
 **Paper(s)**: 2302.00672
+**Status**: ✅ FIXED — `628cec3` adds "in sections and" / "in and" cleanup in `_strip_citations()` (shared regex pipeline, affects all tiers)
 
 ### What the scripter produced
 > "A collective response system is a collective intelligence facilitation system that satisfies the structure, processes, properties, and principles described below, in sections and."

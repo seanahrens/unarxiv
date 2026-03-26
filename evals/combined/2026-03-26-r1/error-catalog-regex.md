@@ -10,6 +10,7 @@ Eval date: 2026-03-26 | Papers evaluated: 1 (2603.17198)
 **Severity**: high — changes a reported number, producing false information
 **Frequency**: 1/1 papers
 **Paper(s)**: 2603.17198
+**Status**: ⚠️ DEFERRED — deeper math parsing issue; ordinal fix in `628cec3` addresses the `\text{th}` variant but the decimal truncation for `$\alpha = 0.5$` needs separate investigation
 
 ### What the scripter produced
 > "α = 0."
@@ -31,6 +32,7 @@ LaTeX math mode parsing in `regex_scripter/math_to_speech.py` or `latex_parser.p
 **Severity**: medium — audible artifact that disrupts speech cadence
 **Frequency**: 1/1 papers (at least 1 occurrence per paper with `\ie` usage)
 **Paper(s)**: 2603.17198
+**Status**: ✅ FIXED — `628cec3` changes `i\.e\.~?` / `e\.g\.~?` patterns to `i\.e\.~?,?\s*` / `e\.g\.~?,?\s*` to consume trailing comma
 
 ### What the scripter produced
 > "that is,,"
@@ -52,6 +54,7 @@ LaTeX math mode parsing in `regex_scripter/math_to_speech.py` or `latex_parser.p
 **Severity**: medium — TTS engines may mispronounce or skip Greek characters
 **Frequency**: 1/1 papers (co-occurs with math truncation error above)
 **Paper(s)**: 2603.17198
+**Status**: ⚠️ DEFERRED — co-occurs with math truncation; `_convert_greek_letters()` already handles `\alpha` → "alpha" but the math parsing fails before that for this pattern
 
 ### What the scripter produced
 > "α = 0."
@@ -94,6 +97,7 @@ Regex scripter does not perform sentence-level TTS normalization for complex aca
 **Severity**: low — cosmetic; attribution is appropriate but slightly verbose
 **Frequency**: 1/1 papers
 **Paper(s)**: 2603.17198
+**Status**: ✅ FIXED — `628cec3` changes footer to "Narrated by unarxiv dot org." in `script_builder.py`
 
 ### What the scripter produced
 > "Narrated by un. archive dot org, an app made by Sean Ahrens and Claude."

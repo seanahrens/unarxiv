@@ -10,6 +10,7 @@ Eval date: 2026-03-26 | Papers evaluated: 5 (2512.03399, 2301.09976, 2404.10636,
 **Severity**: high — grammatically broken sentence; listener hears unintelligible attribution
 **Frequency**: 1/5 papers (3 occurrences within that paper)
 **Paper(s)**: 2404.10636
+**Status**: ⚠️ DEFERRED — requires syntactic detection of preposition-cite sequences; existing `"by, and others"` → `"by others"` cleanup in `_strip_citations()` catches some cases but not the multi-author form
 
 ### What the scripter produced
 > "our approach is inspired by the philosophy of values advanced by, and others"
@@ -95,6 +96,7 @@ The hybrid scripter preserves parenthetical definitions when they immediately fo
 **Severity**: low — audible but not meaning-altering
 **Frequency**: 1/5 papers (consistent with regex tier issue)
 **Paper(s)**: 2411.10534
+**Status**: ✅ FIXED — `628cec3` changes footer to "Narrated by unarxiv dot org." in `script_builder.py` (shared by all tiers)
 
 ### What the scripter produced
 > "un. archive dot org"
