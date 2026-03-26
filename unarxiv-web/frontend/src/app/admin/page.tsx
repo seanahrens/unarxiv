@@ -570,11 +570,12 @@ function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
   const hybrid = current.find((r) => r.scripter_mode === "hybrid");
   const modes = [
     { data: regex, label: "Regex", color: "text-red-400" },
-    { data: llm, label: "LLM", color: "text-blue-400" },
     { data: hybrid, label: "Hybrid", color: "text-violet-400" },
+    { data: llm, label: "LLM", color: "text-blue-400" },
   ].filter((m) => m.data);
 
   const goals: { label: string; key: keyof ScoreCurrentRow }[] = [
+    { label: "Overall", key: "avg_overall" },
     { label: "Fidelity", key: "avg_fidelity" },
     { label: "Citations", key: "avg_citations" },
     { label: "Header/Footer", key: "avg_header" },
@@ -582,7 +583,7 @@ function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
     { label: "TTS", key: "avg_tts" },
   ];
 
-  const Bar = ({ value }: { value: number | null }) => {
+  const Bar = ({ value, isOverall }: { value: number | null; isOverall?: boolean }) => {
     if (value == null) return (
       <div className="flex items-center gap-1.5 flex-1">
         <span className="text-xs text-stone-300 w-7 text-right font-mono">—</span>
@@ -590,10 +591,10 @@ function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
       </div>
     );
     const pct = Math.round(value * 100);
-    const barColor = value >= 0.8 ? "bg-emerald-400" : value >= 0.5 ? "bg-amber-400" : "bg-red-400";
+    const barColor = isOverall ? "bg-stone-400" : value >= 0.8 ? "bg-emerald-400" : value >= 0.5 ? "bg-amber-400" : "bg-red-400";
     return (
       <div className="flex items-center gap-1.5 flex-1">
-        <span className="text-xs text-stone-500 w-7 text-right font-mono">{pct}%</span>
+        <span className={`text-xs w-7 text-right font-mono ${isOverall ? "text-stone-300 font-semibold" : "text-stone-500"}`}>{pct}%</span>
         <div className="flex-1 bg-stone-100 rounded-full h-1.5 overflow-hidden">
           <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
@@ -603,19 +604,26 @@ function GoalBreakdown({ current }: { current: ScoreCurrentRow[] }) {
 
   return (
     <div className="mt-4">
+      {/* Column headers with period/commit info */}
       <div className="flex mb-1">
         <div className="w-28 shrink-0" />
         {modes.map((m) => (
-          <div key={m.label} className={`flex-1 text-xs ${m.color} text-center`}>{m.label}</div>
+          <div key={m.label} className="flex-1 text-center">
+            <div className={`text-xs ${m.color}`}>{m.label}</div>
+            <div className="text-[10px] text-stone-400 font-mono">
+              {m.data!.period ? fmtPeriod(m.data!.period) : ""}
+              {m.data!.count ? ` (${m.data!.count}p)` : ""}
+            </div>
+          </div>
         ))}
       </div>
       {goals.map(({ label, key }) => (
         <div key={String(key)} className="flex items-center gap-2 py-1">
-          <div className="w-28 shrink-0 text-xs text-stone-400" title={GOAL_TOOLTIPS[label]}>
-            <span className="cursor-help border-b border-dashed border-stone-300">{label}</span>
+          <div className="w-28 shrink-0 text-xs text-stone-400" title={GOAL_TOOLTIPS[label] ?? ""}>
+            <span className={label === "Overall" ? "font-medium text-stone-300" : "cursor-help border-b border-dashed border-stone-300"}>{label}</span>
           </div>
           {modes.map((m) => (
-            <Bar key={m.label} value={m.data![key] as number | null} />
+            <Bar key={m.label} value={m.data![key] as number | null} isOverall={key === "avg_overall"} />
           ))}
         </div>
       ))}
@@ -653,7 +661,7 @@ function QualityInsightsPanel({
   const regex = stats.current.find((r) => r.scripter_mode === "regex");
   const llm = stats.current.find((r) => r.scripter_mode === "llm");
   const hybrid = stats.current.find((r) => r.scripter_mode === "hybrid");
-  const modeRows = [regex, llm, hybrid].filter(Boolean) as ScoreCurrentRow[];
+  const modeRows = [regex, hybrid, llm].filter(Boolean) as ScoreCurrentRow[];
   const totalEvals = stats.current.reduce((s, r) => s + r.count, 0);
 
   // Compute trend by comparing last two periods in daily for each mode
