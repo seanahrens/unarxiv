@@ -421,10 +421,11 @@ def _strip_non_prose(text: str) -> str:
     # Also strip bare \includegraphics with just optional args and no braces
     text = re.sub(r"\\includegraphics(?:\[[^\]]*\])?", "", text)
 
-    # Remove \centering, \caption (keep caption text but we'll lose it with figures)
+    # Remove \centering, \caption, \captionsetup (keep caption text but we'll lose it with figures)
     text = re.sub(r"\\centering\b", "", text)
     text = _drop_braced_command(text, "caption")
     text = _drop_braced_command(text, "captionof")
+    text = _drop_braced_command(text, "captionsetup")
 
     # Remove \wrapfigure, wraptable, minipage with figure content
     text = re.sub(r"\\begin\{(wrapfigure|wraptable)\}.*?\\end\{\1\}", "", text, flags=re.DOTALL)
@@ -796,6 +797,19 @@ def _normalize_text(text: str) -> str:
     text = re.sub(r"\bsee\s*\.", ".", text)
     text = re.sub(r"\(see\s*\)", "", text)
     text = re.sub(r"such as\s*\.", ".", text)
+
+    # Clean up orphaned sentence-opening verbs left by stripped figure/table references.
+    # Pattern: "\n\nIllustrates the..." (sentence starts with a bare verb that was preceded by
+    # a stripped \ref{...} or \cref{...}).  We drop the entire fragment to end of sentence.
+    # We only do this at paragraph starts (after a blank line) to avoid false positives.
+    text = re.sub(
+        r"(?<=\n\n)(illustrates|provides|shows|depicts|visualizes|demonstrates|presents|"
+        r"summarizes|outlines|describes|compares|lists|plots|displays|reports|contains|"
+        r"gives|details)[^.!?]*[.!?]?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
     # "(for example, )" or "(for example, ; )" — dangling intro after citation removal
     text = re.sub(r"\(\s*for example,[\s;,]*\)", "", text)
     text = re.sub(r"\(\s*that is,[\s;,]*\)", "", text)
@@ -897,7 +911,8 @@ def _drop_command_defs(text: str) -> str:
     prefixes = ("\\newcommand", "\\renewcommand",
                 "\\newenvironment", "\\renewenvironment",
                 "\\providecommand", "\\DeclareRobustCommand",
-                "\\DeclareMathOperator")
+                "\\DeclareMathOperator",
+                "\\newcolumntype")
     while i < len(text):
         matched = False
         for pfx in prefixes:

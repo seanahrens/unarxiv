@@ -251,7 +251,8 @@ def _convert_superscripts(expr: str) -> str:
 def _convert_subscripts(expr: str) -> str:
     """Convert x_{i} → 'x sub i' for simple subscripts."""
     # Only convert simple subscripts (single char or short)
-    for _ in range(5):
+    # Use 20 passes to handle expressions with many subscripts (e.g. 6+ in one formula)
+    for _ in range(20):
         m = re.search(r"_\{([^{}]{1,10})\}", expr)
         if not m:
             break
