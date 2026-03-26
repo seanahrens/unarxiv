@@ -52,12 +52,19 @@ export const PRICING = {
   },
 } as const;
 
-/** Default models per provider. */
+/**
+ * Default models per provider.
+ *
+ * LLM defaults are intentionally empty — the Modal worker (llm_providers.py)
+ * owns the single source of truth for which model to use. The CF worker just
+ * passes through whatever the user requests (or empty string → Modal default).
+ * This prevents the two systems from having conflicting defaults.
+ *
+ * TTS defaults are fine here since TTS is handled by the CF worker / Modal
+ * premium_tts.py and there's no duplication.
+ */
 export const DEFAULT_MODELS = {
-  llm: {
-    openai:    "gpt-4o-mini",
-    anthropic: "claude-haiku-4-5-20251001",
-  },
+  llm: {} as Record<string, string>,
   tts: {
     openai:     "tts-1-hd",
     elevenlabs: "eleven_multilingual_v2",
@@ -332,7 +339,7 @@ export async function handleNarratePremium(
       }
       llmProvider = req.provider;
       llmApiKey = await aesDecrypt(req.encrypted_key, aesKey);
-      llmModel = req.llm_model || (DEFAULT_MODELS.llm as any)[req.provider] || "gpt-4o-mini";
+      llmModel = req.llm_model || "";  // empty → Modal picks default from llm_providers.py
       ttsProvider = req.provider;
       ttsApiKey = llmApiKey; // same key
       ttsModel = req.tts_model || (DEFAULT_MODELS.tts as any)[req.provider] || "tts-1-hd";
@@ -343,7 +350,7 @@ export async function handleNarratePremium(
       }
       llmProvider = req.llm_provider;
       llmApiKey = await aesDecrypt(req.encrypted_llm_key, aesKey);
-      llmModel = req.llm_model || (DEFAULT_MODELS.llm as any)[req.llm_provider] || "gpt-4o-mini";
+      llmModel = req.llm_model || "";  // empty → Modal picks default from llm_providers.py
       ttsProvider = req.tts_provider;
       ttsApiKey = await aesDecrypt(req.encrypted_tts_key, aesKey);
       ttsModel = req.tts_model || (DEFAULT_MODELS.tts as any)[req.tts_provider] || null;
@@ -355,7 +362,7 @@ export async function handleNarratePremium(
       }
       llmProvider = req.llm_provider;
       llmApiKey = await aesDecrypt(req.encrypted_llm_key, aesKey);
-      llmModel = req.llm_model || (DEFAULT_MODELS.llm as any)[req.llm_provider] || "gpt-4o-mini";
+      llmModel = req.llm_model || "";  // empty → Modal picks default from llm_providers.py
     }
   } catch {
     return json({ error: "Failed to decrypt key — was it encrypted with this server?" }, 400);
