@@ -1103,8 +1103,55 @@ export interface InsertNarrationScoreInput {
   parser_commit?: string | null;
 }
 
-/** Insert a new narration quality score row. */
+/**
+ * Canonical quality scoring formula for unarXiv narration scripts.
+ * Mirrors modal_worker/scoring.py — keep in sync.
+ *
+ * Weights: fidelity 0.35, citations 0.20, header 0.10, figures 0.15, tts 0.20.
+ * When score_figures is null (regex tier), its weight redistributes proportionally.
+ */
+export function computeOverallScore(input: {
+  score_fidelity?: number | null;
+  score_citations?: number | null;
+  score_header?: number | null;
+  score_figures?: number | null;
+  score_tts?: number | null;
+}): number | null {
+  const weights: Record<string, number> = {
+    score_fidelity: 0.35,
+    score_citations: 0.20,
+    score_header: 0.10,
+    score_figures: 0.15,
+    score_tts: 0.20,
+  };
+
+  // When figures is null, redistribute its weight proportionally.
+  if (input.score_figures == null) {
+    const redistFactor = 1.0 / (1.0 - weights.score_figures);
+    delete weights.score_figures;
+    for (const k of Object.keys(weights)) {
+      weights[k] *= redistFactor;
+    }
+  }
+
+  let totalWeight = 0;
+  let weightedSum = 0;
+  for (const [key, w] of Object.entries(weights)) {
+    const val = input[key as keyof typeof input];
+    if (val != null) {
+      weightedSum += w * val;
+      totalWeight += w;
+    }
+  }
+
+  if (totalWeight === 0) return null;
+  return Math.round((weightedSum / totalWeight) * 10000) / 10000;
+}
+
+/** Insert a new narration quality score row. Auto-computes score_overall if omitted. */
 export async function insertNarrationScore(db: D1Database, input: InsertNarrationScoreInput): Promise<{ id: number }> {
+  const overall = input.score_overall ?? computeOverallScore(input);
+
   const result = await db
     .prepare(
       `INSERT INTO narration_scores
@@ -1121,7 +1168,7 @@ export async function insertNarrationScore(db: D1Database, input: InsertNarratio
       input.score_header ?? null,
       input.score_figures ?? null,
       input.score_tts ?? null,
-      input.score_overall ?? null,
+      overall ?? null,
       input.notes ?? null,
       input.parser_commit ?? null,
     )
