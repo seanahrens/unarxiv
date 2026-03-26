@@ -54,9 +54,9 @@ export const VOICE_TIERS: Record<string, VoiceTier> = {
   },
   plus1: {
     id: "plus1",
-    label: "Free Upgrade",
-    description: "Free Upgrade. AI-improved script with figure narrations.",
-    shortDescription: "Free Upgrade.",
+    label: "Basic Voice",
+    description: "Basic Voice. Decent. A tinge botty.",
+    shortDescription: "Basic Voice. Decent.",
     providerName: "Microsoft",
     voiceName: "Eric",
     rank: 2,

@@ -244,7 +244,7 @@ function OptionCard({
             ) : (
               <>
                 <span className="text-sm font-semibold text-stone-700">
-                  {estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
+                  {estimate.option_id === "plus1" || estimate.estimated_cost_usd === 0 ? "Free" : `~$${ceilCents(estimate.estimated_cost_usd)}`}
                 </span>
                 {tier && scriptCharCount > 0 && (
                   <p className="text-[11px] text-stone-500">
@@ -1097,7 +1097,7 @@ export default function UpgradeNarrationModal({
                 <div className="flex items-center justify-between pt-1 border-t border-stone-200 mt-1">
                   <span className="text-xs text-stone-500">Estimated cost</span>
                   <span className="text-sm font-semibold text-stone-700">
-                    {totalCost === 0 ? "Free" : `~$${ceilCents(totalCost ?? 0)}`}
+                    {selectedOptionId === "plus1" || totalCost === 0 ? "Free" : `~$${ceilCents(totalCost ?? 0)}`}
                   </span>
                 </div>
               </div>

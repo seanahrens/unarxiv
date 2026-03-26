@@ -298,7 +298,7 @@ function ScriptsModal({
                     <td className="px-2 py-1.5">
                       {v.transcript_r2_key && (
                         <a
-                          href={`/s?id=${paperId}&version=${v.id}`}
+                          href={`/p?id=${paperId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:text-blue-700 transition-colors"
@@ -1518,7 +1518,7 @@ export default function AdminPage() {
                   </td>
                   <td className="px-2 py-1.5 text-center">
                     {(paper.status === "narrated" || paper.status === "narrating") ? (
-                      <a href={`/s?id=${paper.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors inline-block" title="View script">
+                      <a href={`/p?id=${paper.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors inline-block" title="View paper">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                           <polyline points="14 2 14 8 20 8" />

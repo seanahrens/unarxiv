@@ -432,23 +432,41 @@ export default function PaperPageContent({ paperId: propId }: { paperId?: string
         return scores.reduce((a, b) => a + b, 0) / scores.length;
       };
 
-      // Fetch base transcript
-      const base = await fetchTx(transcriptUrl(paper.id));
-      if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null, charCount: base.text.length, scripterMode: null });
-
-      // Fetch upgrade version transcripts
+      // Fetch versions first so we can show tabs based on actual data
+      let allVersions: PaperVersion[] = [];
       try {
         const resp = await getPaperVersions(paper.id);
-        const upgraded = getUpgradedVersions(resp.versions);
-        for (const v of upgraded) {
-          const tx = await fetchTx(transcriptUrl(paper.id, v.id));
-          if (tx) {
-            const avg = avgScore(v);
-            const scoreLabel = avg != null ? ` (${(avg * 10).toFixed(1)})` : "";
-            tabs.push({ key: `v${v.id}`, label: `AI Script${scoreLabel}`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at, charCount: tx.text.length, scripterMode: v.scripter_mode });
-          }
-        }
+        allVersions = resp.versions;
       } catch {}
+
+      // Base (regex-only) tab: use narration_tier="base" version if it exists,
+      // otherwise fall back to the legacy transcript path (papers narrated via
+      // cron or before the versions system have their script at the default URL).
+      const baseVersion = allVersions.find(v => v.narration_tier === "base");
+      if (baseVersion) {
+        const base = await fetchTx(transcriptUrl(paper.id, baseVersion.id));
+        if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: baseVersion.created_at, charCount: base.text.length, scripterMode: baseVersion.scripter_mode ?? "regex" });
+      } else {
+        // No base version row — try legacy transcript path (default URL uses
+        // best_version_id, so only use it when best_version_id is absent or
+        // points to a base-tier version, otherwise we'd show the upgrade script)
+        const hasBestUpgrade = paper.best_version_id && allVersions.some(v => v.id === paper.best_version_id && v.narration_tier !== "base");
+        if (!hasBestUpgrade) {
+          const base = await fetchTx(transcriptUrl(paper.id));
+          if (base) tabs.push({ key: "base", label: "Programmatic Script", text: base.text, date: base.date, type: "base", llmProvider: null, llmModel: null, createdAt: null, charCount: base.text.length, scripterMode: null });
+        }
+      }
+
+      // Upgrade version transcripts (non-base tiers)
+      const upgraded = getUpgradedVersions(allVersions);
+      for (const v of upgraded) {
+        const tx = await fetchTx(transcriptUrl(paper.id, v.id));
+        if (tx) {
+          const avg = avgScore(v);
+          const scoreLabel = avg != null ? ` (${(avg * 10).toFixed(1)})` : "";
+          tabs.push({ key: `v${v.id}`, label: `AI Script${scoreLabel}`, text: tx.text, date: tx.date, type: "upgraded", llmProvider: v.llm_provider, llmModel: v.llm_model, createdAt: v.created_at, charCount: tx.text.length, scripterMode: v.scripter_mode });
+        }
+      }
 
       // Sort tabs by completion datetime (base first via epoch 0, then by createdAt)
       tabs.sort((a, b) => {
