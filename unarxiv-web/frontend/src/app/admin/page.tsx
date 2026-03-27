@@ -31,7 +31,7 @@ import { VOICE_TIERS, getTierFromProvider } from "@/lib/voiceTiers";
 
 const PAGE_SIZE = 30;
 
-type SortKey = "created_at" | "title" | "rating" | "status" | "duration";
+type SortKey = "created_at" | "title" | "rating" | "status" | "duration" | "activity";
 type SortDir = "asc" | "desc";
 type StatusFilter = "all" | "narrated" | "narrating" | "failed" | "unnarrated";
 
@@ -1056,6 +1056,8 @@ export default function AdminPage() {
             || -((a.created_at || "").localeCompare(b.created_at || ""));
         case "duration":
           return dir * ((a.duration_seconds ?? 0) - (b.duration_seconds ?? 0));
+        case "activity":
+          return dir * ((a.updated_at || a.created_at || "").localeCompare(b.updated_at || b.created_at || ""));
         case "created_at":
         default:
           return dir * ((a.created_at || "").localeCompare(b.created_at || ""));
@@ -1073,7 +1075,7 @@ export default function AdminPage() {
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir(key === "created_at" || key === "duration" ? "desc" : "asc"); }
+    else { setSortKey(key); setSortDir(key === "created_at" || key === "duration" || key === "activity" ? "desc" : "asc"); }
   };
 
   const toggleSelect = useCallback((id: string) => {
@@ -1426,11 +1428,14 @@ export default function AdminPage() {
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
                 </th>
-                <th className="px-1 py-2 w-10 text-center">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5" className="inline opacity-60">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
+                <th className="px-1 py-2 w-10 text-center cursor-pointer select-none" onClick={() => handleSort("duration")}>
+                  <span className="inline-flex items-center gap-0.5 text-stone-400 justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5" className="inline opacity-60">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <SortArrow active={sortKey === "duration"} dir={sortDir} />
+                  </span>
                 </th>
                 <th className="px-2 py-2 cursor-pointer select-none" onClick={() => handleSort("title")}>
                   <span className="inline-flex items-center gap-1 text-stone-400">
@@ -1446,13 +1451,12 @@ export default function AdminPage() {
                     <SortArrow active={sortKey === "rating"} dir={sortDir} />
                   </span>
                 </th>
-                <th className="px-2 py-2 w-10 cursor-pointer select-none text-center" onClick={() => handleSort("duration")}>
+                <th className="px-2 py-2 w-10 cursor-pointer select-none text-center" onClick={() => handleSort("activity")}>
                   <span className="inline-flex items-center gap-0.5 text-stone-400 justify-center">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-60">
-                      <path d="M4 4h16v16H4z" rx="2" />
-                      <path d="M8 8h8M8 12h6" />
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                     </svg>
-                    <SortArrow active={sortKey === "duration"} dir={sortDir} />
+                    <SortArrow active={sortKey === "activity"} dir={sortDir} />
                   </span>
                 </th>
                 <th className="px-2 py-2 w-8 text-center text-stone-400">Hist</th>
@@ -1546,9 +1550,15 @@ export default function AdminPage() {
                     )}
                   </td>
                   <td className="px-2 py-1.5 text-center">
-                    <span className="text-xs text-stone-400 font-mono" title={paper.created_at ? new Date(paper.created_at).toLocaleString() : ""}>
-                      {paper.created_at ? timeAgo(paper.created_at) : ""}
-                    </span>
+                    {sortKey === "activity" ? (
+                      <span className="text-xs text-stone-400 font-mono" title={paper.updated_at ? new Date(paper.updated_at).toLocaleString() : ""}>
+                        {paper.updated_at ? timeAgo(paper.updated_at) : paper.created_at ? timeAgo(paper.created_at) : ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-stone-400 font-mono" title={paper.created_at ? new Date(paper.created_at).toLocaleString() : ""}>
+                        {paper.created_at ? timeAgo(paper.created_at) : ""}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -95,6 +95,7 @@ export interface PaperResponse {
   best_version_id: number | null;
   created_at: string;
   completed_at: string | null;
+  updated_at: string | null;
 }
 
 // --- Lists ---
@@ -190,5 +191,6 @@ export function paperToResponse(paper: Paper, apiOrigin: string): PaperResponse 
     best_version_id: paper.best_version_id,
     created_at: paper.created_at,
     completed_at: paper.completed_at,
+    updated_at: paper.updated_at,
   };
 }
