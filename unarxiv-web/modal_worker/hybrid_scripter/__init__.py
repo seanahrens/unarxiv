@@ -178,10 +178,15 @@ def generate_script(
     # Safety guard: if the body is suspiciously short after processing, the LaTeX
     # structure was likely unrecognised and all content was stripped.  Fall back to
     # the plain regex scripter rather than producing a near-empty narration.
+    # NOTE: measure prose length EXCLUDING placeholders — otherwise a paper whose
+    # content is entirely inside extracted elements (figures/math/tables) will pass
+    # this check on placeholder text alone, then produce a near-empty script when
+    # LLM descriptions fail or come back empty.
     _BODY_MIN_CHARS = 200
-    if len(body.strip()) < _BODY_MIN_CHARS:
-        print(f"[hybrid] WARNING: body too short ({len(body.strip())} chars < {_BODY_MIN_CHARS}), "
-              f"falling back to regex-only pipeline")
+    prose_only = re.sub(r"HYBRID_ELEMENT_[A-Z_]+_\d{3}", "", body)
+    if len(prose_only.strip()) < _BODY_MIN_CHARS:
+        print(f"[hybrid] WARNING: prose too short ({len(prose_only.strip())} chars < {_BODY_MIN_CHARS}, "
+              f"{len(surviving_placeholders)} placeholders excluded), falling back to regex-only pipeline")
         from regex_scripter import generate_script as _regex_generate
         regex_script = _regex_generate(
             source_path=source_path,
