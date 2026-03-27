@@ -27,12 +27,6 @@ interface PaperCardProps {
   collectionId?: string | null;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  unnarrated: "",
-  narrating: "",
-  narrated: "",
-  failed: "Failed",
-};
 
 function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collectionId }: PaperCardProps) {
   const router = useRouter();
@@ -142,7 +136,7 @@ function PaperCard({ paper, onGenerate, onRate, arxivUrl, onPaperChange, collect
             </h3>
             {isFailed && (
               <span className="shrink-0 text-2xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">
-                {STATUS_LABELS[paper.status] || paper.status}
+                Failed
               </span>
             )}
           </div>
