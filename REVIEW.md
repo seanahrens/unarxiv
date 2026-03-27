@@ -1,62 +1,64 @@
-# unarXiv Review — 2026-03-25
+# Daily Codebase Review — 2026-03-27
 
 ## Changes Made
 
-### chore(worker): remove unused QUEUE_BATCH_SIZE env var from wrangler.toml
+### 1. Remove legacy route aliases (worker)
+**File**: `unarxiv-web/worker/src/index.ts`
 
-**File:** `unarxiv-web/worker/wrangler.toml`
+Removed two route aliases that were added as a safety net during the rename of the "premium" feature to "upgrade":
+- `DELETE /api/admin/papers/:id/premium-versions` → alias for `upgrade-versions`
+- `POST /api/papers/:id/narrate-premium` → alias for `narrate-upgrade`
 
-`QUEUE_BATCH_SIZE = "3"` was listed in wrangler.toml but was removed from the TypeScript `Env` interface in a previous refactor session. The Worker never reads this var, so it has no effect. Removed to keep config in sync with the codebase.
+Both were marked "remove after next frontend deploy." The frontend has been deployed using the new routes across many subsequent iterations. These aliases are no longer needed.
 
-This was noted as a "new observation" in the 2026-03-24 review. Closing it now.
+### 2. Remove unused wrangler config variable (attempted, skipped)
+`QUEUE_BATCH_SIZE = "3"` in `wrangler.production.toml` is never read by any worker code. However, `wrangler.production.toml` is listed in `.gitignore` and cannot be committed. **Action required**: manually remove `QUEUE_BATCH_SIZE` from `wrangler.production.toml`.
 
-### refactor(worker): remove stale legacy webhook payload compat block
+### 3. Simplify PaperCard failed status label (frontend)
+**File**: `unarxiv-web/frontend/src/components/PaperCard.tsx`
 
-**File:** `unarxiv-web/worker/src/handlers/narration.ts`
+`STATUS_LABELS` was a table with empty strings for `unnarrated`, `narrating`, and `narrated`, and `"Failed"` for the failed status. The table was only consulted inside `{isFailed && ...}`, making the lookup always return `"Failed"`. Replaced the indirection with the inline string.
 
-The `handleModalWebhook` function contained a ~30-line compatibility block that flattened old nested payload formats (`providers`, `costs` dicts and a `quality_rank`-based `narration_tier` inference). It was written when the Modal worker was mid-migration and marked for removal "after ~1 week."
+### 4. Fix CLAUDE.md modal_worker documentation
+**File**: `CLAUDE.md`
 
-The 2026-03-24 review flagged this for removal but deferred it pending human confirmation that Modal had fully migrated. Code review of `narrate.py` and the premium narration pipeline in `narrate_paper_premium()` confirms that all `send_status()` calls use flat fields only — no nested `providers`/`costs` dicts are sent anywhere in the current Modal codebase. The compat block was dead code.
-
-Removed:
-- The compat block itself (~25 lines)
-- The now-unused field declarations from the body type (`script_r2_key`, `providers`, `costs`, `quality_rank`)
-
-No behavior change for any live narration flow.
-
----
-
-## Left Unchanged (Carried Over — Needs Human Decision)
-
-These items were identified in previous sessions and are explicitly deferred:
-
-- **`DAILY_GLOBAL_LIMIT` / `getGlobalSubmissionCount` not enforced** — The env var is defined and set to `"50"` in wrangler.toml, and `getGlobalSubmissionCount()` exists in `db.ts`, but neither is wired together in any handler. Decide whether to implement the global cap, document it as intentionally unimplemented, or remove the dead infrastructure entirely.
-
-- **`/api/my-additions` GET route with no frontend callers** — Registered and functional in the worker, but the frontend doesn't call it. `handleDeleteMyAddition` (for `DELETE /api/my-additions/:id`) is used by `my-papers` page; the GET endpoint has no caller. Decide whether to build UI for it, keep it unused, or remove it.
-
-- **`admin/page.tsx` size** — Single file of ~1000+ lines. Splitting would improve maintainability but is high blast-radius; deferred for deliberate planning.
-
-- **Design system / shared component library** — No shared `Button`/`Modal` primitives; `shadcn/ui` would reduce modal duplication (`RatingModal` inline in `PaperPageContent.tsx`, `PremiumNarrationModal.tsx` at 1200+ lines) but is a significant dependency addition. Human decision.
-
-- **`RatingModal` inline in `PaperPageContent.tsx`** — The `RatingModal`, `StarIcon`, `StarRatingInput`, `CopyableId`, and `BackButton` sub-components are all defined inline in `PaperPageContent.tsx` (~700 lines total). Each could be extracted to its own file. Deferred as non-urgent and low-risk to leave as-is.
-
-- **`handleReprocessPaper` Modal dispatch duplication** — The inline `fetch` in `handleReprocessPaper` duplicates parts of `dispatchToModal`, but the two paths have meaningfully different behavior (different payload shape including `mode`, different error handling — reprocess does not revert status on failure). Left as-is to avoid over-engineering a one-off admin code path.
+- Removed mention of `legacy_regex_scripter.py` — the source file no longer exists (only a stale `.pyc` cache remains in `__pycache__/`).
+- Added missing `hybrid_scripter/` directory to the architecture listing.
+- Clarified that `regex_scripter/` is used in both base and hybrid modes (not just the default mode).
 
 ---
 
-## New Observations (No Action Required Today)
+## Items Left Unchanged
 
-- **`voiceTiers.ts` and `api.ts` parallel TTS provider lookup functions** — `voiceTiers.ts` exports `getTierFromProvider()` for resolving a TTS provider name to a `VoiceTier`. `api.ts` has a private `ttsProviderToTierId()` that does a similar lookup but returns a string ID for grouping premium estimate options. The two functions have different semantics and are each used in the right place. Acceptable duplication.
+### Pre-existing test failures (9 tests in `worker/src/__tests__/upgrade.test.ts`)
+These failures exist on `main` before this review:
 
-- **`recoverStalePapers` hardcoded URL** — `const baseUrl = "https://api.unarxiv.org"` at line 136 of `narration.ts`. This is intentional (the cron runs in production only; Modal must call back to the production API, not localhost), but worth noting for anyone who extends the cron logic.
+1. **Schema out-of-sync**: Tests error with `D1_ERROR: no such column: error_category` because the test helper's inline schema (`TEST_SCHEMA` in `src/__tests__/helpers.ts`) is missing the `error_category` and `retry_count` columns that were added in a later migration. Fixing requires updating the test schema.
 
-- **`buildRouteTable` called on every request** — The worker rebuilds the array of ~45 route entries (including `new RegExp(...)` calls) on every request because `baseUrl` is passed per-request. In practice V8 handles this efficiently and the overhead is negligible at the expected request volume; not worth the added complexity of memoizing.
+2. **Cost estimate mismatch**: One test expects `script_char_count` to be `50000` but gets `66500`, indicating a drift between the estimation formula and the test fixture.
+
+These are test infrastructure issues — the tests need to be updated to match the current schema and cost formula. Per review constraints, test files are not modified by this agent.
+
+### `DAILY_GLOBAL_LIMIT` in Env type and wrangler config
+Documented in CLAUDE.md as "not currently enforced in code." Left as-is since it's an intentional future placeholder already called out in the docs.
+
+### `buildRouteTable` called per request
+The route table (including RegExp compilation) is rebuilt on every incoming request. For CF Workers this is low-cost (Workers isolates are long-lived), but a module-level cached table would be marginally more efficient. Not worth the refactor at current scale.
+
+### Admin page size (1776 lines)
+`admin/page.tsx` is large but well-organized with clearly separated sub-components and helper functions. No immediate split is warranted — splitting would add indirection without clarity at this stage.
 
 ---
 
 ## Deploy Status
 
-- **Worker** (`unarxiv-api`): Version `18fc4a30-ac07-4d4e-887d-0e8404976aa3` — deployed 2026-03-25
-- **Frontend** (`unarxiv-frontend`): No frontend changes; not redeployed
+| Service | Status |
+|---------|--------|
+| Worker (`unarxiv-api`) | ✅ Deployed successfully (Version: `d2d4e7e8-5031-47cb-aefe-5c7f61315375`) |
+| Frontend (`unarxiv-frontend`) | ❌ Deploy failed — Cloudflare Pages API returned 502/504 Gateway Timeout on all three attempts. This is a transient Cloudflare infrastructure issue, not a code problem. The frontend build succeeded cleanly. Retry: `cd unarxiv-web/frontend && npx wrangler pages deploy out --project-name=unarxiv-frontend` |
 
-**Note:** `wrangler.production.toml` (gitignored) still contains `QUEUE_BATCH_SIZE = "3"` — only the committed `wrangler.toml` was updated. Since the Worker never reads this var, the production deploy is unaffected. The production.toml should be cleaned up manually on next access.
+---
+
+## Human Decision Required
+
+None — all changes are straightforward cleanup. The pre-existing test failures require a human to update `src/__tests__/helpers.ts` with the current schema (adding `error_category TEXT` and `retry_count INTEGER NOT NULL DEFAULT 0` to the papers table) and correct the cost estimate fixture.
