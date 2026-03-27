@@ -12,10 +12,10 @@ Browser → Cloudflare Pages (Next.js) → Cloudflare Workers (API) → D1 (SQLi
 - **Frontend**: `unarxiv-web/frontend/` — Next.js on Cloudflare Pages
 - **API**: `unarxiv-web/worker/` — Cloudflare Workers (TypeScript), bindings in `wrangler.toml`
 - **Narration**: `unarxiv-web/modal_worker/` — Modal serverless Python
-  - `regex_scripter/` — active regex scripter (default), modular LaTeX+PDF → TTS script
+  - `regex_scripter/` — modular LaTeX+PDF → TTS script parser (used in base and hybrid modes)
+  - `hybrid_scripter/` — hybrid mode elements: LLM-enhanced element extraction and description
   - `llm_scripter.py` — LLM-based script upgrader (+ `llm_providers.py`, `figure_utils.py`, `latex_post_process.py`)
-  - `tts_utils.py` — TTS utilities (chunking, voice, tagging) shared by both scripters
-  - `legacy_regex_scripter.py` — old monolithic scripter, switchable via `SCRIPTER_VERSION=legacy`
+  - `tts_utils.py` — TTS utilities (chunking, voice, tagging) shared across scripters
 
 ## Key Config
 
