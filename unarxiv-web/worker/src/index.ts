@@ -249,12 +249,6 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
       handler: (req, env, _url, m) => handleDeleteUpgradeVersions(req, env, m[1]),
     },
     {
-      // Legacy route alias — remove after next frontend deploy
-      method: "DELETE",
-      pattern: /^\/api\/admin\/papers\/([\w.-]+)\/premium-versions$/,
-      handler: (req, env, _url, m) => handleDeleteUpgradeVersions(req, env, m[1]),
-    },
-    {
       method: "POST",
       pattern: /^\/api\/lists$/,
       handler: (req, env) => handleCreateList(req, env),
@@ -364,12 +358,6 @@ function buildRouteTable(baseUrl: string): RouteEntry[] {
     {
       method: "POST",
       pattern: /^\/api\/papers\/(.+?)\/narrate-upgrade$/,
-      handler: (req, env, _url, m, ctx) => handleNarrateUpgrade(req, env, m[1], baseUrl, ctx),
-    },
-    {
-      // Legacy route alias — remove after next frontend deploy
-      method: "POST",
-      pattern: /^\/api\/papers\/(.+?)\/narrate-premium$/,
       handler: (req, env, _url, m, ctx) => handleNarrateUpgrade(req, env, m[1], baseUrl, ctx),
     },
     {
