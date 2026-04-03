@@ -5,7 +5,9 @@ test.describe("Text Search", () => {
   test("searching a common term returns results", async ({ page }) => {
     await page.goto("/?q=AI");
     const cards = page.locator(PAPER_CARD);
-    await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    // Search results require both DB and arXiv API to resolve; give extra time for
+    // slow arXiv API responses from CI.
+    await expect(cards.first()).toBeVisible({ timeout: 20000 });
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(1);
   });

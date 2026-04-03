@@ -17,13 +17,14 @@ test.describe.serial("ArXiv Search Import", () => {
     const searchInput = page.locator(SEARCH_INPUT).first();
     await searchInput.fill(TEST_ARXIV_ID);
 
-    // Should detect arXiv ID and redirect to paper page
+    // Should detect arXiv ID and redirect to paper page.
+    // arXiv import (preview + submit) can take 20-25s on a cold run.
     await expect(page).toHaveURL(new RegExp(`/p\\??id=${TEST_ARXIV_ID}`), {
-      timeout: 15000,
+      timeout: 30000,
     });
 
     // Wait for the paper page to fully load (auto-import completes)
-    await page.locator("h1").waitFor({ timeout: 15000 });
+    await page.locator("h1").waitFor({ timeout: 30000 });
   });
 
   test("imported paper shows title and content", async ({ page }) => {

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { cleanupTestPaper } from "../helpers/api";
-import { TEST_ARXIV_ID, PAPER_ERROR } from "../helpers/fixtures";
+import { TEST_ARXIV_ID, PAPER_ERROR, knownCompleteId } from "../helpers/fixtures";
 
 test.describe("ArXiv URL Routes", () => {
   test.afterAll(async () => {
@@ -31,8 +31,9 @@ test.describe("ArXiv URL Routes", () => {
   });
 
   test("paper page renders with title after redirect", async ({ page }) => {
-    await page.goto(`/abs/${TEST_ARXIV_ID}`);
-    // Wait for paper page to load and show title
+    // Use a paper guaranteed to be in the DB (narrated), so we test the redirect+render
+    // without depending on a fresh arXiv import completing in time.
+    await page.goto(`/abs/${knownCompleteId()}`);
     const heading = page.locator("h1");
     await expect(heading).toBeVisible({ timeout: 15000 });
     const title = await heading.textContent();
